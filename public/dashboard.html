@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de bord</title>
+    <link href="/style.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-purple-600 text-gray-800">
+        <div class="container mx-auto px-4 py-8 max-w-7xl">
+            <!-- Métriques principales -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white bg-opacity-90 backdrop-blur-lg p-6 rounded-xl shadow-lg">
+                    <div class="text-3xl font-bold text-gray-800" id="activeMaintenances">-</div>
+                    <div class="text-sm uppercase text-gray-500 font-semibold tracking-wide">Maintenances actives</div>
+                </div>
+                <div class="bg-white bg-opacity-90 backdrop-blur-lg p-6 rounded-xl shadow-lg">
+                    <div class="text-3xl font-bold text-gray-800" id="ongoingInterventions">-</div>
+                    <div class="text-sm uppercase text-gray-500 font-semibold tracking-wide">Interventions en cours</div>
+                </div>
+                <div class="bg-white bg-opacity-90 backdrop-blur-lg p-6 rounded-xl shadow-lg">
+                    <div class="text-3xl font-bold text-gray-800" id="activeAgents">-</div>
+                    <div class="text-sm uppercase text-gray-500 font-semibold tracking-wide">Agents actifs</div>
+                </div>
+                <div class="bg-white bg-opacity-90 backdrop-blur-lg p-6 rounded-xl shadow-lg">
+                    <div class="text-3xl font-bold text-gray-800" id="sitesUnderContract">-</div>
+                    <div class="text-sm uppercase text-gray-500 font-semibold tracking-wide">Sites sous contrat</div>
+                </div>
+            </div>
+
+            <!-- Section graphiques -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <div class="lg:col-span-2 bg-white bg-opacity-90 backdrop-blur-lg p-6 rounded-xl shadow-lg">
+                    <canvas id="monthlyMaintenanceChart"></canvas>
+                </div>
+                <div class="bg-white bg-opacity-90 backdrop-blur-lg p-6 rounded-xl shadow-lg">
+                    <div class="text-lg font-semibold text-gray-800 mb-4">🚨 Maintenances urgentes</div>
+                    <div id="urgentMaintenances" class="max-h-96 overflow-y-auto space-y-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/script.js"></script>
+</body>
+</html>

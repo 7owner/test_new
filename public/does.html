@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des DOE</title>
+    <link href="/style.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Gestion des DOE</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Formulaire d'ajout -->
+            <div class="md:col-span-1 bg-white p-6 rounded-lg shadow-md">
+                <h2 id="formTitleDoe" class="text-2xl font-semibold text-gray-700 mb-4">Ajouter un DOE</h2>
+                <form id="addDoeForm" class="space-y-4">
+                    <input type="hidden" id="doeId" value="">
+                    <div>
+                        <label for="titre" class="block text-sm font-medium text-gray-700">Titre</label>
+                        <input type="text" id="titre" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                        <textarea id="description" rows="4" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label for="site" class="block text-sm font-medium text-gray-700">Site</label>
+                        <select id="site" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <!-- Les options seront chargées dynamiquement -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="affaire" class="block text-sm font-medium text-gray-700">Affaire</label>
+                        <select id="affaire" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <!-- Les options seront chargées dynamiquement -->
+                        </select>
+                    </div>
+                    <button type="submit" id="submitButtonDoe" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Ajouter le DOE</button>
+                </form>
+            </div>
+
+            <!-- Liste des DOE -->
+            <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Liste des DOE</h2>
+                <div id="doeList" class="space-y-4"></div>
+            </div>
+        </div>
+    </div>
+    <script src="/script.js"></script>
+</body>
+</html>

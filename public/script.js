@@ -1,0 +1,2036 @@
+document.addEventListener('DOMContentLoaded', () => {
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const errorMessageDiv = document.getElementById('error-message');
+
+    // Function to display error messages
+    const showError = (message) => {
+        if (errorMessageDiv) {
+            errorMessageDiv.textContent = message;
+            errorMessageDiv.classList.remove('hidden');
+        }
+    };
+
+    // Function to handle login
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const email = document.getElementById('inputEmail').value;
+            const password = document.getElementById('inputPassword').value;
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showError(data.error || 'Login failed');
+                    return;
+                }
+
+window.location.href = '/dashboard.html';
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('An unexpected error occurred.');
+            }
+        });
+    }
+
+    // Function to handle registration
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const email = document.getElementById('inputEmail').value;
+            const password = document.getElementById('inputPassword').value;
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showError(data.error || 'Registration failed');
+                    return;
+                }
+
+                // Automatically log in the user after successful registration
+                const loginResponse = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                const loginData = await loginResponse.json();
+                if (loginData.token) {
+                    localStorage.setItem('token', loginData.token);
+                    window.location.href = '/'; // Redirect to homepage
+                } else {
+                    window.location.href = '/login.html'; // Redirect to login page on failure
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showError('An unexpected error occurred.');
+            }
+        });
+    }
+
+    // Function to load dashboard data
+    const loadDashboard = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/dashboard', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const data = await response.json();
+
+            document.getElementById('activeMaintenances').textContent = data.activeMaintenances;
+            document.getElementById('ongoingInterventions').textContent = data.ongoingInterventions;
+            document.getElementById('activeAgents').textContent = data.activeAgents;
+            document.getElementById('sitesUnderContract').textContent = data.sitesUnderContract;
+
+            const urgentMaintenancesDiv = document.getElementById('urgentMaintenances');
+            urgentMaintenancesDiv.innerHTML = '';
+            if (data.urgentMaintenances.length > 0) {
+                data.urgentMaintenances.forEach(m => {
+                    const maintenanceEl = document.createElement('div');
+                    maintenanceEl.className = 'flex justify-between items-center p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400';
+                    maintenanceEl.innerHTML = `<div><h4 class="text-gray-800 font-semibold">${m.titre}</h4></div><span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">Bloqué</span>`;
+                    urgentMaintenancesDiv.appendChild(maintenanceEl);
+                });
+            } else {
+                urgentMaintenancesDiv.innerHTML = '<p class="text-gray-500 text-sm">Aucune maintenance urgente.</p>';
+            }
+
+            const ctx = document.getElementById('monthlyMaintenanceChart');
+            new Chart(ctx, {
+                type: 'bar',
+                data: data.chartData,
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        }
+    };
+
+    // Check if we are on the dashboard page and load data
+    if (window.location.pathname.endsWith('dashboard.html')) {
+        loadDashboard();
+    }
+
+    // Logic for agency management
+    const agenceListDiv = document.getElementById('agenceList');
+    const addAgenceForm = document.getElementById('addAgenceForm');
+
+    const fetchAgences = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/agences', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) window.location.href = '/login.html';
+                return;
+            }
+            const agences = await response.json();
+            agenceListDiv.innerHTML = '';
+            agences.forEach(agence => {
+                const agenceEl = document.createElement('div');
+                agenceEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
+                agenceEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold">${agence.titre}</p>
+                        <p class="text-sm text-gray-600">${agence.email || ''}</p>
+                    </div>
+                    <div>
+                        <button class="delete-agence-btn text-red-500 hover:text-red-700" data-id="${agence.id}">Supprimer</button>
+                        <button class="edit-agence-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${agence.id}">Modifier</button>
+                    </div>
+                `;
+                agenceListDiv.appendChild(agenceEl);
+            });
+        } catch (error) {
+            console.error('Error fetching agences:', error);
+        }
+    };
+
+    if (addAgenceForm) {
+        addAgenceForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            const titre = document.getElementById('titre').value;
+            const designation = document.getElementById('designation').value;
+            const telephone = document.getElementById('telephone').value;
+            const email = document.getElementById('email').value;
+
+            const agenceId = document.getElementById('agenceId').value;
+            const method = agenceId ? 'PUT' : 'POST';
+            const url = agenceId ? `/api/agences/${agenceId}` : '/api/agences';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ titre, designation, telephone, email })
+                });
+                if (response.ok) {
+                    addAgenceForm.reset();
+                    document.getElementById('agenceId').value = ''; // Clear hidden ID
+                    document.getElementById('formTitle').textContent = 'Ajouter une Agence';
+                    document.getElementById('submitButton').textContent = 'Ajouter l\'Agence';
+                    fetchAgences();
+                }
+            } catch (error) {
+                console.error('Error saving agence:', error);
+            }
+        });
+    }
+
+    if (agenceListDiv) {
+        agenceListDiv.addEventListener('click', async (event) => {
+            const token = localStorage.getItem('token');
+            if (event.target.classList.contains('delete-agence-btn')) {
+                const agenceId = event.target.dataset.id;
+                if (confirm('Voulez-vous vraiment supprimer cette agence ?')) {
+                    try {
+                        const response = await fetch(`/api/agences/${agenceId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (response.ok) {
+                            fetchAgences();
+                        }
+                    } catch (error) {
+                        console.error('Error deleting agence:', error);
+                    }
+                }
+            } else if (event.target.classList.contains('edit-agence-btn')) {
+                const agenceId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/agences/${agenceId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const agence = await response.json();
+                    
+                    document.getElementById('agenceId').value = agence.id;
+                    document.getElementById('titre').value = agence.titre;
+                    document.getElementById('designation').value = agence.designation || '';
+                    document.getElementById('telephone').value = agence.telephone || '';
+                    document.getElementById('email').value = agence.email || '';
+
+                    document.getElementById('formTitle').textContent = 'Modifier l\'Agence';
+                    document.getElementById('submitButton').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching agence for edit:', error);
+                }
+            } else if (event.target.classList.contains('edit-agence-btn')) {
+                const agenceId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/agences/${agenceId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const agence = await response.json();
+                    
+                    document.getElementById('agenceId').value = agence.id;
+                    document.getElementById('titre').value = agence.titre;
+                    document.getElementById('designation').value = agence.designation || '';
+                    document.getElementById('telephone').value = agence.telephone || '';
+                    document.getElementById('email').value = agence.email || '';
+
+                    document.getElementById('formTitle').textContent = 'Modifier l\'Agence';
+                    document.getElementById('submitButton').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching agence for edit:', error);
+                }
+            }
+        });
+        fetchAgences();
+    }
+
+    // Logic for agent management
+    const agentListDiv = document.getElementById('agentList');
+    const addAgentForm = document.getElementById('addAgentForm');
+    const agenceSelect = document.getElementById('agence');
+
+    const fetchAgents = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/agents', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const agents = await response.json();
+            agentListDiv.innerHTML = '';
+            agents.forEach(agent => {
+                const agentEl = document.createElement('div');
+                agentEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
+                agentEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold">${agent.nom} (${agent.matricule})</p>
+                        <p class="text-sm text-gray-600">${agent.agence_titre}</p>
+                    </div>
+                    <div>
+                        <button class="delete-agent-btn text-red-500 hover:text-red-700" data-id="${agent.matricule}">Supprimer</button>
+                        <button class="edit-agent-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${agent.matricule}">Modifier</button>
+                    </div>
+                `;
+                agentListDiv.appendChild(agentEl);
+            });
+        } catch (error) {
+            console.error('Error fetching agents:', error);
+        }
+    };
+
+    const loadAgencesIntoSelect = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/agences', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const agences = await response.json();
+            agenceSelect.innerHTML = '<option value="">Sélectionner une agence</option>';
+            agences.forEach(agence => {
+                const option = document.createElement('option');
+                option.value = agence.id;
+                option.textContent = agence.titre;
+                agenceSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error fetching agences for select:', error);
+        }
+    };
+
+    if (addAgentForm) {
+        addAgentForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            const matricule = document.getElementById('matricule').value;
+            const nom = document.getElementById('nom').value;
+            const email = document.getElementById('email').value;
+            const agence_id = document.getElementById('agence').value;
+
+            const agentMatricule = document.getElementById('agentMatricule').value;
+            const method = agentMatricule ? 'PUT' : 'POST';
+            const url = agentMatricule ? `/api/agents/${agentMatricule}` : '/api/agents';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ matricule, nom, email, agence_id })
+                });
+                if (response.ok) {
+                    addAgentForm.reset();
+                    document.getElementById('agentMatricule').value = ''; // Clear hidden ID
+                    document.getElementById('formTitleAgent').textContent = 'Ajouter un Agent';
+                    document.getElementById('submitButtonAgent').textContent = 'Ajouter l\'Agent';
+                    fetchAgents();
+                }
+            } catch (error) {
+                console.error('Error saving agent:', error);
+            }
+        });
+    }
+
+    if (agentListDiv) {
+        agentListDiv.addEventListener('click', async (event) => {
+            const token = localStorage.getItem('token');
+            if (event.target.classList.contains('delete-agent-btn')) {
+                const agentMatricule = event.target.dataset.id;
+                if (confirm('Voulez-vous vraiment supprimer cet agent ?')) {
+                    try {
+                        const response = await fetch(`/api/agents/${agentMatricule}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (response.ok) {
+                            fetchAgents();
+                        }
+                    } catch (error) {
+                        console.error('Error deleting agent:', error);
+                    }
+                }
+            } else if (event.target.classList.contains('edit-agent-btn')) {
+                const agentMatricule = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/agents/${agentMatricule}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const agent = await response.json();
+                    
+                    document.getElementById('agentMatricule').value = agent.matricule;
+                    document.getElementById('matricule').value = agent.matricule;
+                    document.getElementById('nom').value = agent.nom;
+                    document.getElementById('email').value = agent.email || '';
+                    document.getElementById('agence').value = agent.agence_id;
+
+                    document.getElementById('formTitleAgent').textContent = 'Modifier l\'Agent';
+                    document.getElementById('submitButtonAgent').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching agent for edit:', error);
+                }
+            } else if (event.target.classList.contains('edit-agent-btn')) {
+                const agentMatricule = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/agents/${agentMatricule}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const agent = await response.json();
+                    
+                    document.getElementById('agentMatricule').value = agent.matricule;
+                    document.getElementById('matricule').value = agent.matricule;
+                    document.getElementById('nom').value = agent.nom;
+                    document.getElementById('email').value = agent.email || '';
+                    document.getElementById('agence').value = agent.agence_id;
+
+                    document.getElementById('formTitleAgent').textContent = 'Modifier l\'Agent';
+                    document.getElementById('submitButtonAgent').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching agent for edit:', error);
+                }
+            }
+        });
+        fetchAgents();
+        loadAgencesIntoSelect();
+    }
+
+    // Logic for address management
+    const adresseListDiv = document.getElementById('adresseList');
+    const addAdresseForm = document.getElementById('addAdresseForm');
+
+    const fetchAdresses = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/adresses', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) window.location.href = '/login.html';
+                return;
+            }
+            const adresses = await response.json();
+            adresseListDiv.innerHTML = '';
+            adresses.forEach(adresse => {
+                const adresseEl = document.createElement('div');
+                adresseEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
+                adresseEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold">${adresse.libelle}</p>
+                        <p class="text-sm text-gray-600">${adresse.ligne1}, ${adresse.code_postal} ${adresse.ville}</p>
+                    </div>
+                    <div>
+                        <button class="delete-adresse-btn text-red-500 hover:text-red-700" data-id="${adresse.id}">Supprimer</button>
+                        <button class="edit-adresse-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${adresse.id}">Modifier</button>
+                    </div>
+                `;
+                adresseListDiv.appendChild(adresseEl);
+            });
+        } catch (error) {
+            console.error('Error fetching adresses:', error);
+        }
+    };
+
+    if (addAdresseForm) {
+        addAdresseForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            const libelle = document.getElementById('libelle').value;
+            const ligne1 = document.getElementById('ligne1').value;
+            const code_postal = document.getElementById('code_postal').value;
+            const ville = document.getElementById('ville').value;
+            const pays = document.getElementById('pays').value;
+
+            const adresseId = document.getElementById('adresseId').value;
+            const method = adresseId ? 'PUT' : 'POST';
+            const url = adresseId ? `/api/adresses/${adresseId}` : '/api/adresses';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ libelle, ligne1, code_postal, ville, pays })
+                });
+                if (response.ok) {
+                    addAdresseForm.reset();
+                    document.getElementById('adresseId').value = ''; // Clear hidden ID
+                    document.getElementById('formTitleAdresse').textContent = 'Ajouter une Adresse';
+                    document.getElementById('submitButtonAdresse').textContent = 'Ajouter l\'Adresse';
+                    fetchAdresses();
+                }
+            } catch (error) {
+                console.error('Error saving adresse:', error);
+            }
+        });
+    }
+
+    if (adresseListDiv) {
+        adresseListDiv.addEventListener('click', async (event) => {
+            const token = localStorage.getItem('token');
+            if (event.target.classList.contains('delete-adresse-btn')) {
+                const adresseId = event.target.dataset.id;
+                if (confirm('Voulez-vous vraiment supprimer cette adresse ?')) {
+                    try {
+                        const response = await fetch(`/api/adresses/${adresseId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (response.ok) {
+                            fetchAdresses();
+                        }
+                    } catch (error) {
+                        console.error('Error deleting adresse:', error);
+                    }
+                }
+            } else if (event.target.classList.contains('edit-adresse-btn')) {
+                const adresseId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/adresses/${adresseId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const adresse = await response.json();
+                    
+                    document.getElementById('adresseId').value = adresse.id;
+                    document.getElementById('libelle').value = adresse.libelle;
+                    document.getElementById('ligne1').value = adresse.ligne1 || '';
+                    document.getElementById('code_postal').value = adresse.code_postal || '';
+                    document.getElementById('ville').value = adresse.ville;
+                    document.getElementById('pays').value = adresse.pays || '';
+
+                    document.getElementById('formTitleAdresse').textContent = 'Modifier l\'Adresse';
+                    document.getElementById('submitButtonAdresse').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching adresse for edit:', error);
+                }
+            } else if (event.target.classList.contains('edit-adresse-btn')) {
+                const adresseId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/adresses/${adresseId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const adresse = await response.json();
+                    
+                    document.getElementById('adresseId').value = adresse.id;
+                    document.getElementById('libelle').value = adresse.libelle;
+                    document.getElementById('ligne1').value = adresse.ligne1 || '';
+                    document.getElementById('code_postal').value = adresse.code_postal || '';
+                    document.getElementById('ville').value = adresse.ville;
+                    document.getElementById('pays').value = adresse.pays || '';
+
+                    document.getElementById('formTitleAdresse').textContent = 'Modifier l\'Adresse';
+                    document.getElementById('submitButtonAdresse').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching adresse for edit:', error);
+                }
+            }
+        });
+        fetchAdresses();
+    }
+
+    // Logic for client management
+    const clientListDiv = document.getElementById('clientList');
+    const addClientForm = document.getElementById('addClientForm');
+    const adresseSelectForClient = document.getElementById('adresse');
+
+    const fetchClients = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/clients', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const clients = await response.json();
+            clientListDiv.innerHTML = '';
+            clients.forEach(client => {
+                const clientEl = document.createElement('div');
+                clientEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
+                clientEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold">${client.nom_client}</p>
+                        <p class="text-sm text-gray-600">${client.adresse_libelle || 'Adresse non spécifiée'}</p>
+                    </div>
+                    <div>
+                        <button class="delete-client-btn text-red-500 hover:text-red-700" data-id="${client.id}">Supprimer</button>
+                        <button class="edit-client-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${client.id}">Modifier</button>
+                    </div>
+                `;
+                clientListDiv.appendChild(clientEl);
+            });
+        } catch (error) {
+            console.error('Error fetching clients:', error);
+        }
+    };
+
+    const loadAdressesIntoSelectForClient = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/adresses', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const adresses = await response.json();
+            adresseSelectForClient.innerHTML = '<option value="">Sélectionner une adresse</option>';
+            adresses.forEach(adresse => {
+                const option = document.createElement('option');
+                option.value = adresse.id;
+                option.textContent = adresse.libelle;
+                adresseSelectForClient.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error fetching adresses for select:', error);
+        }
+    };
+
+    if (addClientForm) {
+        addClientForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            const nom_client = document.getElementById('nom_client').value;
+            const representant_nom = document.getElementById('representant_nom').value;
+            const adresse_id = document.getElementById('adresse').value;
+
+            const clientId = document.getElementById('clientId').value;
+            const method = clientId ? 'PUT' : 'POST';
+            const url = clientId ? `/api/clients/${clientId}` : '/api/clients';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ nom_client, representant_nom, adresse_id })
+                });
+                if (response.ok) {
+                    addClientForm.reset();
+                    document.getElementById('clientId').value = ''; // Clear hidden ID
+                    document.getElementById('formTitleClient').textContent = 'Ajouter un Client';
+                    document.getElementById('submitButtonClient').textContent = 'Ajouter le Client';
+                    fetchClients();
+                }
+            } catch (error) {
+                console.error('Error saving client:', error);
+            }
+        });
+    }
+
+    if (clientListDiv) {
+        clientListDiv.addEventListener('click', async (event) => {
+            const token = localStorage.getItem('token');
+            if (event.target.classList.contains('delete-client-btn')) {
+                const clientId = event.target.dataset.id;
+                if (confirm('Voulez-vous vraiment supprimer ce client ?')) {
+                    try {
+                        const response = await fetch(`/api/clients/${clientId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (response.ok) {
+                            fetchClients();
+                        }
+                    } catch (error) {
+                        console.error('Error deleting client:', error);
+                    }
+                }
+            } else if (event.target.classList.contains('edit-client-btn')) {
+                const clientId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/clients/${clientId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const client = await response.json();
+                    
+                    document.getElementById('clientId').value = client.id;
+                    document.getElementById('nom_client').value = client.nom_client;
+                    document.getElementById('representant_nom').value = client.representant_nom || '';
+                    // Re-load adresses and set the selected one
+                    await loadAdressesIntoSelectForClient();
+                    document.getElementById('adresse').value = client.adresse_id || '';
+
+                    document.getElementById('formTitleClient').textContent = 'Modifier le Client';
+                    document.getElementById('submitButtonClient').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching client for edit:', error);
+                }
+            } else if (event.target.classList.contains('edit-client-btn')) {
+                const clientId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/clients/${clientId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const client = await response.json();
+                    
+                    document.getElementById('clientId').value = client.id;
+                    document.getElementById('nom_client').value = client.nom_client;
+                    document.getElementById('representant_nom').value = client.representant_nom || '';
+                    // Re-load adresses and set the selected one
+                    await loadAdressesIntoSelectForClient();
+                    document.getElementById('adresse').value = client.adresse_id || '';
+
+                    document.getElementById('formTitleClient').textContent = 'Modifier le Client';
+                    document.getElementById('submitButtonClient').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching client for edit:', error);
+                }
+            } else if (event.target.classList.contains('edit-client-btn')) {
+                const clientId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/clients/${clientId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const client = await response.json();
+                    
+                    document.getElementById('clientId').value = client.id;
+                    document.getElementById('nom_client').value = client.nom_client;
+                    document.getElementById('representant_nom').value = client.representant_nom || '';
+                    // Re-load adresses and set the selected one
+                    await loadAdressesIntoSelectForClient();
+                    document.getElementById('adresse').value = client.adresse_id || '';
+
+                    document.getElementById('formTitleClient').textContent = 'Modifier le Client';
+                    document.getElementById('submitButtonClient').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching client for edit:', error);
+                }
+            }
+        });
+        fetchClients();
+        loadAdressesIntoSelectForClient();
+    }
+
+    // Logic for site management
+    const siteListDiv = document.getElementById('siteList');
+    const addSiteForm = document.getElementById('addSiteForm');
+    const adresseSelectForSite = document.getElementById('adresse');
+
+    const fetchSites = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/sites', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const sites = await response.json();
+            siteListDiv.innerHTML = '';
+            sites.forEach(site => {
+                const siteEl = document.createElement('div');
+                siteEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
+                siteEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold">${site.nom_site}</p>
+                        <p class="text-sm text-gray-600">${site.adresse_libelle || 'Adresse non spécifiée'}</p>
+                    </div>
+                    <div>
+                        <button class="delete-site-btn text-red-500 hover:text-red-700" data-id="${site.id}">Supprimer</button>
+                        <button class="edit-site-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${site.id}">Modifier</button>
+                    </div>
+                `;
+                siteListDiv.appendChild(siteEl);
+            });
+        } catch (error) {
+            console.error('Error fetching sites:', error);
+        }
+    };
+
+    const loadAdressesIntoSelectForSite = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/adresses', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const adresses = await response.json();
+            adresseSelectForSite.innerHTML = '<option value="">Sélectionner une adresse</option>';
+            adresses.forEach(adresse => {
+                const option = document.createElement('option');
+                option.value = adresse.id;
+                option.textContent = adresse.libelle;
+                adresseSelectForSite.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error fetching adresses for select:', error);
+        }
+    };
+
+    if (addSiteForm) {
+        addSiteForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            const nom_site = document.getElementById('nom_site').value;
+            const adresse_id = document.getElementById('adresse').value;
+
+            const siteId = document.getElementById('siteId').value;
+            const method = siteId ? 'PUT' : 'POST';
+            const url = siteId ? `/api/sites/${siteId}` : '/api/sites';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ nom_site, adresse_id })
+                });
+                if (response.ok) {
+                    addSiteForm.reset();
+                    document.getElementById('siteId').value = ''; // Clear hidden ID
+                    document.getElementById('formTitleSite').textContent = 'Ajouter un Site';
+                    document.getElementById('submitButtonSite').textContent = 'Ajouter le Site';
+                    fetchSites();
+                }
+            } catch (error) {
+                console.error('Error saving site:', error);
+            }
+        });
+    }
+
+    if (siteListDiv) {
+        siteListDiv.addEventListener('click', async (event) => {
+            const token = localStorage.getItem('token');
+            if (event.target.classList.contains('delete-site-btn')) {
+                const siteId = event.target.dataset.id;
+                if (confirm('Voulez-vous vraiment supprimer ce site ?')) {
+                    try {
+                        const response = await fetch(`/api/sites/${siteId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (response.ok) {
+                            fetchSites();
+                        }
+                    } catch (error) {
+                        console.error('Error deleting site:', error);
+                    }
+                }
+            } else if (event.target.classList.contains('edit-site-btn')) {
+                const siteId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/sites/${siteId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const site = await response.json();
+                    
+                    document.getElementById('siteId').value = site.id;
+                    document.getElementById('nom_site').value = site.nom_site;
+                    // Re-load adresses and set the selected one
+                    await loadAdressesIntoSelectForSite();
+                    document.getElementById('adresse').value = site.adresse_id || '';
+
+                    document.getElementById('formTitleSite').textContent = 'Modifier le Site';
+                    document.getElementById('submitButtonSite').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching site for edit:', error);
+                }
+            } else if (event.target.classList.contains('edit-site-btn')) {
+                const siteId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/sites/${siteId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const site = await response.json();
+                    
+                    document.getElementById('siteId').value = site.id;
+                    document.getElementById('nom_site').value = site.nom_site;
+                    // Re-load adresses and set the selected one
+                    await loadAdressesIntoSelectForSite();
+                    document.getElementById('adresse').value = site.adresse_id || '';
+
+                    document.getElementById('formTitleSite').textContent = 'Modifier le Site';
+                    document.getElementById('submitButtonSite').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching site for edit:', error);
+                }
+            }
+        });
+        fetchSites();
+        loadAdressesIntoSelectForSite();
+    }
+
+    // Logic for maintenance management
+    const maintenanceListDiv = document.getElementById('maintenanceList');
+    const addMaintenanceForm = document.getElementById('addMaintenanceForm');
+
+    const fetchMaintenances = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/maintenances', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const maintenances = await response.json();
+            maintenanceListDiv.innerHTML = '';
+            maintenances.forEach(maintenance => {
+                const maintenanceEl = document.createElement('div');
+                maintenanceEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
+                maintenanceEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold">${maintenance.titre}</p>
+                        <p class="text-sm text-gray-600">${maintenance.description}</p>
+                    </div>
+                    <div>
+                        <button class="delete-maintenance-btn text-red-500 hover:text-red-700" data-id="${maintenance.id}">Supprimer</button>
+                        <button class="edit-maintenance-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${maintenance.id}">Modifier</button>
+                    </div>
+                `;
+                maintenanceListDiv.appendChild(maintenanceEl);
+            });
+        } catch (error) {
+            console.error('Error fetching maintenances:', error);
+        }
+    };
+
+    if (addMaintenanceForm) {
+        addMaintenanceForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            const titre = document.getElementById('titre').value;
+            const description = document.getElementById('description').value;
+
+            const maintenanceId = document.getElementById('maintenanceId').value;
+            const method = maintenanceId ? 'PUT' : 'POST';
+            const url = maintenanceId ? `/api/maintenances/${maintenanceId}` : '/api/maintenances';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ titre, description })
+                });
+                if (response.ok) {
+                    addMaintenanceForm.reset();
+                    document.getElementById('maintenanceId').value = ''; // Clear hidden ID
+                    document.getElementById('formTitleMaintenance').textContent = 'Ajouter une Maintenance';
+                    document.getElementById('submitButtonMaintenance').textContent = 'Ajouter la Maintenance';
+                    fetchMaintenances();
+                }
+            } catch (error) {
+                console.error('Error saving maintenance:', error);
+            }
+        });
+    }
+
+    if (maintenanceListDiv) {
+        maintenanceListDiv.addEventListener('click', async (event) => {
+            const token = localStorage.getItem('token');
+            if (event.target.classList.contains('delete-maintenance-btn')) {
+                const maintenanceId = event.target.dataset.id;
+                if (confirm('Voulez-vous vraiment supprimer cette maintenance ?')) {
+                    try {
+                        const response = await fetch(`/api/maintenances/${maintenanceId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (response.ok) {
+                            fetchMaintenances();
+                        }
+                    } catch (error) {
+                        console.error('Error deleting maintenance:', error);
+                    }
+                }
+            } else if (event.target.classList.contains('edit-maintenance-btn')) {
+                const maintenanceId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/maintenances/${maintenanceId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const maintenance = await response.json();
+                    
+                    document.getElementById('maintenanceId').value = maintenance.id;
+                    document.getElementById('titre').value = maintenance.titre;
+                    document.getElementById('description').value = maintenance.description;
+
+                    document.getElementById('formTitleMaintenance').textContent = 'Modifier la Maintenance';
+                    document.getElementById('submitButtonMaintenance').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching maintenance for edit:', error);
+                }
+            } else if (event.target.classList.contains('edit-maintenance-btn')) {
+                const maintenanceId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/maintenances/${maintenanceId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const maintenance = await response.json();
+                    
+                    document.getElementById('maintenanceId').value = maintenance.id;
+                    document.getElementById('titre').value = maintenance.titre;
+                    document.getElementById('description').value = maintenance.description;
+
+                    document.getElementById('formTitleMaintenance').textContent = 'Modifier la Maintenance';
+                    document.getElementById('submitButtonMaintenance').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching maintenance for edit:', error);
+                }
+            } else if (event.target.classList.contains('edit-maintenance-btn')) {
+                const maintenanceId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/maintenances/${maintenanceId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const maintenance = await response.json();
+                    
+                    document.getElementById('maintenanceId').value = maintenance.id;
+                    document.getElementById('titre').value = maintenance.titre;
+                    document.getElementById('description').value = maintenance.description;
+
+                    document.getElementById('formTitleMaintenance').textContent = 'Modifier la Maintenance';
+                    document.getElementById('submitButtonMaintenance').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching maintenance for edit:', error);
+                }
+            }
+        });
+        fetchMaintenances();
+    }
+
+    // Logic for intervention management
+    const interventionListDiv = document.getElementById('interventionList');
+    const addInterventionForm = document.getElementById('addInterventionForm');
+    const maintenanceSelect = document.getElementById('maintenance');
+
+    const fetchInterventions = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/interventions', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const interventions = await response.json();
+            interventionListDiv.innerHTML = '';
+            interventions.forEach(intervention => {
+                const interventionEl = document.createElement('div');
+                interventionEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
+                interventionEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold">${intervention.description}</p>
+                        <p class="text-sm text-gray-600">Maintenance: ${intervention.maintenance_titre}</p>
+                    </div>
+                    <div>
+                        <button class="delete-intervention-btn text-red-500 hover:text-red-700" data-id="${intervention.id}">Supprimer</button>
+                        <button class="edit-intervention-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${intervention.id}">Modifier</button>
+                    </div>
+                `;
+                interventionListDiv.appendChild(interventionEl);
+            });
+        } catch (error) {
+            console.error('Error fetching interventions:', error);
+        }
+    };
+
+    const loadMaintenancesIntoSelect = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/maintenances', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const maintenances = await response.json();
+            maintenanceSelect.innerHTML = '<option value="">Sélectionner une maintenance</option>';
+            maintenances.forEach(maintenance => {
+                const option = document.createElement('option');
+                option.value = maintenance.id;
+                option.textContent = maintenance.titre;
+                maintenanceSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error fetching maintenances for select:', error);
+        }
+    };
+
+    if (addInterventionForm) {
+        addInterventionForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            const description = document.getElementById('description').value;
+            const date_debut = document.getElementById('date_debut').value;
+            const maintenance_id = document.getElementById('maintenance').value;
+
+            const interventionId = document.getElementById('interventionId').value;
+            const method = interventionId ? 'PUT' : 'POST';
+            const url = interventionId ? `/api/interventions/${interventionId}` : '/api/interventions';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ description, date_debut, maintenance_id })
+                });
+                if (response.ok) {
+                    addInterventionForm.reset();
+                    document.getElementById('interventionId').value = ''; // Clear hidden ID
+                    document.getElementById('formTitleIntervention').textContent = 'Ajouter une Intervention';
+                    document.getElementById('submitButtonIntervention').textContent = 'Ajouter l\'Intervention';
+                    fetchInterventions();
+                }
+            } catch (error) {
+                console.error('Error saving intervention:', error);
+            }
+        });
+    }
+
+    if (interventionListDiv) {
+        interventionListDiv.addEventListener('click', async (event) => {
+            const token = localStorage.getItem('token');
+            if (event.target.classList.contains('delete-intervention-btn')) {
+                const interventionId = event.target.dataset.id;
+                if (confirm('Voulez-vous vraiment supprimer cette intervention ?')) {
+                    try {
+                        const response = await fetch(`/api/interventions/${interventionId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (response.ok) {
+                            fetchInterventions();
+                        }
+                    } catch (error) {
+                        console.error('Error deleting intervention:', error);
+                    }
+                }
+            } else if (event.target.classList.contains('edit-intervention-btn')) {
+                const interventionId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/interventions/${interventionId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const intervention = await response.json();
+                    
+                    document.getElementById('interventionId').value = intervention.id;
+                    document.getElementById('description').value = intervention.description;
+                    document.getElementById('date_debut').value = intervention.date_debut.split('T')[0]; // Assuming date_debut is ISO string
+                    // Re-load maintenances and set the selected one
+                    await loadMaintenancesIntoSelect();
+                    document.getElementById('maintenance').value = intervention.maintenance_id;
+
+                    document.getElementById('formTitleIntervention').textContent = 'Modifier l\'Intervention';
+                    document.getElementById('submitButtonIntervention').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching intervention for edit:', error);
+                }
+            } else if (event.target.classList.contains('edit-intervention-btn')) {
+                const interventionId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/interventions/${interventionId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const intervention = await response.json();
+                    
+                    document.getElementById('interventionId').value = intervention.id;
+                    document.getElementById('description').value = intervention.description;
+                    document.getElementById('date_debut').value = intervention.date_debut.split('T')[0]; // Assuming date_debut is ISO string
+                    // Re-load maintenances and set the selected one
+                    await loadMaintenancesIntoSelect();
+                    document.getElementById('maintenance').value = intervention.maintenance_id;
+
+                    document.getElementById('formTitleIntervention').textContent = 'Modifier l\'Intervention';
+                    document.getElementById('submitButtonIntervention').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching intervention for edit:', error);
+                }
+            }
+        });
+        fetchInterventions();
+        loadMaintenancesIntoSelect();
+    }
+
+    // Logic for rendezvous management
+    const rendezvousListDiv = document.getElementById('rendezvousList');
+    const addRendezvousForm = document.getElementById('addRendezvousForm');
+    const interventionSelect = document.getElementById('intervention');
+    const siteSelect = document.getElementById('site');
+
+    const fetchRendezvous = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/rendezvous', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const rendezvous_list = await response.json();
+            rendezvousListDiv.innerHTML = '';
+            rendezvous_list.forEach(rdv => {
+                const rdvEl = document.createElement('div');
+                rdvEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
+                rdvEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold">${rdv.titre}</p>
+                        <p class="text-sm text-gray-600">Site: ${rdv.site_nom} | Intervention: ${rdv.intervention_description}</p>
+                    </div>
+                    <div>
+                        <button class="delete-rendezvous-btn text-red-500 hover:text-red-700" data-id="${rdv.id}">Supprimer</button>
+                        <button class="edit-rendezvous-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${rdv.id}">Modifier</button>
+                    </div>
+                `;
+                rendezvousListDiv.appendChild(rdvEl);
+            });
+        } catch (error) {
+            console.error('Error fetching rendezvous:', error);
+        }
+    };
+
+    const loadInterventionsIntoSelect = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/interventions', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const interventions = await response.json();
+            interventionSelect.innerHTML = '<option value="">Sélectionner une intervention</option>';
+            interventions.forEach(intervention => {
+                const option = document.createElement('option');
+                option.value = intervention.id;
+                option.textContent = intervention.description;
+                interventionSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error fetching interventions for select:', error);
+        }
+    };
+
+    const loadSitesIntoSelect = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/sites', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const sites = await response.json();
+            siteSelect.innerHTML = '<option value="">Sélectionner un site</option>';
+            sites.forEach(site => {
+                const option = document.createElement('option');
+                option.value = site.id;
+                option.textContent = site.nom_site;
+                siteSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error fetching sites for select:', error);
+        }
+    };
+
+    if (addRendezvousForm) {
+        addRendezvousForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            const titre = document.getElementById('titre').value;
+            const date_rdv = document.getElementById('date_rdv').value;
+            const intervention_id = document.getElementById('intervention').value;
+            const site_id = document.getElementById('site').value;
+
+            const rendezvousId = document.getElementById('rendezvousId').value;
+            const method = rendezvousId ? 'PUT' : 'POST';
+            const url = rendezvousId ? `/api/rendezvous/${rendezvousId}` : '/api/rendezvous';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ titre, date_rdv, intervention_id, site_id })
+                });
+                if (response.ok) {
+                    addRendezvousForm.reset();
+                    document.getElementById('rendezvousId').value = ''; // Clear hidden ID
+                    document.getElementById('formTitleRendezvous').textContent = 'Ajouter un Rendez-vous';
+                    document.getElementById('submitButtonRendezvous').textContent = 'Ajouter le Rendez-vous';
+                    fetchRendezvous();
+                }
+            } catch (error) {
+                console.error('Error saving rendezvous:', error);
+            }
+        });
+    }
+
+    if (rendezvousListDiv) {
+        rendezvousListDiv.addEventListener('click', async (event) => {
+            const token = localStorage.getItem('token');
+            if (event.target.classList.contains('delete-rendezvous-btn')) {
+                const rdvId = event.target.dataset.id;
+                if (confirm('Voulez-vous vraiment supprimer ce rendez-vous ?')) {
+                    try {
+                        const response = await fetch(`/api/rendezvous/${rdvId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (response.ok) {
+                            fetchRendezvous();
+                        }
+                    } catch (error) {
+                        console.error('Error deleting rendezvous:', error);
+                    }
+                }
+            } else if (event.target.classList.contains('edit-rendezvous-btn')) {
+                const rdvId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/rendezvous/${rdvId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const rdv = await response.json();
+                    
+                    document.getElementById('rendezvousId').value = rdv.id;
+                    document.getElementById('titre').value = rdv.titre;
+                    document.getElementById('date_rdv').value = rdv.date_rdv.split('T')[0]; // Assuming date_rdv is ISO string
+                    // Re-load interventions and sites and set the selected ones
+                    await loadInterventionsIntoSelect();
+                    document.getElementById('intervention').value = rdv.intervention_id;
+                    await loadSitesIntoSelect();
+                    document.getElementById('site').value = rdv.site_id;
+
+                    document.getElementById('formTitleRendezvous').textContent = 'Modifier le Rendez-vous';
+                    document.getElementById('submitButtonRendezvous').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching rendezvous for edit:', error);
+                }
+            } else if (event.target.classList.contains('edit-rendezvous-btn')) {
+                const rdvId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/rendezvous/${rdvId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const rdv = await response.json();
+                    
+                    document.getElementById('rendezvousId').value = rdv.id;
+                    document.getElementById('titre').value = rdv.titre;
+                    document.getElementById('date_rdv').value = rdv.date_rdv.split('T')[0]; // Assuming date_rdv is ISO string
+                    // Re-load interventions and sites and set the selected ones
+                    await loadInterventionsIntoSelect();
+                    document.getElementById('intervention').value = rdv.intervention_id;
+                    await loadSitesIntoSelect();
+                    document.getElementById('site').value = rdv.site_id;
+
+                    document.getElementById('formTitleRendezvous').textContent = 'Modifier le Rendez-vous';
+                    document.getElementById('submitButtonRendezvous').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching rendezvous for edit:', error);
+                }
+            }
+        });
+        fetchRendezvous();
+        loadInterventionsIntoSelect();
+        loadSitesIntoSelect();
+    }
+
+    // Logic for affaire management
+    const affaireListDiv = document.getElementById('affaireList');
+    const addAffaireForm = document.getElementById('addAffaireForm');
+    const clientSelectForAffaire = document.getElementById('client');
+
+    const fetchAffaires = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/affaires', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const affaires = await response.json();
+            affaireListDiv.innerHTML = '';
+            affaires.forEach(affaire => {
+                const affaireEl = document.createElement('div');
+                affaireEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
+                affaireEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold">${affaire.nom_affaire}</p>
+                        <p class="text-sm text-gray-600">Client: ${affaire.nom_client}</p>
+                    </div>
+                    <div>
+                        <button class="delete-affaire-btn text-red-500 hover:text-red-700" data-id="${affaire.id}">Supprimer</button>
+                        <button class="edit-affaire-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${affaire.id}">Modifier</button>
+                    </div>
+                `;
+                affaireListDiv.appendChild(affaireEl);
+            });
+        } catch (error) {
+            console.error('Error fetching affaires:', error);
+        }
+    };
+
+    const loadClientsIntoSelectForAffaire = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/clients', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const clients = await response.json();
+            clientSelectForAffaire.innerHTML = '<option value="">Sélectionner un client</option>';
+            clients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.id;
+                option.textContent = client.nom_client;
+                clientSelectForAffaire.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error fetching clients for select:', error);
+        }
+    };
+
+    if (addAffaireForm) {
+        addAffaireForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            const nom_affaire = document.getElementById('nom_affaire').value;
+            const description = document.getElementById('description').value;
+            const client_id = document.getElementById('client').value;
+
+            const affaireId = document.getElementById('affaireId').value;
+            const method = affaireId ? 'PUT' : 'POST';
+            const url = affaireId ? `/api/affaires/${affaireId}` : '/api/affaires';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ nom_affaire, description, client_id })
+                });
+                if (response.ok) {
+                    addAffaireForm.reset();
+                    document.getElementById('affaireId').value = ''; // Clear hidden ID
+                    document.getElementById('formTitleAffaire').textContent = 'Ajouter une Affaire';
+                    document.getElementById('submitButtonAffaire').textContent = 'Ajouter l\'Affaire';
+                    fetchAffaires();
+                }
+            } catch (error) {
+                console.error('Error saving affaire:', error);
+            }
+        });
+    }
+
+    if (affaireListDiv) {
+        affaireListDiv.addEventListener('click', async (event) => {
+            if (event.target.classList.contains('delete-affaire-btn')) {
+                const affaireId = event.target.dataset.id;
+                if (confirm('Voulez-vous vraiment supprimer cette affaire ?')) {
+                    const token = localStorage.getItem('token');
+                    try {
+                        const response = await fetch(`/api/affaires/${affaireId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (response.ok) {
+                            fetchAffaires();
+                        }
+                    } catch (error) {
+                        console.error('Error deleting affaire:', error);
+                    }
+                }
+            } else if (event.target.classList.contains('edit-affaire-btn')) {
+                const affaireId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/affaires/${affaireId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const affaire = await response.json();
+                    
+                    document.getElementById('affaireId').value = affaire.id;
+                    document.getElementById('nom_affaire').value = affaire.nom_affaire;
+                    document.getElementById('description').value = affaire.description || '';
+                    // Re-load clients and set the selected one
+                    await loadClientsIntoSelectForAffaire();
+                    document.getElementById('client').value = affaire.client_id;
+
+                    document.getElementById('formTitleAffaire').textContent = 'Modifier l\'Affaire';
+                    document.getElementById('submitButtonAffaire').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching affaire for edit:', error);
+                }
+            }
+        });
+        fetchAffaires();
+        loadClientsIntoSelectForAffaire();
+    }
+
+    // Logic for DOE management
+    const doeListDiv = document.getElementById('doeList');
+    const addDoeForm = document.getElementById('addDoeForm');
+    const siteSelectForDoe = document.getElementById('site');
+    const affaireSelectForDoe = document.getElementById('affaire');
+
+    const fetchDoes = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/does', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const does = await response.json();
+            doeListDiv.innerHTML = '';
+            does.forEach(doe => {
+                const doeEl = document.createElement('div');
+                doeEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
+                doeEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold">${doe.titre}</p>
+                        <p class="text-sm text-gray-600">Site: ${doe.nom_site} | Affaire: ${doe.nom_affaire}</p>
+                    </div>
+                    <div>
+                        <button class="delete-doe-btn text-red-500 hover:text-red-700" data-id="${doe.id}">Supprimer</button>
+                        <button class="edit-doe-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${doe.id}">Modifier</button>
+                    </div>
+                `;
+                doeListDiv.appendChild(doeEl);
+            });
+        } catch (error) {
+            console.error('Error fetching does:', error);
+        }
+    };
+
+    const loadSitesIntoSelectForDoe = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/sites', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const sites = await response.json();
+            siteSelectForDoe.innerHTML = '<option value="">Sélectionner un site</option>';
+            sites.forEach(site => {
+                const option = document.createElement('option');
+                option.value = site.id;
+                option.textContent = site.nom_site;
+                siteSelectForDoe.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error fetching sites for select:', error);
+        }
+    };
+
+    const loadAffairesIntoSelectForDoe = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/affaires', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const affaires = await response.json();
+            affaireSelectForDoe.innerHTML = '<option value="">Sélectionner une affaire</option>';
+            affaires.forEach(affaire => {
+                const option = document.createElement('option');
+                option.value = affaire.id;
+                option.textContent = affaire.nom_affaire;
+                affaireSelectForDoe.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error fetching affaires for select:', error);
+        }
+    };
+
+    if (addDoeForm) {
+        addDoeForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            const titre = document.getElementById('titre').value;
+            const description = document.getElementById('description').value;
+            const site_id = document.getElementById('site').value;
+            const affaire_id = document.getElementById('affaire').value;
+
+            const doeId = document.getElementById('doeId').value;
+            const method = doeId ? 'PUT' : 'POST';
+            const url = doeId ? `/api/does/${doeId}` : '/api/does';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ titre, description, site_id, affaire_id })
+                });
+                if (response.ok) {
+                    addDoeForm.reset();
+                    document.getElementById('doeId').value = ''; // Clear hidden ID
+                    document.getElementById('formTitleDoe').textContent = 'Ajouter un DOE';
+                    document.getElementById('submitButtonDoe').textContent = 'Ajouter le DOE';
+                    fetchDoes();
+                }
+            } catch (error) {
+                console.error('Error saving doe:', error);
+            }
+        });
+    }
+
+    if (doeListDiv) {
+        doeListDiv.addEventListener('click', async (event) => {
+            if (event.target.classList.contains('delete-doe-btn')) {
+                const doeId = event.target.dataset.id;
+                if (confirm('Voulez-vous vraiment supprimer ce DOE ?')) {
+                    const token = localStorage.getItem('token');
+                    try {
+                        const response = await fetch(`/api/does/${doeId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (response.ok) {
+                            fetchDoes();
+                        }
+                    } catch (error) {
+                        console.error('Error deleting doe:', error);
+                    }
+                }
+            } else if (event.target.classList.contains('edit-doe-btn')) {
+                const doeId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/does/${doeId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const doe = await response.json();
+                    
+                    document.getElementById('doeId').value = doe.id;
+                    document.getElementById('titre').value = doe.titre;
+                    document.getElementById('description').value = doe.description || '';
+                    // Re-load sites and affaires and set the selected ones
+                    await loadSitesIntoSelectForDoe();
+                    document.getElementById('site').value = doe.site_id;
+                    await loadAffairesIntoSelectForDoe();
+                    document.getElementById('affaire').value = doe.affaire_id;
+
+                    document.getElementById('formTitleDoe').textContent = 'Modifier le DOE';
+                    document.getElementById('submitButtonDoe').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching DOE for edit:', error);
+                }
+            }
+        });
+        fetchDoes();
+        loadSitesIntoSelectForDoe();
+        loadAffairesIntoSelectForDoe();
+    }
+
+    // Logic for document management
+    const documentListDiv = document.getElementById('documentList');
+    const addDocumentForm = document.getElementById('addDocumentForm');
+
+    const fetchDocuments = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/documents', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const documents = await response.json();
+            documentListDiv.innerHTML = '';
+            documents.forEach(doc => {
+                const docEl = document.createElement('div');
+                docEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
+                docEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold">${doc.nom_fichier}</p>
+                        <p class="text-sm text-gray-600">Cible: ${doc.cible_type} (ID: ${doc.cible_id}) - Nature: ${doc.nature}</p>
+                    </div>
+                    <div>
+                        <button class="delete-document-btn text-red-500 hover:text-red-700" data-id="${doc.id}">Supprimer</button>
+                        <button class="edit-document-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${doc.id}">Modifier</button>
+                    </div>
+                `;
+                documentListDiv.appendChild(docEl);
+            });
+        } catch (error) {
+            console.error('Error fetching documents:', error);
+        }
+    };
+
+    if (addDocumentForm) {
+        addDocumentForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            const nom_fichier = document.getElementById('nom_fichier').value;
+            const cible_type = document.getElementById('cible_type').value;
+            const cible_id = document.getElementById('cible_id').value;
+            const nature = document.getElementById('nature').value;
+            const type_mime = document.getElementById('type_mime').value;
+
+            const documentId = document.getElementById('documentId').value;
+            const method = documentId ? 'PUT' : 'POST';
+            const url = documentId ? `/api/documents/${documentId}` : '/api/documents';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ nom_fichier, cible_type, cible_id, nature, type_mime })
+                });
+                if (response.ok) {
+                    addDocumentForm.reset();
+                    document.getElementById('documentId').value = ''; // Clear hidden ID
+                    document.getElementById('formTitleDocument').textContent = 'Ajouter un Document';
+                    document.getElementById('submitButtonDocument').textContent = 'Ajouter le Document';
+                    fetchDocuments();
+                }
+            } catch (error) {
+                console.error('Error saving document:', error);
+            }
+        });
+    }
+
+    if (documentListDiv) {
+        documentListDiv.addEventListener('click', async (event) => {
+            if (event.target.classList.contains('delete-document-btn')) {
+                const docId = event.target.dataset.id;
+                if (confirm('Voulez-vous vraiment supprimer ce document ?')) {
+                    const token = localStorage.getItem('token');
+                    try {
+                        const response = await fetch(`/api/documents/${docId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (response.ok) {
+                            fetchDocuments();
+                        }
+                    } catch (error) {
+                        console.error('Error deleting document:', error);
+                    }
+                }
+            } else if (event.target.classList.contains('edit-document-btn')) {
+                const docId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/documents/${docId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const doc = await response.json();
+                    
+                    document.getElementById('documentId').value = doc.id;
+                    document.getElementById('nom_fichier').value = doc.nom_fichier;
+                    document.getElementById('cible_type').value = doc.cible_type;
+                    document.getElementById('cible_id').value = doc.cible_id;
+                    document.getElementById('nature').value = doc.nature;
+                    document.getElementById('type_mime').value = doc.type_mime || '';
+
+                    document.getElementById('formTitleDocument').textContent = 'Modifier le Document';
+                    document.getElementById('submitButtonDocument').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching document for edit:', error);
+                }
+            }
+        });
+        fetchDocuments();
+    }
+
+    // Logic for passeport management
+    const passeportListDiv = document.getElementById('passeportList');
+    const addPasseportForm = document.getElementById('addPasseportForm');
+    const agentSelectForPasseport = document.getElementById('agent_matricule');
+
+    const fetchPasseports = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/passeports', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const passeports = await response.json();
+            passeportListDiv.innerHTML = '';
+            passeports.forEach(passeport => {
+                const passeportEl = document.createElement('div');
+                passeportEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
+                passeportEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold">Agent: ${passeport.agent_nom}</p>
+                        <p class="text-sm text-gray-600">Permis: ${passeport.permis || 'N/A'}</p>
+                        <p class="text-sm text-gray-600">Habilitations: ${passeport.habilitations || 'N/A'}</p>
+                        <p class="text-sm text-gray-600">Certifications: ${passeport.certifications || 'N/A'}</p>
+                    </div>
+                    <div>
+                        <button class="delete-passeport-btn text-red-500 hover:text-red-700" data-id="${passeport.id}">Supprimer</button>
+                        <button class="edit-passeport-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${passeport.id}">Modifier</button>
+                    </div>
+                `;
+                passeportListDiv.appendChild(passeportEl);
+            });
+        } catch (error) {
+            console.error('Error fetching passeports:', error);
+        }
+    };
+
+    const loadAgentsIntoSelectForPasseport = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/agents', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const agents = await response.json();
+            agentSelectForPasseport.innerHTML = '<option value="">Sélectionner un agent</option>';
+            agents.forEach(agent => {
+                const option = document.createElement('option');
+                option.value = agent.matricule;
+                option.textContent = `${agent.nom} (${agent.matricule})`;
+                agentSelectForPasseport.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error fetching agents for select:', error);
+        }
+    };
+
+    if (addPasseportForm) {
+        addPasseportForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            const agent_matricule = document.getElementById('agent_matricule').value;
+            const permis = document.getElementById('permis').value;
+            const habilitations = document.getElementById('habilitations').value;
+            const certifications = document.getElementById('certifications').value;
+            const commentaire = document.getElementById('commentaire').value;
+
+            const passeportId = document.getElementById('passeportId').value;
+            const method = passeportId ? 'PUT' : 'POST';
+            const url = passeportId ? `/api/passeports/${passeportId}` : '/api/passeports';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ agent_matricule, permis, habilitations, certifications, commentaire })
+                });
+                if (response.ok) {
+                    addPasseportForm.reset();
+                    document.getElementById('passeportId').value = ''; // Clear hidden ID
+                    document.getElementById('formTitlePasseport').textContent = 'Ajouter un Passeport';
+                    document.getElementById('submitButtonPasseport').textContent = 'Ajouter le Passeport';
+                    fetchPasseports();
+                }
+            } catch (error) {
+                console.error('Error saving passeport:', error);
+            }
+        });
+    }
+
+    if (passeportListDiv) {
+        passeportListDiv.addEventListener('click', async (event) => {
+            if (event.target.classList.contains('delete-passeport-btn')) {
+                const passeportId = event.target.dataset.id;
+                if (confirm('Voulez-vous vraiment supprimer ce passeport ?')) {
+                    const token = localStorage.getItem('token');
+                    try {
+                        const response = await fetch(`/api/passeports/${passeportId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (response.ok) {
+                            fetchPasseports();
+                        }
+                    } catch (error) {
+                        console.error('Error deleting passeport:', error);
+                    }
+                }
+            } else if (event.target.classList.contains('edit-passeport-btn')) {
+                const passeportId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/passeports/${passeportId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const passeport = await response.json();
+                    
+                    document.getElementById('passeportId').value = passeport.id;
+                    // Re-load agents and set the selected one
+                    await loadAgentsIntoSelectForPasseport();
+                    document.getElementById('agent_matricule').value = passeport.agent_matricule;
+                    document.getElementById('permis').value = passeport.permis || '';
+                    document.getElementById('habilitations').value = passeport.habilitations || '';
+                    document.getElementById('certifications').value = passeport.certifications || '';
+                    document.getElementById('commentaire').value = passeport.commentaire || '';
+
+                    document.getElementById('formTitlePasseport').textContent = 'Modifier le Passeport';
+                    document.getElementById('submitButtonPasseport').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching passeport for edit:', error);
+                }
+            }
+        });
+        fetchPasseports();
+        loadAgentsIntoSelectForPasseport();
+    }
+
+    // Logic for formation management
+    const formationListDiv = document.getElementById('formationList');
+    const addFormationForm = document.getElementById('addFormationForm');
+    const agentSelectForFormation = document.getElementById('agent_matricule');
+
+    const fetchFormations = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/formations', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const formations = await response.json();
+            formationListDiv.innerHTML = '';
+            formations.forEach(formation => {
+                const formationEl = document.createElement('div');
+                formationEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
+                formationEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold">${formation.libelle} (${formation.type})</p>
+                        <p class="text-sm text-gray-600">Agent: ${formation.agent_nom}</p>
+                    </div>
+                    <div>
+                        <button class="delete-formation-btn text-red-500 hover:text-red-700" data-id="${formation.id}">Supprimer</button>
+                        <button class="edit-formation-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${formation.id}">Modifier</button>
+                    </div>
+                `;
+                formationListDiv.appendChild(formationEl);
+            });
+        } catch (error) {
+            console.error('Error fetching formations:', error);
+        }
+    };
+
+    const loadAgentsIntoSelectForFormation = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/agents', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const agents = await response.json();
+            agentSelectForFormation.innerHTML = '<option value="">Sélectionner un agent</option>';
+            agents.forEach(agent => {
+                const option = document.createElement('option');
+                option.value = agent.matricule;
+                option.textContent = `${agent.nom} (${agent.matricule})`;
+                agentSelectForFormation.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error fetching agents for select:', error);
+        }
+    };
+
+    if (addFormationForm) {
+        addFormationForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            const agent_matricule = document.getElementById('agent_matricule').value;
+            const type = document.getElementById('type').value;
+            const libelle = document.getElementById('libelle').value;
+            const date_obtention = document.getElementById('date_obtention').value;
+            const date_expiration = document.getElementById('date_expiration').value;
+            const organisme = document.getElementById('organisme').value;
+            const commentaire = document.getElementById('commentaire').value;
+
+            const formationId = document.getElementById('formationId').value;
+            const method = formationId ? 'PUT' : 'POST';
+            const url = formationId ? `/api/formations/${formationId}` : '/api/formations';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ agent_matricule, type, libelle, date_obtention, date_expiration, organisme, commentaire })
+                });
+                if (response.ok) {
+                    addFormationForm.reset();
+                    document.getElementById('formationId').value = ''; // Clear hidden ID
+                    document.getElementById('formTitleFormation').textContent = 'Ajouter une Formation';
+                    document.getElementById('submitButtonFormation').textContent = 'Ajouter la Formation';
+                    fetchFormations();
+                }
+            } catch (error) {
+                console.error('Error saving formation:', error);
+            }
+        });
+    }
+
+    if (formationListDiv) {
+        formationListDiv.addEventListener('click', async (event) => {
+            if (event.target.classList.contains('delete-formation-btn')) {
+                const formationId = event.target.dataset.id;
+                if (confirm('Voulez-vous vraiment supprimer cette formation ?')) {
+                    const token = localStorage.getItem('token');
+                    try {
+                        const response = await fetch(`/api/formations/${formationId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (response.ok) {
+                            fetchFormations();
+                        }
+                    } catch (error) {
+                        console.error('Error deleting formation:', error);
+                    }
+                }
+            } else if (event.target.classList.contains('edit-formation-btn')) {
+                const formationId = event.target.dataset.id;
+                try {
+                    const response = await fetch(`/api/formations/${formationId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const formation = await response.json();
+                    
+                    document.getElementById('formationId').value = formation.id;
+                    // Re-load agents and set the selected one
+                    await loadAgentsIntoSelectForFormation();
+                    document.getElementById('agent_matricule').value = formation.agent_matricule;
+                    document.getElementById('type').value = formation.type;
+                    document.getElementById('libelle').value = formation.libelle;
+                    document.getElementById('date_obtention').value = formation.date_obtention ? formation.date_obtention.split('T')[0] : '';
+                    document.getElementById('date_expiration').value = formation.date_expiration ? formation.date_expiration.split('T')[0] : '';
+                    document.getElementById('organisme').value = formation.organisme || '';
+                    document.getElementById('commentaire').value = formation.commentaire || '';
+
+                    document.getElementById('formTitleFormation').textContent = 'Modifier la Formation';
+                    document.getElementById('submitButtonFormation').textContent = 'Modifier';
+                } catch (error) {
+                    console.error('Error fetching formation for edit:', error);
+                }
+            }
+        });
+        fetchFormations();
+        loadAgentsIntoSelectForFormation();
+    }
+
+
+});
