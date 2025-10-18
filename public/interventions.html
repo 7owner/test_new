@@ -1,0 +1,100 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Interventions</title>
+    <link href="/style.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <a href="/dashboard.html" class="brand">Gestion Projets</a>
+        </div>
+        <nav class="sidebar-nav">
+          <a href="/dashboard.html"><i data-lucide="home"></i> Dashboard</a>
+          <a href="/agents.html"><i data-lucide="users"></i> Agents</a>
+          <a href="/sites.html"><i data-lucide="building"></i> Sites</a>
+          <a href="/interventions.html"><i data-lucide="wrench"></i> Interventions</a>
+          <a href="/rendezvous.html"><i data-lucide="calendar"></i> Rendez-vous</a>
+          <a href="/achats.html"><i data-lucide="shopping-cart"></i> Achats</a>
+          <a href="/factures.html"><i data-lucide="receipt"></i> Factures</a>
+        </nav>
+      </aside>
+      <main class="content">
+        <nav class="breadcrumb mb-2"><a href="/dashboard.html">Dashboard</a> <span class="mx-1">/</span> <span>Interventions</span></nav>
+        <h1 class="mb-6">Gestion des Interventions</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Formulaire d'ajout -->
+            <div class="md:col-span-1 card card-body">
+                <h2 id="formTitleIntervention" class="text-2xl font-semibold text-gray-700 mb-4">Ajouter une Intervention</h2>
+                <form id="addInterventionForm" class="space-y-4">
+                    <input type="hidden" id="interventionId" value="">
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                        <textarea id="description" rows="4" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label for="date_Début" class="block text-sm font-medium text-gray-700">Date de dÃ©but</label>
+                        <input type="date" id="date_Début" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="maintenance" class="block text-sm font-medium text-gray-700">Maintenance</label>
+                        <select id="maintenance" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <!-- Les options seront chargÃ©es dynamiquement -->
+                        </select>
+                    </div>
+                    <button type="submit" id="submitButtonIntervention" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Ajouter l'Intervention</button>
+                </form>
+            </div>
+
+            <!-- Liste des interventions -->
+            <div class="md:col-span-2 card card-body">
+                <div class="flex items-center justify-between mb-4">
+                  <h2 class="text-2xl font-semibold text-gray-700">Liste des Interventions</h2>
+                  <div class="flex flex-wrap gap-3 items-end">
+                    <div>
+                      <label class="label" for="interSearch">Recherche</label>
+                      <input id="interSearch" type="text" placeholder="Description..." class="field">
+                    </div>
+                    <div>
+                      <label class="label" for="interDateStart">DÃ©but</label>
+                      <input id="interDateStart" type="date" class="field">
+                    </div>
+                    <div>
+                      <label class="label" for="interDateEnd">Fin</label>
+                      <input id="interDateEnd" type="date" class="field">
+                    </div>
+                    <div>
+                      <label class="label" for="interMaintenanceFilter">Maintenance</label>
+                      <select id="interMaintenanceFilter" class="field min-w-[10rem]">
+                        <option value="">Toutes</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="label" for="interSort">Tri</label>
+                      <select id="interSort" class="field">
+                        <option value="date_desc">Date dÃ©croissante</option>
+                        <option value="date_asc">Date croissante</option>
+                        <option value="id_desc">ID dÃ©croissant</option>
+                        <option value="id_asc">Idécroissant</option>
+                        <option value="desc_asc">Description Aâ†’Z</option>
+                        <option value="desc_desc">Description Zâ†’A</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div id="interventionList" class="grid-cards"></div>
+            </div>
+        </div>
+      </main>
+    </div>
+    <script src="/nav.js"></script>
+    <script src="/script.js"></script>
+    <script> if (window.lucide && typeof window.lucide.createIcons==='function'){ window.lucide.createIcons(); } </script>
+</body>
+</html>
+
+

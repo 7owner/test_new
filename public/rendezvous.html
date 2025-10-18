@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Rendez-vous</title>
+    <link href="/style.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-8">
+        <nav class="breadcrumb mb-2"><a href="/dashboard.html">Dashboard</a> <span class="mx-1">/</span> <span>Rendez-vous</span></nav>
+        <h1 class="mb-6">Gestion des Rendez-vous</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Formulaire d'ajout -->
+            <div class="md:col-span-1 card"><div class="card-body">
+                <h2 id="formTitleRendezvous" class="text-2xl font-semibold text-gray-700 mb-4">Ajouter un Rendez-vous</h2>
+                <form id="addRendezvousForm" class="space-y-4">
+                    <input type="hidden" id="rendezvousId" value="">
+                    <div>
+                        <label for="titre" class="label">Titre</label>
+                        <input type="text" id="titre" required class="field">
+                    </div>
+                    <div>
+                        <label for="date_rdv" class="label">Date du RDV</label>
+                        <input type="date" id="date_rdv" required class="field">
+                    </div>
+                    <div>
+                        <label for="intervention" class="label">Intervention</label>
+                        <select id="intervention" required class="field">
+                            <!-- Les options seront chargées dynamiquement -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="site" class="label">Site</label>
+                        <select id="site" required class="field">
+                            <!-- Les options seront chargées dynamiquement -->
+                        </select>
+                    </div>
+                    <button type="submit" id="submitButtonRendezvous" class="btn btn-primary w-full">Ajouter le Rendez-vous</button>
+                </form>
+            </div></div>
+
+            <!-- Liste des rendez-vous -->
+            <div class="md:col-span-2 card"><div class="card-body">
+                <div class="flex items-center justify-between mb-4">
+                  <h2>Liste des Rendez-vous</h2>
+                </div>
+                <div id="rendezvousList" class="grid-cards"></div>
+                <div id="rendezvousRelations" class="mt-8 border-t pt-6">
+                  <h3 class="mb-3">Détails & Pièces jointes</h3>
+                  <div id="rendezvousRelationsContent" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm"></div>
+                </div>
+            </div></div>
+        </div>
+    </div>
+    <script src="/nav.js"></script>
+    <script src="/script.js"></script>
+</body>
+</html>

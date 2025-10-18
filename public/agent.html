@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Détail de l'agent</title>
+  <link href="/style.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <header class="bg-white/80 backdrop-blur border-b border-slate-200">
+    <div class="container mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="/" class="text-xl font-semibold text-indigo-700">Gestion Projets</a>
+      <nav class="space-x-4 text-sm">
+        <a class="text-slate-600 hover:text-indigo-600" href="/dashboard.html">Dashboard</a>
+        <a class="text-slate-600 hover:text-indigo-600" href="/agents.html">Agents</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-6 py-8 max-w-7xl">
+    <div class="mb-2">
+      <nav id="breadcrumb" class="breadcrumb"></nav>
+    </div>
+    <div class="mb-6">
+      <h1 id="agentTitle" >Agent</h1>
+      <p id="agentMeta" class="text-slate-500 mt-1 text-sm"></p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="card card-body">
+        <div class="text-xs uppercase text-slate-500">Formations</div>
+        <div id="countFormations" class="text-3xl font-semibold">-</div>
+      </div>
+      <div class="card card-body">
+        <div class="text-xs uppercase text-slate-500">Passeport</div>
+        <div id="hasPassport" class="text-3xl font-semibold">-</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <section class="lg:col-span-1 card card-body">
+        <h2 class="mb-3">Informations</h2>
+        <div id="agentInfo" class="text-sm text-slate-700"></div>
+      </section>
+      <section class="lg:col-span-1 card card-body">
+        <h2 class="mb-3">Passeport</h2>
+        <div id="agentPassport" class="text-sm text-slate-700"></div>
+      </section>
+      <section class="lg:col-span-1 card card-body">
+        <h2 class="mb-3">Formations</h2>
+        <ul id="agentFormations" class="space-y-2 text-sm"></ul>
+      </section>
+    </div>
+  </main>
+
+  <script src="/nav.js"></script>
+  <script src="/script.js"></script>
+</body>
+<!-- Usage: /agent.html#<matricule> -->
+</html>
+

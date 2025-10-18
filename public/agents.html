@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Agents</title>
+    <link href="/style.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <a href="/dashboard.html" class="brand">Gestion Projets</a>
+        </div>
+        <nav class="sidebar-nav">
+          <a href="/dashboard.html"><i data-lucide="home"></i> Dashboard</a>
+          <a href="/agents.html"><i data-lucide="users"></i> Agents</a>
+          <a href="/sites.html"><i data-lucide="building"></i> Sites</a>
+          <a href="/interventions.html"><i data-lucide="wrench"></i> Interventions</a>
+          <a href="/rendezvous.html"><i data-lucide="calendar"></i> Rendez-vous</a>
+          <a href="/achats.html"><i data-lucide="shopping-cart"></i> Achats</a>
+          <a href="/factures.html"><i data-lucide="receipt"></i> Factures</a>
+        </nav>
+      </aside>
+      <main class="content">
+        <nav class="breadcrumb mb-2"><a href="/dashboard.html">Dashboard</a> <span class="mx-1">/</span> <span>Agents</span></nav>
+        <h1 class="mb-6">Gestion des Agents</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Formulaire d'ajout -->
+            <div class="md:col-span-1 card"><div class="card-body">
+                <h2 id="formTitleAgent" class="mb-4">Ajouter un Agent</h2>
+                <form id="addAgentForm" class="space-y-4">
+                    <input type="hidden" id="agentMatricule" value="">
+                    <div>
+                        <label for="matricule" class="label">Matricule</label>
+                        <input type="text" id="matricule" required class="field">
+                    </div>
+                    <div>
+                        <label for="nom" class="label">Nom</label>
+                        <input type="text" id="nom" required class="field">
+                    </div>
+                    <div>
+                        <label for="email" class="label">Email</label>
+                        <input type="email" id="email" required class="field">
+                    </div>
+                    <div>
+                        <label for="agence" class="label">Agence</label>
+                        <select id="agence" required class="field">
+                            <!-- Les options seront chargées dynamiquement -->
+                        </select>
+                    </div>
+                    <button type="submit" id="submitButtonAgent" class="btn btn-primary w-full">Ajouter l'Agent</button>
+                </form>
+            </div></div>
+
+            <!-- Liste des agents -->
+            <div class="md:col-span-2 card"><div class="card-body">
+                <div class="flex items-center justify-between mb-4">
+                  <h2>Liste des Agents</h2>
+                </div>
+                <div id="agentList" class="grid-cards"></div>
+                <div id="agentRelations" class="mt-8 border-t pt-6">
+                  <h3 class="mb-3">Passeport & Formations</h3>
+                  <div id="agentRelationsContent" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm"></div>
+                </div>
+            </div></div>
+        </div>
+      </main>
+    </div>
+    <script> if (window.lucide && typeof window.lucide.createIcons==='function'){ window.lucide.createIcons(); } </script>
+    <script src="/nav.js"></script>
+    <script src="/script.js"></script>
+</body>
+</html>
