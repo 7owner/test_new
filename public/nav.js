@@ -49,7 +49,6 @@
           <button id="navToggle" class="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:text-indigo-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-expanded="false" aria-label="Ouvrir le menu">
             <i data-lucide="menu"></i>
           </button>
-          <a href="/dashboard.html" class="text-xl font-semibold text-indigo-700">Gestion Projets</a>
         </div>
         <div class="text-sm hidden md:flex items-center gap-3"><button id="themeToggle" class="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:text-indigo-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Basculer le thème" title="Basculer le thème"></button>${authItems}</div>
       </div>
