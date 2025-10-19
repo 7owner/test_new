@@ -175,6 +175,34 @@
     } catch (_) {}
     ensureHeader();
     try { document.body.classList.add('app-bg'); } catch(_){}
+    // Add a floating top-left menu button to toggle header or sidebar
+    try {
+      if (!document.getElementById('headToggle')) {
+        const btn = document.createElement('button');
+        btn.id = 'headToggle';
+        btn.className = 'head-toggle';
+        // Inline SVG hamburger to avoid icon dependencies
+        btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.75 6.75h16.5v1.5H3.75v-1.5Zm0 4.5h16.5v1.5H3.75v-1.5Zm0 4.5h16.5v1.5H3.75v-1.5Z"/></svg>';
+        btn.title = 'Menu';
+        btn.addEventListener('click', () => {
+          const headerHidden = document.body.classList.contains('hide-header') || document.body.classList.contains('header-min');
+          if (headerHidden) {
+            document.body.classList.remove('hide-header');
+            document.body.classList.remove('header-min');
+          } else {
+            const isOpen = document.body.classList.contains('sidebar-open');
+            if (isOpen) {
+              document.body.classList.remove('sidebar-open');
+              document.body.classList.add('sidebar-hidden');
+            } else {
+              document.body.classList.add('sidebar-open');
+              document.body.classList.remove('sidebar-hidden');
+            }
+          }
+        });
+        document.body.appendChild(btn);
+      }
+    } catch(_){}
     // Ensure sidebar mobile toggle works
     try {
       const btn = document.getElementById('navToggle');
