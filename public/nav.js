@@ -47,7 +47,7 @@
       <div class="container mx-auto px-6 py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <button id="navToggle" class="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:text-indigo-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-expanded="false" aria-label="Ouvrir le menu">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M3.75 6.75h16.5v1.5H3.75v-1.5Zm0 4.5h16.5v1.5H3.75v-1.5Zm0 4.5h16.5v1.5H3.75v-1.5Z"/></svg>
+            <i data-lucide="menu"></i>
           </button>
           <a href="/dashboard.html" class="text-xl font-semibold text-indigo-700">Gestion Projets</a>
         </div>
@@ -123,7 +123,7 @@
         const btn = document.getElementById('navToggle');
         if (!btn) return;
         const icoOpen = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>`; // X icon
-        const icoClosed = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M3.75 6.75h16.5v1.5H3.75v-1.5Zm0 4.5h16.5v1.5H3.75v-1.5Zm0 4.5h16.5v1.5H3.75v-1.5Z"/></svg>`; // Hamburger
+        const icoClosed = `<i data-lucide="menu"></i>`; // Hamburger
         btn.innerHTML = isOpen ? icoOpen : icoClosed;
         btn.setAttribute('aria-label', isOpen ? 'Fermer le menu' : 'Ouvrir le menu');
       } catch(_) {}
@@ -275,6 +275,7 @@
     } catch(_){}
   });
 })();
+
 
 
 

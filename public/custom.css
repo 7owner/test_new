@@ -29,6 +29,29 @@ body.theme-dark .app-header { background: rgba(17,24,39,0.85); border-bottom-col
 .app-header nav a { padding: 0.4rem 0.6rem; border-radius: 0.375rem; color: #334155; text-decoration: none; }
 .app-header nav a:hover { background: #f1f5f9; color:#111827; }
 .app-header nav a.text-indigo-700 { color: #4338ca; }
+/* Minimal header on dashboard: hide top nav to avoid duplication with sidebar */
+body.header-min .app-header nav { display: none; }
+/* Allow toggling full header visibility */
+body.hide-header .app-header { display: none; }
+
+/* Floating head toggle button */
+.head-toggle {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 70;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 44px;
+  border-radius: 9999px;
+  background: #111827;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(2,6,23,0.25);
+  border: 1px solid #0b1220;
+}
+.head-toggle:hover { background:#1f2937; }
+.head-toggle .icon { width: 22px; height: 22px; }
 
 /* Default: two columns (sidebar + content) */
 .app-shell { display:grid; grid-template-columns: 16rem 1fr; min-height: calc(100vh - 56px); }
@@ -153,3 +176,4 @@ body.theme-dark { background-image: linear-gradient(180deg, #0b1220, #111827); }
 /* Header auth link overrides for contrast in dark mode */
 body.theme-dark .app-header .text-slate-600 { color: #e5e7eb; }
 body.theme-dark .app-header .text-slate-600:hover { color: #c7d2fe; }
+
