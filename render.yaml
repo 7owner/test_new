@@ -18,5 +18,4 @@ services:
       - key: JWT_SECRET
         # Set this in Render dashboard (Settings → Environment) or via Secrets
         sync: false
-      - key: PORT
-        value: 3000
+    
