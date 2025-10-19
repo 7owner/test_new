@@ -112,3 +112,6 @@ body {
   body.sidebar-open .sidebar { display: block; }
 }
 .truncate { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* Minimal header on dashboard: hide top nav to avoid duplication with sidebar */
+body.header-min .app-header nav { display: none; }
