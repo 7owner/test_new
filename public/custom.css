@@ -37,8 +37,8 @@ body.hide-header .app-header { display: none; }
 /* Floating head toggle button */
 .head-toggle {
   position: fixed;
-  bottom: 16px;
-  right: 16px;
+  top: 16px;
+  left: 16px;
   z-index: 70;
   display: inline-flex;
   align-items: center;
@@ -52,6 +52,8 @@ body.hide-header .app-header { display: none; }
 }
 .head-toggle:hover { background:#1f2937; }
 .head-toggle .icon { width: 22px; height: 22px; }
+/* Show toggle only on mobile */
+@media (min-width: 1025px){ .head-toggle { display: none; } }
 
 /* Default: two columns (sidebar + content) */
 .app-shell { display:grid; grid-template-columns: 16rem 1fr; min-height: calc(100vh - 56px); }
