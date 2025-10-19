@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Détail de l'intervention</title>
+  <link href="/style.css" rel="stylesheet">
+  </head>
+<body class="min-h-screen app-bg">
+  <header></header>
+
+  <main class="container mx-auto px-6 py-8 max-w-7xl">
+    <div class="mb-2">
+      <nav id="breadcrumb" class="breadcrumb"></nav>
+    </div>
+    <div class="mb-6">
+      <h1 id="interTitle" >Intervention</h1>
+      <p id="interMeta" class="text-slate-500 mt-1 text-sm"></p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="card card-body">
+        <div class="text-xs uppercase text-slate-500">Rendez-vous</div>
+        <div id="countRdv" class="text-3xl font-semibold">-</div>
+      </div>
+      <div class="card card-body">
+        <div class="text-xs uppercase text-slate-500">Documents</div>
+        <div id="countDocs" class="text-3xl font-semibold">-</div>
+      </div>
+      <div class="card card-body">
+        <div class="text-xs uppercase text-slate-500">Images</div>
+        <div id="countImgs" class="text-3xl font-semibold">-</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <section class="lg:col-span-2 card card-body">
+        <h2 class="mb-3">Détails</h2>
+        <div id="interD�tails" class="text-sm text-slate-700"></div>
+        <div id="relLinks" class="mt-4 text-sm"></div>
+      </section>
+      <section class="lg:col-span-1 card card-body">
+        <h2 class="mb-3">Rendez-vous</h2>
+        <ul id="interRdvList" class="space-y-2 text-sm"></ul>
+      </section>
+      <section class="lg:col-span-2 card card-body">
+        <h2 class="mb-3">Documents</h2>
+        <ul id="interDocsList" class="space-y-2 text-sm"></ul>
+      </section>
+      <section class="lg:col-span-1 card card-body">
+        <h2 class="mb-3">Images</h2>
+        <div id="interImages" class="flex flex-wrap gap-3"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/nav.js"></script>
+  <script src="/script.js"></script>
+  <script>
+    // script.js handles loading based on #id
+  </script>
+</body>
+<!-- Usage: /intervention.html#<id> -->
+</html>
+
+
+

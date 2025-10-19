@@ -1,10 +1,14 @@
 {
   "name": "projet_var_v4",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build-css": "postcss public/input.css -o public/style.css"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build-css": "postcss public/input.css -o public/style.css",
+    "seed": "node scripts/seed.js",
+    "seed-year": "node scripts/seed_year.js"
   },
   "keywords": [],
   "author": "",

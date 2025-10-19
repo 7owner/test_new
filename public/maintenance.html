@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Détail de la maintenance</title>
+  <link href="/style.css" rel="stylesheet">
+  <script src="/nav.js"></script>
+  <script src="/script.js"></script>
+</head>
+<body>
+  <header></header>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-header"><a href="/dashboard.html" class="brand">Gestion Projets</a></div>
+      <nav class="sidebar-nav">
+        <a href="/dashboard.html"><i data-lucide="home"></i> Dashboard</a>
+        <a href="/agents.html"><i data-lucide="users"></i> Agents</a>
+        <a href="/sites.html"><i data-lucide="building"></i> Sites</a>
+        <a href="/interventions.html"><i data-lucide="wrench"></i> Interventions</a>
+        <a href="/rendezvous.html"><i data-lucide="calendar"></i> Rendez-vous</a>
+      </nav>
+    </aside>
+    <main class="content">
+      <nav class="breadcrumb mb-2"><a href="/dashboard.html">Dashboard</a> <span class="mx-1">/</span> <span>Maintenance</span></nav>
+      <h1 id="mntTitle" class="mb-6">Maintenance</h1>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="card card-body">
+          <div class="text-xs uppercase text-slate-500">État</div>
+          <div id="mntEtat" class="mt-1"><span class="badge">—</span></div>
+        </div>
+        <div class="card card-body">
+          <div class="text-xs uppercase text-slate-500">DOE</div>
+          <div id="mntDoe" class="mt-1 text-sm">—</div>
+        </div>
+        <div class="card card-body">
+          <div class="text-xs uppercase text-slate-500">Site</div>
+          <div id="mntSite" class="mt-1 text-sm">—</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <section class="lg:col-span-2 card card-body">
+          <h2 class="mb-3">Interventions</h2>
+          <ul id="mntInterv" class="space-y-2 text-sm"></ul>
+        </section>
+        <section class="lg:col-span-1 card card-body">
+          <h2 class="mb-3">Documents</h2>
+          <ul id="mntDocs" class="space-y-2 text-sm"></ul>
+        </section>
+        <section class="lg:col-span-3 card card-body">
+          <h2 class="mb-3">Images</h2>
+          <div id="mntImgs" class="flex flex-wrap gap-3"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script> if (window.lucide && typeof window.lucide.createIcons==='function'){ window.lucide.createIcons(); } </script>
+</body>
+</html>
+
+
+
+

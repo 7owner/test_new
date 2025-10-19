@@ -11,66 +11,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.__APP_INIT__) return; // prevent duplicate initialization if script is included twice
     window.__APP_INIT__ = true;
     const loginForm = document.getElementById('loginForm');
-    function badgeClassForMaintenance(etat) {
-      const e = String(etat||"").toLowerCase();
-      if (e === 'bloque' || e.includes('bloq')) return 'badge badge-danger';
-      if (e === 'en_cours' || e.includes('cours')) return 'badge badge-info';
-      if (e === 'termine' || e.includes('term')) return 'badge badge-success';
-      if (e === 'pas_commence' || e.includes('pas') || e.includes('non')) return 'badge badge-warning';
-      return 'badge badge-info';
-    }
-    function showToast(message, type) {
-      const root = document.getElementById('toast-root');
-      if (!root) return; const div = document.createElement('div');
-      div.className = 'toast' + (type ? ' ' + type : '');
-      div.textContent = message; root.appendChild(div);
-      setTimeout(() => { div.style.opacity = '0'; setTimeout(()=> div.remove(), 300); }, 2800);
-    }
     const registerForm = document.getElementById('registerForm');
     const errorMessageDiv = document.getElementById('error-message');
-    function makeCardsClickable(container) {
-      try {
-        if (!container) return;
-        container.addEventListener('click', (ev) => {
-          if (ev.defaultPrevented) return;
-          if (ev.target.closest('button, .btn')) return; // ignore button clicks
-          const card = ev.target.closest('.card');
-          if (!card || !container.contains(card)) return;
-          const link = card.querySelector('a[href]');
-          if (link && link.getAttribute('href')) {
-            ev.preventDefault();
-            window.location.href = link.getAttribute('href');
-          }
-        });
-      } catch(_) {}
-    }
 
     // Function to display error messages
-        function badgeClassFor(type, statut) {
-      if (!statut) return "badge badge-info";
-      const s = String(statut).toLowerCase();
-      const map = {
-        achat: {
-          brouillon: "badge badge-warning",
-          valide: "badge badge-info",
-          commande: "badge badge-info",
-          recu_partiel: "badge badge-success",
-          recu: "badge badge-success",
-          annule: "badge badge-danger"
-        },
-        facture: {
-          brouillon: "badge badge-warning",
-          emise: "badge badge-info",
-          envoyee: "badge badge-info",
-          payee_partielle: "badge badge-warning",
-          payee: "badge badge-success",
-          annulee: "badge badge-danger"
+    const showError = (message) => {
+        if (errorMessageDiv) {
+            errorMessageDiv.textContent = message;
+            errorMessageDiv.classList.remove('hidden');
         }
-      };
-      const group = map[type] || {};
-      return group[s] || "badge badge-info";
-    }
-const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textContent = message; errorMessageDiv.classList.remove("hidden"); } showToast(message, "error"); };
+    };
 
     // Function to handle login
     if (loginForm) {
@@ -89,7 +39,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const data = await response.json();
 
                 if (!response.ok) {
-                    showError(data.error || 'La connexion a échoué'); try{ showToast(data.error || 'La connexion a échoué', "error"); }catch(_){};
+                    showError(data.error || 'Login failed');
                     return;
                 }
 
@@ -97,11 +47,11 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     localStorage.setItem('token', data.token);
                     window.location.href = '/dashboard.html';
                 } else {
-                    showError('La connexion a échoué : jeton manquant'); try{ showToast('La connexion a échoué : jeton manquant', "error"); }catch(_){};
+                    showError('Login failed: missing token');
                 }
             } catch (error) {
-                console.error('Erreur de connexion:', error);
-                showError('Une erreur inattendue est survenue.'); try{ showToast('Une erreur inattendue est survenue.', "error"); }catch(_){};
+                console.error('Login error:', error);
+                showError('An unexpected error occurred.');
             }
         });
     }
@@ -123,7 +73,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const data = await response.json();
 
                 if (!response.ok) {
-                    showError(data.error || 'Inscription échouée'); try{ showToast(data.error || 'Inscription échouée', "error"); }catch(_){};
+                    showError(data.error || 'Registration failed');
                     return;
                 }
 
@@ -142,8 +92,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     window.location.href = '/login.html'; // Redirect to login page on failure
                 }
             } catch (error) {
-                console.error("Erreur lors de l'inscription:", error);
-                showError('Une erreur inattendue est survenue.'); try{ showToast('Une erreur inattendue est survenue.', "error"); }catch(_){};
+                console.error('Registration error:', error);
+                showError('An unexpected error occurred.');
             }
         });
     }
@@ -173,10 +123,6 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
             document.getElementById('ongoingInterventions').textContent = data.ongoingInterventions;
             document.getElementById('activeAgents').textContent = data.activeAgents;
             document.getElementById('sitesUnderContract').textContent = data.sitesUnderContract;
-            try { const el = document.getElementById('achatsCount'); if (el) el.textContent = (data.achatsCount != null ? data.achatsCount : '-'); } catch(_){}
-            try { const el = document.getElementById('facturesCount'); if (el) el.textContent = (data.facturesCount != null ? data.facturesCount : '-'); } catch(_){}
-            try { const el = document.getElementById('reglementsCount'); if (el) el.textContent = (data.reglementsCount != null ? data.reglementsCount : '-'); } catch(_){}
-            try { const fc = document.getElementById('financeCounters'); if (fc) makeCardsClickable(fc); } catch(_){}
 
             const urgentMaintenancesDiv = document.getElementById('urgentMaintenances');
             urgentMaintenancesDiv.innerHTML = '';
@@ -191,34 +137,6 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 urgentMaintenancesDiv.innerHTML = '<p class="text-gray-500 text-sm">Aucune maintenance urgente.</p>';
             }
 
-            // Compact and badge-ify urgent maintenances
-            try {
-                const umc = urgentMaintenancesDiv ? Array.from(urgentMaintenancesDiv.children) : [];
-                umc.forEach(el => {
-                    let title = '';
-                    try { title = (el.querySelector('h4')?.textContent || '').trim(); } catch(_) {}
-                    if (!title) { title = (el.textContent || '').trim(); }
-                    el.className = 'card card-body';
-                    el.innerHTML = `<div class="card-row"><div class="min-w-0"><div class="font-semibold truncate">${title}</div></div><div class="shrink-0"><span class="badge badge-danger">Bloqué</span></div></div>`;
-                });
-            } catch(_) {}
-
-            // Ensure urgent maintenances are rendered as clickable compact cards with proper badges
-            try {
-                if (urgentMaintenancesDiv && Array.isArray(data.urgentMaintenances)) {
-                    urgentMaintenancesDiv.innerHTML = '';
-                    data.urgentMaintenances.forEach(m => {
-                        const el = document.createElement('div');
-                        el.className = 'card card-body';
-                        const badge = `<span class="${badgeClassForMaintenance(m.etat)}">${m.etat||''}</span>`;
-                        const title = (m.titre||('Maintenance #'+m.id));
-                        el.innerHTML = `<div class="card-row"><div class="min-w-0"><div class="font-semibold truncate"><a class="text-indigo-600 hover:underline" href="/maintenance.html#${m.id}">${title}</a></div></div><div class="shrink-0">${badge}</div></div>`;
-                        urgentMaintenancesDiv.appendChild(el);
-                    });
-                    makeCardsClickable(urgentMaintenancesDiv);
-                }
-            } catch(_) {}
-
             const ctx = document.getElementById('monthlyMaintenanceChart');
             new Chart(ctx, {
                 type: 'bar',
@@ -230,36 +148,6 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     }
                 }
             });
-            // Load recent Achats / Factures / Règlements for dashboard
-            try {
-                const token2 = localStorage.getItem('token');
-                const [ra, rf, rg] = await Promise.all([
-                    fetch('/api/achats', { headers: { 'Authorization': `Bearer ${token2}` } }),
-                    fetch('/api/factures', { headers: { 'Authorization': `Bearer ${token2}` } }),
-                    fetch('/api/reglements', { headers: { 'Authorization': `Bearer ${token2}` } }),
-                ]);
-                const recentAchatsDiv = document.getElementById('recentAchats');
-                if (recentAchatsDiv && ra.ok) {
-                    const achats = (await ra.json()).slice(0,5);
-                    recentAchatsDiv.innerHTML = achats.map(a=>
-                        `<li class="flex items-center justify-between"><span>${a.reference||'Sans ref.'} – ${a.objet||''}</span><span class="text-xs text-slate-500">${a.montant_ttc!=null? Number(a.montant_ttc).toFixed(2):'-'}</span></li>`
-                    ).join('') || '<li class="text-slate-500">Aucun achat</li>';
-                }
-                const recentFacturesDiv = document.getElementById('recentFactures');
-                if (recentFacturesDiv && rf.ok) {
-                    const factures = (await rf.json()).slice(0,5);
-                    recentFacturesDiv.innerHTML = factures.map(f=>
-                        `<li class="flex items-center justify-between"><span>${f.reference||'Sans ref.'}</span><span class="text-xs text-slate-500">${f.montant_ttc!=null? Number(f.montant_ttc).toFixed(2):'-'}</span></li>`
-                    ).join('') || '<li class="text-slate-500">Aucune facture</li>';
-                }
-                const recentRegDiv = document.getElementById('recentReglements');
-                if (recentRegDiv && rg.ok) {
-                    const regs = (await rg.json()).slice(0,5);
-                    recentRegDiv.innerHTML = regs.map(g=>
-                        `<li class="flex items-center justify-between"><span>#${g.id} – ${g.mode||''}</span><span class="text-xs text-slate-500">${g.montant!=null? Number(g.montant).toFixed(2):'-'}</span></li>`
-                    ).join('') || '<li class="text-slate-500">Aucun règlement</li>';
-                }
-            } catch(_) {}
 
         } catch (error) {
             console.error('Error loading dashboard:', error);
@@ -269,562 +157,6 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
     // Check if we are on the dashboard page and load data
     if (window.location.pathname.endsWith('dashboard.html')) {
         loadDashboard();
-    }
-
-    // Site details page loader
-    const loadSiteDetail = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) { window.location.href = '/login.html'; return; }
-        const raw = (location.hash || '').replace('#','').trim();
-        const siteId = raw || null;
-        if (!siteId) {
-            const t = document.getElementById('siteTitle');
-            if (t) t.textContent = 'Site introuvable';
-            return;
-        }
-        try {
-            const [siteResp, relResp] = await Promise.all([
-                fetch(`/api/sites/${siteId}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`/api/sites/${siteId}/relations`, { headers: { 'Authorization': `Bearer ${token}` } })
-            ]);
-            if (!siteResp.ok) { window.location.href = '/sites.html'; return; }
-            const site = await siteResp.json();
-            const rel = relResp.ok ? await relResp.json() : { affaires: [], does: [], maintenances: [] };
-
-            const titleEl = document.getElementById('siteTitle');
-            if (titleEl) titleEl.textContent = site.nom_site || ('Site #' + site.id);
-            const metaEl = document.getElementById('siteMeta');
-            if (metaEl) metaEl.textContent = site.adresse_id ? ('Adresse #' + site.adresse_id) : 'Adresse non dÃ©finie';
-
-            const cAff = document.getElementById('countAffaires'); if (cAff) cAff.textContent = (rel.affaires||[]).length || '0';
-            const cDoe = document.getElementById('countDoes'); if (cDoe) cDoe.textContent = (rel.does||[]).length || '0';
-            const cM = document.getElementById('countMaintenances'); if (cM) cM.textContent = (rel.maintenances||[]).length || '0';
-
-            // Adresse detail
-            const addr = rel.adresse || null;
-            const addrDiv = document.getElementById('siteAddress');
-            if (addrDiv) {
-                if (addr) {
-                    const parts = [addr.libelle, addr.ligne1, addr.ligne2].filter(Boolean).join('<br>');
-                    const city = [addr.code_postal, addr.ville].filter(Boolean).join(' ');
-                    const tail = [city, addr.region, addr.pays].filter(Boolean).join(' Â· ');
-                    addrDiv.innerHTML = `${parts || ''}${parts ? '<br>' : ''}<span class="text-slate-600">${tail || ''}</span>` || '<span class="text-slate-500">Aucune</span>';
-                } else {
-                    addrDiv.innerHTML = '<span class="text-slate-500">Aucune</span>';
-                }
-            }
-
-            const bc = document.getElementById('breadcrumb');
-            try { if (bc) bc.innerHTML = `<a class=\"hover:underline\" href=\"/dashboard.html\">Dashboard</a> <span class=\"mx-1\">/</span> <a class=\"hover:underline\" href=\"/sites.html\">Sites</a> <span class=\"mx-1\">/</span> <span>${site.nom_site || ('Site #'+site.id)}</span>`; } catch(_) {}
-            const affUl = document.getElementById('siteAffairesList');
-            if (affUl) {
-                affUl.innerHTML = (rel.affaires||[]).map(a => `
-                  <li class="flex items-center justify-between">
-                    <a class="text-indigo-600 hover:underline" href="/affaires.html#${a.id}">${a.nom_affaire}</a>
-                    <span class="text-xs text-slate-500">#${a.id}</span>
-                  </li>`).join('') || '<li class="text-slate-500">Aucune</li>';
-            }
-            const doeUl = document.getElementById('siteDoesList');
-            if (doeUl) {
-                doeUl.innerHTML = (rel.does||[]).map(d => `
-                  <li class="flex items-center justify-between">
-                    <a class="text-indigo-600 hover:underline" href="/does.html#${d.id}">${d.titre}</a>
-                    <span class="text-xs text-slate-500">#${d.id}</span>
-                  </li>`).join('') || '<li class="text-slate-500">Aucun</li>';
-            }
-            const mUl = document.getElementById('siteMaintenancesList');
-            if (mUl) {
-                mUl.innerHTML = (rel.maintenances||[]).map(m => `
-                  <li class="flex items-center justify-between">
-                    <a class="text-slate-700" href="/maintenance.html#${m.id}">${m.titre || ('Maintenance #' + m.id)}</a>
-                    <span class="text-xs text-slate-500">${m.etat || ''}</span>
-                  </li>`).join('') || '<li class="text-slate-500">Aucune</li>';
-            }
-
-            // Documents
-            const docsUl = document.getElementById('siteDocsList');
-            if (docsUl) {
-                docsUl.innerHTML = (rel.documents||[]).map(d => `
-                  <li class="flex items-center justify-between">
-                    <a class="text-indigo-600 hover:underline" target="_blank" href="/api/documents/${d.id}/view">${d.nom_fichier}</a>
-                    <span class="text-xs text-slate-500">${(d.type_mime||'').split('/')[1]||''}</span>
-                  </li>`).join('') || '<li class="text-slate-500">Aucun</li>';
-            }
-
-            // Rendezvous
-            const rdvUl = document.getElementById('siteRendezvousList');
-            if (rdvUl) {
-                rdvUl.innerHTML = (rel.rendezvous||[]).map(r => {
-                  const when = r.date_rdv ? (new Date(r.date_rdv).toLocaleDateString() + (r.heure_rdv ? ' ' + r.heure_rdv : '')) : '';
-                  return `
-                    <li class="flex items-center justify-between">
-                      <a class="text-slate-700" href="/rendezvous.html#${r.id}">${r.titre || ('Rendez-vous #' + r.id)}</a>
-                      <span class="text-xs text-slate-500">${when}</span>
-                    </li>`;
-                }).join('') || '<li class="text-slate-500">Aucun</li>';
-            }
-
-            // Images
-            const imgsDiv = document.getElementById('siteImages');
-            if (imgsDiv) {
-                imgsDiv.innerHTML = (rel.images||[]).map(i => `
-                  <img class="w-28 h-28 object-cover rounded border" src="/api/images/${i.id}/view" alt="${i.nom_fichier}">`
-                ).join('');
-                if (!imgsDiv.innerHTML) imgsDiv.innerHTML = '<span class="text-slate-500">Aucune</span>';
-            }
-        } catch (e) {
-            console.error('Error loading site detail', e);
-        }
-    };
-
-    if (window.location.pathname.endsWith('site.html')) {
-        loadSiteDetail();
-        window.addEventListener('hashchange', loadSiteDetail);
-    }
-
-    // Intervention details page loader
-    const loadInterventionDetail = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) { window.location.href = '/login.html'; return; }
-        const raw = (location.hash || '').replace('#','').trim();
-        const id = raw || null;
-        if (!id) {
-            const t = document.getElementById('interTitle');
-            if (t) t.textContent = 'Intervention introuvable';
-            return;
-        }
-        try {
-            const resp = await fetch(`/api/interventions/${id}/relations`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!resp.ok) { window.location.href = '/interventions.html'; return; }
-            const rel = await resp.json();
-            const it = rel.intervention || {};
-
-            // Header/meta
-            const titleEl = document.getElementById('interTitle');
-            if (titleEl) titleEl.textContent = it.description || ('Intervention #' + it.id);
-            const metaEl = document.getElementById('interMeta');
-            if (metaEl) metaEl.textContent = (it.date_debut ? ('DÃ©but: ' + (new Date(it.date_debut).toLocaleDateString())) : '') + (it.date_fin ? (' Â· Fin: ' + (new Date(it.date_fin).toLocaleDateString())) : '');
-
-            // Counters
-            const docs = rel.documents || []; const imgs = rel.images || []; const rdvs = rel.rendezvous || [];
-            const cR = document.getElementById('countRdv'); if (cR) cR.textContent = rdvs.length || '0';
-            const cD = document.getElementById('countDocs'); if (cD) cD.textContent = docs.length || '0';
-            const cI = document.getElementById('countImgs'); if (cI) cI.textContent = imgs.length || '0';
-
-            // Details block
-            const det = document.getElementById('interDetails');
-            if (det) {
-              const lines = [];
-              if (rel.maintenance) lines.push(`<div><span class="text-slate-500">Maintenance:</span> ${rel.maintenance.titre || ('#'+rel.maintenance.id)}</div>`);
-              if (rel.doe) lines.push(`<div><span class="text-slate-500">DOE:</span> ${rel.doe.titre || ('#'+rel.doe.id)}</div>`);
-              if (rel.affaire) lines.push(`<div><span class="text-slate-500">Affaire:</span> ${rel.affaire.nom_affaire || ('#'+rel.affaire.id)}</div>`);
-              if (rel.site) lines.push(`<div><span class="text-slate-500">Site:</span> ${rel.site.nom_site || ('#'+rel.site.id)}</div>`);
-              det.innerHTML = lines.join('') || '<span class="text-slate-500">â€”</span>';
-            }
-
-            // Breadcrumb
-            const bcInter = document.getElementById('breadcrumb');
-            try { if (bcInter) bcInter.innerHTML = `<a class=\"hover:underline\" href=\"/dashboard.html\">Dashboard</a> <span class=\"mx-1\">/</span> <a class=\"hover:underline\" href=\"/interventions.html\">Interventions</a> <span class=\"mx-1\">/</span> <span>${it.description || ('Intervention #'+it.id)}</span>`; } catch(_) {}
-
-            // Relation links
-            const relLinks = document.getElementById('relLinks');
-            if (relLinks) {
-              const bits = [];
-              if (rel.maintenance) bits.push(`<a class="text-indigo-600 hover:underline" href="/maintenance.html#${rel.maintenance.id}">Voir la maintenance</a>`);
-              if (rel.doe) bits.push(`<a class="text-indigo-600 hover:underline" href="/does.html#${rel.doe.id}">Voir le DOE</a>`);
-              if (rel.site) bits.push(`<a class="text-indigo-600 hover:underline" href="/site.html#${rel.site.id}">Voir le site</a>`);
-              relLinks.innerHTML = bits.join(' Â· ');
-            }
-
-            // Rendezvous list
-            const rdvUl = document.getElementById('interRdvList');
-            if (rdvUl) {
-              rdvUl.innerHTML = rdvs.map(r => {
-                const when = r.date_rdv ? (new Date(r.date_rdv).toLocaleDateString() + (r.heure_rdv ? ' ' + r.heure_rdv : '')) : '';
-                return `<li class="flex items-center justify-between"><a class="text-slate-700" href="/rendezvous.html#${r.id}">${r.titre || ('Rendez-vous #'+r.id)}</a><span class="text-xs text-slate-500">${when}</span></li>`;
-              }).join('') || '<li class="text-slate-500">Aucun</li>';
-            }
-
-            // Documents
-            const docsUl = document.getElementById('interDocsList');
-            if (docsUl) {
-              docsUl.innerHTML = docs.map(d => `<li class="flex items-center justify-between"><a class="text-indigo-600 hover:underline" target="_blank" href="/api/documents/${d.id}/view">${d.nom_fichier}</a><span class="text-xs text-slate-500">${(d.type_mime||'').split('/')[1]||''}</span></li>`).join('') || '<li class="text-slate-500">Aucun</li>';
-            }
-
-            // Images
-            const imgsDiv = document.getElementById('interImages');
-            if (imgsDiv) {
-              imgsDiv.innerHTML = imgs.map(i => `<img class="w-28 h-28 object-cover rounded border" src="/api/images/${i.id}/view" alt="${i.nom_fichier}">`).join('');
-              if (!imgsDiv.innerHTML) imgsDiv.innerHTML = '<span class="text-slate-500">Aucune</span>';
-            }
-        } catch (e) {
-            console.error('Error loading intervention detail', e);
-        }
-    };
-
-    if (window.location.pathname.endsWith('intervention.html')) {
-        loadInterventionDetail();
-        window.addEventListener('hashchange', loadInterventionDetail);
-    }
-
-    // Maintenance details page loader
-    const loadMaintenanceDetail = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) { window.location.href = '/login.html'; return; }
-        const raw = (location.hash || '').replace('#','').trim();
-        const id = raw || null;
-        if (!id) {
-            const t = document.getElementById('mntTitle');
-            if (t) t.textContent = 'Maintenance introuvable';
-            return;
-        }
-        try {
-            const resp = await fetch(`/api/maintenances/${id}/relations`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!resp.ok) { window.location.href = '/maintenances.html'; return; }
-            const rel = await resp.json();
-            const m = rel.maintenance || {};
-
-            // Header/meta
-            const titleEl = document.getElementById('mntTitle');
-            if (titleEl) titleEl.textContent = m.titre || ('Maintenance #' + m.id);
-            const etatEl = document.getElementById('mntEtat');
-            if (etatEl) etatEl.innerHTML = `<span class="${badgeClassForMaintenance(m.etat)}">${m.etat||''}</span>`;
-
-            // DOE and Site
-            const doeEl = document.getElementById('mntDoe');
-            if (doeEl) doeEl.innerHTML = rel.doe ? `<a class="text-indigo-600 hover:underline" href="/does.html#${rel.doe.id}">${rel.doe.titre || ('DOE #'+rel.doe.id)}</a>` : '<span class="text-slate-500">—</span>';
-            const siteEl = document.getElementById('mntSite');
-            if (siteEl) siteEl.innerHTML = rel.site ? `<a class="text-indigo-600 hover:underline" href="/site.html#${rel.site.id}">${rel.site.nom_site || ('Site #'+rel.site.id)}</a>` : '<span class="text-slate-500">—</span>';
-
-            // Interventions list
-            const intUl = document.getElementById('mntInterv');
-            if (intUl) {
-                const arr = rel.interventions || [];
-                intUl.innerHTML = arr.map(it => {
-                    const when = it.date_debut ? new Date(it.date_debut).toLocaleDateString() : '';
-                    return `<li class="flex items-center justify-between"><a class="text-slate-700" href="/intervention.html#${it.id}">${it.description || ('Intervention #'+it.id)}</a><span class="text-xs text-slate-500">${when}</span></li>`;
-                }).join('') || '<li class="text-slate-500">Aucune</li>';
-            }
-
-            // Documents
-            const docsUl = document.getElementById('mntDocs');
-            if (docsUl) {
-                const docs = rel.documents || [];
-                docsUl.innerHTML = docs.map(d => `<li class="flex items-center justify-between"><a class="text-indigo-600 hover:underline" target="_blank" href="/api/documents/${d.id}/view">${d.nom_fichier}</a><span class="text-xs text-slate-500">${(d.type_mime||'').split('/')[1]||''}</span></li>`).join('') || '<li class="text-slate-500">Aucun</li>';
-            }
-
-            // Images
-            const imgsDiv = document.getElementById('mntImgs');
-            if (imgsDiv) {
-                const imgs = rel.images || [];
-                imgsDiv.innerHTML = imgs.map(i => `<img class="w-28 h-28 object-cover rounded border" src="/api/images/${i.id}/view" alt="${i.nom_fichier}">`).join('');
-                if (!imgsDiv.innerHTML) imgsDiv.innerHTML = '<span class="text-slate-500">Aucune</span>';
-            }
-        } catch (e) {
-            console.error('Error loading maintenance detail', e);
-        }
-    };
-    if (window.location.pathname.endsWith('maintenance.html')) {
-        loadMaintenanceDetail();
-        window.addEventListener('hashchange', loadMaintenanceDetail);
-    }
-
-    // Agent details page loader
-    const loadAgentDetail = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) { window.location.href = '/login.html'; return; }
-        const matricule = (location.hash||'').replace('#','').trim();
-        if (!matricule) { const t = document.getElementById('agentTitle'); if (t) t.textContent = 'Agent introuvable'; return; }
-        try {
-            const resp = await fetch(`/api/agents/${encodeURIComponent(matricule)}/relations`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!resp.ok) { window.location.href = '/agents.html'; return; }
-            const rel = await resp.json();
-            const ag = rel.agent || {};
-            const titleEl = document.getElementById('agentTitle'); if (titleEl) titleEl.textContent = `${ag.nom||'Agent'} (${ag.matricule||matricule})`;
-            const metaEl = document.getElementById('agentMeta'); if (metaEl) metaEl.textContent = [ag.email, ag.tel, ag.admin? 'Admin' : null, ag.actif===false? 'Inactif': null].filter(Boolean).join(' Â· ');
-            const info = document.getElementById('agentInfo');
-            if (info) {
-                info.innerHTML = `
-                  <div><span class="text-slate-500">Email:</span> ${ag.email||'â€”'}</div>
-                  <div><span class="text-slate-500">TÃ©lÃ©phone:</span> ${ag.tel||'â€”'}</div>
-                  <div><span class="text-slate-500">Agence ID:</span> ${ag.agence_id||'â€”'}</div>
-                  <div><span class="text-slate-500">EntrÃ©e:</span> ${ag.date_entree||'â€”'}</div>`;
-            }
-            // Breadcrumb
-            const bcAgent = document.getElementById('breadcrumb');
-            try { if (bcAgent) bcAgent.innerHTML = `<a class=\"hover:underline\" href=\"/dashboard.html\">Dashboard</a> <span class=\"mx-1\">/</span> <a class=\"hover:underline\" href=\"/agents.html\">Agents</a> <span class=\"mx-1\">/</span> <span>${ag.nom || 'Agent'} (${ag.matricule||matricule})</span>`; } catch(_) {}
-
-            const passDiv = document.getElementById('agentPassport');
-            const hasPass = document.getElementById('hasPassport');
-            if (hasPass) hasPass.textContent = rel.passeport ? 'Oui' : 'Non';
-            if (passDiv) {
-                const p = rel.passeport;
-                passDiv.innerHTML = p ? `
-                  <ul class="list-disc pl-5 space-y-1">
-                    ${p.permis? `<li>Permis: ${p.permis}</li>`:''}
-                    ${p.habilitations? `<li>Habilitations: ${p.habilitations}</li>`:''}
-                    ${p.certifications? `<li>Certifications: ${p.certifications}</li>`:''}
-                    ${p.commentaire? `<li>Note: ${p.commentaire}</li>`:''}
-                  </ul>` : '<span class="text-slate-500">Aucun</span>';
-            }
-            const forms = rel.formations||[];
-            const cF = document.getElementById('countFormations'); if (cF) cF.textContent = forms.length || '0';
-            const formsUl = document.getElementById('agentFormations');
-            if (formsUl) {
-                formsUl.innerHTML = forms.map(f => `
-                  <li class="flex items-center justify-between">
-                    <span>${f.libelle} <span class="text-xs text-slate-500">(${f.type})</span></span>
-                    <span class="text-xs text-slate-500">${f.date_obtention? f.date_obtention.split('T')[0] : ''}</span>
-                  </li>`).join('') || '<li class="text-slate-500">Aucune</li>';
-            }
-        } catch (e) { console.error('Error loading agent detail', e); }
-    };
-    if (window.location.pathname.endsWith('agent.html')) {
-        loadAgentDetail();
-        window.addEventListener('hashchange', loadAgentDetail);
-    }
-
-    // Rendezvous details page loader
-    const loadRendezvousDetail = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) { window.location.href = '/login.html'; return; }
-        const id = (location.hash||'').replace('#','').trim();
-        if (!id) { const t = document.getElementById('rdvTitle'); if (t) t.textContent = 'Rendez-vous introuvable'; return; }
-        try {
-            const resp = await fetch(`/api/rendezvous/${id}/relations`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!resp.ok) { window.location.href = '/rendezvous.html'; return; }
-            const rel = await resp.json();
-            const rdv = rel.rendezvous || {};
-            const titleEl = document.getElementById('rdvTitle'); if (titleEl) titleEl.textContent = rdv.titre || ('Rendez-vous #' + rdv.id);
-            const when = rdv.date_rdv ? (new Date(rdv.date_rdv).toLocaleDateString() + (rdv.heure_rdv ? ' ' + rdv.heure_rdv : '')) : '';
-            const metaEl = document.getElementById('rdvMeta'); if (metaEl) metaEl.textContent = [when, rdv.statut, rdv.sujet].filter(Boolean).join(' Â· ');
-            const det = document.getElementById('rdvDetails');
-            if (det) {
-                det.innerHTML = `
-                  <div><span class="text-slate-500">Intervention:</span> ${rel.intervention ? (rel.intervention.description || ('#'+rel.intervention.id)) : 'â€”'}</div>
-                  <div><span class="text-slate-500">Site:</span> ${rel.site ? (rel.site.nom_site || ('#'+rel.site.id)) : 'â€”'}</div>`;
-            }
-            const links = document.getElementById('rdvLinks');
-            if (links) {
-                const bits = [];
-                if (rel.intervention) bits.push(`<a class="text-indigo-600 hover:underline" href="/intervention.html#${rel.intervention.id}">Voir l'intervention</a>`);
-                if (rel.site) bits.push(`<a class="text-indigo-600 hover:underline" href="/site.html#${rel.site.id}">Voir le site</a>`);
-                links.innerHTML = bits.join(' Â· ');
-            }
-            // Breadcrumb
-            const bcRdv = document.getElementById('breadcrumb');
-            try { if (bcRdv) bcRdv.innerHTML = `<a class=\"hover:underline\" href=\"/dashboard.html\">Dashboard</a> <span class=\"mx-1\">/</span> <a class=\"hover:underline\" href=\"/rendezvous.html\">Rendez-vous</a> <span class=\"mx-1\">/</span> <span>${rdv.titre || ('Rendez-vous #'+rdv.id)}</span>`; } catch(_) {}
-
-            const docs = rel.documents||[]; const imgs = rel.images||[];
-            const cD = document.getElementById('rdvDocsCount'); if (cD) cD.textContent = docs.length || '0';
-            const cI = document.getElementById('rdvImgsCount'); if (cI) cI.textContent = imgs.length || '0';
-            const docsUl = document.getElementById('rdvDocsList'); if (docsUl) {
-                docsUl.innerHTML = docs.map(d => `<li class="flex items-center justify-between"><a class=\"text-indigo-600 hover:underline\" target=\"_blank\" href=\"/api/documents/${d.id}/view\">${d.nom_fichier}</a><span class=\"text-xs text-slate-500\">${(d.type_mime||'').split('/')[1]||''}</span></li>`).join('') || '<li class="text-slate-500">Aucun</li>';
-            }
-            const imgsDiv = document.getElementById('rdvImages'); if (imgsDiv) {
-                imgsDiv.innerHTML = imgs.map(i => `<img class=\"w-28 h-28 object-cover rounded border\" src=\"/api/images/${i.id}/view\" alt=\"${i.nom_fichier}\">`).join('');
-                if (!imgsDiv.innerHTML) imgsDiv.innerHTML = '<span class="text-slate-500">Aucune</span>';
-            }
-        } catch (e) { console.error('Error loading rendezvous detail', e); }
-    };
-    if (window.location.pathname.endsWith('rendezvous-view.html')) {
-        loadRendezvousDetail();
-        window.addEventListener('hashchange', loadRendezvousDetail);
-    }
-
-    // ---------------- Achats (liste + ajout) ----------------
-    const achatListDiv = document.getElementById('achatList');
-    const addAchatForm = document.getElementById('addAchatForm');
-    async function loadAffairesSitesForAchat() {
-      const token = localStorage.getItem('token');
-      try {
-        const [afs, sts] = await Promise.all([
-          fetch('/api/affaires', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('/api/sites', { headers: { 'Authorization': `Bearer ${token}` } }),
-        ]);
-        const affaires = afs.ok ? await afs.json() : [];
-        const sites = sts.ok ? await sts.json() : [];
-        const selA = document.getElementById('a_affaire');
-        const selS = document.getElementById('a_site');
-        if (selA) {
-          selA.innerHTML = '<option value="">(Aucune)</option>' + affaires.map(a=>`<option value="${a.id}">${a.nom_affaire}</option>`).join('');
-        }
-        if (selS) {
-          selS.innerHTML = '<option value="">(Aucun)</option>' + sites.map(s=>`<option value="${s.id}">${s.nom_site}</option>`).join('');
-        }
-      } catch (_) {}
-    }
-    async function fetchAchats() {
-      const token = localStorage.getItem('token');
-      try {
-        const r = await fetch('/api/achats', { headers: { 'Authorization': `Bearer ${token}` } });
-        if (!r.ok) return;
-        const achats = await r.json();
-        if (achatListDiv) {
-          achatListDiv.innerHTML = '';
-          achats.forEach(a => {
-            const el = document.createElement('div');
-            el.className = 'card card-body flex items-center justify-between';
-            const mht = (a.montant_ht!=null? Number(a.montant_ht).toFixed(2):'-');
-            const tva = (a.tva!=null? Number(a.tva).toFixed(2):'-');
-            const ttc = (a.montant_ttc!=null? Number(a.montant_ttc).toFixed(2):'-');
-            el.innerHTML = `
-              <div>
-                <div class="font-semibold">${a.reference || 'Sans ref.'} – ${a.objet || ''}</div>
-                <div class="text-sm text-slate-600">Fournisseur: ${a.fournisseur || '—'} · Statut: <span class="${badgeClassFor("achat", a.statut)}">${a.statut}</span></div>
-                <div class="text-xs text-slate-500">HT: ${mht} · TVA: ${tva}% · TTC: ${ttc}</div>
-              </div>
-              <div>
-                <button class="btn btn-danger delete-achat-btn" data-id="${a.id}">Supprimer</button>
-              </div>`;
-            // compact row override
-            try {
-              el.className = 'card card-body';
-              el.innerHTML = `
-                <div class="card-row">
-                  <div class="min-w-0">
-                    <div class="font-semibold truncate">${a.reference || 'Sans ref.'} – ${a.objet || ''}</div>
-                    <div class="text-xs text-slate-500 truncate">Fournisseur: ${a.fournisseur || '—'} · Statut: <span class="${badgeClassFor("achat", a.statut)}">${a.statut}</span></div>
-                    <div class="text-xs text-slate-500">HT: ${mht} · TVA: ${tva}%</div>
-                  </div>
-                  <div class="shrink-0 text-right">
-                    <div class="text-xs text-slate-500">TTC</div>
-                    <div class="font-semibold">${ttc}</div>
-                    <button class="btn btn-sm btn-danger delete-achat-btn mt-1" data-id="${a.id}">Supprimer</button>
-                  </div>
-                </div>`;
-            } catch(_) {}
-            achatListDiv.appendChild(el);
-          });
-        }
-      } catch (e) { console.error('Error fetching achats:', e); }
-    }
-    if (addAchatForm) {
-      addAchatForm.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-        const token = localStorage.getItem('token');
-        const payload = {
-          reference: document.getElementById('a_reference').value || null,
-          objet: document.getElementById('a_objet').value || null,
-          fournisseur: document.getElementById('a_fournisseur').value || null,
-          montant_ht: document.getElementById('a_montant_ht').value || null,
-          tva: document.getElementById('a_tva').value || null,
-          date_commande: document.getElementById('a_date_commande').value || null,
-          affaire_id: document.getElementById('a_affaire').value || null,
-          site_id: document.getElementById('a_site').value || null,
-        };
-        try {
-          const r = await fetch('/api/achats', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
-          if (r.ok) { addAchatForm.reset(); fetchAchats(); try{ showToast("Achat enregistré", "success"); }catch(_){} }
-        } catch (e) { console.error('Error creating achat:', e); }
-      });
-      if (achatListDiv) {
-        achatListDiv.addEventListener('click', async (ev) => {
-          if (ev.target.classList.contains('delete-achat-btn')) {
-            const id = ev.target.dataset.id; const token = localStorage.getItem('token');
-            if (confirm('Supprimer cet achat ?')) {
-              try { const d = await fetch(`/api/achats/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); if (d.ok) fetchAchats(); } catch(_){}
-            }
-          }
-        });
-      }
-      if (achatListDiv) makeCardsClickable(achatListDiv);
-      loadAffairesSitesForAchat();
-      fetchAchats();
-    }
-
-    // ---------------- Factures (liste + ajout) ----------------
-    const factureListDiv = document.getElementById('factureList');
-    const addFactureForm = document.getElementById('addFactureForm');
-    async function loadClientsAffairesForFacture() {
-      const token = localStorage.getItem('token');
-      try {
-        const [cls, afs] = await Promise.all([
-          fetch('/api/clients', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('/api/affaires', { headers: { 'Authorization': `Bearer ${token}` } }),
-        ]);
-        const clients = cls.ok ? await cls.json() : [];
-        const affaires = afs.ok ? await afs.json() : [];
-        const selC = document.getElementById('f_client');
-        const selA = document.getElementById('f_affaire');
-        if (selC) selC.innerHTML = '<option value="">(Aucun)</option>' + clients.map(c=>`<option value="${c.id}">${c.nom_client}</option>`).join('');
-        if (selA) selA.innerHTML = '<option value="">(Aucune)</option>' + affaires.map(a=>`<option value="${a.id}">${a.nom_affaire}</option>`).join('');
-      } catch(_){}
-    }
-    async function fetchFactures() {
-      const token = localStorage.getItem('token');
-      try {
-        const r = await fetch('/api/factures', { headers: { 'Authorization': `Bearer ${token}` } });
-        if (!r.ok) return; const factures = await r.json();
-        if (factureListDiv) {
-          factureListDiv.innerHTML = '';
-          factures.forEach(f => {
-            const el = document.createElement('div');
-            el.className = 'card card-body flex items-center justify-between';
-            const mht = (f.montant_ht!=null? Number(f.montant_ht).toFixed(2):'-');
-            const tva = (f.tva!=null? Number(f.tva).toFixed(2):'-');
-            const ttc = (f.montant_ttc!=null? Number(f.montant_ttc).toFixed(2):'-');
-            el.innerHTML = `
-              <div>
-                <div class="font-semibold">${f.reference || 'Sans ref.'}</div>
-                <div class="text-sm text-slate-600">Statut: <span class="${badgeClassFor("facture", f.statut)}">${f.statut}</span> · Client: ${f.nom_client || '—'}</div>
-                <div class="text-xs text-slate-500">HT: ${mht} · TVA: ${tva}% · TTC: ${ttc}</div>
-              </div>
-              <div>
-                <button class="btn btn-danger delete-facture-btn" data-id="${f.id}">Supprimer</button>
-              </div>`;
-            // compact row override
-            try {
-              el.className = 'card card-body';
-              el.innerHTML = `
-                <div class="card-row">
-                  <div class="min-w-0">
-                    <div class="font-semibold truncate">${f.reference || 'Sans ref.'}</div>
-                    <div class="text-xs text-slate-500 truncate">Statut: <span class="${badgeClassFor("facture", f.statut)}">${f.statut}</span> · Client: ${f.nom_client || '—'}</div>
-                    <div class="text-xs text-slate-500">HT: ${mht} · TVA: ${tva}%</div>
-                  </div>
-                  <div class="shrink-0 text-right">
-                    <div class="text-xs text-slate-500">TTC</div>
-                    <div class="font-semibold">${ttc}</div>
-                    <button class="btn btn-sm btn-danger delete-facture-btn mt-1" data-id="${f.id}">Supprimer</button>
-                  </div>
-                </div>`;
-            } catch(_) {}
-            factureListDiv.appendChild(el);
-          });
-        }
-      } catch(e){ console.error('Error fetching factures:', e); }
-    }
-    if (addFactureForm) {
-      addFactureForm.addEventListener('submit', async (ev) => {
-        ev.preventDefault(); const token = localStorage.getItem('token');
-        const payload = {
-          reference: document.getElementById('f_reference').value || null,
-          montant_ht: document.getElementById('f_montant_ht').value || null,
-          tva: document.getElementById('f_tva').value || null,
-          date_emission: document.getElementById('f_date_emission').value || null,
-          date_echeance: document.getElementById('f_date_echeance').value || null,
-          client_id: document.getElementById('f_client').value || null,
-          affaire_id: document.getElementById('f_affaire').value || null,
-        };
-        try {
-          const r = await fetch('/api/factures', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
-          if (r.ok) { addFactureForm.reset(); fetchFactures(); try{ showToast("Facture enregistrée", "success"); }catch(_){} }
-        } catch(e){ console.error('Error creating facture:', e); }
-      });
-      if (factureListDiv) {
-        factureListDiv.addEventListener('click', async (ev) => {
-          if (ev.target.classList.contains('delete-facture-btn')) {
-            const id = ev.target.dataset.id; const token = localStorage.getItem('token');
-            if (confirm('Supprimer cette facture ?')) {
-              try { const d = await fetch(`/api/factures/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); if (d.ok) fetchFactures(); } catch(_){}
-            }
-          }
-        });
-      }
-      if (factureListDiv) makeCardsClickable(factureListDiv);
-      loadClientsAffairesForFacture();
-      fetchFactures();
     }
 
     // Logic for agency management
@@ -975,19 +307,17 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
             agentListDiv.innerHTML = '';
             agents.forEach(agent => {
                 const agentEl = document.createElement('div');
-                agentEl.className = 'card card-body';
-                const title = `${agent.nom} (${agent.matricule})`;
+                agentEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
                 agentEl.innerHTML = `
-                  <div class="card-row">
-                    <div class="min-w-0">
-                      <div class="font-semibold truncate"><a class="text-indigo-600 hover:underline" href="/agent.html#${agent.matricule}">${title}</a></div>
-                      <div class="text-xs text-slate-500 truncate">${agent.agence_titre || ''}</div>
+                    <div>
+                        <p class="font-semibold">${agent.nom} (${agent.matricule})</p>
+                        <p class="text-sm text-gray-600">${agent.agence_titre}</p>
                     </div>
-                    <div class="shrink-0">
-                      <button class="btn btn-sm btn-danger delete-agent-btn" data-id="${agent.matricule}">Supprimer</button>
-                      <button class="btn btn-sm btn-secondary edit-agent-btn" data-id="${agent.matricule}">Modifier</button>
+                    <div>
+                        <button class="delete-agent-btn text-red-500 hover:text-red-700" data-id="${agent.matricule}">Supprimer</button>
+                        <button class="edit-agent-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${agent.matricule}">Modifier</button>
                     </div>
-                  </div>`;
+                `;
                 agentListDiv.appendChild(agentEl);
             });
         } catch (error) {
@@ -1108,7 +438,6 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 }
             }
         });
-        makeCardsClickable(agentListDiv);
         fetchAgents();
         loadAgencesIntoSelect();
     }
@@ -1428,7 +757,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
     const fetchSites = async () => {
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch('/api/sites?overview=1', {
+            const response = await fetch('/api/sites', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) return;
@@ -1447,54 +776,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                         <button class="edit-site-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${site.id}">Modifier</button>
                     </div>
                 `;
-                try {
-                  const last = site.last_maintenance_date ? new Date(site.last_maintenance_date).toLocaleDateString() : 'â€”';
-                  const firstDiv = siteEl.querySelector('div');
-                  if (firstDiv) {
-                    firstDiv.insertAdjacentHTML('beforeend', `
-                      <div class="mt-2 text-xs text-slate-600 grid grid-cols-2 gap-x-6 gap-y-1">
-                        <div><span class="text-slate-500">Affaires:</span> ${site.affaires_count ?? 0}</div>
-                        <div><span class="text-slate-500">DOE:</span> ${site.does_count ?? 0}</div>
-                        <div><span class="text-slate-500">Maintenances:</span> ${site.maintenances_count ?? 0}</div>
-                        <div><span class="text-slate-500">Derniere maintenance:</span> ${last}</div>
-                      </div>`);
-                  }
-                } catch (_) {}
-                try {
-                  const title = siteEl.querySelector('p.font-semibold');
-                  if (title) {
-                    const txt = title.textContent || ('Site #' + site.id);
-                    title.innerHTML = `<a class="text-indigo-600 hover:underline" href="/site.html#${site.id}">${txt}</a>`;
-                  }
-                } catch (_) {}
                 siteListDiv.appendChild(siteEl);
             });
-            // Colorize site cards uniformly with gradients and accent bars
-            try {
-              const cards = siteListDiv ? Array.from(siteListDiv.children) : [];
-              const gradients = [
-                'linear-gradient(135deg,#eef2ff,#e0e7ff)',
-                'linear-gradient(135deg,#ecfeff,#cffafe)',
-                'linear-gradient(135deg,#ecfdf5,#bbf7d0)',
-                'linear-gradient(135deg,#fff7ed,#fed7aa)',
-                'linear-gradient(135deg,#fef2f2,#fecaca)',
-                'linear-gradient(135deg,#f5f3ff,#ddd6fe)'
-              ];
-              const accents = ['#6366f1','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6'];
-              cards.forEach((el, i) => {
-                el.style.background = gradients[i % gradients.length];
-                el.style.border = '1px solid rgba(15,23,42,0.06)';
-                el.style.position = 'relative';
-                if (!el.querySelector('.accent-bar')) {
-                  const bar = document.createElement('div');
-                  bar.className = 'accent-bar';
-                  bar.style.position = 'absolute'; bar.style.left = '0'; bar.style.top = '0'; bar.style.bottom = '0'; bar.style.width = '4px';
-                  bar.style.background = accents[i % accents.length];
-                  bar.style.borderTopLeftRadius = '12px'; bar.style.borderBottomLeftRadius = '12px';
-                  el.appendChild(bar);
-                }
-              });
-            } catch(_) {}
         } catch (error) {
             console.error('Error fetching sites:', error);
         }
@@ -1540,7 +823,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     },
                     body: JSON.stringify({ nom_site, adresse_id })
                 });
-                if (response.ok) { addSiteForm.reset(); try{ showToast("Site sauvegardé", "success"); }catch(_){};
+                if (response.ok) {
+                    addSiteForm.reset();
                     document.getElementById('siteId').value = ''; // Clear hidden ID
                     document.getElementById('formTitleSite').textContent = 'Ajouter un Site';
                     document.getElementById('submitButtonSite').textContent = 'Ajouter le Site';
@@ -1758,63 +1042,6 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
     const interventionListDiv = document.getElementById('interventionList');
     const addInterventionForm = document.getElementById('addInterventionForm');
     const maintenanceSelect = document.getElementById('maintenance');
-    // Interventions filters (optional controls on interventions.html)
-    const interSearch = document.getElementById('interSearch');
-    const interDateStart = document.getElementById('interDateStart');
-    const interDateEnd = document.getElementById('interDateEnd');
-    const interMaintenanceFilter = document.getElementById('interMaintenanceFilter');
-    const interSort = document.getElementById('interSort');
-    let interventionsData = [];
-
-    const renderInterventions = () => {
-        if (!interventionListDiv) return;
-        const q = (interSearch && interSearch.value || '').toLowerCase();
-        const dStart = interDateStart && interDateStart.value ? new Date(interDateStart.value) : null;
-        const dEnd = interDateEnd && interDateEnd.value ? new Date(interDateEnd.value) : null;
-        const mFilter = interMaintenanceFilter && interMaintenanceFilter.value ? parseInt(interMaintenanceFilter.value, 10) : null;
-        const sort = interSort && interSort.value || 'date_desc';
-
-        let items = interventionsData.slice();
-        items = items.filter(it => {
-            if (q && !(it.description||'').toLowerCase().includes(q)) return false;
-            if (mFilter && it.maintenance_id !== mFilter) return false;
-            const dt = it.date_debut ? new Date(it.date_debut) : null;
-            if (dStart && dt && dt < dStart) return false;
-            if (dEnd && dt && dt > dEnd) return false;
-            return true;
-        });
-
-        items.sort((a,b) => {
-            switch (sort) {
-              case 'date_asc': return (new Date(a.date_debut||0)) - (new Date(b.date_debut||0));
-              case 'date_desc': return (new Date(b.date_debut||0)) - (new Date(a.date_debut||0));
-              case 'id_asc': return (a.id||0) - (b.id||0);
-              case 'id_desc': return (b.id||0) - (a.id||0);
-              case 'desc_asc': return (a.description||'').localeCompare(b.description||'');
-              case 'desc_desc': return (b.description||'').localeCompare(a.description||'');
-            }
-            return 0;
-        });
-
-        interventionListDiv.innerHTML = '';
-        items.forEach(intervention => {
-            const interventionEl = document.createElement('div');
-            interventionEl.className = 'card card-body';
-            const title = (intervention.description || ('Intervention #' + intervention.id));
-            interventionEl.innerHTML = `
-              <div class="card-row">
-                <div class="min-w-0">
-                  <div class="font-semibold truncate"><a class="text-indigo-600 hover:underline" href="/intervention.html#${intervention.id}">${title}</a></div>
-                  <div class="text-xs text-slate-500 truncate">Maintenance: ${intervention.maintenance_titre||''}</div>
-                </div>
-                <div class="shrink-0 text-right">
-                  <button class="btn btn-sm btn-danger delete-intervention-btn" data-id="${intervention.id}">Supprimer</button>
-                  <button class="btn btn-sm btn-secondary edit-intervention-btn" data-id="${intervention.id}">Modifier</button>
-                </div>
-              </div>`;
-            interventionListDiv.appendChild(interventionEl);
-        });
-    };
 
     const fetchInterventions = async () => {
         const token = localStorage.getItem('token');
@@ -1823,8 +1050,23 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) return;
-            interventionsData = await response.json();
-            renderInterventions();
+            const interventions = await response.json();
+            interventionListDiv.innerHTML = '';
+            interventions.forEach(intervention => {
+                const interventionEl = document.createElement('div');
+                interventionEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
+                interventionEl.innerHTML = `
+                    <div>
+                        <p class="font-semibold">${intervention.description}</p>
+                        <p class="text-sm text-gray-600">Maintenance: ${intervention.maintenance_titre}</p>
+                    </div>
+                    <div>
+                        <button class="delete-intervention-btn text-red-500 hover:text-red-700" data-id="${intervention.id}">Supprimer</button>
+                        <button class="edit-intervention-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${intervention.id}">Modifier</button>
+                    </div>
+                `;
+                interventionListDiv.appendChild(interventionEl);
+            });
         } catch (error) {
             console.error('Error fetching interventions:', error);
         }
@@ -1845,27 +1087,10 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 option.textContent = maintenance.titre;
                 maintenanceSelect.appendChild(option);
             });
-            if (interMaintenanceFilter) {
-                // keep first option (Toutes), reset others
-                Array.from(interMaintenanceFilter.querySelectorAll('option'))
-                    .forEach((o, idx) => { if (idx>0) o.remove(); });
-                maintenances.forEach(m => {
-                    const opt = document.createElement('option');
-                    opt.value = m.id; opt.textContent = m.titre || ('Maintenance #' + m.id);
-                    interMaintenanceFilter.appendChild(opt);
-                });
-            }
         } catch (error) {
             console.error('Error fetching maintenances for select:', error);
         }
     };
-
-    // Filters listeners
-    if (interSearch) interSearch.addEventListener('input', renderInterventions);
-    if (interDateStart) interDateStart.addEventListener('change', renderInterventions);
-    if (interDateEnd) interDateEnd.addEventListener('change', renderInterventions);
-    if (interMaintenanceFilter) interMaintenanceFilter.addEventListener('change', renderInterventions);
-    if (interSort) interSort.addEventListener('change', renderInterventions);
 
     if (addInterventionForm) {
         addInterventionForm.addEventListener('submit', async (event) => {
@@ -1961,7 +1186,6 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 }
             }
         });
-        makeCardsClickable(interventionListDiv);
         fetchInterventions();
         loadMaintenancesIntoSelect();
     }
@@ -1983,19 +1207,17 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
             rendezvousListDiv.innerHTML = '';
             rendezvous_list.forEach(rdv => {
                 const rdvEl = document.createElement('div');
-                rdvEl.className = 'card card-body';
-                const title = (rdv.titre || ('Rendez-vous #' + rdv.id));
+                rdvEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
                 rdvEl.innerHTML = `
-                  <div class="card-row">
-                    <div class="min-w-0">
-                      <div class="font-semibold truncate"><a class="text-indigo-600 hover:underline" href="/rendezvous-view.html#${rdv.id}">${title}</a></div>
-                      <div class="text-xs text-slate-500 truncate">Site: ${rdv.site_nom} · Intervention: ${rdv.intervention_description}</div>
+                    <div>
+                        <p class="font-semibold">${rdv.titre}</p>
+                        <p class="text-sm text-gray-600">Site: ${rdv.site_nom} | Intervention: ${rdv.intervention_description}</p>
                     </div>
-                    <div class="shrink-0 text-right">
-                      <button class="btn btn-sm btn-danger delete-rendezvous-btn" data-id="${rdv.id}">Supprimer</button>
-                      <button class="btn btn-sm btn-secondary edit-rendezvous-btn" data-id="${rdv.id}">Modifier</button>
+                    <div>
+                        <button class="delete-rendezvous-btn text-red-500 hover:text-red-700" data-id="${rdv.id}">Supprimer</button>
+                        <button class="edit-rendezvous-btn text-blue-500 hover:text-blue-700 ml-2" data-id="${rdv.id}">Modifier</button>
                     </div>
-                  </div>`;
+                `;
                 rendezvousListDiv.appendChild(rdvEl);
             });
         } catch (error) {
@@ -2142,7 +1364,6 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 }
             }
         });
-        makeCardsClickable(rendezvousListDiv);
         fetchRendezvous();
         loadInterventionsIntoSelect();
         loadSitesIntoSelect();
@@ -2827,145 +2048,5 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         loadAgentsIntoSelectForFormation();
     }
 
-    // Relations helpers and observers
-    function enhanceCards(listEl, selectorEditBtnClass, viewClass, label) {
-        if (!listEl) return;
-        const cards = Array.from(listEl.children);
-        cards.forEach(card => {
-            if (card.querySelector('.' + viewClass)) return;
-            const editBtn = card.querySelector('.' + selectorEditBtnClass);
-            const actions = card.querySelector('div:last-child');
-            if (editBtn && actions) {
-                const id = editBtn.dataset.id;
-                const btn = document.createElement('button');
-                btn.className = viewClass + ' text-slate-600 hover:text-slate-900 mr-2';
-                btn.dataset.id = id;
-                btn.textContent = label;
-                actions.prepend(btn);
-            }
-        });
-    }
 
-    function setupObserver(listEl, cb) {
-        if (!listEl) return;
-        const obs = new MutationObserver(() => cb());
-        obs.observe(listEl, { childList: true });
-        // initial pass
-        cb();
-    }
-
-    // Set up observers to inject â€œVoir relations / Voir dÃ©tailsâ€ buttons
-    setupObserver(document.getElementById('siteList'), () => enhanceCards(document.getElementById('siteList'), 'edit-site-btn', 'view-site-rel', 'Voir relations'));
-    setupObserver(document.getElementById('doeList'), () => enhanceCards(document.getElementById('doeList'), 'edit-doe-btn', 'view-doe-rel', 'Voir relations'));
-    setupObserver(document.getElementById('agentList'), () => enhanceCards(document.getElementById('agentList'), 'edit-agent-btn', 'view-agent-rel', 'Voir relations'));
-    setupObserver(document.getElementById('rendezvousList'), () => enhanceCards(document.getElementById('rendezvousList'), 'edit-rdv-btn', 'view-rdv-rel', 'Voir dÃ©tails'));
-
-    // Global handler for relation/detail views
-    document.addEventListener('click', async (event) => {
-        const token = localStorage.getItem('token');
-        if (event.target.classList.contains('view-site-rel')) {
-            const siteId = event.target.dataset.id;
-            try {
-                const rel = await fetch(`/api/sites/${siteId}/relations`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r=>r.json());
-                const container = document.getElementById('siteRelationsContent');
-                if (container) {
-                    container.innerHTML = `
-                        <div>
-                          <h4 class="font-semibold mb-2">Affaires</h4>
-                          <ul class="list-disc pl-5 space-y-1">${(rel.affaires||[]).map(a=>`<li><a class=\"text-indigo-600 hover:underline\" href=\"/affaires.html#${a.id}\">${a.nom_affaire}</a></li>`).join('') || '<li class=\"text-slate-500\">Aucune</li>'}</ul>
-                        </div>
-                        <div>
-                          <h4 class=\"font-semibold mb-2\">DOE</h4>
-                          <ul class=\"list-disc pl-5 space-y-1\">${(rel.does||[]).map(d=>`<li><a class=\"text-indigo-600 hover:underline view-doe-rel\" data-id=\"${d.id}\" href=\"/does.html#${d.id}\">${d.titre}</a></li>`).join('') || '<li class=\"text-slate-500\">Aucun</li>'}</ul>
-                        </div>
-                        <div>
-                          <h4 class=\"font-semibold mb-2\">Maintenances</h4>
-                          <ul class=\"list-disc pl-5 space-y-1\">${(rel.maintenances||[]).map(m=>`<li><a class=\"text-slate-700\" href=\"/maintenance.html#${m.id}\">${m.titre||('Maintenance #'+m.id)}</a> <span class=\"text-xs text-slate-500\">(${m.etat})</span></li>`).join('') || '<li class=\"text-slate-500\">Aucune</li>'}</ul>
-                        </div>`;
-                }
-            } catch (e) { console.error('Error fetching site relations', e); }
-        } else if (event.target.classList.contains('view-doe-rel')) {
-            const id = event.target.dataset.id;
-            try {
-                const rel = await fetch(`/api/does/${id}/relations`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r=>r.json());
-                const c = document.getElementById('doeRelationsContent');
-                if (!c) return;
-                const docs = (rel.documents||[]).map(d=>`<li><a class=\"text-indigo-600 hover:underline\" target=\"_blank\" href=\"/api/documents/${d.id}/view\">${d.nom_fichier}</a></li>`).join('') || '<li class=\"text-slate-500\">Aucun</li>';
-                const imgs = (rel.images||[]).map(i=>`<img class=\"w-24 h-24 object-cover rounded border\" src=\"/api/images/${i.id}/view\" alt=\"${i.nom_fichier}\">`).join('');
-                c.innerHTML = `
-                    <div>
-                      <h4 class=\"font-semibold mb-2\">Maintenances</h4>
-                      <ul class=\"list-disc pl-5 space-y-1\">${(rel.maintenances||[]).map(m=>`<li>${m.titre||('Maintenance #'+m.id)} <span class=\"text-xs text-slate-500\">(${m.etat})</span></li>`).join('') || '<li class=\"text-slate-500\">Aucune</li>'}</ul>
-                    </div>
-                    <div>
-                      <h4 class=\"font-semibold mb-2\">Documents</h4>
-                      <ul class=\"list-disc pl-5 space-y-1\">${docs}</ul>
-                    </div>
-                    <div>
-                      <h4 class=\"font-semibold mb-2\">Images</h4>
-                      <div class=\"flex flex-wrap gap-2\">${imgs || '<span class=\"text-slate-500\">Aucune</span>'}</div>
-                    </div>`;
-            } catch (e) { console.error('Error fetching DOE relations', e); }
-        } else if (event.target.classList.contains('view-agent-rel')) {
-            const matricule = event.target.dataset.id;
-            try {
-                const rel = await fetch(`/api/agents/${matricule}/relations`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r=>r.json());
-                const c = document.getElementById('agentRelationsContent');
-                if (!c) return;
-                const formations = (rel.formations||[]).map(f=>`<li>${f.libelle} <span class=\"text-xs text-slate-500\">(${f.type})</span></li>`).join('') || '<li class=\"text-slate-500\">Aucune</li>';
-                const pass = rel.passeport ? `
-                    <ul class=\"list-disc pl-5 space-y-1\">
-                      ${rel.passeport.permis ? `<li>Permis: ${rel.passeport.permis}</li>`:''}
-                      ${rel.passeport.habilitations ? `<li>Habilitations: ${rel.passeport.habilitations}</li>`:''}
-                      ${rel.passeport.certifications ? `<li>Certifications: ${rel.passeport.certifications}</li>`:''}
-                    </ul>` : '<span class=\"text-slate-500\">Aucun</span>';
-                c.innerHTML = `
-                    <div>
-                      <h4 class=\"font-semibold mb-2\">Passeport</h4>
-                      ${pass}
-                    </div>
-                    <div>
-                      <h4 class=\"font-semibold mb-2\">Formations</h4>
-                      <ul class=\"list-disc pl-5 space-y-1\">${formations}</ul>
-                    </div>`;
-            } catch (e) { console.error('Error fetching agent relations', e); }
-        } else if (event.target.classList.contains('view-rdv-rel')) {
-            const id = event.target.dataset.id;
-            try {
-                const rel = await fetch(`/api/rendezvous/${id}/relations`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r=>r.json());
-                const c = document.getElementById('rendezvousRelationsContent');
-                if (!c) return;
-                const docs = (rel.documents||[]).map(d=>`<li><a class=\"text-indigo-600 hover:underline\" target=\"_blank\" href=\"/api/documents/${d.id}/view\">${d.nom_fichier}</a></li>`).join('') || '<li class=\"text-slate-500\">Aucun</li>';
-                const imgs = (rel.images||[]).map(i=>`<img class=\"w-24 h-24 object-cover rounded border\" src=\"/api/images/${i.id}/view\" alt=\"${i.nom_fichier}\">`).join('');
-                c.innerHTML = `
-                    <div>
-                      <h4 class=\"font-semibold mb-2\">Intervention</h4>
-                      ${rel.intervention ? `<div class=\"text-sm\">#${rel.intervention.id} - ${rel.intervention.description||''}</div>` : '<div class=\"text-slate-500 text-sm\">Aucune</div>'}
-                    </div>
-                    <div>
-                      <h4 class=\"font-semibold mb-2\">Site</h4>
-                      ${rel.site ? `<div class=\"text-sm\">#${rel.site.id} - ${rel.site.nom_site}</div>` : '<div class=\"text-slate-500 text-sm\">Aucun</div>'}
-                    </div>
-                    <div>
-                      <h4 class=\"font-semibold mb-2\">Documents</h4>
-                      <ul class=\"list-disc pl-5 space-y-1\">${docs}</ul>
-                    </div>
-                    <div>
-                      <h4 class=\"font-semibold mb-2\">Images</h4>
-                      <div class=\"flex flex-wrap gap-2\">${imgs || '<span class=\"text-slate-500\">Aucune</span>'}</div>
-                    </div>`;
-            } catch (e) { console.error('Error fetching rendezvous relations', e); }
-        }
-    });
 });
-
-
-
-
-
-
-
-
-
-
-
