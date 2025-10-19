@@ -43,27 +43,17 @@
       : '<a class="text-slate-600 hover:text-indigo-600" href="/login.html">Connexion</a> <a class="text-slate-600 hover:text-indigo-600 ml-4" href="/register.html">Inscription</a>';
 
     return `
+      <a href="#app-content" class="skip-link">Aller au contenu</a>
       <div class="container mx-auto px-6 py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <button id="navToggle" class="md:hidden inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:text-indigo-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-controls="mobileNav" aria-expanded="false" aria-label="Ouvrir le menu">
+          <button id="navToggle" class="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:text-indigo-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-expanded="false" aria-label="Ouvrir le menu">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M3.75 6.75h16.5v1.5H3.75v-1.5Zm0 4.5h16.5v1.5H3.75v-1.5Zm0 4.5h16.5v1.5H3.75v-1.5Z"/></svg>
           </button>
           <a href="/dashboard.html" class="text-xl font-semibold text-indigo-700">Gestion Projets</a>
         </div>
-        <nav class="hidden md:flex items-center space-x-4 text-sm">
-          ${navItems}
-        </nav>
-        <div class="text-sm hidden md:block">${authItems}</div>
+        <div class="text-sm hidden md:flex items-center gap-3"><button id="themeToggle" class="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:text-indigo-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Basculer le thème" title="Basculer le thème"></button>${authItems}</div>
       </div>
-      <div id="mobileNav" class="md:hidden border-t border-slate-200 bg-white">
-        <div class="container mx-auto px-6 py-3 flex flex-col space-y-2 text-sm">
-          ${links.map(l => {
-            const active = current.endsWith(l.href);
-            return `<a class="${active ? 'text-indigo-700 font-semibold' : 'text-slate-700'} inline-flex items-center gap-2" href="${l.href}">${iconSVG(l.icon)}<span>${l.label}</span></a>`;
-          }).join('')}
-          <div class="pt-2 border-t border-slate-200">${authItems}</div>
-        </div>
-      </div>
+      
     `;
   }
 
@@ -74,8 +64,49 @@
       header.className = 'app-header';
       document.body.prepend(header);
     }
+    header.setAttribute('role', 'banner');
     header.innerHTML = buildNav();
     header.className = 'app-header';
+
+    // Theme helpers and initialization
+    function getPreferredTheme(){
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark' || saved === 'light') return saved;
+      try { return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; } catch(_) { return 'light'; }
+    }
+    function applyTheme(theme){
+      try {
+        document.body.classList.toggle('theme-dark', theme === 'dark');
+        document.body.classList.toggle('theme-light', theme === 'light');
+      } catch(_) {}
+    }
+    function updateThemeToggleIcon(){
+      try {
+        const btn = document.getElementById('themeToggle');
+        if (!btn) return;
+        const isDark = document.body.classList.contains('theme-dark');
+        const sun = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>`;
+        const moon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+        btn.innerHTML = isDark ? sun : moon;
+        btn.setAttribute('aria-label', isDark ? 'Passer en mode clair' : 'Passer en mode sombre');
+        btn.title = isDark ? 'Mode clair' : 'Mode sombre';
+      } catch(_) {}
+    }
+    try {
+      const initial = getPreferredTheme();
+      applyTheme(initial);
+      updateThemeToggleIcon();
+      const tgl = document.getElementById('themeToggle');
+      if (tgl) {
+        tgl.addEventListener('click', () => {
+          const isDark = document.body.classList.contains('theme-dark');
+          const next = isDark ? 'light' : 'dark';
+          localStorage.setItem('theme', next);
+          applyTheme(next);
+          updateThemeToggleIcon();
+        });
+      }
+    } catch(_) {}
 
     const logout = document.getElementById('logoutBtn');
     if (logout) {
@@ -85,25 +116,17 @@
       });
     }
 
-    const toggle = document.getElementById('navToggle');
-    const mobile = document.getElementById('mobileNav');
-    if (toggle && mobile) {
-      // collapsed by default via CSS (max-height)
-      mobile.classList.remove('open');
-      toggle.addEventListener('click', () => {
-        const isOpen = mobile.classList.contains('open');
-        if (isOpen) {
-          mobile.style.maxHeight = mobile.scrollHeight + 'px';
-          requestAnimationFrame(() => {
-            mobile.style.maxHeight = '0px';
-            mobile.classList.remove('open');
-          });
-        } else {
-          mobile.classList.add('open');
-          mobile.style.maxHeight = mobile.scrollHeight + 'px';
-        }
-        toggle.setAttribute('aria-expanded', (!isOpen).toString());
-      });
+    // No horizontal/mobile top nav: menu icon now controls sidebar only
+    // Helper: update menu button icon and label
+    function updateMenuButtonIcon(isOpen){
+      try {
+        const btn = document.getElementById('navToggle');
+        if (!btn) return;
+        const icoOpen = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>`; // X icon
+        const icoClosed = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M3.75 6.75h16.5v1.5H3.75v-1.5Zm0 4.5h16.5v1.5H3.75v-1.5Zm0 4.5h16.5v1.5H3.75v-1.5Z"/></svg>`; // Hamburger
+        btn.innerHTML = isOpen ? icoOpen : icoClosed;
+        btn.setAttribute('aria-label', isOpen ? 'Fermer le menu' : 'Ouvrir le menu');
+      } catch(_) {}
     }
   }
 
@@ -127,6 +150,11 @@
         link.href = '/custom.css';
         head.appendChild(link);
       }
+      // Ensure main content has an id for skip link target
+      try {
+        const main = document.querySelector('main');
+        if (main && !main.id) { main.id = 'app-content'; }
+      } catch(_) {}
       // Ensure favicon is present
       const hasFavicon = document.querySelector('link[rel="icon"]');
       if (head && !hasFavicon) {
@@ -152,20 +180,32 @@
       const btn = document.getElementById('navToggle');
       if (btn) {
         btn.classList.add('sidebar-toggle-btn');
+        // Set initial icon according to state
+        updateMenuButtonIcon(document.body.classList.contains('sidebar-open'));
         btn.addEventListener('click', () => {
           const isOpen = document.body.classList.contains('sidebar-open');
           if (isOpen) {
-            document.body.classList.remove('sidebar-open');
-            document.body.classList.add('sidebar-hidden');
+            // Animate closing: keep open layout, fade/slide up, then hide
+            document.body.classList.add('sidebar-animating');
+            try { btn.setAttribute('aria-expanded', 'false'); } catch(_) {}
+            updateMenuButtonIcon(false);
+            setTimeout(() => {
+              document.body.classList.remove('sidebar-open');
+              document.body.classList.add('sidebar-hidden');
+              document.body.classList.remove('sidebar-animating');
+            }, 200);
           } else {
+            // Open with slight delay for smooth slide-down
             document.body.classList.add('sidebar-open');
             document.body.classList.remove('sidebar-hidden');
+            document.body.classList.add('sidebar-animating');
+            setTimeout(() => { document.body.classList.remove('sidebar-animating'); }, 40);
+            try { btn.setAttribute('aria-expanded', 'true'); } catch(_) {}
+            updateMenuButtonIcon(true);
           }
         });
-        // Initialize hidden on small screens
-        if (window.innerWidth <= 1024) {
-          document.body.classList.add('sidebar-hidden');
-        }
+        // Initialize hidden by default on all screens
+        document.body.classList.add('sidebar-hidden');
       }
     } catch(_){}
     try { if (window.lucide && typeof window.lucide.createIcons === 'function') { window.lucide.createIcons(); } } catch(_){}
