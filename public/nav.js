@@ -147,6 +147,27 @@
     } catch (_) {}
     ensureHeader();
     try { document.body.classList.add('app-bg'); } catch(_){}
+    // Ensure sidebar mobile toggle works
+    try {
+      const btn = document.getElementById('navToggle');
+      if (btn) {
+        btn.classList.add('sidebar-toggle-btn');
+        btn.addEventListener('click', () => {
+          const isOpen = document.body.classList.contains('sidebar-open');
+          if (isOpen) {
+            document.body.classList.remove('sidebar-open');
+            document.body.classList.add('sidebar-hidden');
+          } else {
+            document.body.classList.add('sidebar-open');
+            document.body.classList.remove('sidebar-hidden');
+          }
+        });
+        // Initialize hidden on small screens
+        if (window.innerWidth <= 1024) {
+          document.body.classList.add('sidebar-hidden');
+        }
+      }
+    } catch(_){}
     try { if (window.lucide && typeof window.lucide.createIcons === 'function') { window.lucide.createIcons(); } } catch(_){}
     // Ensure toast container
     if (!document.getElementById('toast-root')) { const tr = document.createElement('div'); tr.id = 'toast-root'; tr.className = 'toast-root'; document.body.appendChild(tr); }
@@ -188,7 +209,29 @@
         if (grids[0]) mk(grids[0]);
         const fc = document.getElementById('financeCounters');
         if (fc) mk(fc);
-      }      // Agent detail: no extra DOM observers to avoid potential loops
+      }
+      // Replace <i data-lucide> by inline SVG if Lucide not loaded
+      try {
+        if (!window.lucide) {
+          document.querySelectorAll('i[data-lucide]').forEach((el) => {
+            const name = el.getAttribute('data-lucide');
+            const svg = (function icon(name){
+              const cls='icon';
+              switch(name){
+                case 'home': return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/></svg>`;
+                case 'users': return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+                case 'building': return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 21V9h6v12"/><path d="M9 9h6"/><path d="M7 12h2M7 16h2M15 12h2M15 16h2"/></svg>`;
+                case 'wrench': return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a5 5 0 0 1-6.4 6.4L3 18l3 3 5.3-5.3a5 5 0 0 0 6.4-6.4l-3-3Z"/></svg>`;
+                case 'calendar': return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`;
+                case 'shopping-cart': return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 12.39a2 2 0 0 0 2 1.61h7.72a2 2 0 0 0 2-1.61L21 6H6"/></svg>`;
+                case 'receipt': return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21V3a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18l3-2 3 2 3-2 3 2 3-2 3 2z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>`;
+                default: return '';
+              }
+            })(name);
+            if (svg) el.outerHTML = svg;
+          });
+        }
+      } catch(_){}
     } catch(_){}
   });
 })();
