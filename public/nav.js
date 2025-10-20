@@ -129,6 +129,65 @@
     }
   }
 
+  function ensureAppShell() {
+    try {
+      // Normalize: if a static app-shell/aside exists in the page, unwrap its <main> and remove it
+      try {
+        const existingShell = document.querySelector('.app-shell');
+        if (existingShell) {
+          const existingMain = existingShell.querySelector('main');
+          if (existingMain) {
+            existingShell.insertAdjacentElement('beforebegin', existingMain);
+          }
+          existingShell.remove();
+        }
+      } catch(_) {}
+      const header = document.querySelector('header');
+      const shell = document.createElement('div');
+      shell.className = 'app-shell';
+      const aside = document.createElement('aside');
+      aside.className = 'sidebar';
+      const sh = document.createElement('div'); sh.className = 'sidebar-header'; sh.innerHTML = '<a href="/dashboard.html" class="brand">Gestion Projets</a>';
+      const nav = document.createElement('nav'); nav.className = 'sidebar-nav';
+      const links = [
+        { href: '/dashboard.html', label: 'Dashboard', icon: 'home' },
+        { href: '/agents.html', label: 'Agents', icon: 'users' },
+        { href: '/sites.html', label: 'Sites', icon: 'building' },
+        { href: '/interventions.html', label: 'Interventions', icon: 'wrench' },
+        { href: '/rendezvous.html', label: 'Rendez-vous', icon: 'calendar' },
+        { href: '/achats.html', label: 'Achats', icon: 'shopping-cart' },
+        { href: '/factures.html', label: 'Factures', icon: 'receipt' }
+      ];
+      const current = location.pathname.replace(/\\/g, '/');
+      nav.innerHTML = links.map(l => {
+        const active = current.endsWith(l.href);
+        return `<a href="${l.href}"><i data-lucide="${l.icon}"></i> ${l.label}</a>`;
+      }).join('');
+      aside.appendChild(sh); aside.appendChild(nav);
+
+      // Determine main content
+      let main = document.querySelector('main');
+      if (!main) {
+        main = document.createElement('main'); main.className = 'content';
+        const toMove = [];
+        Array.from(document.body.children).forEach(el => {
+          if (el === header) return; // keep header outside
+          if (el === shell) return; // skip our shell
+          if (el.tagName && el.tagName.toLowerCase() === 'script') return; // leave scripts
+          toMove.push(el);
+        });
+        toMove.forEach(el => main.appendChild(el));
+      }
+      shell.appendChild(aside);
+      shell.appendChild(main);
+      if (header) {
+        header.insertAdjacentElement('afterend', shell);
+      } else {
+        document.body.prepend(shell);
+      }
+    } catch(_) {}
+  }
+
   function protectRoutes() {
     const unprotected = ['/', '/login.html', '/register.html'];
     const path = location.pathname;
@@ -173,6 +232,7 @@
       }
     } catch (_) {}
     ensureHeader();
+    ensureAppShell();
     try { document.body.classList.add('app-bg'); } catch(_){}
     // Add a floating top-left menu button to toggle sidebar only
     try {
@@ -225,6 +285,24 @@
             updateMenuButtonIcon(true);
           }
         });
+        // Close menu when a sidebar link is clicked
+        try {
+          const sideNav = document.querySelector('.sidebar-nav');
+          if (sideNav) {
+            sideNav.addEventListener('click', (e) => {
+              const a = e.target && (e.target.closest('a'));
+              if (!a) return;
+              document.body.classList.add('sidebar-animating');
+              setTimeout(() => {
+                document.body.classList.remove('sidebar-open');
+                document.body.classList.add('sidebar-hidden');
+                document.body.classList.remove('sidebar-animating');
+                updateMenuButtonIcon(false);
+                try { btn.setAttribute('aria-expanded', 'false'); } catch(_) {}
+              }, 150);
+            });
+          }
+        } catch(_) {}
         // Initialize hidden by default on all screens
         document.body.classList.add('sidebar-hidden');
       }
