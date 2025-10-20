@@ -1,12 +1,12 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Interventions</title>
     <link href="/style.css" rel="stylesheet">
-</head>
-<body class="bg-gray-100">
+  </head>
+<body class="bg-gray-100 app-bg">
     <div class="app-shell">
       <aside class="sidebar">
         <div class="sidebar-header">
@@ -37,13 +37,13 @@
                         <textarea id="description" rows="4" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
                     </div>
                     <div>
-                        <label for="date_Début" class="block text-sm font-medium text-gray-700">Date de dÃ©but</label>
-                        <input type="date" id="date_Début" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <label for="date_D�but" class="block text-sm font-medium text-gray-700">Date de début</label>
+                        <input type="date" id="date_D�but" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                     </div>
                     <div>
                         <label for="maintenance" class="block text-sm font-medium text-gray-700">Maintenance</label>
                         <select id="maintenance" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                            <!-- Les options seront chargÃ©es dynamiquement -->
+                            <!-- Les options seront chargées dynamiquement -->
                         </select>
                     </div>
                     <button type="submit" id="submitButtonIntervention" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Ajouter l'Intervention</button>
@@ -60,7 +60,7 @@
                       <input id="interSearch" type="text" placeholder="Description..." class="field">
                     </div>
                     <div>
-                      <label class="label" for="interDateStart">DÃ©but</label>
+                      <label class="label" for="interDateStart">Début</label>
                       <input id="interDateStart" type="date" class="field">
                     </div>
                     <div>
@@ -76,12 +76,12 @@
                     <div>
                       <label class="label" for="interSort">Tri</label>
                       <select id="interSort" class="field">
-                        <option value="date_desc">Date dÃ©croissante</option>
+                        <option value="date_desc">Date décroissante</option>
                         <option value="date_asc">Date croissante</option>
-                        <option value="id_desc">ID dÃ©croissant</option>
-                        <option value="id_asc">Idécroissant</option>
-                        <option value="desc_asc">Description Aâ†’Z</option>
-                        <option value="desc_desc">Description Zâ†’A</option>
+                        <option value="id_desc">ID décroissant</option>
+                        <option value="id_asc">Id�croissant</option>
+                        <option value="desc_asc">Description A→Z</option>
+                        <option value="desc_desc">Description Z→A</option>
                       </select>
                     </div>
                   </div>
@@ -96,5 +96,8 @@
     <script> if (window.lucide && typeof window.lucide.createIcons==='function'){ window.lucide.createIcons(); } </script>
 </body>
 </html>
+
+
+
 
 
