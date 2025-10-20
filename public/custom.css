@@ -179,3 +179,20 @@ body.theme-dark { background-image: linear-gradient(180deg, #0b1220, #111827); }
 body.theme-dark .app-header .text-slate-600 { color: #e5e7eb; }
 body.theme-dark .app-header .text-slate-600:hover { color: #c7d2fe; }
 
+/* Phone layout: vertical dropdown from top */
+@media (max-width: 768px) {
+  body.sidebar-open .sidebar { position: sticky; top: 56px; max-height: calc(100dvh - 56px); overflow-y: auto; border-right: 0; border-bottom: 1px solid #0b1220; }
+  body.theme-dark.sidebar-open .sidebar { border-bottom-color: #0b1220; }
+  body.sidebar-open .sidebar-nav { flex-direction: column; align-items: stretch; gap: 0.25rem; overflow-x: hidden; overflow-y: visible; white-space: normal; padding: 0.5rem 0.75rem 0.75rem; }
+  body.sidebar-open .sidebar-nav a { display: flex; width: 100%; }
+  /* Show brand inside vertical menu on phones */
+  body.sidebar-open .sidebar-header { display: block; }
+}
+
+/* Desktop fullscreen: menu pinned at Y=0 */
+@media (min-width: 1025px) {
+  body.sidebar-open .app-header { display: none; }
+  body.sidebar-open .sidebar { top: 0; }
+  body.sidebar-open .app-shell { min-height: 100vh; }
+}
+
