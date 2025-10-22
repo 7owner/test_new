@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
@@ -13,9 +13,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'change_me_dev';
 // Middleware
 app.use(cors());
 app.use(express.json()); // For parsing application/json
+// Security headers
+app.use((req, res, next) => { res.set('X-Content-Type-Options','nosniff'); next(); });
 // Silence missing favicon errors to avoid noisy 404s in console
 app.get('/favicon.ico', (_req, res) => res.redirect(302, '/favicon.svg'));
-app.use(express.static('public')); // Serve static files from 'public' directory
+app.use(express.static('public', { setHeaders: (res, filePath, stat) => { try { const ct = res.getHeader('Content-Type'); if (ct && /charset=/i.test(ct)) { res.setHeader('Content-Type', ct.replace(/charset=([^;]+)/i, 'charset=utf-8')); } } catch(_){} try { res.removeHeader('Expires'); res.removeHeader('Pragma'); } catch(_){} res.setHeader('Cache-Control', 'public, max-age=604800, must-revalidate'); res.setHeader('X-Content-Type-Options', 'nosniff'); } })); // Serve static files from 'public' directory
 // Ensure uploads directory exists
 try {
   const uploadsDir = path.join(__dirname, 'public', 'uploads', 'documents');
@@ -1057,7 +1059,9 @@ app.delete('/api/maintenances/:id', authenticateToken, async (req, res) => {
 // API Routes for Interventions (CRUD)
 app.get('/api/interventions', authenticateToken, async (req, res) => {
     try {
-        const result = await pool.query('SELECT intervention.*, maintenance.titre as maintenance_titre FROM intervention JOIN maintenance ON intervention.maintenance_id = maintenance.id ORDER BY intervention.id ASC');
+        const result = await pool.query(
+            'SELECT intervention.*, maintenance.titre as maintenance_titre FROM intervention JOIN maintenance ON intervention.maintenance_id = maintenance.id ORDER BY intervention.id ASC'
+        );
         res.json(result.rows);
     } catch (err) {
         console.error('Error fetching interventions:', err);
@@ -1066,11 +1070,11 @@ app.get('/api/interventions', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/interventions', authenticateToken, async (req, res) => {
-    const { description, date_debut, maintenance_id } = req.body;
+    const { description, date_debut, date_fin = null, maintenance_id, intervention_precedente_id = null } = req.body;
     try {
         const result = await pool.query(
-            'INSERT INTO intervention (description, date_debut, maintenance_id) VALUES ($1, $2, $3) RETURNING *',
-            [description, date_debut, maintenance_id]
+            'INSERT INTO intervention (description, date_debut, date_fin, maintenance_id, intervention_precedente_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [description, date_debut, date_fin, maintenance_id, intervention_precedente_id]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -1081,17 +1085,16 @@ app.post('/api/interventions', authenticateToken, async (req, res) => {
 
 app.put('/api/interventions/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
-    const { description, date_debut, maintenance_id } = req.body;
+    const { description, date_debut, date_fin = null, maintenance_id, intervention_precedente_id = null } = req.body;
     try {
         const result = await pool.query(
-            'UPDATE intervention SET description = $1, date_debut = $2, maintenance_id = $3 WHERE id = $4 RETURNING *',
-            [description, date_debut, maintenance_id, id]
+            'UPDATE intervention SET description = $1, date_debut = $2, date_fin = $3, maintenance_id = $4, intervention_precedente_id = $5 WHERE id = $6 RETURNING *',
+            [description, date_debut, date_fin, maintenance_id, intervention_precedente_id, id]
         );
-        if (result.rows.length > 0) {
-            res.json(result.rows[0]);
-        } else {
-            res.status(404).json({ error: 'Intervention not found' });
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: `Intervention with id ${id} not found` });
         }
+        res.json(result.rows[0]);
     } catch (err) {
         console.error(`Error updating intervention with id ${id}:`, err);
         res.status(500).json({ error: 'Internal Server Error' });
@@ -1107,10 +1110,7 @@ app.delete('/api/interventions/:id', authenticateToken, async (req, res) => {
         console.error(`Error deleting intervention with id ${id}:`, err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
-});
-
-// API Routes for Rendezvous (CRUD)
-app.get('/api/rendezvous', authenticateToken, async (req, res) => {
+});app.get('/api/rendezvous', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT rendezvous.*, intervention.description as intervention_description, site.nom_site as site_nom FROM rendezvous JOIN intervention ON rendezvous.intervention_id = intervention.id JOIN site ON rendezvous.site_id = site.id ORDER BY rendezvous.date_rdv ASC');
         res.json(result.rows);
@@ -1888,7 +1888,7 @@ app.delete('/api/factures/:id', authenticateToken, async (req, res) => {
   const { id } = req.params; try { await pool.query('DELETE FROM facture WHERE id=$1', [id]); res.status(204).send(); } catch (err) { console.error('Error deleting facture:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });
 
-// -------------------- R�glements --------------------
+// -------------------- Règlements --------------------
 app.get('/api/reglements', authenticateToken, async (req, res) => {
   try {
     const { facture_id } = req.query; let sql = 'SELECT * FROM reglement'; const params = [];
@@ -1915,5 +1915,10 @@ initializeDatabase().then(() => {
         console.log(`Serving static files from ${__dirname}/public`);
     });
 });
+
+
+
+
+
 
 
