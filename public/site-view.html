@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestion des Sites</title>
+  <title>Détails du site</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
@@ -51,51 +51,48 @@
   </div>
 
   <main class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1>🏢 LISTE DES SITES</h1>
-      <a href="site-new.html" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau site</a>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="dashboard.html">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="sites.html">Gestion des Sites</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Détails</li>
+      </ol>
+    </nav>
+    <h1 class="mb-4">Détails du site: <span id="site-name"></span></h1>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Informations Générales</h2>
+        <p><strong>ID:</strong> <span id="view_id"></span></p>
+        <p><strong>Nom du Site:</strong> <span id="view_nom_site"></span></p>
+        <p><strong>Adresse ID:</strong> <span id="view_adresse_id"></span></p>
+        <p><strong>Commentaire:</strong> <span id="view_commentaire"></span></p>
+        <p><strong>Statut:</strong> <span id="view_statut"></span></p>
+        <p><strong>Ticket Ouvert:</strong> <span id="view_ticket"></span></p>
+        <p><strong>Responsable:</strong> <span id="view_responsable"></span></p>
+      </div>
     </div>
 
-    <div class="mb-3 d-flex gap-2">
-      <input type="text" class="form-control" id="site-search" placeholder="Rechercher par nom ou ID...">
-      <select class="form-select" id="site-status-filter">
-        <option value="">Tous les statuts</option>
-        <option value="en attente">En attente</option>
-        <option value="prise en charge">Prise en charge</option>
-        <option value="en cour">En cour</option>
-        <option value="fini">Fini</option>
-        <option value="sous devis">Sous devis</option>
-      </select>
-    </div>
-
-    <div class="table-responsive">
-      <table class="table table-striped table-hover">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nom du Site</th>
-            <th>Adresse ID</th>
-            <th>Statut</th>
-            <th>Ticket Ouvert</th>
-            <th>Responsable</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="sites-table-body">
-          <!-- Site data will be loaded here by JavaScript -->
-        </tbody>
-      </table>
+    <div class="d-flex gap-2">
+      <a href="sites.html" class="btn btn-secondary">Retour à la liste</a>
+      <a href="site-edit.html" class="btn btn-primary"><i class="bi bi-pencil me-2"></i>Modifier le site</a>
     </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      const allSites = [
+      const urlParams = new URLSearchParams(window.location.search);
+      const siteId = urlParams.get('id');
+
+      // This is a placeholder for fetching actual site data from a backend.
+      // For now, we'll use the same seed data as sites.html.
+      const sites = [
         {
           id: "SITE001",
           nom_site: "Site Central Paris",
           adresse_id: "ADDR001",
+          commentaire: "Site principal avec bureaux et entrepôts.",
           statut: "en attente",
           ticket: true,
           responsable_matricule: null
@@ -104,6 +101,7 @@
           id: "SITE002",
           nom_site: "Usine Lyon",
           adresse_id: "ADDR002",
+          commentaire: "Usine de production avec machines lourdes.",
           statut: "prise en charge",
           ticket: true,
           responsable_matricule: "AGT001"
@@ -112,6 +110,7 @@
           id: "SITE003",
           nom_site: "Bureau Marseille",
           adresse_id: "ADDR003",
+          commentaire: "Bureau commercial et support technique.",
           statut: "en cour",
           ticket: false,
           responsable_matricule: null
@@ -120,6 +119,7 @@
           id: "SITE004",
           nom_site: "Dépôt Bordeaux",
           adresse_id: "ADDR004",
+          commentaire: "Centre de distribution régional.",
           statut: "fini",
           ticket: false,
           responsable_matricule: "AGT002"
@@ -128,6 +128,7 @@
           id: "SITE005",
           nom_site: "Agence Lille",
           adresse_id: "ADDR005",
+          commentaire: "Petite agence de services.",
           statut: "sous devis",
           ticket: true,
           responsable_matricule: null
@@ -140,85 +141,26 @@
         { matricule: "AGT003", nom: "Bernard", prenom: "Pierre" }
       ];
 
-      const tableBody = document.getElementById('sites-table-body');
-      const searchInput = document.getElementById('site-search');
-      const statusFilter = document.getElementById('site-status-filter');
-
       function getAgentName(matricule) {
         const agent = allAgents.find(a => a.matricule === matricule);
         return agent ? `${agent.nom} ${agent.prenom}` : 'N/A';
       }
 
-      function renderSites(sitesToRender) {
-        tableBody.innerHTML = ''; // Clear existing content
+      const site = sites.find(s => s.id === siteId);
 
-        if (sitesToRender.length === 0) {
-          const row = tableBody.insertRow();
-          row.innerHTML = '<td colspan="7" class="text-center text-muted">Aucun site trouvé.</td>';
-          return;
-        }
-
-        sitesToRender.forEach(site => {
-          const row = tableBody.insertRow();
-          let statusBadgeClass = '';
-          switch (site.statut) {
-            case 'en attente':
-              statusBadgeClass = 'bg-secondary';
-              break;
-            case 'prise en charge':
-              statusBadgeClass = 'bg-info';
-              break;
-            case 'en cour':
-              statusBadgeClass = 'bg-warning';
-              break;
-            case 'fini':
-              statusBadgeClass = 'bg-success';
-              break;
-            case 'sous devis':
-              statusBadgeClass = 'bg-primary';
-              break;
-            default:
-              statusBadgeClass = 'bg-light text-dark';
-          }
-
-          const responsableName = site.responsable_matricule ? getAgentName(site.responsable_matricule) : 'Non assigné';
-
-          row.innerHTML = `
-            <td>${site.id}</td>
-            <td>${site.nom_site}</td>
-            <td>${site.adresse_id}</td>
-            <td><span class="badge ${statusBadgeClass}">${site.statut}</span></td>
-            <td><span class="badge bg-${site.ticket ? 'danger' : 'success'}">${site.ticket ? 'Oui' : 'Non'}</span></td>
-            <td>${responsableName}</td>
-            <td>
-              <a href="site-view.html?id=${site.id}" class="btn btn-sm btn-info me-1"><i class="bi bi-eye"></i> Voir</a>
-              <a href="site-edit.html?id=${site.id}" class="btn btn-sm btn-warning me-1"><i class="bi bi-pencil"></i> Modifier</a>
-              ${site.ticket ? `<button class="btn btn-sm btn-success me-1" onclick="alert('Prendre le ticket pour ${site.id}')"><i class="bi bi-ticket"></i> Prendre le ticket</button>` : ''}
-              <button class="btn btn-sm btn-danger" onclick="alert('Supprimer site ${site.id}')"><i class="bi bi-trash"></i> Supprimer</button>
-            </td>
-          `;
-        });
+      if (site) {
+        document.getElementById('site-name').textContent = site.nom_site;
+        document.getElementById('view_id').textContent = site.id;
+        document.getElementById('view_nom_site').textContent = site.nom_site;
+        document.getElementById('view_adresse_id').textContent = site.adresse_id;
+        document.getElementById('view_commentaire').textContent = site.commentaire;
+        document.getElementById('view_statut').textContent = site.statut;
+        document.getElementById('view_ticket').textContent = site.ticket ? 'Oui' : 'Non';
+        document.getElementById('view_responsable').textContent = site.responsable_matricule ? getAgentName(site.responsable_matricule) : 'Non assigné';
+      } else {
+        document.getElementById('site-name').textContent = 'Site introuvable';
+        // Hide other details or show an error message
       }
-
-      function applyFilters() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const selectedStatus = statusFilter.value;
-
-        const filteredSites = allSites.filter(site => {
-          const matchesSearch = site.nom_site.toLowerCase().includes(searchTerm) ||
-                                site.id.toLowerCase().includes(searchTerm);
-          const matchesStatus = selectedStatus === '' || site.statut === selectedStatus;
-          return matchesSearch && matchesStatus;
-        });
-
-        renderSites(filteredSites);
-      }
-
-      searchInput.addEventListener('input', applyFilters);
-      statusFilter.addEventListener('change', applyFilters);
-
-      // Initial render
-      renderSites(allSites);
     });
   </script>
 </body>

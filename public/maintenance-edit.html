@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modifier une maintenance</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=1"></script>
+  <script src="/script.js?v=1"></script>
+</head>
+<body>
+  <header class="header d-flex justify-content-between align-items-center mb-4">
+    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard" style="text-decoration: none; color: inherit;"></a></h1>
+    <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+      Menu
+    </button>
+  </header>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <main class="container mt-5">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="dashboard.html">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="maintenances.html">Gestion des Maintenances</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Modifier</li>
+      </ol>
+    </nav>
+    <h1 class="mb-4">Modifier une maintenance</h1>
+
+    <div class="card">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Informations de la maintenance</h2>
+        <form>
+          <div class="mb-3">
+            <label for="id" class="form-label">ID Maintenance</label>
+            <input type="text" class="form-control" id="id" required readonly>
+          </div>
+          <div class="mb-3">
+            <label for="doe_id" class="form-label">DOE associé</label>
+            <select class="form-select" id="doe_id">
+              <option value="">Sélectionner un DOE</option>
+            </select>
+            <div id="doe-details" class="mt-2 p-2 border rounded bg-light" style="display: none;">
+              <strong>Titre:</strong> <span id="doe-title"></span><br>
+              <strong>Description:</strong> <span id="doe-description"></span>
+              <a href="#" id="view-doe-btn" class="btn btn-sm btn-info mt-2"><i class="bi bi-eye"></i> Voir DOE</a>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="affaire_id" class="form-label">Affaire associée</label>
+            <select class="form-select" id="affaire_id">
+              <option value="">Sélectionner une affaire</option>
+              <option value="AFF001">Affaire Paris</option>
+              <option value="AFF002">Affaire Lyon</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="titre" class="form-label">Titre</label>
+            <input type="text" class="form-control" id="titre" required>
+          </div>
+          <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" rows="3" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="etat" class="form-label">État</label>
+            <select class="form-select" id="etat" required>
+              <option value="Pas_commence">Pas commencé</option>
+              <option value="En_cours">En cours</option>
+              <option value="Termine">Terminé</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="responsable" class="form-label">Responsable</label>
+            <select class="form-select" id="responsable">
+              <option value="">Non assigné</option>
+              <option value="AGT001">Dupont Jean (AGT001)</option>
+              <option value="AGT002">Martin Sophie (AGT002)</option>
+            </select>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-2"></i>Enregistrer les modifications</button>
+            <a href="maintenance-view.html?id=" class="btn btn-secondary" id="cancel-button">Annuler</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const maintenanceId = urlParams.get('id');
+
+      const allMaintenances = [
+        {
+          id: "MNT001",
+          site_id: "SITE001",
+          titre: "Maintenance préventive annuelle",
+          description: "Vérification complète des systèmes.",
+          etat: "Pas_commence",
+          responsable: null,
+          doe_id: "DOE001",
+          affaire_id: "AFF001"
+        },
+        {
+          id: "MNT002",
+          site_id: "SITE002",
+          titre: "Réparation urgence machine",
+          description: "Réparation suite à une panne critique.",
+          etat: "En_cours",
+          responsable: "AGT001",
+          doe_id: "DOE002",
+          affaire_id: "AFF002"
+        },
+        {
+          id: "MNT003",
+          site_id: "SITE001",
+          titre: "Contrôle sécurité incendie",
+          description: "Contrôle réglementaire des équipements.",
+          etat: "Termine",
+          responsable: "AGT002",
+          doe_id: "DOE001",
+          affaire_id: "AFF001"
+        },
+        {
+          id: "MNT004",
+          site_id: "SITE005",
+          titre: "Installation nouveau matériel",
+          description: "Mise en place de nouveaux serveurs.",
+          etat: "En_cours",
+          responsable: null,
+          doe_id: null,
+          affaire_id: null
+        }
+      ];
+
+      const sampleDoes = [
+        { id: "DOE001", titre: "DOE Site Central Paris", description: "Dossier d'ouvrages exécutés pour le site central de Paris." },
+        { id: "DOE002", titre: "DOE Usine Lyon", description: "Dossier d'ouvrages exécutés pour l'usine de Lyon." }
+      ];
+
+      const doeSelect = document.getElementById('doe_id');
+      const doeDetailsDiv = document.getElementById('doe-details');
+      const doeTitleSpan = document.getElementById('doe-title');
+      const doeDescriptionSpan = document.getElementById('doe-description');
+      const viewDoeBtn = document.getElementById('view-doe-btn');
+
+      // Populate DOE dropdown
+      sampleDoes.forEach(doe => {
+        const option = document.createElement('option');
+        option.value = doe.id;
+        option.textContent = doe.titre;
+        doeSelect.appendChild(option);
+      });
+
+      doeSelect.addEventListener('change', function() {
+        const selectedDoeId = this.value;
+        const selectedDoe = sampleDoes.find(doe => doe.id === selectedDoeId);
+
+        if (selectedDoe) {
+          doeTitleSpan.textContent = selectedDoe.titre;
+          doeDescriptionSpan.textContent = selectedDoe.description;
+          viewDoeBtn.href = `doe-view.html?id=${selectedDoe.id}`; // Link to DOE view page
+          doeDetailsDiv.style.display = 'block';
+        } else {
+          doeDetailsDiv.style.display = 'none';
+        }
+      });
+
+      const maintenance = allMaintenances.find(m => m.id === maintenanceId);
+
+      if (maintenance) {
+        document.getElementById('id').value = maintenance.id;
+        document.getElementById('doe_id').value = maintenance.doe_id;
+        document.getElementById('affaire_id').value = maintenance.affaire_id;
+        document.getElementById('titre').value = maintenance.titre;
+        document.getElementById('description').value = maintenance.description;
+        document.getElementById('etat').value = maintenance.etat;
+        document.getElementById('responsable').value = maintenance.responsable;
+
+        // Pre-fill DOE details if available
+        const selectedDoe = sampleDoes.find(doe => doe.id === maintenance.doe_id);
+        if (selectedDoe) {
+          doeTitleSpan.textContent = selectedDoe.titre;
+          doeDescriptionSpan.textContent = selectedDoe.description;
+          viewDoeBtn.href = `doe-view.html?id=${selectedDoe.id}`;
+          doeDetailsDiv.style.display = 'block';
+        }
+
+        // Update cancel button link
+        document.getElementById('cancel-button').href = `maintenance-view.html?id=${maintenance.id}`;
+      } else {
+        alert("Maintenance non trouvée!");
+        window.location.href = "maintenances.html";
+      }
+    });
+  </script>
+</body>
+</html>

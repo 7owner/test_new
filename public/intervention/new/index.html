@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Créer une intervention</title>
+  <link href="/style.css" rel="stylesheet">
+  <link href="/custom.css" rel="stylesheet">
+  <script src="/nav.js"></script>
+  <script src="/script.js" defer></script>
+</head>
+<body class="app-bg">
+  <header></header>
+  <main class="content">
+    <div class="form-wrap">
+      <div class="form-subtle">
+        <section class="form-card">
+          <div class="form-header">✖ Créer une nouvelle intervention</div>
+          <div class="form-body">
+            <form id="newInterventionForm" class="form-grid">
+              <div class="col-span-2">
+                <label class="label" for="newMaintenance">Maintenance associée</label>
+                <select id="newMaintenance" class="field" required>
+                  <option value="">Sélectionner une maintenance</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="label" for="newDateStart">Date de début</label>
+                <input id="newDateStart" type="date" class="field">
+              </div>
+              <div>
+                <label class="label" for="newDateEnd">Date de fin (optionnel)</label>
+                <input id="newDateEnd" type="date" class="field">
+              </div>
+
+              <div class="col-span-2">
+                <label class="label" for="newPrevIntervention">Intervention précédente (optionnel)</label>
+                <select id="newPrevIntervention" class="field">
+                  <option value="">Sélectionner une intervention précédente (optionnel)</option>
+                </select>
+              </div>
+
+              <div class="col-span-2">
+                <label class="label" for="newDescription">Description de l'intervention</label>
+                <textarea id="newDescription" class="field" placeholder="Description…"></textarea>
+              </div>
+
+              <div class="col-span-2 form-actions">
+                <a class="btn btn-secondary" href="/interventions.html">← Retour à la liste</a>
+                <button id="saveInterventionBtn" type="submit" class="btn btn-primary">💾 Enregistrer</button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </div>
+      <div class="mt-4 alert-info">
+        ℹ Veuillez remplir tous les champs obligatoires avant d’enregistrer l’intervention.
+      </div>
+    </div>
+  </main>
+  <script>
+  (function(){
+    async function populateSelects(){
+      const token = localStorage.getItem('token');
+      try {
+        const [mRes, iRes] = await Promise.all([
+          fetch('/api/maintenances', { headers: { 'Authorization': `Bearer ${token}` }}),
+          fetch('/api/interventions', { headers: { 'Authorization': `Bearer ${token}` }})
+        ]);
+        if (mRes.ok) {
+          const maints = await mRes.json();
+          const sel = document.getElementById('newMaintenance');
+          maints.forEach(m => { const o = document.createElement('option'); o.value = m.id; o.textContent = m.titre || ('Maintenance #' + m.id); sel.appendChild(o); });
+        }
+        if (iRes.ok) {
+          const inters = await iRes.json();
+          const selp = document.getElementById('newPrevIntervention');
+          inters.forEach(it => { const o = document.createElement('option'); o.value = it.id; o.textContent = (it.description || ('Intervention #'+it.id)); selp.appendChild(o); });
+        }
+      } catch(e) { console.error(e); }
+    }
+    function toast(msg, kind){
+      try {
+        let root = document.getElementById('toast-root'); if (!root) { root = document.createElement('div'); root.id='toast-root'; root.className='toast-root'; document.body.appendChild(root);} 
+        const d = document.createElement('div'); d.className = 'toast '+(kind||''); d.textContent = msg; root.appendChild(d); setTimeout(()=>{ try{ d.remove(); }catch(_){ } }, 2600);
+      } catch(_){ alert(msg); }
+    }
+    async function setup(){
+      await populateSelects();
+      const form = document.getElementById('newInterventionForm');
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const token = localStorage.getItem('token');
+        const payload = {
+          description: document.getElementById('newDescription').value || '',
+          date_debut: document.getElementById('newDateStart').value || null,
+          maintenance_id: document.getElementById('newMaintenance').value ? Number(document.getElementById('newMaintenance').value) : null
+        };
+        if (!payload.maintenance_id) { toast('Sélectionnez une maintenance', 'error'); return; }
+        try {
+          const res = await fetch('/api/interventions', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
+          if (!res.ok) { toast('Erreur lors de la création', 'error'); return; }
+          toast('Intervention créée', 'success');
+          setTimeout(()=>{ window.location.href = '/interventions.html'; }, 600);
+        } catch(e){ console.error(e); toast('Erreur réseau', 'error'); }
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+  })();
+  </script>
+</body>
+</html>

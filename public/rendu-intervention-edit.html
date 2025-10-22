@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modifier un rendu d'intervention</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=1"></script>
+  <script src="/script.js?v=1"></script>
+</head>
+<body>
+  <header class="header d-flex justify-content-between align-items-center mb-4">
+    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard" style="text-decoration: none; color: inherit;"></a></h1>
+    <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+      Menu
+    </button>
+  </header>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <main class="container mt-5">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="dashboard.html">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="interventions.html">Planning Interventions</a></li>
+        <li class="breadcrumb-item"><a href="intervention-view.html">Détails Intervention</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Modifier Rendu</li>
+      </ol>
+    </nav>
+    <h1 class="mb-4">Modifier un rendu d'intervention</h1>
+
+    <div class="card">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Informations du rendu</h2>
+        <form>
+          <div class="mb-3">
+            <label for="id" class="form-label">ID Rendu</label>
+            <input type="text" class="form-control" id="id" required readonly>
+          </div>
+          <div class="mb-3">
+            <label for="resume" class="form-label">Résumé</label>
+            <textarea class="form-control" id="resume" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="valeur" class="form-label">Valeur</label>
+            <input type="text" class="form-control" id="valeur">
+          </div>
+
+          <h3 class="mt-5 mb-3">Images Associées</h3>
+          <div id="rendu-images-container">
+            <!-- Existing images will be loaded here -->
+          </div>
+          <button type="button" id="add-new-image-btn" class="btn btn-outline-secondary mb-4"><i class="bi bi-plus-circle me-2"></i>Ajouter une nouvelle image</button>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-2"></i>Enregistrer les modifications</button>
+            <a href="intervention-view.html" class="btn btn-secondary" id="cancel-button">Annuler</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const renduId = urlParams.get('id');
+
+      const sampleRendus = [
+        { id: "RND001", intervention_id: "INT001", resume: "Rapport de vérification OK.", valeur: "Conforme" },
+        { id: "RND002", intervention_id: "INT002", resume: "Diagnostic panne compresseur.", valeur: "Non conforme" }
+      ];
+
+      const sampleImages = [
+        { id: "IMG001", rendu_id: "RND001", nom_fichier: "rapport_int001_1.jpg", commentaire: "Photo avant intervention.", src: "https://via.placeholder.com/150" },
+        { id: "IMG002", rendu_id: "RND001", nom_fichier: "rapport_int001_2.jpg", commentaire: "Photo après réparation.", src: "https://via.placeholder.com/150" },
+        { id: "IMG003", rendu_id: "RND002", nom_fichier: "panne_compresseur.jpg", commentaire: "Image du compresseur en panne.", src: "https://via.placeholder.com/150" }
+      ];
+
+      const rendu = sampleRendus.find(r => r.id === renduId);
+
+      if (rendu) {
+        document.getElementById('id').value = rendu.id;
+        document.getElementById('resume').value = rendu.resume;
+        document.getElementById('valeur').value = rendu.valeur;
+
+        // Update cancel button link
+        document.getElementById('cancel-button').href = `rendu-intervention-view.html?id=${rendu.id}`;
+
+        // Render associated images for editing
+        const imagesContainer = document.getElementById('rendu-images-container');
+        imagesContainer.innerHTML = ''; // Clear existing content
+
+        const filteredImages = sampleImages.filter(img => img.rendu_id === renduId);
+        
+        // Render existing images
+        if (filteredImages.length > 0) {
+          filteredImages.forEach(img => {
+            const imageEntry = document.createElement('div');
+            imageEntry.className = 'rendu-image-entry mb-4 p-3 border rounded bg-light';
+            imageEntry.innerHTML = `
+              <div class="d-flex justify-content-end">
+                <button type="button" class="btn-close remove-image"></button>
+              </div>
+              <div class="mb-3 text-center">
+                <img src="${img.src}" class="img-fluid mb-2" alt="${img.nom_fichier}" style="max-width: 150px; height: auto;">
+                <p class="mb-1">Fichier actuel: <strong>${img.nom_fichier}</strong></p>
+              </div>
+              <div class="mb-3">
+                <label for="image_file_${img.id}" class="form-label">Remplacer l'image</label>
+                <input class="form-control" type="file" id="image_file_${img.id}" name="image_file_${img.id}">
+              </div>
+              <div class="mb-3">
+                <label for="image_commentaire_${img.id}" class="form-label">Commentaire Image</label>
+                <textarea class="form-control" id="image_commentaire_${img.id}" name="image_commentaire_${img.id}" rows="2">${img.commentaire}</textarea>
+              </div>
+            `;
+            imagesContainer.appendChild(imageEntry);
+          });
+        } else {
+          imagesContainer.innerHTML = '<p class="text-muted">Aucune image associée pour le moment.</p>';
+        }
+
+        // Add new image button logic
+        const addNewImageBtn = document.getElementById('add-new-image-btn');
+        addNewImageBtn.addEventListener('click', function() {
+          const newImageEntry = document.createElement('div');
+          newImageEntry.className = 'rendu-image-entry mb-4 p-3 border rounded bg-light';
+          const newId = `new_image_${Date.now()}`;
+          newImageEntry.innerHTML = `
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn-close remove-image"></button>
+            </div>
+            <div class="mb-3">
+              <label for="${newId}" class="form-label">Fichier Image</label>
+              <input class="form-control" type="file" id="${newId}" name="image_file[]" required>
+            </div>
+            <div class="mb-3">
+              <label for="${newId}_comment" class="form-label">Commentaire Image</label>
+              <textarea class="form-control" id="${newId}_comment" name="image_commentaire[]" rows="2"></textarea>
+            </div>
+          `;
+          imagesContainer.appendChild(newImageEntry);
+        });
+
+        // Remove image logic
+        imagesContainer.addEventListener('click', function(event) {
+          if (event.target.classList.contains('remove-image')) {
+            event.target.closest('.rendu-image-entry').remove();
+          }
+        });
+
+      } else {
+        alert("Rendu d'intervention non trouvé!");
+        window.location.href = `intervention-view.html?id=${urlParams.get('intervention_id')}`;
+      }
+    });
+  </script>
+</body>
+</html>

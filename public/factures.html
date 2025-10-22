@@ -4,66 +4,120 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Factures</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/style.css" rel="stylesheet">
   <script src="/nav.js"></script>
   <script src="/script.js"></script>
 </head>
 <body>
-  <header></header>
-  <main class="container mx-auto p-8 max-w-7xl">
-    <nav class="breadcrumb mb-2"><a href="/dashboard.html">Dashboard</a> <span class="mx-1">/</span> <span>Factures</span></nav>
-    <h1 class="mb-6">Gestion des Factures</h1>
+  <nav class="navbar navbar-light bg-light fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Gestion Projets</a>
+      <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+        Menu
+      </button>
+    </div>
+  </nav>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <div class="md:col-span-1 card"><div class="card-body">
-        <h2 class="mb-4">Ajouter une facture</h2>
-        <form id="addFactureForm" class="space-y-4">
-          <div>
-            <label for="f_reference" class="label">Référence</label>
-            <input id="f_reference" class="field" type="text" placeholder="Ex: FAC-2025-001">
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label for="f_montant_ht" class="label">Montant HT</label>
-              <input id="f_montant_ht" class="field" type="number" step="0.01" placeholder="0.00">
-            </div>
-            <div>
-              <label for="f_tva" class="label">TVA %</label>
-              <input id="f_tva" class="field" type="number" step="0.01" placeholder="20">
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label for="f_date_emission" class="label">Date émission</label>
-              <input id="f_date_emission" class="field" type="date">
-            </div>
-            <div>
-              <label for="f_date_echeance" class="label">Date échéance</label>
-              <input id="f_date_echeance" class="field" type="date">
-            </div>
-          </div>
-          <div>
-            <label for="f_client" class="label">Client</label>
-            <select id="f_client" class="field"><option value="">(Aucun)</option></select>
-          </div>
-          <div>
-            <label for="f_affaire" class="label">Affaire</label>
-            <select id="f_affaire" class="field"><option value="">(Aucune)</option></select>
-          </div>
-          <button type="submit" class="btn btn-primary w-full">Ajouter</button>
-        </form>
-      </div></div>
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+        <li class="nav-item">
+          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
+        </li>
+      </ul>
+    </div>
+  </div>
 
-      <div class="md:col-span-2 card"><div class="card-body">
-        <div class="flex items-center justify-between mb-4">
-          <h2>Liste des factures</h2>
+  <main class="container mt-5">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/dashboard.html">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Factures</li>
+      </ol>
+    </nav>
+    <h1 class="mb-4">Gestion des Factures</h1>
+
+    <div class="row">
+      <div class="col-md-4">
+        <div class="card mb-4">
+          <div class="card-body">
+            <h2 class="card-title">Ajouter une facture</h2>
+            <form id="addFactureForm">
+              <input id="f_reference" type="text" placeholder="Ex: FAC-2025-001" class="form-control mb-3">
+              <div class="row mb-3">
+                <div class="col">
+                  <label for="f_montant_ht" class="form-label">Montant HT</label>
+                  <input id="f_montant_ht" class="form-control" type="number" step="0.01" placeholder="0.00">
+                </div>
+                <div class="col">
+                  <label for="f_tva" class="form-label">TVA %</label>
+                  <input id="f_tva" class="form-control" type="number" step="0.01" placeholder="20">
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col">
+                  <label for="f_date_emission" class="form-label">Date émission</label>
+                  <input id="f_date_emission" class="form-control" type="date">
+                </div>
+                <div class="col">
+                  <label for="f_date_echeance" class="form-label">Date échéance</label>
+                  <input id="f_date_echeance" class="form-control" type="date">
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="f_client" class="form-label">Client</label>
+                <select id="f_client" class="form-select"><option value=""></option></select>
+              </div>
+              <div class="mb-3">
+                <label for="f_affaire" class="form-label">Affaire</label>
+                <select id="f_affaire" class="form-select"><option value=""></option></select>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Ajouter</button>
+            </form>
+          </div>
         </div>
-        <div id="factureList" class="grid-cards"></div>
-      </div></div>
+      </div>
+
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="card-title mb-0">Liste des factures</h2>
+            </div>
+            <div id="factureList"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="/nav.js"></script>
+  <script src="/script.js"></script>
 </body>
 </html>
-
 
 

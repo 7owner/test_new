@@ -1,103 +1,211 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Interventions</title>
-    <link href="/style.css" rel="stylesheet">
-  </head>
-<body class="bg-gray-100 app-bg">
-    <div class="app-shell">
-      <aside class="sidebar">
-        <div class="sidebar-header">
-          <a href="/dashboard.html" class="brand">Gestion Projets</a>
-        </div>
-        <nav class="sidebar-nav">
-          <a href="/dashboard.html"><i data-lucide="home"></i> Dashboard</a>
-          <a href="/agents.html"><i data-lucide="users"></i> Agents</a>
-          <a href="/sites.html"><i data-lucide="building"></i> Sites</a>
-          <a href="/interventions.html"><i data-lucide="wrench"></i> Interventions</a>
-          <a href="/rendezvous.html"><i data-lucide="calendar"></i> Rendez-vous</a>
-          <a href="/achats.html"><i data-lucide="shopping-cart"></i> Achats</a>
-          <a href="/factures.html"><i data-lucide="receipt"></i> Factures</a>
-        </nav>
-      </aside>
-      <main class="content">
-        <nav class="breadcrumb mb-2"><a href="/dashboard.html">Dashboard</a> <span class="mx-1">/</span> <span>Interventions</span></nav>
-        <h1 class="mb-6">Gestion des Interventions</h1>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planning Interventions</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=1"></script>
+  <script src="/script.js?v=1"></script>
+</head>
+<body>
+  <header class="header d-flex justify-content-between align-items-center mb-4">
+    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard" style="text-decoration: none; color: inherit;"></a></h1>
+    <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+      Menu
+    </button>
+  </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- Formulaire d'ajout -->
-            <div class="md:col-span-1 card card-body">
-                <h2 id="formTitleIntervention" class="text-2xl font-semibold text-gray-700 mb-4">Ajouter une Intervention</h2>
-                <form id="addInterventionForm" class="space-y-4">
-                    <input type="hidden" id="interventionId" value="">
-                    <div>
-                        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-                        <textarea id="description" rows="4" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
-                    </div>
-                    <div>
-                        <label for="date_D�but" class="block text-sm font-medium text-gray-700">Date de début</label>
-                        <input type="date" id="date_D�but" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                    </div>
-                    <div>
-                        <label for="maintenance" class="block text-sm font-medium text-gray-700">Maintenance</label>
-                        <select id="maintenance" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                            <!-- Les options seront chargées dynamiquement -->
-                        </select>
-                    </div>
-                    <button type="submit" id="submitButtonIntervention" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Ajouter l'Intervention</button>
-                </form>
-            </div>
-
-            <!-- Liste des interventions -->
-            <div class="md:col-span-2 card card-body">
-                <div class="flex items-center justify-between mb-4">
-                  <h2 class="text-2xl font-semibold text-gray-700">Liste des Interventions</h2>
-                  <div class="flex flex-wrap gap-3 items-end">
-                    <div>
-                      <label class="label" for="interSearch">Recherche</label>
-                      <input id="interSearch" type="text" placeholder="Description..." class="field">
-                    </div>
-                    <div>
-                      <label class="label" for="interDateStart">Début</label>
-                      <input id="interDateStart" type="date" class="field">
-                    </div>
-                    <div>
-                      <label class="label" for="interDateEnd">Fin</label>
-                      <input id="interDateEnd" type="date" class="field">
-                    </div>
-                    <div>
-                      <label class="label" for="interMaintenanceFilter">Maintenance</label>
-                      <select id="interMaintenanceFilter" class="field min-w-[10rem]">
-                        <option value="">Toutes</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label class="label" for="interSort">Tri</label>
-                      <select id="interSort" class="field">
-                        <option value="date_desc">Date décroissante</option>
-                        <option value="date_asc">Date croissante</option>
-                        <option value="id_desc">ID décroissant</option>
-                        <option value="id_asc">Id�croissant</option>
-                        <option value="desc_asc">Description A→Z</option>
-                        <option value="desc_desc">Description Z→A</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                <div id="interventionList" class="grid-cards"></div>
-            </div>
-        </div>
-      </main>
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
-    <script src="/nav.js"></script>
-    <script src="/script.js"></script>
-    <script> if (window.lucide && typeof window.lucide.createIcons==='function'){ window.lucide.createIcons(); } </script>
+    <div class="offcanvas-body">
+      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+        <li class="nav-item">
+          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <main class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1>🛠️ LISTE DES INTERVENTIONS</h1>
+      <a href="intervention-new.html" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Créer une nouvelle intervention</a>
+    </div>
+
+    <div class="mb-3 d-flex gap-2">
+      <input type="text" class="form-control" id="intervention-search" placeholder="Rechercher par description ou ID...">
+      <select class="form-select" id="intervention-status-filter">
+        <option value="">Tous les statuts</option>
+        <option value="pas commencé">Pas commencé</option>
+        <option value="bloqué">Bloqué</option>
+        <option value="en attente">En attente</option>
+        <option value="en cours">En cours</option>
+        <option value="terminé">Terminé</option>
+      </select>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Maintenance ID</th>
+            <th>Description</th>
+            <th>Date Début</th>
+            <th>Date Fin</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="interventions-table-body">
+          <!-- Intervention data will be loaded here by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const allInterventions = [
+        {
+          id: "INT001",
+          maintenance_id: "MNT001",
+          description: "Vérification annuelle des systèmes de sécurité",
+          date_debut: "2024-01-15",
+          date_fin: "2024-01-15",
+          status: "terminé"
+        },
+        {
+          id: "INT002",
+          maintenance_id: "MNT002",
+          description: "Réparation du système de climatisation",
+          date_debut: "2024-02-20",
+          date_fin: "2024-02-22",
+          status: "en cours"
+        },
+        {
+          id: "INT003",
+          maintenance_id: "MNT001",
+          description: "Mise à jour logicielle des équipements",
+          date_debut: "2024-03-10",
+          date_fin: "2024-03-10",
+          status: "pas commencé"
+        },
+        {
+          id: "INT004",
+          maintenance_id: "MNT003",
+          description: "Remplacement de pièces défectueuses",
+          date_debut: "2024-04-01",
+          date_fin: "2024-04-03",
+          status: "bloqué"
+        },
+        {
+          id: "INT005",
+          maintenance_id: "MNT004",
+          description: "Installation de nouveaux capteurs",
+          date_debut: "2024-05-05",
+          date_fin: "2024-05-05",
+          status: "en attente"
+        }
+      ];
+
+      const tableBody = document.getElementById('interventions-table-body');
+      const searchInput = document.getElementById('intervention-search');
+      const statusFilter = document.getElementById('intervention-status-filter');
+
+      function renderInterventions(interventionsToRender) {
+        tableBody.innerHTML = ''; // Clear existing content
+
+        if (interventionsToRender.length === 0) {
+          const row = tableBody.insertRow();
+          row.innerHTML = '<td colspan="7" class="text-center text-muted">Aucune intervention trouvée.</td>';
+          return;
+        }
+
+        interventionsToRender.forEach(intervention => {
+          const row = tableBody.insertRow();
+          let statusBadgeClass = '';
+          switch (intervention.status) {
+            case 'pas commencé':
+              statusBadgeClass = 'bg-secondary';
+              break;
+            case 'bloqué':
+              statusBadgeClass = 'bg-danger';
+              break;
+            case 'en attente':
+              statusBadgeClass = 'bg-info';
+              break;
+            case 'en cours':
+              statusBadgeClass = 'bg-warning';
+              break;
+            case 'terminé':
+              statusBadgeClass = 'bg-success';
+              break;
+            default:
+              statusBadgeClass = 'bg-light text-dark';
+          }
+
+          row.innerHTML = `
+            <td>${intervention.id}</td>
+            <td>${intervention.maintenance_id}</td>
+            <td>${intervention.description}</td>
+            <td>${intervention.date_debut}</td>
+            <td>${intervention.date_fin || 'N/A'}</td>
+            <td><span class="badge ${statusBadgeClass}">${intervention.status}</span></td>
+            <td>
+              <a href="intervention-view.html?id=${intervention.id}" class="btn btn-sm btn-info me-1"><i class="bi bi-eye"></i> Voir</a>
+              <a href="intervention-edit.html?id=${intervention.id}" class="btn btn-sm btn-warning me-1"><i class="bi bi-pencil"></i> Modifier</a>
+              <button class="btn btn-sm btn-danger" onclick="alert('Supprimer intervention ${intervention.id}')"><i class="bi bi-trash"></i> Supprimer</button>
+            </td>
+          `;
+        });
+      }
+
+      function applyFilters() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedStatus = statusFilter.value;
+
+        const filteredInterventions = allInterventions.filter(intervention => {
+          const matchesSearch = intervention.description.toLowerCase().includes(searchTerm) ||
+                                intervention.id.toLowerCase().includes(searchTerm);
+          const matchesStatus = selectedStatus === '' || intervention.status === selectedStatus;
+          return matchesSearch && matchesStatus;
+        });
+
+        renderInterventions(filteredInterventions);
+      }
+
+      searchInput.addEventListener('input', applyFilters);
+      statusFilter.addEventListener('change', applyFilters);
+
+      // Initial render
+      renderInterventions(allInterventions);
+    });
+  </script>
 </body>
 </html>
-
-
-
-
-

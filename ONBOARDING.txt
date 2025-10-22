@@ -1,0 +1,80 @@
+Projet VAR V4 — Onboarding et contexte des changements
+
+1) Vue d’ensemble
+- Application de gestion: Agents, Sites, Interventions, Rendez‑vous, Achats, Factures, avec un Dashboard.
+- Front statique (HTML/CSS/JS) servi par un petit serveur Node.
+- Navigation unifiée, responsive, accessible, avec mode jour/nuit.
+
+2) Stack & déploiement
+- Front: HTML dans public/, styles dans public/style.css et public/custom.css.
+- JS: logique UI et données dans public/script.js; header/menu dans public/nav.js.
+- Backend: Node/Express (server.js). SQL d’init dans db/init.sql; scripts de seed dans scripts/.
+- Déploiement: Render (render.yaml). Branches: main (dev), deploy/render (déploiement via PR).
+
+3) Structure des dossiers (extraits utiles)
+- public/: pages (dashboard.html, agents.html, sites.html, etc.) et assets.
+- public/nav.js: construit le header + menu et gère le toggle, le thème, l’injection de layout.
+- public/custom.css: styles globaux (header sticky, menu horizontal/vertical, animations, dark mode).
+- public/script.js: logique métier (chargement des listes, formulaires, etc.).
+- db/: SQL d’initialisation; scripts/: seed.
+
+4) Lancer en local
+- Prérequis: Node LTS.
+- Installation: npm install
+- Démarrage: npm start (server.js sert public/)
+- URL: http://localhost:<PORT> (PORT via env ou valeur par défaut du serveur).
+- Auth: localStorage.token (login/register basiques côté client).
+
+5) Conventions & bonnes pratiques
+- Ne pas dupliquer la sidebar/entête dans les pages: nav.js injecte automatiquement <header>, .app-shell, .sidebar.
+- Inclure une seule fois nav.js et script.js; prévoir <header></header> et un <main class="content">.
+- Accessibilité: nav.js ajoute un lien « Aller au contenu » (#app-content) et maintient aria-expanded sur le bouton menu.
+- Responsive:
+  - Desktop: clic menu → barre horizontale collée en haut (Y=0) si ouverte.
+  - Mobile: clic menu → menu vertical déroulant depuis le haut, scrollable si long.
+- Icônes: via data-lucide ou SVG inline fournis par nav.js (fallback inclus si Lucide absent).
+
+6) Ajouter une nouvelle page
+- Head minimal: <link href="/style.css" rel="stylesheet">
+- Body: <header></header> puis <main class="content"> … contenu …
+- Scripts en bas: <script src="/nav.js"></script><script src="/script.js"></script>
+- Le menu s’injecte, le thème et le responsive fonctionnent automatiquement.
+
+7) Flux Git recommandé
+- Créer une feature branch (ex: feat/ma-fonctionnalite) → PR vers main.
+- Pour le déploiement Render: PR dédiée vers deploy/render.
+- Branches utiles créées: feat/nav-ui-toggle (travaux UI récents), deploy-render-nav-ui (portage vers deploy/render).
+
+8) Points d’attention
+- Éviter la double inclusion de nav.js (corrigé sur index.html).
+- Encodage: privilégier UTF‑8 (certaines pages anciennes contenaient des accents corrompus; nav.js normalise au runtime).
+- Si le menu n’apparaît pas: vérifier <header></header> présent et que /nav.js est inclus.
+
+9) Changements récents — Quoi et Pourquoi
+- Toggle menu unifié (nav.js):
+  - Quoi: le bouton en haut à gauche bascule la navigation (classes body.sidebar-open / body.sidebar-hidden), met à jour aria‑expanded et l’icône (hamburger ↔ X). Fermeture auto après clic sur un lien.
+  - Pourquoi: éviter les duplications et garantir un comportement identique sur toutes les pages (UX cohérente, accessibilité).
+- Responsive horizontal/vertical:
+  - Quoi: desktop → barre horizontale en haut (Y=0) quand ouverte; mobile → menu vertical déroulant depuis le haut, scrollable.
+  - Pourquoi: meilleure lisibilité, utilisation optimale de l’espace, expérience mobile fluide.
+- Mode jour/nuit:
+  - Quoi: bouton #themeToggle (soleil/lune), persiste en localStorage; classes theme-dark/theme-light appliquées au body; couleurs adaptées dans custom.css.
+  - Pourquoi: confort visuel, conformité aux préférences système, modernisation UI.
+- Accessibilité du header:
+  - Quoi: ajout d’un lien « Aller au contenu », aria-labels, aria-expanded, min-height pour limiter les sauts de mise en page (CLS).
+  - Pourquoi: meilleure navigation clavier et stabilité visuelle.
+- Injection unifiée et normalisation (ensureAppShell dans nav.js):
+  - Quoi: si une page contient encore une vieille sidebar statique, nav.js extrait <main>, supprime l’ancien wrapper et reconstruit la structure standard.
+  - Pourquoi: enlever la dette technique sans repasser à la main sur chaque page; DRY et maintenance simplifiée.
+- Nettoyages et correctifs:
+  - Quoi: suppression d’une double inclusion de nav.js, ajout de fallback d’icônes, animations open/close.
+  - Pourquoi: éviter des bugs (double événement), garantir la robustesse hors-ligne/CDN.
+- Intégration Git/branches:
+  - Quoi: création de feat/nav-ui-toggle (version testée) et deploy-render-nav-ui (portage vers deploy/render) pour PRs propres, sans écraser origin/main.
+  - Pourquoi: éviter les rebase conflictuels et préserver l’historique de déploiement.
+
+10) À quoi sert ce document et pourquoi
+- Sert d’onboarding rapide pour tout nouveau collaborateur: compréhension de l’architecture, des conventions, et du workflow.
+- Documente les décisions récentes (menu, thème, accessibilité) afin d’expliquer la logique, d’éviter les régressions et d’accélérer les futures évolutions.
+- Donne des consignes concrètes (ajout de page, run local, flux Git) pour être autonome rapidement.
+

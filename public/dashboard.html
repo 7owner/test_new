@@ -4,129 +4,311 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tableau de bord</title>
-  <link href="/style.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="/nav.js"></script>
-  <script src="/script.js"></script>
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=1"></script>
+
 </head>
-<body class="bg-gradient-to-br from-slate-50 to-indigo-50 min-h-screen app-bg header-min">
-  <header></header>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <a href="/dashboard.html" class="brand">Gestion Projets</a>
-      </div>
-      <nav class="sidebar-nav">
-        <a href="/dashboard.html"><i data-lucide="home"></i> Dashboard</a>
-        <a href="/agents.html"><i data-lucide="users"></i> Agents</a>
-        <a href="/sites.html"><i data-lucide="building"></i> Sites</a>
-        <a href="/interventions.html"><i data-lucide="wrench"></i> Interventions</a>
-        <a href="/rendezvous.html"><i data-lucide="calendar"></i> Rendez-vous</a>
-        <a href="/achats.html"><i data-lucide="shopping-cart"></i> Achats</a>
-        <a href="/factures.html"><i data-lucide="receipt"></i> Factures</a>
-      </nav>
-    </aside>
-    <main class="content">
-      <div class="container mx-auto px-6 py-8 max-w-7xl">
-    <h1 class="mb-6">Tableau de bord</h1>
+<body>
+  <header class="header d-flex justify-content-between align-items-center mb-4">
+    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard" style="text-decoration: none; color: inherit;"></a></h1>
+    <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+      Menu
+    </button>
+  </header>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <main class="container mt-5">
+    <h1 class="mb-4">Tableau de bord</h1>
     <!-- Métriques principales -->
-    <div class="grid grid-autofit-cards">
-      <div class="card"><div class="card-body">
-        <div class="text-3xl font-bold text-gray-800" id="activeMaintenances">-</div>
-        <div class="text-sm uppercase text-gray-500 font-semibold tracking-wide">Maintenances actives</div>
-      </div></div>
-      <div class="card"><div class="card-body">
-        <div class="text-3xl font-bold text-gray-800" id="ongoingInterventions">-</div>
-        <div class="text-sm uppercase text-gray-500 font-semibold tracking-wide">Interventions en cours</div>
-        <div class="mt-2 text-xs">
-          <a href="/interventions.html">Voir les interventions</a>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-4">
+   
+	  <div class="col">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">Maintenance en cours</h5>
+            <p class="card-text" id="activeMaintenances">-</p>
+            <a href="/maintenances.html" class="btn btn-sm btn-outline-primary">Voir les Maintenance</a>
+          </div>
         </div>
-      </div></div>
-      <div class="card"><div class="card-body">
-        <div class="text-3xl font-bold text-gray-800" id="activeAgents">-</div>
-        <div class="text-sm uppercase text-gray-500 font-semibold tracking-wide">Agents actifs</div>
-      </div></div>
-      <div class="card"><div class="card-body">
-        <div class="text-3xl font-bold text-gray-800" id="sitesUnderContract">-</div>
-        <div class="text-sm uppercase text-gray-500 font-semibold tracking-wide">Sites sous contrat</div>
-        <div class="mt-2 text-xs">
-          <a href="/sites.html">Voir les sites</a>
+      </div>
+      <div class="col">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">Interventions en cours</h5>
+            <p class="card-text" id="ongoingInterventions">-</p>
+            <a href="/interventions.html" class="btn btn-sm btn-outline-primary">Voir les interventions</a>
+          </div>
         </div>
-      </div></div>
+      </div>
+      <div class="col">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">Agents actifs</h5>
+            <p class="card-text" id="activeAgents">-</p>
+            <a href="/agents.html" class="btn btn-sm btn-outline-primary">Agents actifs</a>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">Sites sous contrat</h5>
+            <p class="card-text" id="sitesUnderContract">-</p>
+            <a href="/sites.html" class="btn btn-sm btn-outline-primary">Voir les sites</a>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Graphique + maintenances urgentes -->
-    <div class="grid grid-autofit-cards">
-      <div class="card span-2"><div class="card-body">
-        <canvas id="monthlyMaintenanceChart"></canvas>
-      </div></div>
-      <div class="card"><div class="card-body">
-        <h2 class="mb-4">Maintenances urgentes</h2>
-        <div id="urgentMaintenances" class="max-h-96 overflow-y-auto space-y-4"></div>
-      </div></div>
-    </div>
-
-    <!-- Cartes financi�res (résumés) -->
-    <div class="grid grid-autofit-cards">
-      <div class="card"><div class="card-body">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="mb-0">Achats récents</h2>
-          <a class="text-indigo-600" href="/achats.html">Voir tout</a>
+    <div class="row g-4 mb-4">
+      <div class="col-lg-8">
+        <div class="card h-100">
+          <div class="card-body">
+            <canvas id="monthlyMaintenanceChart"></canvas>
+          </div>
         </div>
-        <ul id="recentAchats" class="space-y-2 text-sm"></ul>
-      </div></div>
-      <div class="card"><div class="card-body">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="mb-0">Factures r�centes</h2>
-          <a class="text-indigo-600" href="/factures.html">Voir tout</a>
-        </div>
-        <ul id="recentFactures" class="space-y-2 text-sm"></ul>
-      </div></div>
-    </div>
-
-    <!-- Compteurs finance (en dessous du graphe et urgences) -->
-    <div id="financeCounters" class="grid grid-autofit-cards">
-      <div class="card"><div class="card-body">
-        <div class="text-3xl font-bold text-gray-800" id="achatsCount">-</div>
-        <div class="text-sm uppercase text-gray-500 font-semibold tracking-wide">Achats</div>
-        <div class="mt-2 text-xs">
-          <a href="/achats.html">Voir les achats</a>
-        </div>
-      </div></div>
-      <div class="card"><div class="card-body">
-        <div class="text-3xl font-bold text-gray-800" id="facturesCount">-</div>
-        <div class="text-sm uppercase text-gray-500 font-semibold tracking-wide">Factures</div>
-        <div class="mt-2 text-xs">
-          <a href="/factures.html">Voir les factures</a>
-        </div>
-      </div></div>
-      <div class="card"><div class="card-body">
-        <div class="text-3xl font-bold text-gray-800" id="reglementsCount">-</div>
-        <div class="text-sm uppercase text-gray-500 font-semibold tracking-wide">R�glements</div>
-        <div class="mt-2 text-xs">
-          <a href="/factures.html">Voir factures</a>
-        </div>
-      </div></div>
-    </div>
-    <div class="grid grid-autofit-cards">
-      <div class="card"><div class="card-body">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="mb-0">R�glements r�cents</h2>
-          <a class="text-indigo-600" href="/factures.html">Voir factures</a>
-        </div>
-        <ul id="recentReglements" class="space-y-2 text-sm"></ul>
-      </div></div>
-    </div>
       </div>
+      <div class="col-lg-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">Maintenances sur sites avec ticket ouvert</h5>
+            <div id="urgentMaintenances"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    </div>
+
+    <!-- Compteurs finance -->
+    <div id="financeCounters" class="row row-cols-1 row-cols-md-3 g-4 mb-4">
+      <div class="col">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">Achats</h5>
+            <p class="card-text" id="achatsCount">-</p>
+            <a href="/achats.html" class="btn btn-sm btn-outline-primary">Voir les achats</a>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">Factures</h5>
+            <p class="card-text" id="facturesCount">-</p>
+            <a href="/factures.html" class="btn btn-sm btn-outline-primary">Voir les factures</a>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">Règlements</h5>
+            <p class="card-text" id="reglementsCount">-</p>
+            <a href="/factures.html" class="btn btn-sm btn-outline-primary">Voir factures</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
     </main>
-  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script>
-    if (window.lucide && typeof window.lucide.createIcons === 'function') { window.lucide.createIcons(); }
+    // Sample data for sites and maintenances
+    const allSites = [
+      {
+        id: "SITE001",
+        nom_site: "Site Central Paris",
+        adresse_id: "ADDR001",
+        statut: "en attente",
+        ticket: true,
+        responsable_matricule: null
+      },
+      {
+        id: "SITE002",
+        nom_site: "Usine Lyon",
+        adresse_id: "ADDR002",
+        statut: "prise en charge",
+        ticket: true,
+        responsable_matricule: "AGT001"
+      },
+      {
+        id: "SITE003",
+        nom_site: "Bureau Marseille",
+        adresse_id: "ADDR003",
+        statut: "en cour",
+        ticket: false,
+        responsable_matricule: null
+      },
+      {
+        id: "SITE004",
+        nom_site: "Dépôt Bordeaux",
+        adresse_id: "ADDR004",
+        statut: "fini",
+        ticket: false,
+        responsable_matricule: "AGT002"
+      },
+      {
+        id: "SITE005",
+        nom_site: "Agence Lille",
+        adresse_id: "ADDR005",
+        statut: "sous devis",
+        ticket: true,
+        responsable_matricule: null
+      }
+    ];
+
+    const allMaintenances = [
+      {
+        id: "MNT001",
+        site_id: "SITE001",
+        titre: "Maintenance préventive annuelle",
+        description: "Vérification complète des systèmes.",
+        etat: "Pas_commence"
+      },
+      {
+        id: "MNT002",
+        site_id: "SITE002",
+        titre: "Réparation urgence machine",
+        description: "Réparation suite à une panne critique.",
+        etat: "En_cours"
+      },
+      {
+        id: "MNT003",
+        site_id: "SITE001",
+        titre: "Contrôle sécurité incendie",
+        description: "Contrôle réglementaire des équipements.",
+        etat: "Termine"
+      },
+      {
+        id: "MNT004",
+        site_id: "SITE005",
+        titre: "Installation nouveau matériel",
+        description: "Mise en place de nouveaux serveurs.",
+        etat: "En_cours"
+      }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // Update Maintenances sur sites avec ticket ouvert
+      const urgentMaintenancesDiv = document.getElementById('urgentMaintenances');
+      urgentMaintenancesDiv.innerHTML = '';
+
+      const maintenancesWithOpenTickets = allMaintenances.filter(mnt => {
+        const site = allSites.find(s => s.id === mnt.site_id);
+        return site && site.ticket === true; // Only maintenances for sites with open tickets
+      });
+
+      if (maintenancesWithOpenTickets.length > 0) {
+        maintenancesWithOpenTickets.forEach(mnt => {
+          const site = allSites.find(s => s.id === mnt.site_id);
+          let statusBadgeClass = '';
+          switch (site.statut) {
+            case 'en attente':
+              statusBadgeClass = 'bg-secondary';
+              break;
+            case 'prise en charge':
+              statusBadgeClass = 'bg-info';
+              break;
+            case 'en cour':
+              statusBadgeClass = 'bg-warning';
+              break;
+            case 'fini':
+              statusBadgeClass = 'bg-success';
+              break;
+            case 'sous devis':
+              statusBadgeClass = 'bg-primary';
+              break;
+            default:
+              statusBadgeClass = 'bg-light text-dark';
+          }
+
+          const maintenanceEl = document.createElement('div');
+          maintenanceEl.className = 'card card-body mb-2';
+          maintenanceEl.innerHTML = `
+            <div>
+              <h6 class="card-title mb-1">${mnt.titre}</h6>
+              <p class="card-text text-muted mb-1">Site: ${site.nom_site}</p>
+              <span class="badge ${statusBadgeClass}">${site.statut}</span>
+              <a href="maintenance-view.html?id=${mnt.id}" class="btn btn-sm btn-info ms-2"><i class="bi bi-eye"></i> Détails</a>
+            </div>
+          `;
+          urgentMaintenancesDiv.appendChild(maintenanceEl);
+        });
+      } else {
+        urgentMaintenancesDiv.innerHTML = '<p class="text-gray-500 text-sm">Aucune maintenance sur site avec ticket ouvert.</p>';
+      }
+
+      // Placeholder for other dashboard metrics (activeMaintenances, ongoingInterventions, etc.)
+      document.getElementById('activeMaintenances').textContent = allMaintenances.filter(m => m.etat !== 'Termine').length;
+      document.getElementById('ongoingInterventions').textContent = allMaintenances.filter(m => m.etat === 'En_cours').length;
+      document.getElementById('activeAgents').textContent = '3'; // Example
+      document.getElementById('sitesUnderContract').textContent = allSites.length;
+
+      // Chart.js example (if needed, ensure chartData is defined)
+      const ctx = document.getElementById('monthlyMaintenanceChart');
+      if (ctx) {
+        // Destroy existing chart instance if it exists
+        const existingChart = Chart.getChart('monthlyMaintenanceChart');
+        if (existingChart) {
+          existingChart.destroy();
+        }
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+            datasets: [{
+              label: 'Maintenances par mois',
+              data: [12, 19, 3, 5, 2, 3],
+              backgroundColor: 'rgba(75, 192, 192, 0.6)',
+              borderColor: 'rgba(75, 192, 192, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: { beginAtZero: true }
+            }
+          }
+        });
+      }
+    });
   </script>
 </body>
 </html>
-
-
-
-
-
