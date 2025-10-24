@@ -43,23 +43,28 @@ Ce document résume les modifications effectuées et l'état actuel du projet, a
 ## 2. Problèmes Actuels et Prochaines Étapes
 
 ### 2.1. Erreurs `init.sql` persistantes
-*   **Erreur 1** : `le type « statut_intervention » existe déjà` lors de `npm start`.
+*   **Original Error 1** : `le type « statut_intervention » existe déjà` lors de `npm start`.
     *   **Cause** : `CREATE TYPE IF NOT EXISTS` pour les ENUMs ne semble pas fonctionner comme prévu avec le pilote `node-postgres` lors de l'exécution du script complet, ou la clause `IF NOT EXISTS` n'est pas appliquée à toutes les instructions `CREATE TYPE`.
-    *   **Action en cours** : J'ai ajouté `IF NOT EXISTS` à toutes les instructions `CREATE TYPE`.
-*   **Erreur 2** : `erreur de syntaxe sur ou près de « NOT »` lors de `npm start`.
-    *   **Cause** : Cette erreur est due à l'ajout incorrect de `IF NOT EXISTS` aux instructions `ALTER TABLE ... ADD CONSTRAINT`. PostgreSQL ne supporte pas `ADD CONSTRAINT IF NOT EXISTS`.
-    *   **Action en cours** : Je dois supprimer `IF NOT EXISTS` de toutes les instructions `ALTER TABLE ... ADD CONSTRAINT`.
+    *   **Résolution** : `IF NOT EXISTS` a été retiré de toutes les instructions `CREATE TYPE` dans `db/init.sql`.
+*   **Original Error 2** : `erreur de syntaxe sur ou près de « NOT »` lors de `npm start`.
+    *   **Cause** : Cette erreur était due à l'ajout incorrect de `IF NOT EXISTS` aux instructions `ALTER TABLE ... ADD CONSTRAINT`. PostgreSQL ne supporte pas `ADD CONSTRAINT IF NOT EXISTS`.
+    *   **Résolution** : `IF NOT EXISTS` a été supprimé de toutes les instructions `ALTER TABLE ... ADD CONSTRAINT` dans `db/init.sql`. Une version corrigée, `database_correction/init_fixed.sql`, a été créée et est maintenant utilisée par `server.js`.
 
-### 2.2. Prochaines étapes pour la résolution des erreurs `init.sql`
-1.  **Finaliser la correction de `db/init.sql` :** Supprimer `IF NOT EXISTS` des instructions `ALTER TABLE ... ADD CONSTRAINT`.
-2.  **Rendre `initializeDatabase()` idempotent dans `server.js` :** Ajouter une vérification au début de la fonction `initializeDatabase()` pour sauter l'exécution de `db/init.sql` si le schéma est déjà en place. Cela évitera de tenter de recréer les types et tables à chaque `npm start`.
+### 2.2. Solution pour l'idempotence de `initializeDatabase()`
+*   **Action** : La fonction `initializeDatabase()` dans `server.js` a été rendue idempotente. Elle vérifie maintenant l'existence de la table `public.ticket` pour déterminer si le schéma est déjà en place, évitant ainsi de tenter de recréer les types et tables à chaque `npm start`.
 
-### 2.3. Tâches Frontend en attente
+### 2.3. Enrichissement des Données de Semence (`db/seed.sql`)
+*   **Action** : Le fichier `database_correction/seed_fixed.sql` a été créé pour remplacer `db/seed.sql`.
+    *   Deux nouveaux utilisateurs ont été ajoutés (`pierre.bernard@example.com`, `marie.petit@example.com`).
+    *   Les agents `AGT003` et `AGT004` sont désormais liés à des comptes d'utilisateur.
+    *   Des données supplémentaires ont été ajoutées pour `rendezvous`, `achats`, `factures`, `reglements`, `equipe`, `agence_membre`, `agent_equipe`, `fonction`, et `agent_fonction` pour une base de données plus cohérente et complète.
+
+### 2.4. Améliorations de l'Interface Utilisateur (Header)
+*   **Action** : Un message de bienvenue ("Bienvenue, [email de l'utilisateur]") a été ajouté entre le logo et le bouton "Menu" dans l'en-tête de la plupart des fichiers HTML du répertoire `public/`. Les pages de redirection ou d'authentification (e.g., `login.html`, `register.html`, `agent-show.html`) ont été exclues de cette modification.
+
+## 3. Tâches en Suspens et Prochaines Étapes
+
+*   **Débuggage de l'Accès Admin aux CRUD** : La raison pour laquelle l'administrateur ne peut pas effectuer les opérations CRUD doit être investiguée et corrigée. Un `console.log(req.user)` a été temporairement ajouté au middleware `authorizeAdmin` pour faciliter le débogage.
 *   **Génération de jetons (Requête 1)** : Implémenter l'interface utilisateur pour l'admin afin d'appeler la route `/api/invite-agent`.
 *   **Demande d'affiliation (Requête 2)** : Implémenter l'interface utilisateur pour les utilisateurs afin de soumettre une demande d'affiliation via `/api/request-affiliation`.
 *   **Styling du Dashboard (Requête 3)** : Modifier `dashboard.html` et `custom.css` pour styliser les cartes "sites", "tickets" et "Agents" en cercles.
-
----
-
-**Pour continuer la session :**
-Veuillez me confirmer que je dois procéder à la correction de `db/init.sql` (suppression de `IF NOT EXISTS` sur les contraintes) et à la modification de `server.js` (ajout de la vérification d'initialisation du schéma).

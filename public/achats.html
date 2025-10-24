@@ -8,15 +8,17 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/style.css" rel="stylesheet">
   <script src="/nav.js"></script>
-  <script src="/script.js"></script>
-</head>
+
 <body>
   <nav class="navbar navbar-light bg-light fixed-top">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#">Gestion Projets</a>
-      <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
         Menu
       </button>
+    </div>
     </div>
   </nav>
 
