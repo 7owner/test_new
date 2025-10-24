@@ -109,9 +109,9 @@ main.container {
 
 /* Circle Card Styling */
 .circle-card {
-  width: 150px; /* Adjust as needed */
-  height: 150px; /* Adjust as needed */
-  border-radius: 50%;
+  width: 250px; /* Adjust as needed */
+  height: 250px; /* Adjust as needed */
+  border-radius: 45%;
   display: flex;
   align-items: center;
   justify-content: center;

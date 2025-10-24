@@ -39,21 +39,21 @@ pool.on('error', (err) => {
 async function initializeDatabase() {
     const client = await pool.connect();
     try {
-        // Check if schema is already initialized by looking for a known type
-        const checkSchemaSql = "SELECT 1 FROM pg_type WHERE typname = 'statut_intervention'";
+        // Check if schema is already initialized by looking for a known table
+        const checkSchemaSql = "SELECT to_regclass('public.ticket')";
         const schemaExists = await client.query(checkSchemaSql);
 
-        if (schemaExists.rows.length > 0) {
+        if (schemaExists.rows[0].to_regclass) {
             console.log('Database schema already initialized. Skipping init.sql execution.');
         } else {
-            const schemaSql = fs.readFileSync(path.join(__dirname, 'db', 'init.sql')).toString();
+            const schemaSql = fs.readFileSync(path.join(__dirname, 'database_correction', 'init_fixed.sql')).toString();
             await client.query(schemaSql);
             console.log('Database schema initialized successfully.');
         }
 
         // Seed data (idempotent via NOT EXISTS checks)
         try {
-            const seedSql = fs.readFileSync(path.join(__dirname, 'db', 'seed.sql')).toString();
+            const seedSql = fs.readFileSync(path.join(__dirname, 'database_correction', 'seed_fixed.sql')).toString();
             await client.query(seedSql);
             console.log('Database seed executed successfully.');
         } catch (seedErr) {
@@ -88,6 +88,7 @@ const authenticateToken = (req, res, next) => {
 };
 
 const authorizeAdmin = (req, res, next) => {
+    console.log(req.user);
     if (!req.user || !req.user.roles || !req.user.roles.includes('ROLE_ADMIN')) {
         return res.sendStatus(403); // Forbidden if not admin
     }
@@ -148,7 +149,7 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        const token = jwt.sign({ id: user.id, email: user.email, roles: user.roles }, JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: user.id, email: user.email, roles: JSON.parse(user.roles) }, JWT_SECRET, { expiresIn: '1h' });
 
         res.json({ message: 'Login successful', token });
     } catch (err) {
