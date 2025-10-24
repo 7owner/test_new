@@ -12,10 +12,13 @@
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard" style="text-decoration: none; color: inherit;"></a></h1>
-    <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-      Menu
-    </button>
+    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard.html" style="text-decoration: none; color: inherit;"></a></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span id="logged-in-user-email" class="me-2"></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+        Menu
+      </button>
+    </div>
   </header>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
@@ -46,6 +49,9 @@
         <li class="nav-item">
           <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
+        </li>
       </ul>
     </div>
   </div>
@@ -63,7 +69,7 @@
     <div class="card">
       <div class="card-body">
         <h2 class="card-title mb-4">Informations de l'agent</h2>
-        <form>
+        <form id="agent-edit-form">
           <div class="mb-3">
             <label for="matricule" class="form-label">Matricule</label>
             <input type="text" class="form-control" id="matricule" required readonly>
@@ -144,7 +150,7 @@
           </div>
 
           <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-2"></i>Enregistrer les modifications</button>
+            <button type="submit" class="btn btn-primary" id="save-agent-btn"><i class="bi bi-save me-2"></i>Enregistrer les modifications</button>
             <a href="agents.html" class="btn btn-secondary">Annuler</a>
           </div>
         </form>
@@ -208,10 +214,30 @@
           habilitations: "H0B0",
           certifications: "Secouriste",
           passport_commentaire: "En attente de renouvellement CACES."
+        },
+        {
+          matricule: "AGT004",
+          nom: "Petit",
+          prenom: "Marie",
+          email: "marie.petit@example.com",
+          tel: "0655443322",
+          actif: true,
+          admin: false,
+          agence: "Agence C",
+          fonction: "Agent",
+          titre: "Technicien Junior",
+          permis: "Permis B",
+          habilitations: "H0B0",
+          certifications: "SST",
+          passport_commentaire: "Nouvel agent."
         }
       ];
 
       const agent = agents.find(a => a.matricule === matricule);
+
+      // Retrieve logged-in user role from localStorage
+      const currentUserRole = localStorage.getItem('userRole');
+      const currentUserIsAdmin = (currentUserRole === 'admin');
 
       if (agent) {
         document.getElementById('matricule').value = agent.matricule;
@@ -228,8 +254,17 @@
         document.getElementById('habilitations').value = agent.habilitations;
         document.getElementById('certifications').value = agent.certifications;
         document.getElementById('passport_commentaire').value = agent.passport_commentaire;
+
+        // Conditionally disable form fields and hide save button for non-admins
+        if (!currentUserIsAdmin) {
+          const form = document.getElementById('agent-edit-form');
+          form.querySelectorAll('input, select, textarea').forEach(element => {
+            element.setAttribute('disabled', 'true');
+          });
+          document.getElementById('save-agent-btn').classList.add('d-none');
+        }
+
       } else {
-        // Handle agent not found, e.g., redirect or show error
         alert("Agent non trouvé!");
         window.location.href = "agents.html";
       }

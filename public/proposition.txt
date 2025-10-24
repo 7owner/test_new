@@ -1,0 +1,18 @@
+✅ FICHE DE CORRECTION – init.sql
+N°	Problème	Gravité	Explication	Correction recommandée
+1️⃣	Valeur manquante dans ENUM doc_cible_type	❌ Critique	Dans seed.sql, vous insérez une ligne avec 'RenduIntervention', mais cette valeur n’existe pas dans la définition ENUM actuelle.	➤ Ajouter 'RenduIntervention' à l’ENUM :
+ALTER TYPE doc_cible_type ADD VALUE IF NOT EXISTS 'RenduIntervention';
+2️⃣	date_fin par défaut égale à CURRENT_TIMESTAMP	⚠️ Moyen	Logiquement, une date de fin ne devrait être renseignée que lorsque l’enregistrement est clôturé.	➤ Remplacer DEFAULT CURRENT_TIMESTAMP par NULL.
+3️⃣	Pas de cohérence uniforme sur ON DELETE	⚠️ Moyen	Certaines FK utilisent CASCADE, d'autres SET NULL, d'autres RESTRICT – selon le besoin, mais vérifier si cela correspond à votre logique métier.	➤ Vérifier que toutes les règles sont souhaitées selon vos besoins métiers.
+4️⃣	Absence d’index spécifiques sur certaines FK	✅ Optionnel	Quelques tables avec FK pourraient bénéficier d’indexes supplémentaires pour les performances.	➤ À envisager : ajouter des index là où il y a de fortes relations (ex: maintenance_id, agent_matricule).
+5️⃣	ENUM parfois restrictifs	✅ Optionnel	Dans le futur, d’autres types (RapportIntervention, Audit, etc.) pourraient apparaître.	➤ Anticiper besoins futurs ou envisager une table de référence plutôt qu’un ENUM.
+
+✅ Conclusion : fichier bien structuré, seule correction obligatoire = ajout d’une valeur ENUM.
+
+✅ FICHE DE CORRECTION – seed.sql
+N°	Problème	Gravité	Explication	Correction recommandée
+1️⃣	Utilisation de 'RenduIntervention' dans images.cible_type	❌ Critique	Cette valeur n’existe pas dans doc_cible_type → provoquera une erreur d’insertion.	➤ Ajouter valeur manquante dans init.sql.
+2️⃣	Mots de passe stockés en clair	⚠️ Moyen	En production, un mot de passe brut est interdit.	➤ Utiliser un hash (bcrypt) si lié à une app Symfony/Laravel.
+3️⃣	image_blob contient des valeurs factices (\xDEADBEEF)	✅ OK pour maquette	Correct pour les tests, mais à remplacer pour de vraies insertions ultérieures.	➤ Aucun changement requis en développement.
+4️⃣	date_debut non homogène	✅ Optionnel	Certaines insertions utilisent NOW(), d’autres pas.	➤ Uniformiser si utile.
+5️⃣	Références dynamiques basées sur SELECT ... LIMIT 1	✅ OK	Bon usage pour insertion conditionnelle.	➤ Aucun changement.

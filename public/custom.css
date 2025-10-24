@@ -106,3 +106,75 @@ main.container {
   background-color: #4f46e5;
   color: #fff;
 }
+
+/* Circle Card Styling */
+.circle-card {
+  width: 150px; /* Adjust as needed */
+  height: 150px; /* Adjust as needed */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden; /* Hide content that overflows the circle */
+  position: relative;
+  margin: auto; /* Center the circle */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  background-color: #f0f4f8; /* Light background for the circle */
+  border: 2px solid #cbd5e1;
+}
+
+.circle-card .card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0; /* Remove padding to allow content to fill */
+}
+
+.circle-card .card-title {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+  color: #1e293b;
+  z-index: 1; /* Ensure text is above background image */
+}
+
+.circle-card .card-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #334155;
+  z-index: 1;
+}
+
+.circle-card a.btn {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  z-index: 1;
+}
+
+/* Specific styles for each card type with logos */
+.circle-card.tickets-card {
+  background-image: url('/images/ticket-icon.png'); /* Placeholder */
+  background-size: 60%;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #e0f2f7; /* Light blue background */
+}
+
+.circle-card.agents-card {
+  background-image: url('/images/agent-icon.png'); /* Placeholder */
+  background-size: 60%;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #e6ffed; /* Light green background */
+}
+
+.circle-card.sites-card {
+  background-image: url('/images/site-icon.png'); /* Placeholder */
+  background-size: 60%;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #fff3e0; /* Light orange background */
+}

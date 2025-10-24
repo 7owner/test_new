@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Détails de l'agent</title>
+  <title>Générer un Jeton d'Accès</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
@@ -60,47 +60,37 @@
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="dashboard.html">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="agents.html">Agents</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Détails Agent</li>
+        <li class="breadcrumb-item"><a href="agents.html">Gestion des Agents</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Générer Jeton</li>
       </ol>
     </nav>
-    <h1 class="mb-4">Détails de l'agent: <span id="agent-name"></span></h1>
+    <h1 class="mb-4">Générer un Jeton d'Accès pour <span id="agent-name"></span></h1>
 
-    <div class="card mb-4">
+    <div class="card">
       <div class="card-body">
-        <h2 class="card-title mb-4">Informations Générales</h2>
-        <p><strong>Matricule:</strong> <span id="view_matricule"></span></p>
-        <p><strong>Nom:</strong> <span id="view_nom"></span></p>
-        <p><strong>Prénom:</strong> <span id="view_prenom"></span></p>
-        <p><strong>Email:</strong> <span id="view_email"></span></p>
-        <p><strong>Téléphone:</strong> <span id="view_tel"></span></p>
-        <p><strong>Titre:</strong> <span id="view_titre"></span></p>
-        <p><strong>Agence:</strong> <span id="view_agence"></span></p>
-        <p><strong>Fonction:</strong> <span id="view_fonction"></span></p>
-        <p><strong>Actif:</strong> <span id="view_actif"></span></p>
-        <p><strong>Administrateur:</strong> <span id="view_admin"></span></p>
-      </div>
-    </div>
+        <h2 class="card-title mb-4">Paramètres du Jeton</h2>
+        <form id="token-generation-form">
+          <div class="mb-3">
+            <label for="expiration-date" class="form-label">Date d'expiration</label>
+            <input type="date" class="form-control" id="expiration-date" required>
+          </div>
+          <div class="mb-3">
+            <label for="expiration-time" class="form-label">Heure d'expiration</label>
+            <input type="time" class="form-control" id="expiration-time" value="23:59">
+          </div>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Passeport</h2>
-        <p>Voir les détails du passeport de l'agent.</p>
-        <a href="agent-passport-view.html" class="btn btn-info"><i class="bi bi-journal-text me-2"></i>Voir Passeport</a>
-      </div>
-    </div>
+          <button type="button" id="generate-token-btn" class="btn btn-primary mb-3"><i class="bi bi-key me-2"></i>Générer et Envoyer Jeton</button>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Formations</h2>
-        <p>Voir la liste des formations de l'agent.</p>
-        <a href="agent-formation-view.html" class="btn btn-info"><i class="bi bi-mortarboard me-2"></i>Voir Formations</a>
-      </div>
-    </div>
+          <div id="generated-token-display" class="alert alert-success d-none" role="alert">
+            <strong>Jeton généré:</strong> <span id="generated-token"></span>
+            <p class="mt-2 mb-0">Un email a été envoyé à l'agent avec les instructions pour définir son mot de passe.</p>
+          </div>
 
-    <div class="d-flex gap-2">
-      <a href="agents.html" class="btn btn-secondary">Retour à la liste</a>
-      <a href="agent-edit.html" class="btn btn-primary" id="edit-agent-btn"><i class="bi bi-pencil me-2"></i>Modifier l'agent</a>
+          <div class="d-flex gap-2">
+            <a href="agents.html" class="btn btn-secondary">Retour aux agents</a>
+          </div>
+        </form>
+      </div>
     </div>
   </main>
 
@@ -108,11 +98,9 @@
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const urlParams = new URLSearchParams(window.location.search);
-      const matricule = urlParams.get('matricule');
+      const agentMatricule = urlParams.get('matricule');
 
-      // This is a placeholder for fetching actual agent data from a backend.
-      // For now, we'll use the same seed data as agents.html.
-      const agents = [
+      const allAgents = [
         {
           matricule: "AGT001",
           nom: "Dupont",
@@ -122,8 +110,7 @@
           actif: true,
           admin: false,
           agence: "Agence A",
-          fonction: "Agent",
-          titre: "Technicien Senior"
+          fonction: "Agent"
         },
         {
           matricule: "AGT002",
@@ -134,8 +121,7 @@
           actif: true,
           admin: true,
           agence: "Agence B",
-          fonction: "Manager",
-          titre: "Chef de Projet"
+          fonction: "Manager"
         },
         {
           matricule: "AGT003",
@@ -146,8 +132,7 @@
           actif: false,
           admin: false,
           agence: "Agence A",
-          fonction: "Chef",
-          titre: "Chef d'équipe"
+          fonction: "Chef"
         },
         {
           matricule: "AGT004",
@@ -163,33 +148,46 @@
         }
       ];
 
-      const agent = agents.find(a => a.matricule === matricule);
+      const agent = allAgents.find(a => a.matricule === agentMatricule);
+
+      if (agent) {
+        document.getElementById('agent-name').textContent = `${agent.nom} ${agent.prenom} (${agent.matricule})`;
+      } else {
+        document.getElementById('agent-name').textContent = 'Agent introuvable';
+      }
+
+      const generateTokenBtn = document.getElementById('generate-token-btn');
+      const generatedTokenDisplay = document.getElementById('generated-token-display');
+      const generatedTokenSpan = document.getElementById('generated-token');
+
+      generateTokenBtn.addEventListener('click', function() {
+        const expirationDate = document.getElementById('expiration-date').value;
+        const expirationTime = document.getElementById('expiration-time').value;
+
+        if (!expirationDate) {
+          alert("Veuillez sélectionner une date d'expiration.");
+          return;
+        }
+
+        // Simulate token generation
+        const token = `TOKEN-${Math.random().toString(36).substr(2, 9)}-${agentMatricule}-${expirationDate.replace(/-/g, '')}`;
+        generatedTokenSpan.textContent = token;
+        generatedTokenDisplay.classList.remove('d-none');
+
+        alert(`Jeton généré et un email a été envoyé à ${agent.email} avec les instructions pour définir son mot de passe (simulation).`);
+      });
 
       // Retrieve logged-in user role from localStorage
       const currentUserRole = localStorage.getItem('userRole');
       const currentUserIsAdmin = (currentUserRole === 'admin');
 
-      if (agent) {
-        document.getElementById('agent-name').textContent = `${agent.nom} ${agent.prenom}`;
-        document.getElementById('view_matricule').textContent = agent.matricule;
-        document.getElementById('view_nom').textContent = agent.nom;
-        document.getElementById('view_prenom').textContent = agent.prenom;
-        document.getElementById('view_email').textContent = agent.email;
-        document.getElementById('view_tel').textContent = agent.tel;
-        document.getElementById('view_titre').textContent = agent.titre;
-        document.getElementById('view_agence').textContent = agent.agence;
-        document.getElementById('view_fonction').textContent = agent.fonction;
-        document.getElementById('view_actif').textContent = agent.actif ? 'Oui' : 'Non';
-        document.getElementById('view_admin').textContent = agent.admin ? 'Oui' : 'Non';
-
-        // Conditionally show/hide edit button
-        if (!currentUserIsAdmin) {
-          document.getElementById('edit-agent-btn').classList.add('d-none');
-        }
-
-      } else {
-        document.getElementById('agent-name').textContent = 'Agent introuvable';
-        // Hide other details or show an error message
+      // Conditionally disable form fields and hide save button for non-admins
+      if (!currentUserIsAdmin) {
+        const form = document.getElementById('token-generation-form');
+        form.querySelectorAll('input, select, textarea, button[type="button"]').forEach(element => {
+          element.setAttribute('disabled', 'true');
+        });
+        generateTokenBtn.classList.add('d-none');
       }
     });
   </script>

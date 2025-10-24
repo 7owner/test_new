@@ -89,7 +89,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const data = await response.json();
 
                 if (!response.ok) {
-                    showError(data.error || 'La connexion a échoué'); try{ showToast(data.error || 'La connexion a échoué', "error"); }catch(_){};
+                    showError(data.error || 'La connexion a ï¿½chouï¿½'); try{ showToast(data.error || 'La connexion a ï¿½chouï¿½', "error"); }catch(_){};
                     return;
                 }
 
@@ -97,7 +97,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     localStorage.setItem('token', data.token);
                     window.location.href = '/dashboard.html';
                 } else {
-                    showError('La connexion a échoué : jeton manquant'); try{ showToast('La connexion a échoué : jeton manquant', "error"); }catch(_){};
+                    showError('La connexion a ï¿½chouï¿½ : jeton manquant'); try{ showToast('La connexion a ï¿½chouï¿½ : jeton manquant', "error"); }catch(_){};
                 }
             } catch (error) {
                 console.error('Erreur de connexion:', error);
@@ -123,7 +123,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const data = await response.json();
 
                 if (!response.ok) {
-                    showError(data.error || 'Inscription échouée'); try{ showToast(data.error || 'Inscription échouée', "error"); }catch(_){};
+                    showError(data.error || 'Inscription ï¿½chouï¿½e'); try{ showToast(data.error || 'Inscription ï¿½chouï¿½e', "error"); }catch(_){};
                     return;
                 }
 
@@ -199,7 +199,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try { title = (el.querySelector('h4')?.textContent || '').trim(); } catch(_) {}
                     if (!title) { title = (el.textContent || '').trim(); }
                     el.className = 'card card-body';
-                    el.innerHTML = `<div class="card-row"><div class="min-w-0"><div class="font-semibold truncate">${title}</div></div><div class="shrink-0"><span class="badge badge-danger">Bloqué</span></div></div>`;
+                    el.innerHTML = `<div class="card-row"><div class="min-w-0"><div class="font-semibold truncate">${title}</div></div><div class="shrink-0"><span class="badge badge-danger">Bloquï¿½</span></div></div>`;
                 });
             } catch(_) {}
 
@@ -230,7 +230,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     }
                 }
             });
-            // Load recent Achats / Factures / Règlements for dashboard
+            // Load recent Achats / Factures / Rï¿½glements for dashboard
             try {
                 const token2 = localStorage.getItem('token');
                 const [ra, rf, rg] = await Promise.all([
@@ -242,7 +242,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 if (recentAchatsDiv && ra.ok) {
                     const achats = (await ra.json()).slice(0,5);
                     recentAchatsDiv.innerHTML = achats.map(a=>
-                        `<li class="flex items-center justify-between"><span>${a.reference||'Sans ref.'} – ${a.objet||''}</span><span class="text-xs text-slate-500">${a.montant_ttc!=null? Number(a.montant_ttc).toFixed(2):'-'}</span></li>`
+                        `<li class="flex items-center justify-between"><span>${a.reference||'Sans ref.'} ï¿½ ${a.objet||''}</span><span class="text-xs text-slate-500">${a.montant_ttc!=null? Number(a.montant_ttc).toFixed(2):'-'}</span></li>`
                     ).join('') || '<li class="text-slate-500">Aucun achat</li>';
                 }
                 const recentFacturesDiv = document.getElementById('recentFactures');
@@ -256,8 +256,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 if (recentRegDiv && rg.ok) {
                     const regs = (await rg.json()).slice(0,5);
                     recentRegDiv.innerHTML = regs.map(g=>
-                        `<li class="flex items-center justify-between"><span>#${g.id} – ${g.mode||''}</span><span class="text-xs text-slate-500">${g.montant!=null? Number(g.montant).toFixed(2):'-'}</span></li>`
-                    ).join('') || '<li class="text-slate-500">Aucun règlement</li>';
+                        `<li class="flex items-center justify-between"><span>#${g.id} ï¿½ ${g.mode||''}</span><span class="text-xs text-slate-500">${g.montant!=null? Number(g.montant).toFixed(2):'-'}</span></li>`
+                    ).join('') || '<li class="text-slate-500">Aucun rï¿½glement</li>';
                 }
             } catch(_) {}
 
@@ -492,9 +492,9 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
 
             // DOE and Site
             const doeEl = document.getElementById('mntDoe');
-            if (doeEl) doeEl.innerHTML = rel.doe ? `<a class="text-indigo-600 hover:underline" href="/does.html#${rel.doe.id}">${rel.doe.titre || ('DOE #'+rel.doe.id)}</a>` : '<span class="text-slate-500">—</span>';
+            if (doeEl) doeEl.innerHTML = rel.doe ? `<a class="text-indigo-600 hover:underline" href="/does.html#${rel.doe.id}">${rel.doe.titre || ('DOE #'+rel.doe.id)}</a>` : '<span class="text-slate-500">ï¿½</span>';
             const siteEl = document.getElementById('mntSite');
-            if (siteEl) siteEl.innerHTML = rel.site ? `<a class="text-indigo-600 hover:underline" href="/site.html#${rel.site.id}">${rel.site.nom_site || ('Site #'+rel.site.id)}</a>` : '<span class="text-slate-500">—</span>';
+            if (siteEl) siteEl.innerHTML = rel.site ? `<a class="text-indigo-600 hover:underline" href="/site.html#${rel.site.id}">${rel.site.nom_site || ('Site #'+rel.site.id)}</a>` : '<span class="text-slate-500">ï¿½</span>';
 
             // Interventions list
             const intUl = document.getElementById('mntInterv');
@@ -670,9 +670,9 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
             const ttc = (a.montant_ttc!=null? Number(a.montant_ttc).toFixed(2):'-');
             el.innerHTML = `
               <div>
-                <div class="font-semibold">${a.reference || 'Sans ref.'} – ${a.objet || ''}</div>
-                <div class="text-sm text-slate-600">Fournisseur: ${a.fournisseur || '—'} · Statut: <span class="${badgeClassFor("achat", a.statut)}">${a.statut}</span></div>
-                <div class="text-xs text-slate-500">HT: ${mht} · TVA: ${tva}% · TTC: ${ttc}</div>
+                <div class="font-semibold">${a.reference || 'Sans ref.'} ï¿½ ${a.objet || ''}</div>
+                <div class="text-sm text-slate-600">Fournisseur: ${a.fournisseur || 'ï¿½'} ï¿½ Statut: <span class="${badgeClassFor("achat", a.statut)}">${a.statut}</span></div>
+                <div class="text-xs text-slate-500">HT: ${mht} ï¿½ TVA: ${tva}% ï¿½ TTC: ${ttc}</div>
               </div>
               <div>
                 <button class="btn btn-danger delete-achat-btn" data-id="${a.id}">Supprimer</button>
@@ -683,9 +683,9 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
               el.innerHTML = `
                 <div class="card-row">
                   <div class="min-w-0">
-                    <div class="font-semibold truncate">${a.reference || 'Sans ref.'} – ${a.objet || ''}</div>
-                    <div class="text-xs text-slate-500 truncate">Fournisseur: ${a.fournisseur || '—'} · Statut: <span class="${badgeClassFor("achat", a.statut)}">${a.statut}</span></div>
-                    <div class="text-xs text-slate-500">HT: ${mht} · TVA: ${tva}%</div>
+                    <div class="font-semibold truncate">${a.reference || 'Sans ref.'} ï¿½ ${a.objet || ''}</div>
+                    <div class="text-xs text-slate-500 truncate">Fournisseur: ${a.fournisseur || 'ï¿½'} ï¿½ Statut: <span class="${badgeClassFor("achat", a.statut)}">${a.statut}</span></div>
+                    <div class="text-xs text-slate-500">HT: ${mht} ï¿½ TVA: ${tva}%</div>
                   </div>
                   <div class="shrink-0 text-right">
                     <div class="text-xs text-slate-500">TTC</div>
@@ -715,7 +715,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         };
         try {
           const r = await fetch('/api/achats', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
-          if (r.ok) { addAchatForm.reset(); fetchAchats(); try{ showToast("Achat enregistré", "success"); }catch(_){} }
+          if (r.ok) { addAchatForm.reset(); fetchAchats(); try{ showToast("Achat enregistrï¿½", "success"); }catch(_){} }
         } catch (e) { console.error('Error creating achat:', e); }
       });
       if (achatListDiv) {
@@ -767,8 +767,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
             el.innerHTML = `
               <div>
                 <div class="font-semibold">${f.reference || 'Sans ref.'}</div>
-                <div class="text-sm text-slate-600">Statut: <span class="${badgeClassFor("facture", f.statut)}">${f.statut}</span> · Client: ${f.nom_client || '—'}</div>
-                <div class="text-xs text-slate-500">HT: ${mht} · TVA: ${tva}% · TTC: ${ttc}</div>
+                <div class="text-sm text-slate-600">Statut: <span class="${badgeClassFor("facture", f.statut)}">${f.statut}</span> ï¿½ Client: ${f.nom_client || 'ï¿½'}</div>
+                <div class="text-xs text-slate-500">HT: ${mht} ï¿½ TVA: ${tva}% ï¿½ TTC: ${ttc}</div>
               </div>
               <div>
                 <button class="btn btn-danger delete-facture-btn" data-id="${f.id}">Supprimer</button>
@@ -780,8 +780,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 <div class="card-row">
                   <div class="min-w-0">
                     <div class="font-semibold truncate">${f.reference || 'Sans ref.'}</div>
-                    <div class="text-xs text-slate-500 truncate">Statut: <span class="${badgeClassFor("facture", f.statut)}">${f.statut}</span> · Client: ${f.nom_client || '—'}</div>
-                    <div class="text-xs text-slate-500">HT: ${mht} · TVA: ${tva}%</div>
+                    <div class="text-xs text-slate-500 truncate">Statut: <span class="${badgeClassFor("facture", f.statut)}">${f.statut}</span> ï¿½ Client: ${f.nom_client || 'ï¿½'}</div>
+                    <div class="text-xs text-slate-500">HT: ${mht} ï¿½ TVA: ${tva}%</div>
                   </div>
                   <div class="shrink-0 text-right">
                     <div class="text-xs text-slate-500">TTC</div>
@@ -809,7 +809,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         };
         try {
           const r = await fetch('/api/factures', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
-          if (r.ok) { addFactureForm.reset(); fetchFactures(); try{ showToast("Facture enregistrée", "success"); }catch(_){} }
+          if (r.ok) { addFactureForm.reset(); fetchFactures(); try{ showToast("Facture enregistrï¿½e", "success"); }catch(_){} }
         } catch(e){ console.error('Error creating facture:', e); }
       });
       if (factureListDiv) {
@@ -1540,7 +1540,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     },
                     body: JSON.stringify({ nom_site, adresse_id })
                 });
-                if (response.ok) { addSiteForm.reset(); try{ showToast("Site sauvegardé", "success"); }catch(_){};
+                if (response.ok) { addSiteForm.reset(); try{ showToast("Site sauvegardï¿½", "success"); }catch(_){};
                     document.getElementById('siteId').value = ''; // Clear hidden ID
                     document.getElementById('formTitleSite').textContent = 'Ajouter un Site';
                     document.getElementById('submitButtonSite').textContent = 'Ajouter le Site';
@@ -1989,7 +1989,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                   <div class="card-row">
                     <div class="min-w-0">
                       <div class="font-semibold truncate"><a class="text-indigo-600 hover:underline" href="/rendezvous-view.html#${rdv.id}">${title}</a></div>
-                      <div class="text-xs text-slate-500 truncate">Site: ${rdv.site_nom} · Intervention: ${rdv.intervention_description}</div>
+                      <div class="text-xs text-slate-500 truncate">Site: ${rdv.site_nom} ï¿½ Intervention: ${rdv.intervention_description}</div>
                     </div>
                     <div class="shrink-0 text-right">
                       <button class="btn btn-sm btn-danger delete-rendezvous-btn" data-id="${rdv.id}">Supprimer</button>
@@ -2956,7 +2956,68 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     </div>`;
             } catch (e) { console.error('Error fetching rendezvous relations', e); }
         }
-    });
+    // Logout functionality
+    const logoutLink = document.getElementById('logout-link');
+    if (logoutLink) {
+        logoutLink.addEventListener('click', function(event) {
+            event.preventDefault();
+            localStorage.removeItem('jwtToken'); // Clear the JWT token
+            localStorage.removeItem('token'); // Also remove 'token' if it's used
+            window.location.href = '/login.html'; // Redirect to login page
+        });
+    }
+
+    // User info in header
+    const token = localStorage.getItem('jwtToken') || localStorage.getItem('token');
+    if (token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const decodedToken = JSON.parse(atob(base64));
+            const userEmail = decodedToken.email;
+
+            const loggedInUserEmailSpan = document.getElementById('logged-in-user-email');
+            if (loggedInUserEmailSpan) {
+                loggedInUserEmailSpan.textContent = userEmail;
+            }
+
+            // Fetch agent matricule for the logged-in user
+            fetch(`/api/agents?email=${userEmail}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(response => response.json())
+            .then(agents => {
+                if (agents && agents.length > 0) {
+                    const agentMatricule = agents[0].matricule;
+                    const userInfoContainer = document.getElementById('user-info-container');
+                    if (userInfoContainer) {
+                        const userLink = document.createElement('a');
+                        userLink.href = `/agent.html#${agentMatricule}`;
+                        userLink.textContent = userEmail;
+                        userLink.className = 'me-2 text-decoration-none text-dark'; // Style as needed
+                        loggedInUserEmailSpan.replaceWith(userLink); // Replace span with link
+                    }
+                }
+            })
+            .catch(error => console.error('Error fetching agent for user info:', error));
+
+        } catch (error) {
+            console.error('Error decoding token or fetching user info:', error);
+            // Optionally, redirect to login if token is invalid
+            localStorage.removeItem('jwtToken');
+            localStorage.removeItem('token');
+            // window.location.href = '/login.html';
+        }
+    }
+
+    // Utility function for Markdown rendering
+    function renderMarkdown(markdownText) {
+        if (typeof marked === 'undefined') {
+            console.warn('Marked.js is not loaded. Markdown rendering will not work.');
+            return markdownText;
+        }
+        return marked.parse(markdownText);
+    }
 });
 
 

@@ -12,10 +12,13 @@
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard" style="text-decoration: none; color: inherit;"></a></h1>
-    <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-      Menu
-    </button>
+    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard.html" style="text-decoration: none; color: inherit;"></a></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span id="logged-in-user-email" class="me-2"></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+        Menu
+      </button>
+    </div>
   </header>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
@@ -46,13 +49,16 @@
         <li class="nav-item">
           <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
+        </li>
       </ul>
     </div>
   </div>
 
   <main class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1>🛠️ LISTE DES INTERVENTIONS</h1>
+      <h1>🛠️ INTERVENTIONS</h1>
       <a href="intervention-new.html" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Créer une nouvelle intervention</a>
     </div>
 
@@ -138,6 +144,10 @@
       const searchInput = document.getElementById('intervention-search');
       const statusFilter = document.getElementById('intervention-status-filter');
 
+      // Retrieve logged-in user role from localStorage
+      const currentUserRole = localStorage.getItem('userRole');
+      const currentUserIsAdmin = (currentUserRole === 'admin');
+
       function renderInterventions(interventionsToRender) {
         tableBody.innerHTML = ''; // Clear existing content
 
@@ -179,8 +189,10 @@
             <td><span class="badge ${statusBadgeClass}">${intervention.status}</span></td>
             <td>
               <a href="intervention-view.html?id=${intervention.id}" class="btn btn-sm btn-info me-1"><i class="bi bi-eye"></i> Voir</a>
-              <a href="intervention-edit.html?id=${intervention.id}" class="btn btn-sm btn-warning me-1"><i class="bi bi-pencil"></i> Modifier</a>
-              <button class="btn btn-sm btn-danger" onclick="alert('Supprimer intervention ${intervention.id}')"><i class="bi bi-trash"></i> Supprimer</button>
+              ${currentUserIsAdmin ? `
+                <a href="intervention-edit.html?id=${intervention.id}" class="btn btn-sm btn-warning me-1"><i class="bi bi-pencil"></i> Modifier</a>
+                <button class="btn btn-sm btn-danger" onclick="alert('Supprimer intervention ${intervention.id}')"><i class="bi bi-trash"></i> Supprimer</button>
+              ` : ''}
             </td>
           `;
         });
@@ -205,6 +217,11 @@
 
       // Initial render
       renderInterventions(allInterventions);
+
+      // Conditionally hide create intervention button for non-admins
+      if (!currentUserIsAdmin) {
+        document.querySelector('a[href="intervention-new.html"]').classList.add('d-none');
+      }
     });
   </script>
 </body>

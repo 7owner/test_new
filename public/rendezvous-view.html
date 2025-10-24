@@ -7,7 +7,16 @@
   <link href="/style.css" rel="stylesheet">
   </head>
 <body class="min-h-screen app-bg">
-  <header></header>
+  <header class="flex justify-between items-center p-4 bg-white shadow-md">
+    <h1 class="text-xl font-bold text-gray-800">
+        <img src="/logo_logicielle.png" alt="Logo Système de Maintenance" class="h-8 inline-block align-middle mr-2">
+        <a href="/dashboard.html" class="text-gray-800 no-underline">Détail du rendez-vous</a>
+    </h1>
+    <div class="flex items-center">
+        <span id="logged-in-user-email" class="mr-4 text-gray-700"></span>
+        <a href="#" id="logout-link" class="text-red-500 hover:text-red-700">Déconnexion</a>
+    </div>
+</header>
 
   <main class="container mx-auto px-6 py-8 max-w-7xl">
     <div class="mb-2">
@@ -32,7 +41,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <section class="lg:col-span-2 card card-body">
         <h2 class="mb-3">Détails</h2>
-        <div id="rdvD�tails" class="text-sm text-slate-700"></div>
+        <div id="rdvD�tails" class="text-sm text-slate-700"></div>
         <div id="rdvLinks" class="mt-4 text-sm"></div>
       </section>
       <section class="lg:col-span-1 card card-body">

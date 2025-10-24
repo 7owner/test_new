@@ -12,10 +12,13 @@
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard" style="text-decoration: none; color: inherit;"></a></h1>
-    <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-      Menu
-    </button>
+    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard.html" style="text-decoration: none; color: inherit;"></a></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span id="logged-in-user-email" class="me-2"></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+        Menu
+      </button>
+    </div>
   </header>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
@@ -46,6 +49,9 @@
         <li class="nav-item">
           <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
+        </li>
       </ul>
     </div>
   </div>
@@ -73,9 +79,18 @@
       </div>
     </div>
 
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Tickets Associés</h2>
+        <div id="tickets-list">
+          <!-- Tickets will be loaded here -->
+        </div>
+      </div>
+    </div>
+
     <div class="d-flex gap-2">
       <a href="sites.html" class="btn btn-secondary">Retour à la liste</a>
-      <a href="site-edit.html" class="btn btn-primary"><i class="bi bi-pencil me-2"></i>Modifier le site</a>
+      <a href="site-edit.html" class="btn btn-primary" id="edit-site-btn"><i class="bi bi-pencil me-2"></i>Modifier le site</a>
     </div>
   </main>
 
@@ -141,12 +156,22 @@
         { matricule: "AGT003", nom: "Bernard", prenom: "Pierre" }
       ];
 
+      const allTickets = [
+        { id: "TKT001", site_id: "SITE001", titre: "Vérification annuelle", etat: "Termine" },
+        { id: "TKT002", site_id: "SITE002", titre: "Panne machine X", etat: "En_cours" },
+        { id: "TKT003", site_id: "SITE001", titre: "Contrôle sécurité", etat: "En_cours" },
+      ];
+
       function getAgentName(matricule) {
         const agent = allAgents.find(a => a.matricule === matricule);
-        return agent ? `${agent.nom} ${agent.prenom}` : 'N/A';
+        return agent ? `${agent.nom} ${agent.prenom}` : 'Non assigné';
       }
 
       const site = sites.find(s => s.id === siteId);
+
+      // Retrieve logged-in user role from localStorage
+      const currentUserRole = localStorage.getItem('userRole');
+      const currentUserIsAdmin = (currentUserRole === 'admin');
 
       if (site) {
         document.getElementById('site-name').textContent = site.nom_site;
@@ -157,6 +182,36 @@
         document.getElementById('view_statut').textContent = site.statut;
         document.getElementById('view_ticket').textContent = site.ticket ? 'Oui' : 'Non';
         document.getElementById('view_responsable').textContent = site.responsable_matricule ? getAgentName(site.responsable_matricule) : 'Non assigné';
+
+        // Render associated tickets
+        const ticketsListDiv = document.getElementById('tickets-list');
+        const filteredTickets = allTickets.filter(t => t.site_id === siteId);
+
+        if (filteredTickets.length > 0) {
+          const list = document.createElement('ul');
+          list.className = 'list-group';
+          filteredTickets.forEach(ticket => {
+            const item = document.createElement('li');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center';
+            item.innerHTML = `
+              <div>
+                <h6 class="mb-1">${ticket.titre}</h6>
+                <small>ID: ${ticket.id} - État: ${ticket.etat}</small>
+              </div>
+              <a href="ticket-view.html?id=${ticket.id}" class="btn btn-sm btn-info">Voir</a>
+            `;
+            list.appendChild(item);
+          });
+          ticketsListDiv.appendChild(list);
+        } else {
+          ticketsListDiv.innerHTML = '<p class="text-muted">Aucun ticket associé à ce site.</p>';
+        }
+
+        // Conditionally hide edit button
+        if (!currentUserIsAdmin) {
+          document.getElementById('edit-site-btn').classList.add('d-none');
+        }
+
       } else {
         document.getElementById('site-name').textContent = 'Site introuvable';
         // Hide other details or show an error message
