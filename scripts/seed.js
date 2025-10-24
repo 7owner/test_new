@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const { Pool } = require('pg');
+const bcrypt = require('bcrypt'); // Import bcrypt
 
 async function run() {
   const pool = new Pool({
@@ -10,9 +11,11 @@ async function run() {
   });
   const client = await pool.connect();
   try {
+    // Execute init.sql statements individually
     const initSql = fs.readFileSync(path.join(__dirname, '..', 'db', 'init.sql')).toString();
     await client.query(initSql);
     console.log('Schema OK');
+
     const seedSql = fs.readFileSync(path.join(__dirname, '..', 'db', 'seed.sql')).toString();
     await client.query(seedSql);
     console.log('Seed OK');

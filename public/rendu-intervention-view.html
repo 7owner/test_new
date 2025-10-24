@@ -12,10 +12,13 @@
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard" style="text-decoration: none; color: inherit;"></a></h1>
-    <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-      Menu
-    </button>
+    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard.html" style="text-decoration: none; color: inherit;"></a></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span id="logged-in-user-email" class="me-2"></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+        Menu
+      </button>
+    </div>
   </header>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
@@ -26,7 +29,7 @@
     <div class="offcanvas-body">
       <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
+          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
@@ -45,6 +48,9 @@
         </li>
         <li class="nav-item">
           <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
         </li>
       </ul>
     </div>
@@ -76,13 +82,13 @@
         <div id="rendu-images-list" class="row row-cols-1 row-cols-md-3 g-3">
           <!-- Placeholder for Rendu images -->
         </div>
-        <button type="button" class="btn btn-primary mt-3"><i class="bi bi-plus-circle me-2"></i>Ajouter Image</button>
+        <button type="button" class="btn btn-primary mt-3" id="add-image-btn"><i class="bi bi-plus-circle me-2"></i>Ajouter Image</button>
       </div>
     </div>
 
     <div class="d-flex gap-2">
       <a href="intervention-view.html" class="btn btn-secondary" id="back-to-intervention-btn">Retour à l'intervention</a>
-      <a href="rendu-intervention-edit.html" class="btn btn-primary"><i class="bi bi-pencil me-2"></i>Modifier le rendu</a>
+      <a href="rendu-intervention-edit.html" class="btn btn-primary" id="edit-rendu-btn"><i class="bi bi-pencil me-2"></i>Modifier le rendu</a>
     </div>
   </main>
 
@@ -93,8 +99,8 @@
       const renduId = urlParams.get('id');
 
       const sampleRendus = [
-        { id: "RND001", intervention_id: "INT001", resume: "Rapport de vérification OK.", valeur: "Conforme", images: [{ nom_fichier: "rapport_int001_1.jpg", src: "https://via.placeholder.com/100" }] },
-        { id: "RND002", intervention_id: "INT002", resume: "Diagnostic panne compresseur.", valeur: "Non conforme", images: [{ nom_fichier: "panne_compresseur.jpg", src: "https://via.placeholder.com/100" }] }
+        { id: "RND001", intervention_id: "INT001", resume: "Rapport de vérification OK.", valeur: "Conforme" },
+        { id: "RND002", intervention_id: "INT002", resume: "Diagnostic panne compresseur.", valeur: "Non conforme" }
       ];
 
       const sampleImages = [
@@ -104,6 +110,10 @@
       ];
 
       const rendu = sampleRendus.find(r => r.id === renduId);
+
+      // Retrieve logged-in user role from localStorage
+      const currentUserRole = localStorage.getItem('userRole');
+      const currentUserIsAdmin = (currentUserRole === 'admin');
 
       if (rendu) {
         document.getElementById('rendu-id').textContent = rendu.id;
@@ -128,8 +138,10 @@
                 <p class="mb-1"><strong>Fichier:</strong> ${img.nom_fichier}</p>
                 <p class="mb-0"><strong>Commentaire:</strong> ${img.commentaire}</p>
                 <div class="d-flex justify-content-end gap-2 mt-2">
-                  <button type="button" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i> Modifier</button>
-                  <button type="button" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Supprimer</button>
+                  ${currentUserIsAdmin ? `
+                    <button type="button" class="btn btn-sm btn-primary edit-rendu-image-btn"><i class="bi bi-pencil"></i> Modifier</button>
+                    <button type="button" class="btn btn-sm btn-danger delete-rendu-image-btn"><i class="bi bi-trash"></i> Supprimer</button>
+                  ` : ''}
                 </div>
               </div>
             `;
@@ -137,6 +149,12 @@
           });
         } else {
           renduImagesList.innerHTML = '<p class="text-muted">Aucune image associée.</p>';
+        }
+
+        // Conditionally hide admin-specific buttons
+        if (!currentUserIsAdmin) {
+          document.getElementById('add-image-btn').classList.add('d-none');
+          document.getElementById('edit-rendu-btn').classList.add('d-none');
         }
 
       } else {

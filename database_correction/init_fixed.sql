@@ -14,21 +14,21 @@
 -- --------------------------------------------------
 -- Enum types
 -- --------------------------------------------------
-CREATE TYPE IF NOT EXISTS statut_intervention AS ENUM ('Pas_commence','Bloque','En_attente','En_cours','Termine');
-CREATE TYPE IF NOT EXISTS etat_rapport        AS ENUM ('Pas_commence','En_cours','Termine');
-CREATE TYPE IF NOT EXISTS sujet_type          AS ENUM ('ticket','intervention');
-CREATE TYPE IF NOT EXISTS statut_rdv          AS ENUM ('Planifie','Confirme','Termine','Annule');
+CREATE TYPE statut_intervention AS ENUM ('Pas_commence','Bloque','En_attente','En_cours','Termine');
+CREATE TYPE etat_rapport        AS ENUM ('Pas_commence','En_cours','Termine');
+CREATE TYPE sujet_type          AS ENUM ('maintenance','intervention');
+CREATE TYPE statut_rdv          AS ENUM ('Planifie','Confirme','Termine','Annule');
 -- Extended doc_cible_type includes the "RenduIntervention" value required for images and documents
-CREATE TYPE IF NOT EXISTS doc_cible_type      AS ENUM (
-    'Affaire','Agent','Agence','Adresse','Client','Site','RendezVous','DOE','Ticket','Intervention',
-    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention'
+CREATE TYPE doc_cible_type      AS ENUM (
+    'Affaire','Agent','Agence','Adresse','Client','Site','RendezVous','DOE','Maintenance','Intervention',
+    'RapportMaintenance','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention'
 );
-CREATE TYPE IF NOT EXISTS doc_nature          AS ENUM ('Document','Video','Audio','Autre');
-CREATE TYPE IF NOT EXISTS statut_achat        AS ENUM ('Brouillon','Valide','Commande','Recu_partiel','Recu','Annule');
-CREATE TYPE IF NOT EXISTS statut_facture      AS ENUM ('Brouillon','Emise','Envoyee','Payee_partielle','Payee','Annulee');
-CREATE TYPE IF NOT EXISTS mode_reglement      AS ENUM ('Virement','Cheque','Carte','Especes','Traite','Autre');
-CREATE TYPE IF NOT EXISTS role_agence         AS ENUM ('Admin','Manager','Membre');
-CREATE TYPE IF NOT EXISTS type_formation      AS ENUM ('Habilitation','Certification','Permis');
+CREATE TYPE doc_nature          AS ENUM ('Document','Video','Audio','Autre');
+CREATE TYPE statut_achat        AS ENUM ('Brouillon','Valide','Commande','Recu_partiel','Recu','Annule');
+CREATE TYPE statut_facture      AS ENUM ('Brouillon','Emise','Envoyee','Payee_partielle','Payee','Annulee');
+CREATE TYPE mode_reglement      AS ENUM ('Virement','Cheque','Carte','Especes','Traite','Autre');
+CREATE TYPE role_agence         AS ENUM ('Admin','Manager','Membre');
+CREATE TYPE type_formation      AS ENUM ('Habilitation','Certification','Permis');
 
 -- --------------------------------------------------
 -- Core entities
@@ -143,10 +143,10 @@ CREATE TABLE IF NOT EXISTS site_affaire (
     date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin   TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-CREATE UNIQUE INDEX uq_site_affaire ON site_affaire(site_id, affaire_id); -- For idempotency with client.query();
+CREATE UNIQUE INDEX IF NOT EXISTS uq_site_affaire ON site_affaire(site_id, affaire_id);
 
--- Ticket entity (scheduled maintenance events)
-CREATE TABLE IF NOT EXISTS ticket (
+-- Maintenance entity (scheduled maintenance events)
+CREATE TABLE IF NOT EXISTS maintenance (
     id SERIAL PRIMARY KEY,
     doe_id     BIGINT NOT NULL,
     affaire_id BIGINT NOT NULL,
@@ -157,14 +157,14 @@ CREATE TABLE IF NOT EXISTS ticket (
     date_debut  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin    TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_ticket_doe    ON ticket(doe_id);
-CREATE INDEX IF NOT EXISTS idx_ticket_affaire ON ticket(affaire_id);
-CREATE INDEX IF NOT EXISTS idx_ticket_etat    ON ticket(etat);
+CREATE INDEX IF NOT EXISTS idx_maintenance_doe    ON maintenance(doe_id);
+CREATE INDEX IF NOT EXISTS idx_maintenance_affaire ON maintenance(affaire_id);
+CREATE INDEX IF NOT EXISTS idx_maintenance_etat    ON maintenance(etat);
 
--- Rapport de ticket
-CREATE TABLE IF NOT EXISTS rapport_ticket (
+-- Rapport de maintenance
+CREATE TABLE IF NOT EXISTS rapport_maintenance (
     id SERIAL PRIMARY KEY,
-    ticket_id     BIGINT NOT NULL,
+    maintenance_id     BIGINT NOT NULL,
     date_rapport       TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     matricule          VARCHAR(20) NOT NULL,
     nom_client         VARCHAR(255),
@@ -175,9 +175,9 @@ CREATE TABLE IF NOT EXISTS rapport_ticket (
     date_debut         TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin           TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_rapport_ticket        ON rapport_ticket(ticket_id);
-CREATE INDEX IF NOT EXISTS idx_rapport_ticket_date   ON rapport_ticket(date_rapport);
-CREATE INDEX IF NOT EXISTS idx_rapport_ticket_etat   ON rapport_ticket(etat);
+CREATE INDEX IF NOT EXISTS idx_rapport_maintenance        ON rapport_maintenance(maintenance_id);
+CREATE INDEX IF NOT EXISTS idx_rapport_maintenance_date   ON rapport_maintenance(date_rapport);
+CREATE INDEX IF NOT EXISTS idx_rapport_maintenance_etat   ON rapport_maintenance(etat);
 
 -- Passeport (one-to-one with Agent)
 CREATE TABLE IF NOT EXISTS passeport (
@@ -190,7 +190,7 @@ CREATE TABLE IF NOT EXISTS passeport (
     date_debut      TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin        TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-CREATE UNIQUE INDEX uq_passeport_agent ON passeport(agent_matricule); -- For idempotency with client.query();
+CREATE UNIQUE INDEX IF NOT EXISTS uq_passeport_agent ON passeport(agent_matricule);
 
 -- Formation (trainings and certifications)
 CREATE TABLE IF NOT EXISTS formation (
@@ -213,7 +213,7 @@ CREATE INDEX IF NOT EXISTS idx_formation_expiration ON formation(date_expiration
 -- Intervention entity (executed maintenance operations)
 CREATE TABLE IF NOT EXISTS intervention (
     id SERIAL PRIMARY KEY,
-    ticket_id            BIGINT NOT NULL,
+    maintenance_id            BIGINT NOT NULL,
     description              TEXT NOT NULL,
     date_debut               DATE NOT NULL,
     date_fin                 DATE,
@@ -259,7 +259,7 @@ CREATE TABLE IF NOT EXISTS agence_membre (
     date_debut      TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin        TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-CREATE UNIQUE INDEX uq_agence_membre        ON agence_membre(agence_id, agent_matricule); -- For idempotency with client.query();
+CREATE UNIQUE INDEX IF NOT EXISTS uq_agence_membre        ON agence_membre(agence_id, agent_matricule);
 CREATE INDEX IF NOT EXISTS idx_agence_membre_agence       ON agence_membre(agence_id);
 CREATE INDEX IF NOT EXISTS idx_agence_membre_agent        ON agence_membre(agent_matricule);
 
@@ -271,7 +271,7 @@ CREATE TABLE IF NOT EXISTS agent_equipe (
     date_debut      TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin        TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-CREATE UNIQUE INDEX uq_agent_equipe       ON agent_equipe(equipe_id, agent_matricule); -- For idempotency with client.query();
+CREATE UNIQUE INDEX IF NOT EXISTS uq_agent_equipe       ON agent_equipe(equipe_id, agent_matricule);
 CREATE INDEX IF NOT EXISTS idx_agent_equipe_equipe      ON agent_equipe(equipe_id);
 CREATE INDEX IF NOT EXISTS idx_agent_equipe_agent       ON agent_equipe(agent_matricule);
 
@@ -284,7 +284,7 @@ CREATE TABLE IF NOT EXISTS fonction (
     date_debut  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin    TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-CREATE UNIQUE INDEX uq_fonction_code ON fonction(code); -- For idempotency with client.query();
+CREATE UNIQUE INDEX IF NOT EXISTS uq_fonction_code ON fonction(code);
 
 -- Agent_fonction (assignment of roles to agents)
 CREATE TABLE IF NOT EXISTS agent_fonction (
@@ -295,7 +295,7 @@ CREATE TABLE IF NOT EXISTS agent_fonction (
     date_debut      TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin        TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-CREATE UNIQUE INDEX uq_agent_fonction      ON agent_fonction(agent_matricule, fonction_id); -- For idempotency with client.query();
+CREATE UNIQUE INDEX IF NOT EXISTS uq_agent_fonction      ON agent_fonction(agent_matricule, fonction_id);
 CREATE INDEX IF NOT EXISTS idx_agent_fonction_fonction   ON agent_fonction(fonction_id);
 
 -- Achats (purchases)
@@ -445,14 +445,14 @@ ALTER TABLE site_affaire
   ADD CONSTRAINT fk_site_affaire_affaire FOREIGN KEY (affaire_id) REFERENCES affaire(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 -- Maintenance relations
-ALTER TABLE ticket
-  ADD CONSTRAINT fk_ticket_doe    FOREIGN KEY (doe_id) REFERENCES doe(id) ON UPDATE CASCADE ON DELETE RESTRICT;
-ALTER TABLE ticket
-  ADD CONSTRAINT fk_ticket_affaire FOREIGN KEY (affaire_id) REFERENCES affaire(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE maintenance
+  ADD CONSTRAINT fk_maintenance_doe    FOREIGN KEY (doe_id) REFERENCES doe(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE maintenance
+  ADD CONSTRAINT fk_maintenance_affaire FOREIGN KEY (affaire_id) REFERENCES affaire(id) ON UPDATE CASCADE ON DELETE RESTRICT;
 
 -- Intervention relations
 ALTER TABLE intervention
-  ADD CONSTRAINT fk_intervention_ticket FOREIGN KEY (ticket_id) REFERENCES ticket(id) ON UPDATE CASCADE ON DELETE CASCADE;
+  ADD CONSTRAINT fk_intervention_maintenance FOREIGN KEY (maintenance_id) REFERENCES maintenance(id) ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE intervention
   ADD CONSTRAINT fk_intervention_prec FOREIGN KEY (intervention_precedente_id) REFERENCES intervention(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
@@ -463,12 +463,12 @@ ALTER TABLE rendezvous
   ADD CONSTRAINT fk_rendezvous_site        FOREIGN KEY (site_id) REFERENCES site(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 -- Rapport de maintenance relations
-ALTER TABLE rapport_ticket
-  ADD CONSTRAINT fk_rapport_ticket_ticket FOREIGN KEY (ticket_id) REFERENCES ticket(id) ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE rapport_ticket
-  ADD CONSTRAINT fk_rapport_ticket_agent FOREIGN KEY (matricule) REFERENCES agent(matricule) ON UPDATE CASCADE ON DELETE SET NULL;
-ALTER TABLE rapport_ticket
-  ADD CONSTRAINT fk_rapport_ticket_adresse FOREIGN KEY (adresse_client_id) REFERENCES adresse(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE rapport_maintenance
+  ADD CONSTRAINT fk_rapport_maintenance_maintenance FOREIGN KEY (maintenance_id) REFERENCES maintenance(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE rapport_maintenance
+  ADD CONSTRAINT fk_rapport_maintenance_agent FOREIGN KEY (matricule) REFERENCES agent(matricule) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE rapport_maintenance
+  ADD CONSTRAINT fk_rapport_maintenance_adresse FOREIGN KEY (adresse_client_id) REFERENCES adresse(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 -- Passeport relation
 ALTER TABLE passeport

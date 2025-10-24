@@ -69,14 +69,14 @@ WHERE NOT EXISTS (SELECT 1 FROM site WHERE nom_site = 'Site Lyon 1');
 
 -- Seed affaires
 INSERT INTO affaire (nom_affaire, client_id, description)
-SELECT 'Contrat Ticket ACME', (SELECT id FROM client WHERE nom_client = 'Client ACME' LIMIT 1), 'Contrat annuel'
-WHERE NOT EXISTS (SELECT 1 FROM affaire WHERE nom_affaire = 'Contrat Ticket ACME');
+SELECT 'Contrat Maintenance ACME', (SELECT id FROM client WHERE nom_client = 'Client ACME' LIMIT 1), 'Contrat annuel'
+WHERE NOT EXISTS (SELECT 1 FROM affaire WHERE nom_affaire = 'Contrat Maintenance ACME');
 
 -- Link site and affaire
 INSERT INTO site_affaire (site_id, affaire_id)
 SELECT s.id, a.id
 FROM (SELECT id FROM site WHERE nom_site = 'Site Paris 1' LIMIT 1) s,
-     (SELECT id FROM affaire WHERE nom_affaire = 'Contrat Ticket ACME' LIMIT 1) a
+     (SELECT id FROM affaire WHERE nom_affaire = 'Contrat Maintenance ACME' LIMIT 1) a
 WHERE NOT EXISTS (
   SELECT 1 FROM site_affaire WHERE site_id = s.id AND affaire_id = a.id
 );
@@ -85,35 +85,35 @@ WHERE NOT EXISTS (
 INSERT INTO doe (site_id, affaire_id, titre, description)
 SELECT s.id, a.id, 'DOE Paris 2025', 'Dossier des ouvrages exécutés'
 FROM (SELECT id FROM site WHERE nom_site = 'Site Paris 1' LIMIT 1) s,
-     (SELECT id FROM affaire WHERE nom_affaire = 'Contrat Ticket ACME' LIMIT 1) a
+     (SELECT id FROM affaire WHERE nom_affaire = 'Contrat Maintenance ACME' LIMIT 1) a
 WHERE NOT EXISTS (SELECT 1 FROM doe WHERE titre = 'DOE Paris 2025');
 
--- Seed tickets (some ongoing and blocked)
-INSERT INTO ticket (doe_id, affaire_id, titre, description, etat, responsable, date_debut)
-SELECT d.id, a.id, 'Ticket Semaine 42', 'Vérifications périodiques', 'En_cours', 'AGT001', NOW() - INTERVAL '10 days'
+-- Seed maintenances (some ongoing and blocked)
+INSERT INTO maintenance (doe_id, affaire_id, titre, description, etat, responsable, date_debut)
+SELECT d.id, a.id, 'Maintenance Semaine 42', 'Vérifications périodiques', 'En_cours', 'AGT001', NOW() - INTERVAL '10 days'
 FROM (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1) d,
-     (SELECT id FROM affaire WHERE nom_affaire = 'Contrat Ticket ACME' LIMIT 1) a
-WHERE NOT EXISTS (SELECT 1 FROM ticket WHERE titre = 'Ticket Semaine 42');
+     (SELECT id FROM affaire WHERE nom_affaire = 'Contrat Maintenance ACME' LIMIT 1) a
+WHERE NOT EXISTS (SELECT 1 FROM maintenance WHERE titre = 'Maintenance Semaine 42');
 
-INSERT INTO ticket (doe_id, affaire_id, titre, description, etat, responsable, date_debut)
-SELECT d.id, a.id, 'Ticket Urgente', 'Panne critique sur site', 'En_cours', 'AGT002', NOW() - INTERVAL '2 days'
+INSERT INTO maintenance (doe_id, affaire_id, titre, description, etat, responsable, date_debut)
+SELECT d.id, a.id, 'Maintenance Urgente', 'Panne critique sur site', 'En_cours', 'AGT002', NOW() - INTERVAL '2 days'
 FROM (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1) d,
-     (SELECT id FROM affaire WHERE nom_affaire = 'Contrat Ticket ACME' LIMIT 1) a
-WHERE NOT EXISTS (SELECT 1 FROM ticket WHERE titre = 'Ticket Urgente');
+     (SELECT id FROM affaire WHERE nom_affaire = 'Contrat Maintenance ACME' LIMIT 1) a
+WHERE NOT EXISTS (SELECT 1 FROM maintenance WHERE titre = 'Maintenance Urgente');
 
 -- Seed interventions
-INSERT INTO intervention (ticket_id, description, date_debut, status)
+INSERT INTO intervention (maintenance_id, description, date_debut, status)
 SELECT m.id, 'Intervention initiale', CURRENT_DATE - INTERVAL '1 day', 'Termine'
-FROM (SELECT id FROM ticket WHERE titre = 'Ticket Semaine 42' LIMIT 1) m
+FROM (SELECT id FROM maintenance WHERE titre = 'Maintenance Semaine 42' LIMIT 1) m
 WHERE NOT EXISTS (
-  SELECT 1 FROM intervention WHERE description = 'Intervention initiale' AND ticket_id = m.id
+  SELECT 1 FROM intervention WHERE description = 'Intervention initiale' AND maintenance_id = m.id
 );
 
-INSERT INTO intervention (ticket_id, description, date_debut, status)
+INSERT INTO intervention (maintenance_id, description, date_debut, status)
 SELECT m.id, 'Intervention de suivi', CURRENT_DATE, 'En_cours'
-FROM (SELECT id FROM ticket WHERE titre = 'Ticket Semaine 42' LIMIT 1) m
+FROM (SELECT id FROM maintenance WHERE titre = 'Maintenance Semaine 42' LIMIT 1) m
 WHERE NOT EXISTS (
-  SELECT 1 FROM intervention WHERE description = 'Intervention de suivi' AND ticket_id = m.id
+  SELECT 1 FROM intervention WHERE description = 'Intervention de suivi' AND maintenance_id = m.id
 );
 
 -- Seed passeport for AGT001

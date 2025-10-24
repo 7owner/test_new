@@ -14,7 +14,16 @@
 <body class="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 text-slate-700">
 
   <!-- Header dynamique (chargé via nav.js) -->
-  <header></header>
+  <header class="flex justify-between items-center p-4 bg-white shadow-md">
+    <h1 class="text-xl font-bold text-gray-800">
+        <img src="/logo_logicielle.png" alt="Logo Système de Maintenance" class="h-8 inline-block align-middle mr-2">
+        <a href="/dashboard.html" class="text-gray-800 no-underline">Détail de l'intervention</a>
+    </h1>
+    <div class="flex items-center">
+        <span id="logged-in-user-email" class="mr-4 text-gray-700"></span>
+        <a href="#" id="logout-link" class="text-red-500 hover:text-red-700">Déconnexion</a>
+    </div>
+</header>
 
   <main class="container mx-auto px-6 py-10 max-w-7xl">
     

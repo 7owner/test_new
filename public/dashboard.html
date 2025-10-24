@@ -13,10 +13,13 @@
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard" style="text-decoration: none; color: inherit;"></a></h1>
-    <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-      Menu
-    </button>
+    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard.html" style="text-decoration: none; color: inherit;"></a></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span id="logged-in-user-email" class="me-2"></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+        Menu
+      </button>
+    </div>
   </header>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
@@ -47,6 +50,9 @@
         <li class="nav-item">
           <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
+        </li>
       </ul>
     </div>
   </div>
@@ -55,16 +61,16 @@
     <h1 class="mb-4">Tableau de bord</h1>
     <!-- Métriques principales -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-4">
-   
-	  <div class="col">
-        <div class="card h-100">
+      <div class="col">
+        <div class="card h-100 circle-card tickets-card">
           <div class="card-body">
-            <h5 class="card-title">Maintenance en cours</h5>
+            <h5 class="card-title">Tickets</h5>
             <p class="card-text" id="activeMaintenances">-</p>
-            <a href="/maintenances.html" class="btn btn-sm btn-outline-primary">Voir les Maintenance</a>
+            <a href="/tickets.html" class="btn btn-sm btn-outline-primary">Voir les Tickets</a>
           </div>
         </div>
       </div>
+      <!--
       <div class="col">
         <div class="card h-100">
           <div class="card-body">
@@ -74,17 +80,18 @@
           </div>
         </div>
       </div>
+      -->
       <div class="col">
-        <div class="card h-100">
+        <div class="card h-100 circle-card agents-card">
           <div class="card-body">
             <h5 class="card-title">Agents actifs</h5>
             <p class="card-text" id="activeAgents">-</p>
-            <a href="/agents.html" class="btn btn-sm btn-outline-primary">Agents actifs</a>
+            <a href="/agents.html" class="btn btn-sm btn-outline-primary">Voir les agents</a>
           </div>
         </div>
       </div>
       <div class="col">
-        <div class="card h-100">
+        <div class="card h-100 circle-card sites-card">
           <div class="card-body">
             <h5 class="card-title">Sites sous contrat</h5>
             <p class="card-text" id="sitesUnderContract">-</p>
@@ -106,7 +113,7 @@
       <div class="col-lg-4">
         <div class="card h-100">
           <div class="card-body">
-            <h5 class="card-title">Maintenances sur sites avec ticket ouvert</h5>
+            <h5 class="card-title">Ticket ouvert</h5>
             <div id="urgentMaintenances"></div>
           </div>
         </div>
@@ -199,28 +206,40 @@
         site_id: "SITE001",
         titre: "Maintenance préventive annuelle",
         description: "Vérification complète des systèmes.",
-        etat: "Pas_commence"
+        etat: "Pas_commence",
+        doe_id: "DOE001",
+        affaire_id: "AFF001",
+        responsable: null
       },
       {
         id: "MNT002",
         site_id: "SITE002",
         titre: "Réparation urgence machine",
         description: "Réparation suite à une panne critique.",
-        etat: "En_cours"
+        etat: "En_cours",
+        doe_id: "DOE002",
+        affaire_id: "AFF002",
+        responsable: "AGT001"
       },
       {
         id: "MNT003",
         site_id: "SITE001",
         titre: "Contrôle sécurité incendie",
         description: "Contrôle réglementaire des équipements.",
-        etat: "Termine"
+        etat: "Termine",
+        doe_id: "DOE001",
+        affaire_id: "AFF001",
+        responsable: "AGT002"
       },
       {
         id: "MNT004",
         site_id: "SITE005",
         titre: "Installation nouveau matériel",
         description: "Mise en place de nouveaux serveurs.",
-        etat: "En_cours"
+        etat: "En_cours",
+        doe_id: null,
+        affaire_id: null,
+        responsable: null
       }
     ];
 
@@ -276,7 +295,7 @@
 
       // Placeholder for other dashboard metrics (activeMaintenances, ongoingInterventions, etc.)
       document.getElementById('activeMaintenances').textContent = allMaintenances.filter(m => m.etat !== 'Termine').length;
-      document.getElementById('ongoingInterventions').textContent = allMaintenances.filter(m => m.etat === 'En_cours').length;
+      //document.getElementById('ongoingInterventions').textContent = allMaintenances.filter(m => m.etat === 'En_cours').length;
       document.getElementById('activeAgents').textContent = '3'; // Example
       document.getElementById('sitesUnderContract').textContent = allSites.length;
 
@@ -306,6 +325,16 @@
               y: { beginAtZero: true }
             }
           }
+        });
+      }
+
+      // Logout functionality
+      const logoutLink = document.getElementById('logout-link');
+      if (logoutLink) {
+        logoutLink.addEventListener('click', function(event) {
+          event.preventDefault();
+          localStorage.removeItem('jwtToken'); // Clear the JWT token
+          window.location.href = '/login.html'; // Redirect to login page
         });
       }
     });

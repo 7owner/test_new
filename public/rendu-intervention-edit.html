@@ -12,10 +12,13 @@
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard" style="text-decoration: none; color: inherit;"></a></h1>
-    <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-      Menu
-    </button>
+    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard.html" style="text-decoration: none; color: inherit;"></a></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span id="logged-in-user-email" class="me-2"></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+        Menu
+      </button>
+    </div>
   </header>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
@@ -26,7 +29,7 @@
     <div class="offcanvas-body">
       <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
+          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
@@ -46,6 +49,9 @@
         <li class="nav-item">
           <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
+        </li>
       </ul>
     </div>
   </div>
@@ -64,7 +70,7 @@
     <div class="card">
       <div class="card-body">
         <h2 class="card-title mb-4">Informations du rendu</h2>
-        <form>
+        <form id="rendu-edit-form">
           <div class="mb-3">
             <label for="id" class="form-label">ID Rendu</label>
             <input type="text" class="form-control" id="id" required readonly>
@@ -85,7 +91,7 @@
           <button type="button" id="add-new-image-btn" class="btn btn-outline-secondary mb-4"><i class="bi bi-plus-circle me-2"></i>Ajouter une nouvelle image</button>
 
           <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-2"></i>Enregistrer les modifications</button>
+            <button type="submit" class="btn btn-primary" id="save-rendu-btn"><i class="bi bi-save me-2"></i>Enregistrer les modifications</button>
             <a href="intervention-view.html" class="btn btn-secondary" id="cancel-button">Annuler</a>
           </div>
         </form>
@@ -112,6 +118,10 @@
 
       const rendu = sampleRendus.find(r => r.id === renduId);
 
+      // Retrieve logged-in user role from localStorage
+      const currentUserRole = localStorage.getItem('userRole');
+      const currentUserIsAdmin = (currentUserRole === 'admin');
+
       if (rendu) {
         document.getElementById('id').value = rendu.id;
         document.getElementById('resume').value = rendu.resume;
@@ -133,7 +143,7 @@
             imageEntry.className = 'rendu-image-entry mb-4 p-3 border rounded bg-light';
             imageEntry.innerHTML = `
               <div class="d-flex justify-content-end">
-                <button type="button" class="btn-close remove-image"></button>
+                ${currentUserIsAdmin ? `<button type="button" class="btn-close remove-image"></button>` : ''}
               </div>
               <div class="mb-3 text-center">
                 <img src="${img.src}" class="img-fluid mb-2" alt="${img.nom_fichier}" style="max-width: 150px; height: auto;">
@@ -141,11 +151,11 @@
               </div>
               <div class="mb-3">
                 <label for="image_file_${img.id}" class="form-label">Remplacer l'image</label>
-                <input class="form-control" type="file" id="image_file_${img.id}" name="image_file_${img.id}">
+                <input class="form-control" type="file" id="image_file_${img.id}" name="image_file[]" ${currentUserIsAdmin ? '' : 'disabled'}>
               </div>
               <div class="mb-3">
                 <label for="image_commentaire_${img.id}" class="form-label">Commentaire Image</label>
-                <textarea class="form-control" id="image_commentaire_${img.id}" name="image_commentaire_${img.id}" rows="2">${img.commentaire}</textarea>
+                <textarea class="form-control" id="image_commentaire_${img.id}" name="image_commentaire[]" rows="2" ${currentUserIsAdmin ? '' : 'disabled'}>${img.commentaire}</textarea>
               </div>
             `;
             imagesContainer.appendChild(imageEntry);
@@ -154,34 +164,47 @@
           imagesContainer.innerHTML = '<p class="text-muted">Aucune image associée pour le moment.</p>';
         }
 
-        // Add new image button logic
-        const addNewImageBtn = document.getElementById('add-new-image-btn');
-        addNewImageBtn.addEventListener('click', function() {
-          const newImageEntry = document.createElement('div');
-          newImageEntry.className = 'rendu-image-entry mb-4 p-3 border rounded bg-light';
-          const newId = `new_image_${Date.now()}`;
-          newImageEntry.innerHTML = `
-            <div class="d-flex justify-content-end">
-              <button type="button" class="btn-close remove-image"></button>
-            </div>
-            <div class="mb-3">
-              <label for="${newId}" class="form-label">Fichier Image</label>
-              <input class="form-control" type="file" id="${newId}" name="image_file[]" required>
-            </div>
-            <div class="mb-3">
-              <label for="${newId}_comment" class="form-label">Commentaire Image</label>
-              <textarea class="form-control" id="${newId}_comment" name="image_commentaire[]" rows="2"></textarea>
-            </div>
-          `;
-          imagesContainer.appendChild(newImageEntry);
-        });
+        // Dynamic image upload logic (only for admins)
+        const addImageBtn = document.getElementById('add-new-image-btn');
+        if (currentUserIsAdmin) {
+          addImageBtn.addEventListener('click', function() {
+            const newImageEntry = document.createElement('div');
+            newImageEntry.className = 'rendu-image-entry mb-4 p-3 border rounded bg-light';
+            const newId = `new_image_${Date.now()}`;
+            newImageEntry.innerHTML = `
+              <div class="d-flex justify-content-end">
+                <button type="button" class="btn-close remove-image"></button>
+              </div>
+              <div class="mb-3">
+                <label for="${newId}" class="form-label">Fichier Image</label>
+                <input class="form-control" type="file" id="${newId}" name="image_file[]" required>
+              </div>
+              <div class="mb-3">
+                <label for="${newId}_comment" class="form-label">Commentaire Image</label>
+                <textarea class="form-control" name="image_commentaire[]" rows="2"></textarea>
+              </div>
+            `;
+            imagesContainer.appendChild(newImageEntry);
+          });
+        } else {
+          addImageBtn.classList.add('d-none');
+        }
 
-        // Remove image logic
+        // Remove image logic (only for admins)
         imagesContainer.addEventListener('click', function(event) {
-          if (event.target.classList.contains('remove-image')) {
+          if (event.target.classList.contains('remove-image') && currentUserIsAdmin) {
             event.target.closest('.rendu-image-entry').remove();
           }
         });
+
+        // Conditionally disable form fields and hide save button for non-admins
+        if (!currentUserIsAdmin) {
+          const form = document.getElementById('rendu-edit-form');
+          form.querySelectorAll('input:not([type="file"]), select, textarea').forEach(element => {
+            element.setAttribute('disabled', 'true');
+          });
+          document.getElementById('save-rendu-btn').classList.add('d-none');
+        }
 
       } else {
         alert("Rendu d'intervention non trouvé!");

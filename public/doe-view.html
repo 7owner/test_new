@@ -12,10 +12,13 @@
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard" style="text-decoration: none; color: inherit;"></a></h1>
-    <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-      Menu
-    </button>
+    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"><a href="/dashboard.html" style="text-decoration: none; color: inherit;"></a></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span id="logged-in-user-email" class="me-2"></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+        Menu
+      </button>
+    </div>
   </header>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
@@ -26,7 +29,7 @@
     <div class="offcanvas-body">
       <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
+          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
@@ -45,6 +48,9 @@
         </li>
         <li class="nav-item">
           <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
         </li>
       </ul>
     </div>
@@ -80,8 +86,8 @@
             <div class="d-flex justify-content-between align-items-center mb-2">
               <strong>Fichier:</strong> <a href="#" target="_blank">plan_site_A.pdf</a>
               <div>
-                <button type="button" class="btn btn-sm btn-primary me-2"><i class="bi bi-pencil"></i> Modifier</button>
-                <button type="button" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Supprimer</button>
+                <button type="button" class="btn btn-sm btn-primary me-2 edit-doe-doc-btn"><i class="bi bi-pencil"></i> Modifier</button>
+                <button type="button" class="btn btn-sm btn-danger delete-doe-doc-btn"><i class="bi bi-trash"></i> Supprimer</button>
               </div>
             </div>
             <p class="mb-0"><strong>Commentaire:</strong> Plan détaillé du site A.</p>
@@ -90,14 +96,14 @@
             <div class="d-flex justify-content-between align-items-center mb-2">
               <strong>Fichier:</strong> <a href="#" target="_blank">rapport_audit_B.docx</a>
               <div>
-                <button type="button" class="btn btn-sm btn-primary me-2"><i class="bi bi-pencil"></i> Modifier</button>
-                <button type="button" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Supprimer</button>
+                <button type="button" class="btn btn-sm btn-primary me-2 edit-doe-doc-btn"><i class="bi bi-pencil"></i> Modifier</button>
+                <button type="button" class="btn btn-sm btn-danger delete-doe-doc-btn"><i class="bi bi-trash"></i> Supprimer</button>
               </div>
             </div>
             <p class="mb-0"><strong>Commentaire:</strong> Rapport d'audit de sécurité du site B.</p>
           </div>
         </div>
-        <button type="button" class="btn btn-primary mt-3"><i class="bi bi-plus-circle me-2"></i>Ajouter Document</button>
+        <button type="button" class="btn btn-primary mt-3" id="add-doe-doc-btn"><i class="bi bi-plus-circle me-2"></i>Ajouter Document</button>
       </div>
     </div>
 
@@ -112,8 +118,8 @@
               <p class="mb-1"><strong>Fichier:</strong> image_doe_1.jpg</p>
               <p class="mb-0"><strong>Commentaire:</strong> Vue générale du site.</p>
               <div class="d-flex justify-content-end gap-2 mt-2">
-                <button type="button" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i> Modifier</button>
-                <button type="button" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Supprimer</button>
+                <button type="button" class="btn btn-sm btn-primary edit-doe-image-btn"><i class="bi bi-pencil"></i> Modifier</button>
+                <button type="button" class="btn btn-sm btn-danger delete-doe-image-btn"><i class="bi bi-trash"></i> Supprimer</button>
               </div>
             </div>
           </div>
@@ -123,19 +129,19 @@
               <p class="mb-1"><strong>Fichier:</strong> image_doe_2.jpg</p>
               <p class="mb-0"><strong>Commentaire:</strong> Détail d'un équipement.</p>
               <div class="d-flex justify-content-end gap-2 mt-2">
-                <button type="button" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i> Modifier</button>
-                <button type="button" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Supprimer</button>
+                <button type="button" class="btn btn-sm btn-primary edit-doe-image-btn"><i class="bi bi-pencil"></i> Modifier</button>
+                <button type="button" class="btn btn-sm btn-danger delete-doe-image-btn"><i class="bi bi-trash"></i> Supprimer</button>
               </div>
             </div>
           </div>
         </div>
-        <button type="button" class="btn btn-primary mt-3"><i class="bi bi-plus-circle me-2"></i>Ajouter Image</button>
+        <button type="button" class="btn btn-primary mt-3" id="add-doe-image-btn"><i class="bi bi-plus-circle me-2"></i>Ajouter Image</button>
       </div>
     </div>
 
     <div class="d-flex gap-2">
       <a href="maintenances.html" class="btn btn-secondary">Retour à la liste des maintenances</a>
-      <a href="doe-edit.html" class="btn btn-primary"><i class="bi bi-pencil me-2"></i>Modifier le DOE</a>
+      <a href="doe-edit.html" class="btn btn-primary" id="edit-doe-btn"><i class="bi bi-pencil me-2"></i>Modifier le DOE</a>
     </div>
   </main>
 
@@ -164,6 +170,10 @@
 
       const doe = sampleDoes.find(d => d.id === doeId);
 
+      // Retrieve logged-in user role from localStorage
+      const currentUserRole = localStorage.getItem('userRole');
+      const currentUserIsAdmin = (currentUserRole === 'admin');
+
       if (doe) {
         document.getElementById('doe-title').textContent = doe.titre;
         document.getElementById('view_id').textContent = doe.id;
@@ -184,8 +194,10 @@
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <strong>Fichier:</strong> <a href="#" target="_blank">${doc.nom_fichier}</a>
                 <div>
-                  <button type="button" class="btn btn-sm btn-primary me-2"><i class="bi bi-pencil"></i> Modifier</button>
-                  <button type="button" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Supprimer</button>
+                  ${currentUserIsAdmin ? `
+                    <button type="button" class="btn btn-sm btn-primary me-2 edit-doe-doc-btn"><i class="bi bi-pencil"></i> Modifier</button>
+                    <button type="button" class="btn btn-sm btn-danger delete-doe-doc-btn"><i class="bi bi-trash"></i> Supprimer</button>
+                  ` : ''}
                 </div>
               </div>
               <p class="mb-0"><strong>Commentaire:</strong> ${doc.commentaire}</p>
@@ -210,8 +222,10 @@
                 <p class="mb-1"><strong>Fichier:</strong> ${img.nom_fichier}</p>
                 <p class="mb-0"><strong>Commentaire:</strong> ${img.commentaire}</p>
                 <div class="d-flex justify-content-end gap-2 mt-2">
-                  <button type="button" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i> Modifier</button>
-                  <button type="button" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Supprimer</button>
+                  ${currentUserIsAdmin ? `
+                    <button type="button" class="btn btn-sm btn-primary edit-doe-image-btn"><i class="bi bi-pencil"></i> Modifier</button>
+                    <button type="button" class="btn btn-sm btn-danger delete-doe-image-btn"><i class="bi bi-trash"></i> Supprimer</button>
+                  ` : ''}
                 </div>
               </div>
             `;
@@ -219,6 +233,13 @@
           });
         } else {
           doeImagesList.innerHTML = '<p class="text-muted">Aucune image associée.</p>';
+        }
+
+        // Conditionally hide admin-specific buttons
+        if (!currentUserIsAdmin) {
+          document.getElementById('add-doe-doc-btn').classList.add('d-none');
+          document.getElementById('add-doe-image-btn').classList.add('d-none');
+          document.getElementById('edit-doe-btn').classList.add('d-none');
         }
 
       } else {

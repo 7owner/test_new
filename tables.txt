@@ -2,7 +2,7 @@
 // ENUMS
 //////////////////////////////////////////////////////
 Enum sujet_type {
-  maintenance
+  ticket
   intervention
 }
 
@@ -28,9 +28,9 @@ Enum doc_cible_type {
   Site
   RendezVous
   DOE
-  Maintenance
+  Ticket
   Intervention
-  RapportMaintenance
+  RapportTicket
   Achat
   Facture
   Reglement
@@ -279,11 +279,11 @@ Table rendez_vous {
 }
 
 //////////////////////////////////////////////////////
-// MAINTENANCE, INTERVENTIONS CHAÎNABLES, RAPPORT
+// TICKET, INTERVENTIONS CHAÎNABLES, RAPPORT
 //////////////////////////////////////////////////////
-Table maintenance {
+Table ticket {
   id               bigint        [pk, increment]
-  doe_id           bigint        [not null, ref: > doe.id, note: 'Maintenance rattachée à un DOE']
+  doe_id           bigint        [not null, ref: > doe.id, note: 'Ticket rattaché à un DOE']
   affaire_id       bigint        [not null, ref: > affaire.id, note: 'Lien explicite à l\'affaire']
   titre            varchar(255)
   description      text          [not null]
@@ -293,15 +293,15 @@ Table maintenance {
   date_fin         timestamp     [not null, default: 'CURRENT_TIMESTAMP']
 
   indexes {
-    doe_id     [name: 'idx_maintenance_doe']
-    affaire_id [name: 'idx_maintenance_affaire']
-    etat       [name: 'idx_maintenance_etat']
+    doe_id     [name: 'idx_ticket_doe']
+    affaire_id [name: 'idx_ticket_affaire']
+    etat       [name: 'idx_ticket_etat']
   }
 }
 
 Table intervention {
   id                         bigint     [pk, increment]
-  maintenance_id             bigint     [not null, ref: > maintenance.id]
+  ticket_id                  bigint     [not null, ref: > ticket.id]
   description                text       [not null]
   date_debut                 date       [not null]
   date_fin                   date
@@ -310,14 +310,14 @@ Table intervention {
   date_fin_ts                timestamp  [not null, default: 'CURRENT_TIMESTAMP']
 
   indexes {
-    maintenance_id             [name: 'idx_intervention_maintenance']
+    ticket_id                  [name: 'idx_intervention_ticket']
     intervention_precedente_id [name: 'idx_intervention_prec']
   }
 }
 
-Table rapport_maintenance {
+Table rapport_ticket {
   id                  bigint        [pk, increment]
-  maintenance_id      bigint        [not null, ref: > maintenance.id]
+  ticket_id           bigint        [not null, ref: > ticket.id]
   date_rapport        timestamp     [not null, default: 'CURRENT_TIMESTAMP']
   matricule           varchar(20)   [not null, ref: > agent.matricule]
   nom_client          varchar(255)
@@ -329,9 +329,9 @@ Table rapport_maintenance {
   date_fin            timestamp     [not null, default: 'CURRENT_TIMESTAMP']
 
   indexes {
-    maintenance_id [name: 'idx_rapport_maintenance']
-    date_rapport   [name: 'idx_rapport_maintenance_date']
-    etat           [name: 'idx_rapport_maintenance_etat']
+    ticket_id      [name: 'idx_rapport_ticket']
+    date_rapport   [name: 'idx_rapport_ticket_date']
+    etat           [name: 'idx_rapport_ticket_etat']
   }
 }
 
@@ -407,7 +407,7 @@ Table achat {
   reference_commande      varchar(100)
   affaire_id              bigint        [ref: > affaire.id]
   site_id                 bigint        [ref: > site.id]
-  rapport_maintenance_id  bigint        [ref: > rapport_maintenance.id, note: 'Si achat lié à une maintenance']
+  rapport_ticket_id       bigint        [ref: > rapport_ticket.id, note: 'Si achat lié à un ticket']
   fournisseur_nom         varchar(255)  [not null]
   fournisseur_email       varchar(255)
   fournisseur_tel         varchar(50)
@@ -451,7 +451,7 @@ Table facture {
   affaire_id        bigint         [ref: > affaire.id]
   site_id           bigint         [ref: > site.id]
   client_id         bigint         [ref: > client.id]
-  maintenance_id    bigint         [ref: > maintenance.id]
+  ticket_id         bigint         [ref: > ticket.id]
   intervention_id   bigint         [ref: > intervention.id]
   devise            varchar(3)     [not null, default: 'EUR']
   statut            statut_facture [not null, default: 'Brouillon']

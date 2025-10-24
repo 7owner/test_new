@@ -112,19 +112,26 @@
       if (loginForm) {
         loginForm.addEventListener('submit', async (event) => {
           event.preventDefault();
-          // In a real application, you would send the form data to a backend API
           const email = document.getElementById('inputEmail').value;
           const password = document.getElementById('inputPassword').value;
 
           console.log('Login attempt:', { email, password });
 
-          // Simulate API call
-          if (email === 'test@example.com' && password === 'password') {
-            alert('Connexion réussie!');
+          // Simulate API call and role assignment based on email
+          let isAdmin = false;
+          if (email === 'admin@example.com' && password === 'password') {
+            isAdmin = true;
+            localStorage.setItem('userRole', 'admin');
+            alert('Connexion réussie en tant qu\'administrateur!');
+            window.location.href = '/dashboard.html'; // Redirect to dashboard
+          } else if (email === 'user@example.com' && password === 'password') {
+            localStorage.setItem('userRole', 'user');
+            alert('Connexion réussie en tant qu\'utilisateur!');
             window.location.href = '/dashboard.html'; // Redirect to dashboard
           } else {
             errorMessageDiv.textContent = 'Email ou mot de passe incorrect.';
             errorMessageDiv.classList.remove('d-none');
+            localStorage.removeItem('userRole'); // Clear role on failed login
           }
         });
       }
