@@ -1,4 +1,16 @@
 <!DOCTYPE html>
+      // Charger l'agent depuis l'API
+      (async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const headers = token ? { 'Authorization': Bearer  } : {};
+          const res = await fetch('/api/agents', { headers, credentials: 'same-origin' });
+          const data = res.ok ? await res.json() : [];
+          const list = Array.isArray(data) ? data : [];
+          agent = list.find(a => String(a.matricule) === String(agentMatricule)) || null;
+          if (agent) { document.getElementById('agent-name').textContent = ${agent.nom}  (); }
+        } catch(e) { console.error('Erreur chargement /api/agents:', e); }
+      })();
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -8,7 +20,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
-  <script src="/script.js?v=1"></script>
+  <!-- script.js dÈsactivÈ -->
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
@@ -100,53 +112,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const agentMatricule = urlParams.get('matricule');
 
-      const allAgents = [
-        {
-          matricule: "AGT001",
-          nom: "Dupont",
-          prenom: "Jean",
-          email: "jean.dupont@example.com",
-          tel: "0612345678",
-          actif: true,
-          admin: false,
-          agence: "Agence A",
-          fonction: "Agent"
-        },
-        {
-          matricule: "AGT002",
-          nom: "Martin",
-          prenom: "Sophie",
-          email: "sophie.martin@example.com",
-          tel: "0687654321",
-          actif: true,
-          admin: true,
-          agence: "Agence B",
-          fonction: "Manager"
-        },
-        {
-          matricule: "AGT003",
-          nom: "Bernard",
-          prenom: "Pierre",
-          email: "pierre.bernard@example.com",
-          tel: "0611223344",
-          actif: false,
-          admin: false,
-          agence: "Agence A",
-          fonction: "Chef"
-        },
-        {
-          matricule: "AGT004",
-          nom: "Petit",
-          prenom: "Marie",
-          email: "marie.petit@example.com",
-          tel: "0655443322",
-          actif: true,
-          admin: false,
-          agence: "Agence C",
-          fonction: "Agent",
-          titre: "Technicien Junior"
-        }
-      ];
+      let agent = null;
 
       const agent = allAgents.find(a => a.matricule === agentMatricule);
 
@@ -174,7 +140,7 @@
         generatedTokenSpan.textContent = token;
         generatedTokenDisplay.classList.remove('d-none');
 
-        alert(`Jeton g√©n√©r√© et un email a √©t√© envoy√© √† ${agent.email} avec les instructions pour d√©finir son mot de passe (simulation).`);
+        const targetEmail = agent && agent.email ? agent.email : "(email inconnu)"; alert(`Jeton gÈnÈrÈ et un email a ÈtÈ envoyÈ ‡ ${targetEmail} (simulation).`);
       });
 
       // Retrieve logged-in user role from localStorage
@@ -193,3 +159,4 @@
   </script>
 </body>
 </html>
+
