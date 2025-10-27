@@ -274,10 +274,21 @@ try {
   console.log('nodemailer not installed; using console email simulation');
 }
 
-// Middleware to verify JWT
+// Trust proxy for correct secure cookies behind proxies
+try { app.set('trust proxy', 1); } catch {}
+
+// Pre-create session table to avoid transaction-abort issues
+async function ensureSessionTable() {
+  try {
+    await pool.query("CREATE TABLE IF NOT EXISTS \"session\" (\n      sid varchar NOT NULL PRIMARY KEY,\n      sess json NOT NULL,\n      expire timestamp(6) NOT NULL\n    );");
+    await pool.query("CREATE INDEX IF NOT EXISTS \"IDX_session_expire\" ON \"session\"(expire);");
+  } catch (e) { console.warn('ensureSessionTable failed:', e.message); }
+}
+ensureSessionTable();
+
 // Sessions setup
 app.use(session({
-  store: new PgSession({ pool, tableName: 'session', createTableIfMissing: true }),
+  store: new PgSession({ pool, tableName: 'session', createTableIfMissing: false }),
   secret: process.env.SESSION_SECRET || JWT_SECRET,
   resave: false,
   saveUninitialized: false,
