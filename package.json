@@ -9,7 +9,8 @@
                     "build-css":  "postcss public/input.css -o public/style.css",
                     "seed":  "node scripts/seed.js",
                     "seed-year":  "node scripts/seed_year.js",
-                    "seed-demo":  "node scripts/seed_demo_relations.js"
+                    "seed-demo":  "node scripts/seed_demo_relations.js",
+                    "migrate-assignments":  "node scripts/migrate_assignments.js"
                 },
     "keywords":  [
 
