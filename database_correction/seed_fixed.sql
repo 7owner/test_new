@@ -6,16 +6,20 @@
 -- Seed users (for admin and non-admin roles)
 -- Passwords are bcrypt hashed (cost=10) to avoid storing plaintext credentials
 INSERT INTO users (email, roles, password)
-SELECT 'maboujunior777@gmail.com', '["ROLE_ADMIN"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq';
+SELECT 'maboujunior777@gmail.com', '["ROLE_ADMIN"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='maboujunior777@gmail.com');
 
 INSERT INTO users (email, roles, password)
-SELECT 'takotuemabou@outlook.com', '["ROLE_USER"]', '$2b$10$FzYl.RlTXgB/sPKe7phzJuXk.uUfXWDWnevVIB4MuXc2NoIOW2WKq';
+SELECT 'takotuemabou@outlook.com', '["ROLE_USER"]', '$2b$10$FzYl.RlTXgB/sPKe7phzJuXk.uUfXWDWnevVIB4MuXc2NoIOW2WKq'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='takotuemabou@outlook.com');
 
 INSERT INTO users (email, roles, password)
-SELECT 'pierre.bernard@example.com', '["ROLE_USER"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq';
+SELECT 'pierre.bernard@example.com', '["ROLE_USER"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='pierre.bernard@example.com');
 
 INSERT INTO users (email, roles, password)
-SELECT 'marie.petit@example.com', '["ROLE_USER"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq';
+SELECT 'marie.petit@example.com', '["ROLE_USER"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='marie.petit@example.com');
 
 -- Seed addresses
 INSERT INTO adresse (libelle, ligne1, code_postal, ville, pays)
