@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
-  <!-- script.js désactivé -->
+  <!-- script.js dï¿½sactivï¿½ -->
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
@@ -114,33 +114,44 @@
 
       let agent = null;
 
-      const agent = allAgents.find(a => a.matricule === agentMatricule);
-
-      if (agent) {
-        document.getElementById('agent-name').textContent = `${agent.nom} ${agent.prenom} (${agent.matricule})`;
-      } else {
-        document.getElementById('agent-name').textContent = 'Agent introuvable';
-      }
+            // Charger l'agent depuis l'API puis mettre Ã  jour le nom
+      (async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const headers = token ? { 'Authorization': Bearer  } : {};
+          const res = await fetch('/api/agents', { headers, credentials:'same-origin' });
+          const data = res.ok ? await res.json() : [];
+          const list = Array.isArray(data) ? data : [];
+          agent = list.find(a => String(a.matricule) === String(agentMatricule)) || null;
+        } catch(e) { console.error('Erreur chargement /api/agents:', e); }
+        document.getElementById('agent-name').textContent = agent ? ${agent.nom}  () : 'Agent introuvable';
+      })();
 
       const generateTokenBtn = document.getElementById('generate-token-btn');
       const generatedTokenDisplay = document.getElementById('generated-token-display');
       const generatedTokenSpan = document.getElementById('generated-token');
 
-      generateTokenBtn.addEventListener('click', function() {
+            generateTokenBtn.addEventListener('click', async function() {
         const expirationDate = document.getElementById('expiration-date').value;
         const expirationTime = document.getElementById('expiration-time').value;
-
-        if (!expirationDate) {
-          alert("Veuillez sÃ©lectionner une date d'expiration.");
-          return;
+        if (!expirationDate) { alert("Veuillez sÃ©lectionner une date d'expiration."); return; }
+        const interventionId = new URLSearchParams(location.search).get('intervention_id');
+        if (!agent || !agent.email) { alert("Email d'agent introuvable. Impossible d'envoyer le jeton."); return; }
+        if (!interventionId) { if (!confirm("Aucun intervention_id fourni. Continuer tout de mÃªme ?")) return; }
+        try {
+          const token = localStorage.getItem('token');
+          const headers = { 'Content-Type': 'application/json', ...(token ? { 'Authorization': Bearer  } : {}) };
+          const body = { email: agent.email, intervention_id: interventionId || 1 };
+          const r = await fetch('/api/invite-agent', { method:'POST', headers, credentials:'same-origin', body: JSON.stringify(body) });
+          const data = await r.json().catch(()=>({}));
+          if (!r.ok) throw new Error((data && data.error) || HTTP );
+          generatedTokenSpan.textContent = data && data.newTicketId ? TICKET- : 'OK';
+          generatedTokenDisplay.classList.remove('d-none');
+          alert(Invitation envoyÃ©e Ã  . Ticket liÃ©: );
+        } catch(e) {
+          console.error(e);
+          alert(Ã‰chec de la gÃ©nÃ©ration/envoi: );
         }
-
-        // Simulate token generation
-        const token = `TOKEN-${Math.random().toString(36).substr(2, 9)}-${agentMatricule}-${expirationDate.replace(/-/g, '')}`;
-        generatedTokenSpan.textContent = token;
-        generatedTokenDisplay.classList.remove('d-none');
-
-        const targetEmail = agent && agent.email ? agent.email : "(email inconnu)"; alert(`Jeton généré et un email a été envoyé à ${targetEmail} (simulation).`);
       });
 
       // Retrieve logged-in user role from localStorage
