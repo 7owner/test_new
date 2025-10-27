@@ -32,22 +32,24 @@ INSERT INTO agence (titre, designation, telephone, email)
 SELECT 'Agence Lyon', 'Agence secondaire Lyon', '0499999999', 'lyon@agence.fr';
 
 -- Seed agents
+-- AGT001 lié à l'utilisateur takotuemabou@outlook.com
 INSERT INTO agent (matricule, nom, prenom, admin, email, tel, actif, agence_id, user_id)
-SELECT 'AGT001', 'Dupont', 'Jean', FALSE, 'jean.dupont@example.com', '0612345678', TRUE,
-       1, -- Agence Paris
-       1; -- takotuemabou@outlook.com
+SELECT 'AGT001', 'Dupont', 'Jean', FALSE, 'takotuemabou@outlook.com', '0612345678', TRUE,
+       (SELECT id FROM agence WHERE titre = 'Agence Paris' LIMIT 1),
+       (SELECT id FROM users WHERE email = 'takotuemabou@outlook.com' LIMIT 1);
 
+-- AGT002 lié à l'utilisateur maboujunior777@gmail.com
 INSERT INTO agent (matricule, nom, prenom, admin, email, tel, actif, agence_id, user_id)
-SELECT 'AGT002', 'Martin', 'Sophie', TRUE, 'sophie.martin@example.com', '0687654321', TRUE,
-       2, -- Agence Lyon
-       2; -- maboujunior777@gmail.com
+SELECT 'AGT002', 'Martin', 'Sophie', TRUE, 'maboujunior777@gmail.com', '0687654321', TRUE,
+       (SELECT id FROM agence WHERE titre = 'Agence Lyon' LIMIT 1),
+       (SELECT id FROM users WHERE email = 'maboujunior777@gmail.com' LIMIT 1);
 
 INSERT INTO agent (matricule, nom, prenom, admin, email, tel, actif, agence_id, user_id)
 SELECT 'AGT003', 'Bernard', 'Pierre', FALSE, 'pierre.bernard@example.com', '0611223344', FALSE,
-       1, -- Agence Paris
-       3; -- pierre.bernard@example.com
+       (SELECT id FROM agence WHERE titre = 'Agence Paris' LIMIT 1),
+       (SELECT id FROM users WHERE email = 'pierre.bernard@example.com' LIMIT 1);
 
 INSERT INTO agent (matricule, nom, prenom, admin, email, tel, actif, agence_id, user_id)
 SELECT 'AGT004', 'Petit', 'Marie', FALSE, 'marie.petit@example.com', '0655443322', TRUE,
-       2, -- Agence Lyon
-       4; -- marie.petit@example.com
+       (SELECT id FROM agence WHERE titre = 'Agence Lyon' LIMIT 1),
+       (SELECT id FROM users WHERE email = 'marie.petit@example.com' LIMIT 1);
