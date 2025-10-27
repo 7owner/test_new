@@ -63,6 +63,29 @@ Ce document rÃ©sume les correctifs et Ã©volutions rÃ©alisÃ©s durant la session, 
   - nav.js: Ã©vite lâ€™appel Ã  `/api/me` pour peupler lâ€™email (utilise le JWT local pour le bandeau) afin dâ€™Ã©viter les 500 bruyants pendant le durcissement backend.
   - login.html: rÃ©cupÃ©ration CSRF optionnelle et parsing JSON conditionnÃ© au content-type pour Ã©viter les â€œUnexpected tokenâ€¦â€.
 
+
+- Tickets (création + vue + liste)
+  - API: lors de POST /api/tickets, etat est casté en etat_rapport (défaut Pas_commence).
+  - API: date_debut par défaut CURRENT_TIMESTAMP si manquante; cast explicite des dates.
+  - UI: public/ticket-new.html propose 'Date de début/fin' (datetime-local) envoyées en ISO.
+  - UI: public/ticket-view.html affiche date + heure locales.
+  - UI: public/tickets.html charge les noms de sites via /api/sites et affiche un lien vers site-view.html.
+
+- Sites (création)
+  - public/site-new.html: switch 'Saisir une nouvelle adresse'. Si activé: Adresse (ligne 1), Code postal, Ville requis. Création via /api/adresses puis /api/sites (JWT ou CSRF).
+
+- Dashboard (synchronisé DB)
+  - Carte 'Tickets ouverts': 'X / Y' depuis /api/tickets. Graphe barres 'Tickets par mois' et donut 'Ouverts vs Fermés'.
+  - Panneau 'Tickets ouverts': 5 plus récents (tri date), badge d'état, nom du site et lien 'Voir tout'.
+
+- Mot de passe oublié (Render)
+  - Liens reset basés sur x-forwarded-proto/eq.protocol + eq.get('host').
+
+- Routage par défaut
+  - GET / renvoie public/dashboard.html (page d'accueil).
+
+- Initialisation DB (compat Render)
+  - Exécution SQL statement-par-statement avec normalisation (BOM, commentaires) et logs. Env: INIT_SQL, SEED_SQL, SKIP_DB_INIT.
 ## Points connus / Dette technique
 
 - `public/script.js` est tronquÃ© (Unexpected end of input). Il a Ã©tÃ© retirÃ© des pages sensibles; Ã  rÃ©parer ou dÃ©coupler dÃ©finitivement.

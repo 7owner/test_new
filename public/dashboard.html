@@ -4,62 +4,43 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tableau de bord</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
-
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1>  <a href="/dashboard.html"> <img src="/logo_logicielle.png" alt="" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
+    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="Logo" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
     <div id="user-info-container" class="d-flex align-items-center">
       <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-        Menu
-      </button>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">Menu</button>
     </div>
   </header>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
     <div class="offcanvas-header">
       <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
     </div>
     <div class="offcanvas-body">
       <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
-        </li>
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
+        <li class="nav-item"><a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
+        <li class="nav-item"><a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a></li>
+        <li class="nav-item"><a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a></li>
+        <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
+        <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
       </ul>
     </div>
   </div>
 
   <main class="container mt-5">
     <h1 class="mb-4">Tableau de bord</h1>
-    <!-- Métriques principales -->
+
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-4">
       <div class="col">
         <div class="card h-100 circle-card tickets-card">
@@ -70,17 +51,6 @@
           </div>
         </div>
       </div>
-      <!--
-      <div class="col">
-        <div class="card h-100">
-          <div class="card-body">
-            <h5 class="card-title">Interventions en cours</h5>
-            <p class="card-text" id="ongoingInterventions">-</p>
-            <a href="/interventions.html" class="btn btn-sm btn-outline-primary">Voir les interventions</a>
-          </div>
-        </div>
-      </div>
-      -->
       <div class="col">
         <div class="card h-100 circle-card agents-card">
           <div class="card-body">
@@ -93,7 +63,7 @@
       <div class="col">
         <div class="card h-100 circle-card sites-card">
           <div class="card-body">
-            <h5 class="card-title">Sites sous contrat</h5>
+            <h5 class="card-title">Sites</h5>
             <p class="card-text" id="sitesUnderContract">-</p>
             <a href="/sites.html" class="btn btn-sm btn-outline-primary">Voir les sites</a>
           </div>
@@ -101,38 +71,26 @@
       </div>
     </div>
 
-    <!-- Graphique + maintenances urgentes -->
     <div class="row g-4 mb-4">
       <div class="col-lg-8">
         <div class="card h-100">
           <div class="card-body">
             <canvas id="monthlyMaintenanceChart"></canvas>
+            <div class="mt-4"><canvas id="openClosedChart" height="160"></canvas></div>
           </div>
         </div>
       </div>
       <div class="col-lg-4">
         <div class="card h-100">
           <div class="card-body">
-            <h5 class="card-title">Ticket ouvert</h5>
+            <h5 class="card-title">Tickets ouverts</h5>
             <div id="urgentMaintenances"></div>
           </div>
         </div>
       </div>
     </div>
 
-    </div>
-
-    <!-- Compteurs finance -->
-    <div id="financeCounters" class="row row-cols-1 row-cols-md-3 g-4 mb-4">
-      <div class="col">
-        <div class="card h-100">
-          <div class="card-body">
-            <h5 class="card-title">Achats</h5>
-            <p class="card-text" id="achatsCount">-</p>
-            <a href="/achats.html" class="btn btn-sm btn-outline-primary">Voir les achats</a>
-          </div>
-        </div>
-      </div>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
       <div class="col">
         <div class="card h-100">
           <div class="card-body">
@@ -152,233 +110,85 @@
         </div>
       </div>
     </div>
+  </main>
 
-    </main>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
-    // Sample data for sites and maintenances
-    const allSites = [
-      {
-        id: "SITE001",
-        nom_site: "Site Central Paris",
-        adresse_id: "ADDR001",
-        statut: "en attente",
-        ticket: true,
-        responsable_matricule: null
-      },
-      {
-        id: "SITE002",
-        nom_site: "Usine Lyon",
-        adresse_id: "ADDR002",
-        statut: "prise en charge",
-        ticket: true,
-        responsable_matricule: "AGT001"
-      },
-      {
-        id: "SITE003",
-        nom_site: "Bureau Marseille",
-        adresse_id: "ADDR003",
-        statut: "en cour",
-        ticket: false,
-        responsable_matricule: null
-      },
-      {
-        id: "SITE004",
-        nom_site: "Dépôt Bordeaux",
-        adresse_id: "ADDR004",
-        statut: "fini",
-        ticket: false,
-        responsable_matricule: "AGT002"
-      },
-      {
-        id: "SITE005",
-        nom_site: "Agence Lille",
-        adresse_id: "ADDR005",
-        statut: "sous devis",
-        ticket: true,
-        responsable_matricule: null
-      }
-    ];
-
-    const allMaintenances = [
-      {
-        id: "MNT001",
-        site_id: "SITE001",
-        titre: "Maintenance préventive annuelle",
-        description: "Vérification complète des systèmes.",
-        etat: "Pas_commence",
-        doe_id: "DOE001",
-        affaire_id: "AFF001",
-        responsable: null
-      },
-      {
-        id: "MNT002",
-        site_id: "SITE002",
-        titre: "Réparation urgence machine",
-        description: "Réparation suite à une panne critique.",
-        etat: "En_cours",
-        doe_id: "DOE002",
-        affaire_id: "AFF002",
-        responsable: "AGT001"
-      },
-      {
-        id: "MNT003",
-        site_id: "SITE001",
-        titre: "Contrôle sécurité incendie",
-        description: "Contrôle réglementaire des équipements.",
-        etat: "Termine",
-        doe_id: "DOE001",
-        affaire_id: "AFF001",
-        responsable: "AGT002"
-      },
-      {
-        id: "MNT004",
-        site_id: "SITE005",
-        titre: "Installation nouveau matériel",
-        description: "Mise en place de nouveaux serveurs.",
-        etat: "En_cours",
-        doe_id: null,
-        affaire_id: null,
-        responsable: null
-      }
-    ];
+    async function buildHeaders(json=false){
+      const h = json? { 'Content-Type':'application/json' } : {};
+      const token = localStorage.getItem('token');
+      if (token) { h['Authorization'] = `Bearer ${token}`; return h; }
+      try { const r = await fetch('/api/csrf-token', { credentials:'same-origin' }); const d = await r.json().catch(()=>({})); if (d && d.csrfToken) h['CSRF-Token'] = d.csrfToken; } catch {}
+      return h;
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
-      // Update Maintenances sur sites avec ticket ouvert
+      // Tickets ouverts (liste, triés, limités)
       const urgentMaintenancesDiv = document.getElementById('urgentMaintenances');
-      urgentMaintenancesDiv.innerHTML = '';
+      (async () => {
+        let siteMap = new Map();
+        try { const rs = await fetch('/api/sites', { headers: await buildHeaders(false), credentials:'same-origin' }); if (rs.ok){ const rows = await rs.json(); siteMap = new Map((rows||[]).map(s => [String(s.id), s.nom_site || `Site #${s.id}`])); } } catch {}
+        try {
+          const r = await fetch('/api/tickets', { headers: await buildHeaders(false), credentials:'same-origin' });
+          const data = r.ok? await r.json() : [];
+          let open = (Array.isArray(data)? data: []).filter(t => String(t.etat) !== 'Termine');
+          const getWhen = t => t.date_debut || t.date_fin || null;
+          open.sort((a,b) => (new Date(getWhen(b)||0)) - (new Date(getWhen(a)||0)) );
+          const limited = open.slice(0,5);
+          if (!limited.length) { urgentMaintenancesDiv.innerHTML = '<p class="text-muted">Aucun ticket ouvert.</p>'; return; }
+          urgentMaintenancesDiv.innerHTML = '';
+          limited.forEach(t => {
+            const siteName = siteMap.get(String(t.site_id)) || (t.site_id ? `Site #${t.site_id}` : 'N/A');
+            const badge = (s => { switch(String(s||'')) { case 'Pas_commence': return 'bg-secondary'; case 'En_attente': return 'bg-info'; case 'En_cours': return 'bg-warning'; case 'Bloque': return 'bg-danger'; default: return 'bg-light text-dark'; } })(t.etat);
+            const el = document.createElement('div'); el.className='card card-body mb-2';
+            el.innerHTML = `
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <h6 class="card-title mb-1">${t.titre || '(Sans titre)'}</h6>
+                  <p class="card-text text-muted mb-1">Site: ${siteName}</p>
+                  <span class="badge ${badge}">${String(t.etat||'').replace('_',' ')}</span>
+                </div>
+                <div>
+                  <a href="ticket-view.html?id=${t.id}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i> Détails</a>
+                </div>
+              </div>`;
+            urgentMaintenancesDiv.appendChild(el);
+          });
+          const footer = document.createElement('div'); footer.className='d-flex justify-content-end mt-2'; footer.innerHTML = '<a class="btn btn-sm btn-outline-primary" href="/tickets.html">Voir tout</a>'; urgentMaintenancesDiv.appendChild(footer);
+        } catch (e) { urgentMaintenancesDiv.innerHTML = '<p class="text-muted">Impossible de charger les tickets ouverts.</p>'; }
+      })();
 
-      const maintenancesWithOpenTickets = allMaintenances.filter(mnt => {
-        const site = allSites.find(s => s.id === mnt.site_id);
-        return site && site.ticket === true; // Only maintenances for sites with open tickets
-      });
-
-      if (maintenancesWithOpenTickets.length > 0) {
-        maintenancesWithOpenTickets.forEach(mnt => {
-          const site = allSites.find(s => s.id === mnt.site_id);
-          let statusBadgeClass = '';
-          switch (site.statut) {
-            case 'en attente':
-              statusBadgeClass = 'bg-secondary';
-              break;
-            case 'prise en charge':
-              statusBadgeClass = 'bg-info';
-              break;
-            case 'en cour':
-              statusBadgeClass = 'bg-warning';
-              break;
-            case 'fini':
-              statusBadgeClass = 'bg-success';
-              break;
-            case 'sous devis':
-              statusBadgeClass = 'bg-primary';
-              break;
-            default:
-              statusBadgeClass = 'bg-light text-dark';
-          }
-
-          const maintenanceEl = document.createElement('div');
-          maintenanceEl.className = 'card card-body mb-2';
-          maintenanceEl.innerHTML = `
-            <div>
-              <h6 class="card-title mb-1">${mnt.titre}</h6>
-              <p class="card-text text-muted mb-1">Site: ${site.nom_site}</p>
-              <span class="badge ${statusBadgeClass}">${site.statut}</span>
-              <a href="maintenance-view.html?id=${mnt.id}" class="btn btn-sm btn-info ms-2"><i class="bi bi-eye"></i> Détails</a>
-            </div>
-          `;
-          urgentMaintenancesDiv.appendChild(maintenanceEl);
-        });
-      } else {
-        urgentMaintenancesDiv.innerHTML = '<p class="text-gray-500 text-sm">Aucune maintenance sur site avec ticket ouvert.</p>';
-      }
-
-      // Utilitaires d'accès API (JWT ou CSRF)
-      async function buildHeaders(json=false){
-        const h = json? { 'Content-Type':'application/json' } : {};
-        const token = localStorage.getItem('token');
-        if (token) { h['Authorization'] = `Bearer ${token}`; return h; }
-        try { const r = await fetch('/api/csrf-token', { credentials:'same-origin' }); const d = await r.json().catch(()=>({})); if (d && d.csrfToken) h['CSRF-Token'] = d.csrfToken; } catch {}
-        return h;
-      }
-
-      // Charger les métriques réelles depuis l'API
+      // Tickets (ouvert/total) + graphiques (bar + donut)
       (async () => {
         try {
-          // Tickets ouverts
           const rt = await fetch('/api/tickets', { headers: await buildHeaders(false), credentials:'same-origin' });
-          if (rt.ok) {
-            const rows = await rt.json();
-            const open = (Array.isArray(rows)? rows: []).filter(t => String(t.etat) !== 'Termine').length;
-            document.getElementById('activeMaintenances').textContent = `${open}`;
-          } else {
-            document.getElementById('activeMaintenances').textContent = allMaintenances.filter(m => m.etat !== 'Termine').length;
+          const rows = rt.ok? await rt.json() : [];
+          const tickets = Array.isArray(rows)? rows : [];
+          const openCount = tickets.filter(t => String(t.etat) !== 'Termine').length;
+          const totalCount = tickets.length;
+          document.getElementById('activeMaintenances').textContent = `${openCount} / ${totalCount}`;
+
+          const byMonth = new Array(12).fill(0);
+          tickets.forEach(t => { const d = t.date_debut ? new Date(t.date_debut) : (t.date_fin ? new Date(t.date_fin) : null); if (!d || isNaN(d)) return; byMonth[d.getMonth()]++; });
+          const ctx = document.getElementById('monthlyMaintenanceChart');
+          if (ctx && window.Chart) {
+            const existing = Chart.getChart('monthlyMaintenanceChart'); if (existing) existing.destroy();
+            new Chart(ctx, { type: 'bar', data: { labels: ['Jan','Fev','Mar','Avr','Mai','Juin','Juil','Aout','Sep','Oct','Nov','Dec'], datasets: [{ label:'Tickets par mois', data: byMonth, backgroundColor:'rgba(13,110,253,0.6)', borderColor:'rgba(13,110,253,1)', borderWidth:1 }] }, options:{ responsive:true, scales:{ y:{ beginAtZero:true }}} });
           }
-        } catch { document.getElementById('activeMaintenances').textContent = allMaintenances.filter(m => m.etat !== 'Termine').length; }
 
-        try {
-          // Agents actifs (compte simple pour l'instant)
-          const ra = await fetch('/api/agents', { headers: await buildHeaders(false), credentials:'same-origin' });
-          if (ra.ok) { const rows = await ra.json(); document.getElementById('activeAgents').textContent = (Array.isArray(rows)? rows.length: 0); }
-        } catch {}
-
-        try {
-          // Sites (compte simple)
-          const rs = await fetch('/api/sites', { headers: await buildHeaders(false), credentials:'same-origin' });
-          if (rs.ok) { const rows = await rs.json(); document.getElementById('sitesUnderContract').textContent = (Array.isArray(rows)? rows.length: 0); }
-        } catch {}
-
-        try {
-          // Factures
-          const rf = await fetch('/api/factures', { headers: await buildHeaders(false), credentials:'same-origin' });
-          if (rf.ok) { const rows = await rf.json(); document.getElementById('facturesCount').textContent = (Array.isArray(rows)? rows.length: 0); }
-        } catch {}
-
-        try {
-          // Règlements
-          const rr = await fetch('/api/reglements', { headers: await buildHeaders(false), credentials:'same-origin' });
-          if (rr.ok) { const rows = await rr.json(); document.getElementById('reglementsCount').textContent = (Array.isArray(rows)? rows.length: 0); }
+          const dctx = document.getElementById('openClosedChart');
+          if (dctx && window.Chart) {
+            const existingPie = Chart.getChart('openClosedChart'); if (existingPie) existingPie.destroy();
+            new Chart(dctx, { type:'doughnut', data: { labels:['Ouverts','Fermes'], datasets:[{ data:[openCount, totalCount-openCount], backgroundColor:['rgba(25,135,84,0.7)','rgba(220,53,69,0.7)'], borderColor:['rgba(25,135,84,1)','rgba(220,53,69,1)'], borderWidth:1 }] }, options:{ responsive:true, cutout:'60%' } });
+          }
         } catch {}
       })();
 
-      // Chart.js example (if needed, ensure chartData is defined)
-      const ctx = document.getElementById('monthlyMaintenanceChart');
-      if (ctx) {
-        // Destroy existing chart instance if it exists
-        const existingChart = Chart.getChart('monthlyMaintenanceChart');
-        if (existingChart) {
-          existingChart.destroy();
-        }
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
-            datasets: [{
-              label: 'Maintenances par mois',
-              data: [12, 19, 3, 5, 2, 3],
-              backgroundColor: 'rgba(75, 192, 192, 0.6)',
-              borderColor: 'rgba(75, 192, 192, 1)',
-              borderWidth: 1
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              y: { beginAtZero: true }
-            }
-          }
-        });
-      }
-
-      // Logout functionality
-      const logoutLink = document.getElementById('logout-link');
-      if (logoutLink) {
-        logoutLink.addEventListener('click', function(event) {
-          event.preventDefault();
-          localStorage.removeItem('jwtToken'); // Clear the JWT token
-          window.location.href = '/login.html'; // Redirect to login page
-        });
-      }
+      // Compteurs
+      (async () => { try { const r = await fetch('/api/agents', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('activeAgents').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
+      (async () => { try { const r = await fetch('/api/sites', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('sitesUnderContract').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
+      (async () => { try { const r = await fetch('/api/factures', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('facturesCount').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
+      (async () => { try { const r = await fetch('/api/reglements', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('reglementsCount').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
     });
   </script>
 </body>

@@ -12,6 +12,10 @@ const crypto = require('crypto');
 const app = express();
 const port = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'change_me_dev';
+const pathInitDefault = path.join(__dirname, 'database_correction', 'init_fixed.sql');
+const pathSeedDefault = path.join(__dirname, 'database_correction', 'seed_fixed.sql');
+const INIT_SQL_PATH = process.env.INIT_SQL || pathInitDefault;
+const SEED_SQL_PATH = process.env.SEED_SQL || pathSeedDefault;
 
 // Middleware
 app.use(cors());
@@ -35,6 +39,13 @@ app.use(express.static('public', { setHeaders: (res, filePath, stat) => {
   res.setHeader('Cache-Control', 'public, max-age=604800, must-revalidate');
   res.setHeader('X-Content-Type-Options', 'nosniff');
 } })); // Serve static files from 'public' directory
+// Default homepage → dashboard
+try {
+  app.get('/', (_req, res) => {
+    try { res.sendFile(path.join(__dirname, 'public', 'dashboard.html')); }
+    catch { res.redirect(302, '/dashboard.html'); }
+  });
+} catch(_) {}
 // Ensure uploads directory exists
 try {
   const uploadsDir = path.join(__dirname, 'public', 'uploads', 'documents');
@@ -54,6 +65,10 @@ pool.on('error', (err) => {
 
 // Function to initialize the database schema
 async function initializeDatabase() {
+    if (String(process.env.SKIP_DB_INIT || 'false').toLowerCase() === 'true') {
+        console.warn('SKIP_DB_INIT=true -> skipping DB initialization');
+        return;
+    }
     const client = await pool.connect();
     try {
         // Check if schema is already initialized by looking for a known table
@@ -63,8 +78,33 @@ async function initializeDatabase() {
         if (schemaExists.rows[0].to_regclass) {
             console.log('Database schema already initialized. Skipping init.sql execution.');
         } else {
-            const schemaSql = fs.readFileSync(path.join(__dirname, 'database_correction', 'init_fixed.sql')).toString();
-            await client.query(schemaSql);
+            const schemaPath = INIT_SQL_PATH;
+            console.log('Initializing schema from:', schemaPath);
+            const schemaSqlRaw = fs.readFileSync(schemaPath, 'utf8');
+            // Normalize, strip BOM and comments, then split by ';'
+            const norm = schemaSqlRaw
+              .replace(/\uFEFF/g, '')
+              .replace(/\r\n/g, '\n')
+              .replace(/\/\*[\s\S]*?\*\//g, ''); // remove /* */ blocks
+            const statements = norm
+              .split('\n')
+              .filter(line => !/^\s*--/.test(line))
+              .join('\n')
+              .split(';')
+              .map(s => s.trim())
+              .filter(s => /\S/.test(s))
+              .filter(s => /^[A-Za-z]/.test(s)); // drop any leading junk fragments
+            if (!statements.length) {
+              console.error('Schema init: no SQL statements parsed from init_fixed.sql. First 120 chars:', norm.slice(0,120));
+              throw new Error('Empty schema after parsing');
+            }
+            console.log('Schema init: executing', statements.length, 'statements. First statement head:', statements[0].slice(0,120));
+            await client.query('BEGIN');
+            for (const stmt of statements) {
+              try { await client.query(stmt); }
+              catch (e) { console.error('Schema statement failed:', stmt.slice(0,120)+'...', e.message); throw e; }
+            }
+            await client.query('COMMIT');
             console.log('Database schema initialized successfully.');
         }
 
@@ -96,8 +136,31 @@ async function initializeDatabase() {
 
         // Seed data (idempotent via NOT EXISTS checks)
         try {
-            const seedSql = fs.readFileSync(path.join(__dirname, 'database_correction', 'seed_fixed.sql')).toString();
-            await client.query(seedSql);
+            const seedPath = SEED_SQL_PATH;
+            console.log('Seeding database from:', seedPath);
+            const seedRaw = fs.readFileSync(seedPath, 'utf8');
+            const normSeed = seedRaw
+              .replace(/\uFEFF/g, '')
+              .replace(/\r\n/g, '\n')
+              .replace(/\/\*[\s\S]*?\*\//g, '');
+            const seedStatements = normSeed
+              .split('\n')
+              .filter(line => !/^\s*--/.test(line))
+              .join('\n')
+              .split(';')
+              .map(s => s.trim())
+              .filter(s => /\S/.test(s))
+              .filter(s => /^[A-Za-z]/.test(s));
+            if (!seedStatements.length) {
+              console.warn('Seed: no statements parsed from seed_fixed.sql. First 120 chars:', normSeed.slice(0,120));
+            }
+            console.log('Seed: executing', seedStatements.length, 'statements. First statement head:', (seedStatements[0]||'').slice(0,120));
+            await client.query('BEGIN');
+            for (const stmt of seedStatements) {
+              try { await client.query(stmt); }
+              catch (e) { console.warn('Seed statement failed:', stmt.slice(0,120)+'...', e.message); throw e; }
+            }
+            await client.query('COMMIT');
             console.log('Database seed executed successfully.');
         } catch (seedErr) {
             console.warn('Database seed skipped/failed:', seedErr.message);
@@ -362,7 +425,9 @@ app.post('/api/forgot-password', async (req, res) => {
             [userId, resetToken, expiresAt]
         );
 
-        const resetLink = `http://localhost:${port}/reset-password.html?token=${resetToken}`;
+        const host = req.get('host');
+        const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+        const resetLink = `${proto}://${host}/reset-password.html?token=${resetToken}`;
         try {
           await sendMail({
             to: email,
@@ -444,7 +509,9 @@ app.post('/api/forgot-password', async (req, res) => {
             [userId, resetToken, expiresAt]
         );
 
-        const resetLink = `http://localhost:${port}/reset-password.html?token=${resetToken}`;
+        const host = req.get('host');
+        const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+        const resetLink = `${proto}://${host}/reset-password.html?token=${resetToken}`;
         try {
           await sendMail({
             to: email,
