@@ -1,4 +1,4 @@
-//////////////////////////////////////////////////////
+﻿//////////////////////////////////////////////////////
 // ENUMS
 //////////////////////////////////////////////////////
 Enum sujet_type {
@@ -85,7 +85,7 @@ Enum type_formation {
 }
 
 //////////////////////////////////////////////////////
-// RÉFÉRENTIELS
+// RÃ‰FÃ‰RENTIELS
 //////////////////////////////////////////////////////
 Table adresse {
   id               bigint       [pk, increment]
@@ -256,7 +256,7 @@ Table doe {
 }
 
 //////////////////////////////////////////////////////
-// RENDEZ-VOUS (peuvent être rattachés à une intervention)
+// RENDEZ-VOUS (peuvent Ãªtre rattachÃ©s Ã  une intervention)
 //////////////////////////////////////////////////////
 Table rendez_vous {
   id               bigint       [pk, increment]
@@ -279,24 +279,20 @@ Table rendez_vous {
 }
 
 //////////////////////////////////////////////////////
-// TICKET, INTERVENTIONS CHAÎNABLES, RAPPORT
+// TICKET, INTERVENTIONS CHAÃŽNABLES, RAPPORT
 //////////////////////////////////////////////////////
-Table ticket {
-  id               bigint        [pk, increment]
-  doe_id           bigint        [not null, ref: > doe.id, note: 'Ticket rattaché à un DOE']
-  affaire_id       bigint        [not null, ref: > affaire.id, note: 'Lien explicite à l\'affaire']
-  titre            varchar(255)
-  description      text          [not null]
-  etat             etat_rapport  [not null, default: 'Pas_commence']
-  responsable      varchar(20)   [ref: > agent.matricule]
-  date_debut       timestamp     [not null, default: 'CURRENT_TIMESTAMP']
-  date_fin         timestamp     [not null, default: 'CURRENT_TIMESTAMP']
 
-  indexes {
-    doe_id     [name: 'idx_ticket_doe']
-    affaire_id [name: 'idx_ticket_affaire']
-    etat       [name: 'idx_ticket_etat']
-  }
+// Historique des responsables secondaires du ticket
+Table ticket_responsable {
+  id               bigint       [pk, increment]
+  ticket_id        bigint       [not null, ref: > ticket.id]
+  actor_email      varchar(255) [not null, note: 'Email de l\'acteur (admin)']
+  actor_name       varchar(255) [note: 'Nom saisi au moment de la prise']
+  role             varchar(50)  [not null, default: 'Secondaire']
+  date_debut       timestamp    [not null, default: 'CURRENT_TIMESTAMP']
+  date_fin         timestamp
+  commentaire      text
+  created_at       timestamp    [not null, default: 'CURRENT_TIMESTAMP']
 }
 
 Table intervention {
@@ -305,7 +301,7 @@ Table intervention {
   description                text       [not null]
   date_debut                 date       [not null]
   date_fin                   date
-  intervention_precedente_id bigint     [ref: > intervention.id, note: 'Chaînage intervention → intervention suivante']
+  intervention_precedente_id bigint     [ref: > intervention.id, note: 'ChaÃ®nage intervention â†’ intervention suivante']
   date_debut_ts              timestamp  [not null, default: 'CURRENT_TIMESTAMP']
   date_fin_ts                timestamp  [not null, default: 'CURRENT_TIMESTAMP']
 
@@ -336,7 +332,7 @@ Table rapport_ticket {
 }
 
 //////////////////////////////////////////////////////
-// FORMATIONS (validité habilitations/certifications/permis)
+// FORMATIONS (validitÃ© habilitations/certifications/permis)
 //////////////////////////////////////////////////////
 Table formation {
   id                 bigint          [pk, increment]
@@ -344,11 +340,11 @@ Table formation {
   type               type_formation  [not null]
   libelle            varchar(255)    [not null]
   date_obtention     date
-  date_expiration    date            [note: 'Timer de validité']
+  date_expiration    date            [note: 'Timer de validitÃ©']
   organisme          varchar(255)
   commentaire        text
-  cree_par           varchar(20)     [ref: > agent.matricule, note: 'Admin ayant créé']
-  modifie_par        varchar(20)     [ref: > agent.matricule, note: 'Admin dernière modif']
+  cree_par           varchar(20)     [ref: > agent.matricule, note: 'Admin ayant crÃ©Ã©']
+  modifie_par        varchar(20)     [ref: > agent.matricule, note: 'Admin derniÃ¨re modif']
   date_debut         timestamp       [not null, default: 'CURRENT_TIMESTAMP']
   date_fin           timestamp       [not null, default: 'CURRENT_TIMESTAMP']
 
@@ -407,7 +403,7 @@ Table achat {
   reference_commande      varchar(100)
   affaire_id              bigint        [ref: > affaire.id]
   site_id                 bigint        [ref: > site.id]
-  rapport_ticket_id       bigint        [ref: > rapport_ticket.id, note: 'Si achat lié à un ticket']
+  rapport_ticket_id       bigint        [ref: > rapport_ticket.id, note: 'Si achat liÃ© Ã  un ticket']
   fournisseur_nom         varchar(255)  [not null]
   fournisseur_email       varchar(255)
   fournisseur_tel         varchar(50)
@@ -443,7 +439,7 @@ Table achat_ligne {
 }
 
 //////////////////////////////////////////////////////
-// FACTURATION (AR) + lignes + règlements
+// FACTURATION (AR) + lignes + rÃ¨glements
 //////////////////////////////////////////////////////
 Table facture {
   id                bigint         [pk, increment]
@@ -504,7 +500,7 @@ Table reglement {
 }
 
 //////////////////////////////////////////////////////
-// DOCUMENTS (non-images) — traçabilité multi-cibles
+// DOCUMENTS (non-images) â€” traÃ§abilitÃ© multi-cibles
 //////////////////////////////////////////////////////
 Table documents_repertoire {
   id               bigint          [pk, increment]
@@ -527,4 +523,26 @@ Table documents_repertoire {
     checksum_sha256                [name: 'idx_docs_checksum']
     date_debut                     [name: 'idx_docs_date']
   }
+}
+
+
+//////////////////////////////////////////////////////
+// SÉCURITÉ / AUDIT / RÉINITIALISATION MDP
+//////////////////////////////////////////////////////
+Table audit_log {
+  id               bigint       [pk, increment]
+  entity           text         [not null]
+  entity_id        text
+  action           text         [not null]
+  actor_email      text
+  details          jsonb
+  created_at       timestamp    [not null, default: 'CURRENT_TIMESTAMP']
+}
+
+Table password_reset_tokens {
+  id               bigint       [pk, increment]
+  user_id          bigint       [not null, ref: > users.id]
+  token            varchar(255) [not null, unique]
+  expires_at       timestamp    [not null]
+  created_at       timestamp    [not null, default: 'CURRENT_TIMESTAMP']
 }

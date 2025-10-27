@@ -4,57 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Créer un nouveau ticket</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
-  <script src="/script.js?v=1"></script>
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"></h1>
+    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="Logo" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
     <div id="user-info-container" class="d-flex align-items-center">
       <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-        Menu
-      </button>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">Menu</button>
     </div>
   </header>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
     <div class="offcanvas-header">
       <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
     </div>
     <div class="offcanvas-body">
       <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item">
-          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/tickets.html"><i class="bi bi-tools me-2"></i>Tickets</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
-        </li>
+        <li class="nav-item"><a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
+        <li class="nav-item"><a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/tickets.html"><i class="bi bi-tools me-2"></i>Tickets</a></li>
+        <li class="nav-item"><a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a></li>
+        <li class="nav-item"><a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a></li>
+        <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
+        <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
       </ul>
     </div>
   </div>
@@ -72,72 +51,65 @@
     <div class="card">
       <div class="card-body">
         <h2 class="card-title mb-4">Informations du ticket</h2>
-        <form id="ticket-new-form">
-          <div class="mb-3">
+        <div id="msg" class="d-none"></div>
+        <form id="ticket-new-form" class="row g-3">
+          <div class="col-md-6">
             <label for="doe_id" class="form-label">DOE associé</label>
-            <select class="form-select" id="doe_id" required>
+            <select class="form-select" id="doe_id">
               <option value="">Sélectionner un DOE</option>
             </select>
-            <div id="doe-details" class="mt-2 p-2 border rounded bg-light" style="display: none;">
+            <div id="doe-details" class="mt-2 p-2 border rounded bg-light d-none">
               <strong>Titre:</strong> <span id="doe-title"></span><br>
               <strong>Description:</strong> <span id="doe-description"></span>
               <a href="#" id="view-doe-btn" class="btn btn-sm btn-info mt-2"><i class="bi bi-eye"></i> Voir DOE</a>
             </div>
           </div>
-          <div class="mb-3">
+          <div class="col-md-6">
             <label for="affaire_id" class="form-label">Affaire associée</label>
             <select class="form-select" id="affaire_id">
               <option value="">Sélectionner une affaire</option>
-              <option value="AFF001">Affaire Paris</option>
-              <option value="AFF002">Affaire Lyon</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="titre" class="form-label">Titre</label>
-            <input type="text" class="form-control" id="titre" required>
-          </div>
-          <div class="mb-3">
-            <label for="description" class="form-label">Description</label>
-            <textarea class="form-control" id="description" rows="3" required></textarea>
-          </div>
-          <div class="mb-3">
-            <label for="etat" class="form-label">État</label>
-            <select class="form-select" id="etat" required>
-              <option value="Pas_commence">Pas commencé</option>
-              <option value="En_cours">En cours</option>
-              <option value="Termine">Terminé</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="responsable" class="form-label">Responsable</label>
-            <select class="form-select" id="responsable">
-              <option value="">Non assigné</option>
-              <option value="AGT001">Dupont Jean (AGT001)</option>
-              <option value="AGT002">Martin Sophie (AGT002)</option>
             </select>
           </div>
 
-          <h3 class="mt-5 mb-3">Fichiers Associés</h3>
-          <div id="ticket-documents-container">
-            <!-- Document entry template -->
-            <div class="ticket-document-entry mb-4 p-3 border rounded bg-light">
-              <div class="d-flex justify-content-end">
-                <button type="button" class="btn-close remove-document"></button>
-              </div>
-              <div class="mb-3">
-                <label for="document_file" class="form-label">Fichier</label>
-                <input class="form-control" type="file" name="document_file[]" required>
-              </div>
-              <div class="mb-3">
-                <label for="document_commentaire" class="form-label">Commentaire</label>
-                <textarea class="form-control" name="document_commentaire[]" rows="2"></textarea>
-              </div>
-            </div>
+          <div class="col-12">
+            <label for="titre" class="form-label">Titre (optionnel)</label>
+            <input type="text" class="form-control" id="titre">
           </div>
-          <button type="button" id="add-document-btn" class="btn btn-outline-secondary mb-4"><i class="bi bi-plus-circle me-2"></i>Ajouter un fichier</button>
+          <div class="col-12">
+            <label for="description" class="form-label">Description (optionnel)</label>
+            <textarea class="form-control" id="description" rows="3"></textarea>
+          </div>
 
-          <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary" id="save-ticket-btn"><i class="bi bi-save me-2"></i>Enregistrer Ticket et Fichiers</button>
+          <div class="col-md-6">
+            <label for="date_debut" class="form-label">Date de début (optionnel)</label>
+            <input type="datetime-local" class="form-control" id="date_debut">
+            <div class="form-text">Laisser vide pour utiliser la date et l'heure actuelles.</div>
+          </div>
+          <div class="col-md-6">
+            <label for="date_fin" class="form-label">Date de fin (optionnel)</label>
+            <input type="datetime-local" class="form-control" id="date_fin">
+          </div>
+
+          <div class="col-md-6">
+            <label for="etat" class="form-label">État (optionnel)</label>
+            <select id="etat" class="form-select">
+              <option value="">(par défaut: Pas_commence)</option>
+              <option value="Pas_commence">Pas_commence</option>
+              <option value="En_attente">En_attente</option>
+              <option value="En_cours">En_cours</option>
+              <option value="Bloque">Bloque</option>
+              <option value="Termine">Termine</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="responsable" class="form-label">Responsable (optionnel)</label>
+            <select id="responsable" class="form-select">
+              <option value="">Aucun</option>
+            </select>
+          </div>
+
+          <div class="col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-primary" id="save-ticket-btn">Créer</button>
             <a href="tickets.html" class="btn btn-secondary">Annuler</a>
           </div>
         </form>
@@ -145,75 +117,112 @@
     </div>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Dynamic document upload logic
-      const container = document.getElementById('ticket-documents-container');
-      const addBtn = document.getElementById('add-document-btn');
+    document.addEventListener('DOMContentLoaded', async function() {
+      const msg = document.getElementById('msg');
+      function showMsg(text, type) { if (!msg) return; msg.className = `alert alert-${type||'info'}`; msg.textContent = text; msg.classList.remove('d-none'); }
 
-      addBtn.addEventListener('click', function() {
-        const template = container.querySelector('.ticket-document-entry').cloneNode(true);
-        template.querySelectorAll('input, select, textarea').forEach(input => input.value = ''); // Clear values
-        container.appendChild(template);
-      });
+      const token = localStorage.getItem('token');
+      let isAdmin = false;
+      if (token) { try { const p=JSON.parse(atob(token.split('.')[1])); isAdmin = Array.isArray(p.roles) && p.roles.includes('ROLE_ADMIN'); } catch(_){} }
+      if (!isAdmin) { const f=document.getElementById('ticket-new-form'); if (f) f.innerHTML = '<div class="alert alert-danger">Accès refusé. Seuls les administrateurs peuvent créer des tickets.</div>'; return; }
 
-      container.addEventListener('click', function(event) {
-        if (event.target.classList.contains('remove-document')) {
-          if (container.querySelectorAll('.ticket-document-entry').length > 1) {
-            event.target.closest('.ticket-document-entry').remove();
-          } else {
-            alert('Au moins un fichier est requis.');
-          }
-        }
-      });
+      const headers = token ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } : { 'Content-Type': 'application/json' };
 
-      // DOE selection and display logic
       const doeSelect = document.getElementById('doe_id');
+      const affaireSelect = document.getElementById('affaire_id');
+      const responsableSelect = document.getElementById('responsable');
       const doeDetailsDiv = document.getElementById('doe-details');
       const doeTitleSpan = document.getElementById('doe-title');
       const doeDescriptionSpan = document.getElementById('doe-description');
       const viewDoeBtn = document.getElementById('view-doe-btn');
 
-      const sampleDoes = [
-        { id: "DOE001", titre: "DOE Site Central Paris", description: "Dossier d'ouvrages exécutés pour le site central de Paris." },
-        { id: "DOE002", titre: "DOE Usine Lyon", description: "Dossier d'ouvrages exécutés pour l'usine de Lyon." }
-      ];
+      // Load DOE
+      try {
+        const r = await fetch('/api/does', { headers, credentials:'same-origin' });
+        const does = r.ok? await r.json() : [];
+        window.__API_DOES__ = Array.isArray(does)? does : [];
+        (window.__API_DOES__||[]).forEach(d => doeSelect.add(new Option(`${d.titre || 'DOE'} (ID: ${d.id})`, d.id)));
+      } catch(_){ showMsg('Impossible de charger les DOE.', 'danger'); }
 
-      // Populate DOE dropdown
-      sampleDoes.forEach(doe => {
-        const option = document.createElement('option');
-        option.value = doe.id;
-        option.textContent = doe.titre;
-        doeSelect.appendChild(option);
-      });
+      // Load Affaires
+      try {
+        const r = await fetch('/api/affaires', { headers, credentials:'same-origin' });
+        const affaires = r.ok? await r.json() : [];
+        window.__API_AFFAIRES__ = Array.isArray(affaires)? affaires : [];
+        (window.__API_AFFAIRES__||[]).forEach(a => affaireSelect.add(new Option(`${a.nom_affaire || 'Affaire'} (ID: ${a.id})`, a.id)));
+      } catch(_){ showMsg('Impossible de charger les affaires.', 'danger'); }
 
-      doeSelect.addEventListener('change', function() {
-        const selectedDoeId = this.value;
-        const selectedDoe = sampleDoes.find(doe => doe.id === selectedDoeId);
+      // Load Agents (responsable)
+      try {
+        const r = await fetch('/api/agents', { headers, credentials:'same-origin' });
+        const agents = r.ok? await r.json() : [];
+        (Array.isArray(agents)? agents: []).forEach(a => responsableSelect.add(new Option(`${a.prenom||''} ${a.nom||''} (${a.matricule})`, a.matricule)));
+      } catch(_){ /* non bloquant */ }
 
-        if (selectedDoe) {
-          doeTitleSpan.textContent = selectedDoe.titre;
-          doeDescriptionSpan.textContent = selectedDoe.description;
-          viewDoeBtn.href = `doe-view.html?id=${selectedDoe.id}`; // Link to DOE view page
-          doeDetailsDiv.style.display = 'block';
+      // Sync affaire + details on DOE change
+      doeSelect.addEventListener('change', () => {
+        const sel = Number(doeSelect.value) || null;
+        const d = (window.__API_DOES__||[]).find(x => String(x.id) === String(sel));
+        if (d) {
+          doeTitleSpan.textContent = d.titre || '';
+          doeDescriptionSpan.textContent = d.description || '';
+          viewDoeBtn.href = `doe-view.html?id=${d.id}`;
+          doeDetailsDiv.classList.remove('d-none');
+          if (d.affaire_id) affaireSelect.value = String(d.affaire_id);
         } else {
-          doeDetailsDiv.style.display = 'none';
+          doeDetailsDiv.classList.add('d-none');
         }
       });
 
-      // Retrieve logged-in user role from localStorage
-      const currentUserRole = localStorage.getItem('userRole');
-      const currentUserIsAdmin = (currentUserRole === 'admin');
+      // Prefilter DOE by site_id if provided
+      try {
+        const siteParam = new URLSearchParams(location.search).get('site_id');
+        if (siteParam) {
+          const applyFilter = () => {
+            const list = Array.isArray(window.__API_DOES__)? window.__API_DOES__ : [];
+            const keepFirst = doeSelect.options[0];
+            doeSelect.innerHTML=''; if (keepFirst) doeSelect.appendChild(keepFirst);
+            list.filter(d => String(d.site_id) === String(siteParam)).forEach(d => doeSelect.add(new Option(`${d.titre || 'DOE'} (Site ${d.site_id})`, d.id)));
+          };
+          setTimeout(applyFilter, 300);
+          setTimeout(applyFilter, 800);
+        }
+      } catch(_){}
 
-      // Conditionally disable form fields and hide save button for non-admins
-      if (!currentUserIsAdmin) {
-        const form = document.getElementById('ticket-new-form');
-        form.querySelectorAll('input, select, textarea, button[type="submit"], #add-document-btn').forEach(element => {
-          element.setAttribute('disabled', 'true');
-        });
-        document.getElementById('save-ticket-btn').classList.add('d-none');
-      }
+      // Submit
+      const form = document.getElementById('ticket-new-form');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+          titre: (document.getElementById('titre')?.value || '').trim() || null,
+          description: (document.getElementById('description')?.value || '').trim() || null,
+          doe_id: Number(doeSelect.value) || null,
+          affaire_id: Number(affaireSelect.value) || null,
+          etat: (document.getElementById('etat')?.value || null),
+          responsable: (responsableSelect.value || null),
+          site_id: (new URLSearchParams(location.search).get('site_id') ? Number(new URLSearchParams(location.search).get('site_id')) : null)
+        };
+
+        // Optional dates: send ISO strings if provided
+        try {
+          const dd = (document.getElementById('date_debut')?.value || '').trim();
+          const df = (document.getElementById('date_fin')?.value || '').trim();
+          payload.date_debut = dd ? new Date(dd).toISOString() : null;
+          payload.date_fin = df ? new Date(df).toISOString() : null;
+        } catch(_) { payload.date_debut = payload.date_debut || null; payload.date_fin = payload.date_fin || null; }
+
+        if (!payload.doe_id || !payload.affaire_id) { alert('Veuillez sélectionner un DOE et une Affaire.'); return; }
+
+        try {
+          const r = await fetch('/api/tickets', { method:'POST', headers, credentials:'same-origin', body: JSON.stringify(payload) });
+          if (!r.ok) { const d=await r.json().catch(()=>({})); throw new Error(d && d.error ? d.error : `HTTP ${r.status}`); }
+          const created = await r.json();
+          if (created && created.id) { alert('Ticket créé avec succès'); location.href = `ticket-view.html?id=${created.id}`; }
+          else { throw new Error('Réponse invalide du serveur'); }
+        } catch(err) { console.error(err); alert(`Échec de la création: ${err.message}`); }
+      });
     });
   </script>
 </body>

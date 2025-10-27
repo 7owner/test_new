@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matériels</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=1"></script>
+</head>
+<body>
+  <header class="header d-flex justify-content-between align-items-center mb-4">
+    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="Logo" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">Menu</button>
+    </div>
+  </header>
+
+  <main class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0">Matériels</h2>
+      <a href="/dashboard.html" class="btn btn-secondary">Retour</a>
+    </div>
+
+    <div id="admin-form" class="card mb-4 d-none">
+      <div class="card-body">
+        <h5 class="card-title">Ajouter / Mettre à jour</h5>
+        <form id="matForm" class="row g-3">
+          <input type="hidden" id="mat_id">
+          <div class="col-md-4"><label class="form-label">Référence</label><input class="form-control" id="mat_ref"></div>
+          <div class="col-md-4"><label class="form-label">Désignation</label><input class="form-control" id="mat_designation"></div>
+          <div class="col-md-4"><label class="form-label">Catégorie</label><input class="form-control" id="mat_categorie"></div>
+          <div class="col-md-4"><label class="form-label">Fabricant</label><input class="form-control" id="mat_fabricant"></div>
+          <div class="col-md-4"><label class="form-label">Prix d'achat</label><input type="number" step="0.01" class="form-control" id="mat_prix"></div>
+          <div class="col-12"><label class="form-label">Commentaire</label><textarea class="form-control" id="mat_commentaire"></textarea></div>
+          <div class="col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-primary" id="saveBtn">Enregistrer</button>
+            <button type="button" class="btn btn-secondary" id="resetBtn">Réinitialiser</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="msg"></div>
+
+    <div class="table-responsive">
+      <table class="table table-striped align-middle">
+        <thead>
+          <tr>
+            <th>ID</th><th>Référence</th><th>Désignation</th><th>Catégorie</th><th>Fabricant</th><th>Prix</th><th>Commentaire</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="matList"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      const token = localStorage.getItem('token');
+      const isAdmin = (() => { try { const p = token ? JSON.parse(atob(token.split('.')[1])) : null; return Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
+      if (isAdmin) document.getElementById('admin-form').classList.remove('d-none');
+
+      const listEl = document.getElementById('matList');
+      const msg = document.getElementById('msg');
+      const form = document.getElementById('matForm');
+
+      async function load() {
+        listEl.innerHTML = '<tr><td colspan="8" class="text-muted">Chargement...</td></tr>';
+        try {
+          const r = await fetch('/api/materiels', { headers: Object.assign({}, token? { 'Authorization': `Bearer ${token}` }: {}), credentials: 'same-origin' });
+          if (!r.ok) throw new Error('Load failed');
+          const data = await r.json();
+          listEl.innerHTML = '';
+          if (!data.length) { listEl.innerHTML = '<tr><td colspan="8" class="text-muted">Aucun matériel.</td></tr>'; return; }
+          data.forEach(m => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${m.id}</td><td>${m.reference||''}</td><td>${m.designation||''}</td><td>${m.categorie||''}</td><td>${m.fabricant||''}</td><td>${m.prix_achat||''}</td><td>${m.commentaire||''}</td><td>${isAdmin?'<button class="btn btn-sm btn-outline-primary me-2 edit">Éditer</button><button class="btn btn-sm btn-outline-danger delete">Suppr.</button>':''}</td>`;
+            if (isAdmin) {
+              tr.querySelector('.edit').addEventListener('click', () => {
+                document.getElementById('mat_id').value = m.id;
+                document.getElementById('mat_ref').value = m.reference || '';
+                document.getElementById('mat_designation').value = m.designation || '';
+                document.getElementById('mat_categorie').value = m.categorie || '';
+                document.getElementById('mat_fabricant').value = m.fabricant || '';
+                document.getElementById('mat_prix').value = m.prix_achat || '';
+                document.getElementById('mat_commentaire').value = m.commentaire || '';
+              });
+              tr.querySelector('.delete').addEventListener('click', async () => {
+                if (!confirm('Supprimer ce matériel ?')) return;
+                const rd = await fetch(`/api/materiels/${m.id}`, { method: 'DELETE', headers: Object.assign({}, token? { 'Authorization': `Bearer ${token}` }: {}), credentials: 'same-origin' });
+                if (rd.ok) load(); else alert('Suppression refusée.');
+              });
+            }
+            listEl.appendChild(tr);
+          });
+        } catch (e) {
+          listEl.innerHTML = '<tr><td colspan="8" class="text-danger">Erreur de chargement.</td></tr>';
+        }
+      }
+
+      form?.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const id = document.getElementById('mat_id').value.trim();
+        const payload = {
+          reference: document.getElementById('mat_ref').value.trim() || null,
+          designation: document.getElementById('mat_designation').value.trim() || null,
+          categorie: document.getElementById('mat_categorie').value.trim() || null,
+          fabricant: document.getElementById('mat_fabricant').value.trim() || null,
+          prix_achat: document.getElementById('mat_prix').value || null,
+          commentaire: document.getElementById('mat_commentaire').value.trim() || null,
+        };
+        try {
+          const url = id ? `/api/materiels/${id}` : '/api/materiels';
+          const method = id ? 'PUT' : 'POST';
+          const r = await fetch(url, { method, headers: Object.assign({ 'Content-Type': 'application/json' }, token? { 'Authorization': `Bearer ${token}` }: {}), credentials: 'same-origin', body: JSON.stringify(payload) });
+          if (!r.ok) throw new Error('save failed');
+          form.reset();
+          await load();
+        } catch (e) {
+          alert('Enregistrement refusé.');
+        }
+      });
+
+      document.getElementById('resetBtn')?.addEventListener('click', () => { form.reset(); document.getElementById('mat_id').value=''; });
+
+      load();
+    });
+  </script>
+</body>
+</html>
+

@@ -4,54 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Détails du ticket</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
-  <script src="/script.js?v=1"></script>
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"></h1>
+    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="Logo" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
     <div id="user-info-container" class="d-flex align-items-center">
       <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-        Menu
-      </button>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">Menu</button>
     </div>
   </header>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
     <div class="offcanvas-header">
       <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
     </div>
     <div class="offcanvas-body">
       <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item">
-          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
-        </li>
+        <li class="nav-item"><a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
+        <li class="nav-item"><a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
+        <li class="nav-item"><a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a></li>
+        <li class="nav-item"><a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a></li>
+        <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
+        <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
       </ul>
     </div>
   </div>
@@ -78,6 +59,7 @@
         <p><strong>Durée:</strong> <span id="view_duree"></span></p>
         <p><strong>DOE:</strong> <span id="view_doe"></span></p>
         <p><strong>Affaire ID:</strong> <span id="view_affaire_id"></span></p>
+        <p><strong>Site:</strong> <span id="view_site"></span></p>
         <p><strong>Responsable:</strong> <span id="view_responsable"></span></p>
       </div>
     </div>
@@ -85,248 +67,100 @@
     <div class="card mb-4">
       <div class="card-body">
         <h2 class="card-title mb-4">Interventions Associées</h2>
-        <div id="ticket-interventions-list">
-          <!-- Placeholder for interventions -->
-        </div>
-        <a href="intervention-new.html" class="btn btn-primary mt-3" id="add-intervention-btn"><i class="bi bi-plus-circle me-2"></i>Ajouter une intervention</a>
+        <div id="ticket-interventions-list"></div>
+        <a href="intervention-new.html" class="btn btn-primary mt-3 d-none" id="add-intervention-btn"><i class="bi bi-plus-circle me-2"></i>Ajouter une intervention</a>
       </div>
     </div>
 
     <div class="d-flex gap-2">
       <a href="tickets.html" class="btn btn-secondary">Retour à la liste des tickets</a>
-      <a href="ticket-edit.html" class="btn btn-primary" id="edit-ticket-btn"><i class="bi bi-pencil me-2"></i>Modifier le ticket</a>
+      <a href="ticket-edit.html" class="btn btn-primary d-none" id="edit-ticket-btn"><i class="bi bi-pencil me-2"></i>Modifier le ticket</a>
     </div>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const ticketId = urlParams.get('id');
+    document.addEventListener('DOMContentLoaded', async function() {
+      const qp = new URLSearchParams(location.search);
+      const ticketId = qp.get('id');
+      const token = localStorage.getItem('token');
+      const headers = token? { 'Authorization': `Bearer ${token}` } : {};
+      const isAdmin = (()=>{ try{ const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles)&&p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
 
-      // Sample data for sites and tickets (should be consistent with dashboard.html)
-      const allSites = [
-        {
-          id: "SITE001",
-          nom_site: "Site Central Paris",
-          adresse_id: "ADDR001",
-          statut: "en attente",
-          ticket: true,
-          responsable_matricule: null
-        },
-        {
-          id: "SITE002",
-          nom_site: "Usine Lyon",
-          adresse_id: "ADDR002",
-          statut: "prise en charge",
-          ticket: true,
-          responsable_matricule: "AGT001"
-        },
-        {
-          id: "SITE003",
-          nom_site: "Bureau Marseille",
-          adresse_id: "ADDR003",
-          statut: "en cour",
-          ticket: false,
-          responsable_matricule: null
-        },
-        {
-          id: "SITE004",
-          nom_site: "Dépôt Bordeaux",
-          adresse_id: "ADDR004",
-          statut: "fini",
-          ticket: false,
-          responsable_matricule: "AGT002"
-        },
-        {
-          id: "SITE005",
-          nom_site: "Agence Lille",
-          adresse_id: "ADDR005",
-          statut: "sous devis",
-          ticket: true,
-          responsable_matricule: null
-        }
-      ];
-
-      const allTickets = [
-        {
-          id: "MNT001",
-          site_id: "SITE001",
-          titre: "Ticket préventif annuel",
-          description: "Vérification complète des systèmes.",
-          etat: "Pas_commence",
-          doe_id: "DOE001",
-          affaire_id: "AFF001",
-          responsable: null
-        },
-        {
-          id: "MNT002",
-          site_id: "SITE002",
-          titre: "Réparation urgence machine",
-          description: "Réparation suite à une panne critique.",
-          etat: "En_cours",
-          doe_id: "DOE002",
-          affaire_id: "AFF002",
-          responsable: "AGT001"
-        },
-        {
-          id: "MNT003",
-          site_id: "SITE001",
-          titre: "Contrôle sécurité incendie",
-          description: "Contrôle réglementaire des équipements.",
-          etat: "Termine",
-          doe_id: "DOE001",
-          affaire_id: "AFF001",
-          responsable: "AGT002"
-        },
-        {
-          id: "MNT004",
-          site_id: "SITE005",
-          titre: "Installation nouveau matériel",
-          description: "Mise en place de nouveaux serveurs.",
-          etat: "En_cours",
-          doe_id: null,
-          affaire_id: null,
-          responsable: null
-        }
-      ];
-
-      const allAgents = [
-        { matricule: "AGT001", nom: "Dupont", prenom: "Jean" },
-        { matricule: "AGT002", nom: "Martin", prenom: "Sophie" },
-        { matricule: "AGT003", nom: "Bernard", prenom: "Pierre" }
-      ];
-
-      const sampleDoes = [
-        { id: "DOE001", titre: "DOE Site Central Paris", description: "Dossier d'ouvrages exécutés pour le site central de Paris.", site_id: "SITE001", affaire_id: "AFF001" },
-        { id: "DOE002", titre: "DOE Usine Lyon", description: "Dossier d'ouvrages exécutés pour l'usine de Lyon.", site_id: "SITE002", affaire_id: "AFF002" }
-      ];
-
-      const sampleInterventions = [
-        {
-          id: "INT001",
-          ticket_id: "MNT001",
-          description: "Vérification annuelle des systèmes de sécurité",
-          date_debut: "2024-01-15",
-          date_fin: "2024-01-15",
-          status: "terminé"
-        },
-        {
-          id: "INT002",
-          ticket_id: "MNT001",
-          description: "Contrôle des accès et alarmes",
-          date_debut: "2024-01-16",
-          date_fin: "2024-01-16",
-          status: "en cours"
-        },
-        {
-          id: "INT003",
-          ticket_id: "MNT002",
-          description: "Diagnostic panne climatisation",
-          date_debut: "2024-02-20",
-          date_fin: "2024-02-20",
-          status: "bloqué"
-        }
-      ];
-
-      function getAgentName(matricule) {
-        const agent = allAgents.find(a => a.matricule === matricule);
-        return agent ? `${agent.nom} ${agent.prenom}` : 'Non assigné';
+      function set(id, val){ const el=document.getElementById(id); if(el) el.textContent = val||''; }
+      function fmt(iso){
+        if(!iso) return '';
+        const d=new Date(iso);
+        return isNaN(d)? '' : d.toLocaleString(); // affiche date + heure locales
       }
 
-      function getDoeTitle(doeId) {
-        const doe = sampleDoes.find(d => d.id === doeId);
-        return doe ? doe.titre : 'N/A';
-      }
+      try {
+        const res = await fetch(`/api/tickets/${ticketId}/relations`, { headers, credentials: 'same-origin' });
+        if (res.status===401||res.status===403){ try{ location.replace('/login.html'); }catch{ location.href='/login.html'; } return; }
+        if (!res.ok) throw new Error('Load failed');
+        const data = await res.json();
+        const t = data.ticket;
+        if (!t) throw new Error('Not found');
 
-      const ticket = allTickets.find(m => m.id === ticketId);
+        document.getElementById('ticket-title').textContent = t.titre || '(Sans titre)';
+        set('view_id', t.id);
+        set('view_titre', t.titre || '');
+        set('view_description', t.description || '');
+        set('view_etat', t.etat || '');
 
-      // Retrieve logged-in user role from localStorage
-      const currentUserRole = localStorage.getItem('userRole');
-      const currentUserIsAdmin = (currentUserRole === 'admin');
+        set('view_date_debut', fmt(t.date_debut));
+        set('view_date_fin', t.date_fin? fmt(t.date_fin) : 'En cours');
+        if (t.date_debut && t.date_fin) {
+          const dd=new Date(t.date_debut), df=new Date(t.date_fin); const dj=Math.floor((df-dd)/(1000*60*60*24)); set('view_duree', `${dj} jours`);
+        } else { set('view_duree',''); }
 
-      if (ticket) {
-        const site = allSites.find(s => s.id === ticket.site_id);
-        document.getElementById('ticket-title').textContent = ticket.titre;
-        document.getElementById('view_id').textContent = ticket.id;
-        document.getElementById('view_titre').textContent = ticket.titre;
-        document.getElementById('view_description').textContent = ticket.description;
-        document.getElementById('view_etat').textContent = ticket.etat;
+        const doe = data.doe;
+        const doeEl = document.getElementById('view_doe');
+        if (doeEl) doeEl.innerHTML = (doe && doe.id) ? `<a href="doe-view.html?id=${doe.id}">${doe.titre || 'DOE'}</a>` : 'N/A';
+        const affaire = data.affaire; set('view_affaire_id', (affaire && affaire.id) ? affaire.id : 'N/A');
 
-        const dateDebut = new Date(ticket.date_debut);
-        const dateFin = ticket.date_fin ? new Date(ticket.date_fin) : new Date();
-        const dureeMs = dateFin - dateDebut;
-        const dureeJours = Math.floor(dureeMs / (1000 * 60 * 60 * 24));
-
-        document.getElementById('view_date_debut').textContent = dateDebut.toLocaleDateString();
-        document.getElementById('view_date_fin').textContent = ticket.date_fin ? new Date(ticket.date_fin).toLocaleDateString() : 'En cours';
-        document.getElementById('view_duree').textContent = `${dureeJours} jours`;
-        
-        const doeTitle = getDoeTitle(ticket.doe_id);
-        document.getElementById('view_doe').innerHTML = ticket.doe_id ? `<a href="doe-view.html?id=${ticket.doe_id}">${doeTitle}</a>` : 'N/A';
-
-        document.getElementById('view_affaire_id').textContent = ticket.affaire_id || 'N/A';
-        document.getElementById('view_responsable').textContent = ticket.responsable ? getAgentName(ticket.responsable) : 'Non assigné';
-
-        // Render associated interventions
-        const interventionsListDiv = document.getElementById('ticket-interventions-list');
-        interventionsListDiv.innerHTML = '';
-        const filteredInterventions = sampleInterventions.filter(int => int.ticket_id === ticketId);
-
-        if (filteredInterventions.length > 0) {
-          filteredInterventions.forEach(intervention => {
-            let statusBadgeClass = '';
-            switch (intervention.status) {
-              case 'pas commencé':
-                statusBadgeClass = 'bg-secondary';
-                break;
-              case 'bloqué':
-                statusBadgeClass = 'bg-danger';
-                break;
-              case 'en attente':
-                statusBadgeClass = 'bg-info';
-                break;
-              case 'en cours':
-                statusBadgeClass = 'bg-warning';
-                break;
-              case 'terminé':
-                statusBadgeClass = 'bg-success';
-                break;
-              default:
-                statusBadgeClass = 'bg-light text-dark';
-            }
-
-            const interventionEl = document.createElement('div');
-            interventionEl.className = 'card card-body mb-2';
-            interventionEl.innerHTML = `
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="mb-1">${intervention.description}</h6>
-                  <small class="text-muted">Du ${intervention.date_debut} au ${intervention.date_fin || 'N/A'} - <span class="badge ${statusBadgeClass}">${intervention.status}</span></small>
-                </div>
-                <div>
-                  <a href="intervention-view.html?id=${intervention.id}" class="btn btn-sm btn-info me-1"><i class="bi bi-eye"></i> Voir</a>
-                  ${currentUserIsAdmin ? `
-                    <a href="intervention-edit.html?id=${intervention.id}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i> Modifier</a>
-                  ` : ''}
-                </div>
-              </div>
-            `;
-            interventionsListDiv.appendChild(interventionEl);
-          });
-        } else {
-          interventionsListDiv.innerHTML = '<p class="text-muted">Aucune intervention associée.</p>';
+        const siteEl = document.getElementById('view_site');
+        if (siteEl) {
+          const s = data.site;
+          if (s && s.id) {
+            const name = s.nom_site ? ` — ${s.nom_site}` : '';
+            siteEl.innerHTML = `<a href="site-view.html?id=${s.id}">Site #${s.id}${name}</a>`;
+          } else if (t.site_id) {
+            siteEl.innerHTML = `<a href="site-view.html?id=${t.site_id}">Site #${t.site_id}</a>`;
+          } else {
+            siteEl.textContent = 'N/A';
+          }
         }
 
-        // Conditionally hide admin-specific buttons
-        if (!currentUserIsAdmin) {
-          document.getElementById('add-intervention-btn').classList.add('d-none');
-          document.getElementById('edit-ticket-btn').classList.add('d-none');
-        }
+        set('view_responsable', t.responsable || 'Non assigné');
 
-      } else {
+        // Interventions
+        const list = document.getElementById('ticket-interventions-list');
+        list.innerHTML = '';
+        const items = Array.isArray(data.interventions)? data.interventions : [];
+        if (!items.length) list.innerHTML = '<p class="text-muted">Aucune intervention associée.</p>';
+        items.forEach(inter => {
+          const badge = (function(s){
+            switch(s){ case 'Pas_commence': return 'bg-secondary'; case 'Bloque': return 'bg-danger'; case 'En_attente': return 'bg-info'; case 'En_cours': return 'bg-warning'; case 'Termine': return 'bg-success'; default: return 'bg-light text-dark'; }
+          })(inter.status||'');
+          const el = document.createElement('div'); el.className='card card-body mb-2';
+          el.innerHTML = `<div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1">${inter.description||''}</h6>
+              <small class="text-muted">Du ${inter.date_debut||''} au ${inter.date_fin||'N/A'} - <span class="badge ${badge}">${inter.status||''}</span></small>
+            </div>
+            <div>
+              <a href="intervention-view.html?id=${inter.id}" class="btn btn-sm btn-info me-1"><i class="bi bi-eye"></i> Voir</a>
+            </div>
+          </div>`;
+          list.appendChild(el);
+        });
+
+        // Admin actions
+        if (isAdmin) { document.getElementById('add-intervention-btn').classList.remove('d-none'); document.getElementById('edit-ticket-btn').classList.remove('d-none'); }
+
+      } catch(e) {
         document.getElementById('ticket-title').textContent = 'Ticket introuvable';
-        // Hide other details or show an error message
       }
     });
   </script>

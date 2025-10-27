@@ -20,6 +20,10 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "connect-pg-simple": "^9.0.0",
+    "csurf": "^1.11.0",
+    "express-session": "^1.17.3",
+    "nodemailer": "^6.9.13",
     "pg": "^8.16.3"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
--- --------------------------------------------------
+﻿-- --------------------------------------------------
 -- Postgres Schema Initialization (Node.js Compatible)
 -- --------------------------------------------------
 
@@ -7,13 +7,55 @@
 --  therefore must only be executed once on an empty database.  The
 --  standard PostgreSQL `CREATE TYPE IF NOT EXISTS` construct is
 --  deliberately avoided because it is not well supported by the
-  --  node-postgres driver when executing multi‐statement scripts.  If
+  --  node-postgres driver when executing multiâ€statement scripts.  If
 --  you need idempotent migrations for an existing database, please
 --  use a proper migration tool (e.g. Prisma, Sequelize or Knex).
+
+-- Drop tables in reverse order of dependency
+DROP TABLE IF EXISTS rendu_intervention_image CASCADE;
+DROP TABLE IF EXISTS rendu_intervention CASCADE;
+DROP TABLE IF EXISTS documents_repertoire CASCADE;
+DROP TABLE IF EXISTS images CASCADE;
+DROP TABLE IF EXISTS reglement CASCADE;
+DROP TABLE IF EXISTS facture CASCADE;
+DROP TABLE IF EXISTS achat CASCADE;
+DROP TABLE IF EXISTS agent_fonction CASCADE;
+DROP TABLE IF EXISTS fonction CASCADE;
+DROP TABLE IF EXISTS agent_equipe CASCADE;
+DROP TABLE IF EXISTS agence_membre CASCADE;
+DROP TABLE IF EXISTS equipe CASCADE;
+DROP TABLE IF EXISTS rendezvous CASCADE;
+-- New: matÃ©riel and liaisons
+DROP TABLE IF EXISTS materiel_image CASCADE;
+DROP TABLE IF EXISTS intervention_materiel CASCADE;
+DROP TABLE IF EXISTS materiel CASCADE;
+DROP TABLE IF EXISTS intervention CASCADE;
+DROP TABLE IF EXISTS rapport_ticket CASCADE;
+DROP TABLE IF EXISTS ticket CASCADE;
+DROP TABLE IF EXISTS site_affaire CASCADE;
+DROP TABLE IF EXISTS doe CASCADE;
+DROP TABLE IF EXISTS affaire CASCADE;
+DROP TABLE IF EXISTS client CASCADE;
+DROP TABLE IF EXISTS site CASCADE;
+DROP TABLE IF EXISTS agence CASCADE;
+DROP TABLE IF EXISTS adresse CASCADE;
+DROP TABLE IF EXISTS agent CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
 -- --------------------------------------------------
 -- Enum types
 -- --------------------------------------------------
+DROP TYPE IF EXISTS statut_intervention CASCADE;
+DROP TYPE IF EXISTS etat_rapport CASCADE;
+DROP TYPE IF EXISTS sujet_type CASCADE;
+DROP TYPE IF EXISTS statut_rdv CASCADE;
+DROP TYPE IF EXISTS doc_cible_type CASCADE;
+DROP TYPE IF EXISTS doc_nature CASCADE;
+DROP TYPE IF EXISTS statut_achat CASCADE;
+DROP TYPE IF EXISTS statut_facture CASCADE;
+DROP TYPE IF EXISTS mode_reglement CASCADE;
+DROP TYPE IF EXISTS role_agence CASCADE;
+DROP TYPE IF EXISTS type_formation CASCADE;
 CREATE TYPE statut_intervention AS ENUM ('Pas_commence','Bloque','En_attente','En_cours','Termine');
 CREATE TYPE etat_rapport        AS ENUM ('Pas_commence','En_cours','Termine');
 CREATE TYPE sujet_type          AS ENUM ('ticket','intervention');
@@ -40,6 +82,15 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(180) UNIQUE NOT NULL,
     roles JSONB NOT NULL,
     password VARCHAR(255) NOT NULL
+);
+
+-- Password Reset Tokens table
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    expires_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Agent (personnel) entity
@@ -122,11 +173,11 @@ CREATE TABLE IF NOT EXISTS affaire (
 );
 CREATE INDEX IF NOT EXISTS idx_affaire_client ON affaire(client_id);
 
--- DOE entity (Dossier des Ouvrages Exécutés)
+-- DOE entity (Dossier des Ouvrages ExÃ©cutÃ©s)
 CREATE TABLE IF NOT EXISTS doe (
     id SERIAL PRIMARY KEY,
     site_id    BIGINT NOT NULL,
-    affaire_id BIGINT NOT NULL,
+    affaire_id BIGINT,
     titre      VARCHAR(255) NOT NULL,
     description TEXT,
     date_debut  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -139,24 +190,64 @@ CREATE INDEX IF NOT EXISTS idx_doe_affaire ON doe(affaire_id);
 CREATE TABLE IF NOT EXISTS site_affaire (
     id SERIAL PRIMARY KEY,
     site_id    BIGINT NOT NULL,
-    affaire_id BIGINT NOT NULL,
+    affaire_id BIGINT,
     date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin   TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+DROP INDEX IF EXISTS uq_site_affaire;
 CREATE UNIQUE INDEX uq_site_affaire ON site_affaire(site_id, affaire_id); -- For idempotency with client.query();
 
 -- Ticket entity (scheduled maintenance events)
 CREATE TABLE IF NOT EXISTS ticket (
     id SERIAL PRIMARY KEY,
-    doe_id     BIGINT NOT NULL,
-    affaire_id BIGINT NOT NULL,
+    doe_id     BIGINT,
+    affaire_id BIGINT,
+    site_id    BIGINT,
     titre      VARCHAR(255),
-    description TEXT NOT NULL,
+    description TEXT,
     etat        etat_rapport DEFAULT 'Pas_commence' NOT NULL,
     responsable VARCHAR(20),
     date_debut  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin    TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+
+-- --------------------------------------------------
+-- MatÃ©riel (inventory) and liaisons
+-- --------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS materiel (
+    id SERIAL PRIMARY KEY,
+    reference   TEXT UNIQUE,
+    designation TEXT,
+    categorie   TEXT,
+    fabricant   TEXT,
+    prix_achat  NUMERIC(12,2),
+    commentaire TEXT,
+    created_at  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE materiel ADD COLUMN IF NOT EXISTS intervention_id INTEGER REFERENCES intervention(id) ON DELETE SET NULL;
+
+CREATE TABLE IF NOT EXISTS intervention_materiel (
+    id SERIAL PRIMARY KEY,
+    intervention_id INTEGER NOT NULL REFERENCES intervention(id) ON DELETE CASCADE,
+    materiel_id     INTEGER NOT NULL REFERENCES materiel(id) ON DELETE RESTRICT,
+    quantite        INTEGER DEFAULT 1,
+    commentaire     TEXT,
+    created_at      TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_intervention_materiel_intervention ON intervention_materiel(intervention_id);
+CREATE INDEX IF NOT EXISTS idx_intervention_materiel_materiel     ON intervention_materiel(materiel_id);
+
+CREATE TABLE IF NOT EXISTS materiel_image (
+    id SERIAL PRIMARY KEY,
+    materiel_id INTEGER NOT NULL REFERENCES materiel(id) ON DELETE CASCADE,
+    nom_fichier TEXT,
+    type_mime   TEXT,
+    commentaire TEXT,
+    created_at  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_materiel_image_materiel ON materiel_image(materiel_id);
 CREATE INDEX IF NOT EXISTS idx_ticket_doe    ON ticket(doe_id);
 CREATE INDEX IF NOT EXISTS idx_ticket_affaire ON ticket(affaire_id);
 CREATE INDEX IF NOT EXISTS idx_ticket_etat    ON ticket(etat);
@@ -190,6 +281,7 @@ CREATE TABLE IF NOT EXISTS passeport (
     date_debut      TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin        TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+DROP INDEX IF EXISTS uq_passeport_agent;
 CREATE UNIQUE INDEX uq_passeport_agent ON passeport(agent_matricule); -- For idempotency with client.query();
 
 -- Formation (trainings and certifications)
@@ -214,7 +306,7 @@ CREATE INDEX IF NOT EXISTS idx_formation_expiration ON formation(date_expiration
 CREATE TABLE IF NOT EXISTS intervention (
     id SERIAL PRIMARY KEY,
     ticket_id            BIGINT NOT NULL,
-    description              TEXT NOT NULL,
+    description TEXT,
     date_debut               DATE NOT NULL,
     date_fin                 DATE,
     intervention_precedente_id BIGINT,
@@ -259,6 +351,7 @@ CREATE TABLE IF NOT EXISTS agence_membre (
     date_debut      TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin        TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+DROP INDEX IF EXISTS uq_agence_membre;
 CREATE UNIQUE INDEX uq_agence_membre        ON agence_membre(agence_id, agent_matricule); -- For idempotency with client.query();
 CREATE INDEX IF NOT EXISTS idx_agence_membre_agence       ON agence_membre(agence_id);
 CREATE INDEX IF NOT EXISTS idx_agence_membre_agent        ON agence_membre(agent_matricule);
@@ -271,6 +364,7 @@ CREATE TABLE IF NOT EXISTS agent_equipe (
     date_debut      TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin        TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+DROP INDEX IF EXISTS uq_agent_equipe;
 CREATE UNIQUE INDEX uq_agent_equipe       ON agent_equipe(equipe_id, agent_matricule); -- For idempotency with client.query();
 CREATE INDEX IF NOT EXISTS idx_agent_equipe_equipe      ON agent_equipe(equipe_id);
 CREATE INDEX IF NOT EXISTS idx_agent_equipe_agent       ON agent_equipe(agent_matricule);
@@ -284,6 +378,7 @@ CREATE TABLE IF NOT EXISTS fonction (
     date_debut  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin    TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+DROP INDEX IF EXISTS uq_fonction_code;
 CREATE UNIQUE INDEX uq_fonction_code ON fonction(code); -- For idempotency with client.query();
 
 -- Agent_fonction (assignment of roles to agents)
@@ -295,6 +390,7 @@ CREATE TABLE IF NOT EXISTS agent_fonction (
     date_debut      TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_fin        TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+DROP INDEX IF EXISTS uq_agent_fonction;
 CREATE UNIQUE INDEX uq_agent_fonction      ON agent_fonction(agent_matricule, fonction_id); -- For idempotency with client.query();
 CREATE INDEX IF NOT EXISTS idx_agent_fonction_fonction   ON agent_fonction(fonction_id);
 
@@ -337,7 +433,7 @@ CREATE INDEX IF NOT EXISTS idx_facture_client ON facture(client_id);
 CREATE INDEX IF NOT EXISTS idx_facture_affaire ON facture(affaire_id);
 CREATE INDEX IF NOT EXISTS idx_facture_statut ON facture(statut);
 
--- Règlements (payments)
+-- RÃ¨glements (payments)
 CREATE TABLE IF NOT EXISTS reglement (
     id SERIAL PRIMARY KEY,
     facture_id BIGINT NOT NULL,
@@ -449,6 +545,8 @@ ALTER TABLE ticket
   ADD CONSTRAINT fk_ticket_doe    FOREIGN KEY (doe_id) REFERENCES doe(id) ON UPDATE CASCADE ON DELETE RESTRICT;
 ALTER TABLE ticket
   ADD CONSTRAINT fk_ticket_affaire FOREIGN KEY (affaire_id) REFERENCES affaire(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE ticket
+  ADD CONSTRAINT fk_ticket_site FOREIGN KEY (site_id) REFERENCES site(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 -- Intervention relations
 ALTER TABLE intervention

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -125,75 +125,41 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const interventionId = urlParams.get('id');
-
-      // This is a placeholder for fetching actual intervention data from a backend.
-      // For now, we'll use the same seed data as interventions.html.
-      const interventions = [
-        {
-          id: "INT001",
-          maintenance_id: "MNT001",
-          description: "Vérification annuelle des systèmes de sécurité",
-          date_debut: "2024-01-15",
-          date_fin: "2024-01-15",
-          status: "terminé"
-        },
-        {
-          id: "INT002",
-          maintenance_id: "MNT002",
-          description: "Réparation du système de climatisation",
-          date_debut: "2024-02-20",
-          date_fin: "2024-02-22",
-          status: "en cours"
-        },
-        {
-          id: "INT003",
-          maintenance_id: "MNT001",
-          description: "Mise à jour logicielle des équipements",
-          date_debut: "2024-03-10",
-          date_fin: "2024-03-10",
-          status: "pas commencé"
-        },
-        {
-          id: "INT004",
-          maintenance_id: "MNT003",
-          description: "Remplacement de pièces défectueuses",
-          date_debut: "2024-04-01",
-          date_fin: "2024-04-03",
-          status: "bloqué"
-        },
-        {
-          id: "INT005",
-          maintenance_id: "MNT004",
-          description: "Installation de nouveaux capteurs",
-          date_debut: "2024-05-05",
-          date_fin: "2024-05-05",
-          status: "en attente"
-        }
-      ];
-
-      const intervention = interventions.find(i => i.id === interventionId);
-
-      // Retrieve logged-in user role from localStorage
-      const currentUserRole = localStorage.getItem('userRole');
-      const currentUserIsAdmin = (currentUserRole === 'admin');
-
-      if (intervention) {
-        document.getElementById('id').value = intervention.id;
-        document.getElementById('maintenance_id').value = intervention.maintenance_id;
-        document.getElementById('description').value = intervention.description;
-        document.getElementById('date_debut').value = intervention.date_debut;
-        document.getElementById('date_fin').value = intervention.date_fin;
-        document.getElementById('status').value = intervention.status;
-        document.getElementById('intervention_precedente_id').value = intervention.intervention_precedente_id;
-
-        // Conditionally disable form fields and hide save button for non-admins
-        if (!currentUserIsAdmin) {
-          const form = document.getElementById('intervention-edit-form');
-          form.querySelectorAll('input, select, textarea').forEach(element => {
-            element.setAttribute('disabled', 'true');
-          });
+  const urlParams = new URLSearchParams(window.location.search);
+  const interventionId = urlParams.get('id');
+  const token = localStorage.getItem('token');
+  let currentUserIsAdmin = false; let actorEmail='';
+  if (token) { try { const p = JSON.parse(atob(token.split('.')[1])); const roles = Array.isArray(p.roles)?p.roles:[]; currentUserIsAdmin = roles.includes('ROLE_ADMIN'); actorEmail = p.email||''; const el = document.getElementById('logged-in-user-email'); if (el && actorEmail) el.textContent = actorEmail; } catch(_){} }
+  async function loadIntervention() {
+    if (!interventionId || !token) { alert('Intervention non trouv�e ou non authentifi�.'); try{window.location.replace('interventions.html')}catch(_){window.location.href='interventions.html'}; return; }
+    try {
+          const res = await fetch(`/api/interventions/${interventionId}/relations`, { headers: { 'Authorization': `Bearer ${token}`, 'X-Actor-Email': actorEmail }, credentials: 'same-origin' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const i = data.intervention; if (!i) throw new Error('Intervention introuvable');
+      document.getElementById('id').value = i.id;
+      document.getElementById('maintenance_id').value = i.ticket_id || '';
+      document.getElementById('description').value = i.description || '';
+      document.getElementById('date_debut').value = i.date_debut ? i.date_debut.substring(0,10) : '';
+      document.getElementById('date_fin').value = i.date_fin ? i.date_fin.substring(0,10) : '';
+      document.getElementById('status').value = i.status || i.statut || '';
+      document.getElementById('intervention_precedente_id').value = i.intervention_precedente_id || '';
+      if (!currentUserIsAdmin) { const form = document.getElementById('intervention-edit-form'); form.querySelectorAll('input, select, textarea').forEach(e => e.setAttribute('disabled','true')); document.getElementById('save-intervention-btn').classList.add('d-none'); }
+    } catch(e) { console.error('Erreur chargement intervention:', e); alert('Erreur de chargement.'); }
+  }
+  async function saveIntervention(ev) {
+    ev.preventDefault(); if (!currentUserIsAdmin) return alert('Action r�serv�e aux administrateurs.');
+    const id = document.getElementById('id').value;
+    const payload = { description: document.getElementById('description').value, date_debut: document.getElementById('date_debut').value || null, date_fin: document.getElementById('date_fin').value || null, ticket_id: document.getElementById('maintenance_id').value || null, intervention_precedente_id: document.getElementById('intervention_precedente_id').value || null };
+    try {
+          const res = await fetch(`/api/interventions/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'X-Actor-Email': actorEmail }, credentials: 'same-origin', body: JSON.stringify(payload) });
+      if (!res.ok) { if (res.status===403) return alert('Non autoris� (admin requis).'); throw new Error(`HTTP ${res.status}`); }
+      try { window.location.replace('interventions.html'); } catch(_) { window.location.href='interventions.html'; }
+    } catch(e) { console.error('Erreur mise � jour intervention:', e); alert('�chec de la sauvegarde.'); }
+  }
+  document.getElementById('intervention-edit-form').addEventListener('submit', saveIntervention);
+  loadIntervention();
+});
           document.getElementById('save-intervention-btn').classList.add('d-none');
         }
 
@@ -205,3 +171,4 @@
   </script>
 </body>
 </html>
+

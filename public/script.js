@@ -1,4 +1,4 @@
-// Guard against double-loading and unregister any leftover Service Workers on this origin
+﻿// Guard against double-loading and unregister any leftover Service Workers on this origin
 if (typeof window !== 'undefined') {
   if ('serviceWorker' in navigator) {
     try {
@@ -89,7 +89,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const data = await response.json();
 
                 if (!response.ok) {
-                    showError(data.error || 'La connexion a �chou�'); try{ showToast(data.error || 'La connexion a �chou�', "error"); }catch(_){};
+                    showError(data.error || 'La connexion a ï¿½chouï¿½'); try{ showToast(data.error || 'La connexion a ï¿½chouï¿½', "error"); }catch(_){};
                     return;
                 }
 
@@ -97,7 +97,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     localStorage.setItem('token', data.token);
                     window.location.href = '/dashboard.html';
                 } else {
-                    showError('La connexion a �chou� : jeton manquant'); try{ showToast('La connexion a �chou� : jeton manquant', "error"); }catch(_){};
+                    showError('La connexion a ï¿½chouï¿½ : jeton manquant'); try{ showToast('La connexion a ï¿½chouï¿½ : jeton manquant', "error"); }catch(_){};
                 }
             } catch (error) {
                 console.error('Erreur de connexion:', error);
@@ -123,7 +123,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const data = await response.json();
 
                 if (!response.ok) {
-                    showError(data.error || 'Inscription �chou�e'); try{ showToast(data.error || 'Inscription �chou�e', "error"); }catch(_){};
+                    showError(data.error || 'Inscription ï¿½chouï¿½e'); try{ showToast(data.error || 'Inscription ï¿½chouï¿½e', "error"); }catch(_){};
                     return;
                 }
 
@@ -158,7 +158,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
 
         try {
             const response = await fetch('/api/dashboard', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
 
             if (response.status === 401 || response.status === 403) {
@@ -184,7 +184,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 data.urgentMaintenances.forEach(m => {
                     const maintenanceEl = document.createElement('div');
                     maintenanceEl.className = 'flex justify-between items-center p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400';
-                    maintenanceEl.innerHTML = `<div><h4 class="text-gray-800 font-semibold">${m.titre}</h4></div><span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">Bloqué</span>`;
+                    maintenanceEl.innerHTML = `<div><h4 class="text-gray-800 font-semibold">${m.titre}</h4></div><span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">BloquÃ©</span>`;
                     urgentMaintenancesDiv.appendChild(maintenanceEl);
                 });
             } else {
@@ -199,7 +199,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try { title = (el.querySelector('h4')?.textContent || '').trim(); } catch(_) {}
                     if (!title) { title = (el.textContent || '').trim(); }
                     el.className = 'card card-body';
-                    el.innerHTML = `<div class="card-row"><div class="min-w-0"><div class="font-semibold truncate">${title}</div></div><div class="shrink-0"><span class="badge badge-danger">Bloqu�</span></div></div>`;
+                    el.innerHTML = `<div class="card-row"><div class="min-w-0"><div class="font-semibold truncate">${title}</div></div><div class="shrink-0"><span class="badge badge-danger">Bloquï¿½</span></div></div>`;
                 });
             } catch(_) {}
 
@@ -230,7 +230,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     }
                 }
             });
-            // Load recent Achats / Factures / R�glements for dashboard
+            // Load recent Achats / Factures / Rï¿½glements for dashboard
             try {
                 const token2 = localStorage.getItem('token');
                 const [ra, rf, rg] = await Promise.all([
@@ -242,7 +242,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 if (recentAchatsDiv && ra.ok) {
                     const achats = (await ra.json()).slice(0,5);
                     recentAchatsDiv.innerHTML = achats.map(a=>
-                        `<li class="flex items-center justify-between"><span>${a.reference||'Sans ref.'} � ${a.objet||''}</span><span class="text-xs text-slate-500">${a.montant_ttc!=null? Number(a.montant_ttc).toFixed(2):'-'}</span></li>`
+                        `<li class="flex items-center justify-between"><span>${a.reference||'Sans ref.'} ï¿½ ${a.objet||''}</span><span class="text-xs text-slate-500">${a.montant_ttc!=null? Number(a.montant_ttc).toFixed(2):'-'}</span></li>`
                     ).join('') || '<li class="text-slate-500">Aucun achat</li>';
                 }
                 const recentFacturesDiv = document.getElementById('recentFactures');
@@ -256,8 +256,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 if (recentRegDiv && rg.ok) {
                     const regs = (await rg.json()).slice(0,5);
                     recentRegDiv.innerHTML = regs.map(g=>
-                        `<li class="flex items-center justify-between"><span>#${g.id} � ${g.mode||''}</span><span class="text-xs text-slate-500">${g.montant!=null? Number(g.montant).toFixed(2):'-'}</span></li>`
-                    ).join('') || '<li class="text-slate-500">Aucun r�glement</li>';
+                        `<li class="flex items-center justify-between"><span>#${g.id} ï¿½ ${g.mode||''}</span><span class="text-xs text-slate-500">${g.montant!=null? Number(g.montant).toFixed(2):'-'}</span></li>`
+                    ).join('') || '<li class="text-slate-500">Aucun rï¿½glement</li>';
                 }
             } catch(_) {}
 
@@ -284,8 +284,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         }
         try {
             const [siteResp, relResp] = await Promise.all([
-                fetch(`/api/sites/${siteId}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`/api/sites/${siteId}/relations`, { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch(`/api/sites/${siteId}`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
+                fetch(`/api/sites/${siteId}/relations`, { headers: { 'Authorization': `Bearer ${authToken}` } })
             ]);
             if (!siteResp.ok) { window.location.href = '/sites.html'; return; }
             const site = await siteResp.json();
@@ -294,7 +294,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
             const titleEl = document.getElementById('siteTitle');
             if (titleEl) titleEl.textContent = site.nom_site || ('Site #' + site.id);
             const metaEl = document.getElementById('siteMeta');
-            if (metaEl) metaEl.textContent = site.adresse_id ? ('Adresse #' + site.adresse_id) : 'Adresse non définie';
+            if (metaEl) metaEl.textContent = site.adresse_id ? ('Adresse #' + site.adresse_id) : 'Adresse non dÃ©finie';
 
             const cAff = document.getElementById('countAffaires'); if (cAff) cAff.textContent = (rel.affaires||[]).length || '0';
             const cDoe = document.getElementById('countDoes'); if (cDoe) cDoe.textContent = (rel.does||[]).length || '0';
@@ -307,7 +307,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 if (addr) {
                     const parts = [addr.libelle, addr.ligne1, addr.ligne2].filter(Boolean).join('<br>');
                     const city = [addr.code_postal, addr.ville].filter(Boolean).join(' ');
-                    const tail = [city, addr.region, addr.pays].filter(Boolean).join(' · ');
+                    const tail = [city, addr.region, addr.pays].filter(Boolean).join(' Â· ');
                     addrDiv.innerHTML = `${parts || ''}${parts ? '<br>' : ''}<span class="text-slate-600">${tail || ''}</span>` || '<span class="text-slate-500">Aucune</span>';
                 } else {
                     addrDiv.innerHTML = '<span class="text-slate-500">Aucune</span>';
@@ -394,7 +394,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
             return;
         }
         try {
-            const resp = await fetch(`/api/interventions/${id}/relations`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(`/api/interventions/${id}/relations`, { headers: { 'Authorization': `Bearer ${authToken}` } });
             if (!resp.ok) { window.location.href = '/interventions.html'; return; }
             const rel = await resp.json();
             const it = rel.intervention || {};
@@ -403,7 +403,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
             const titleEl = document.getElementById('interTitle');
             if (titleEl) titleEl.textContent = it.description || ('Intervention #' + it.id);
             const metaEl = document.getElementById('interMeta');
-            if (metaEl) metaEl.textContent = (it.date_debut ? ('Début: ' + (new Date(it.date_debut).toLocaleDateString())) : '') + (it.date_fin ? (' · Fin: ' + (new Date(it.date_fin).toLocaleDateString())) : '');
+            if (metaEl) metaEl.textContent = (it.date_debut ? ('DÃ©but: ' + (new Date(it.date_debut).toLocaleDateString())) : '') + (it.date_fin ? (' Â· Fin: ' + (new Date(it.date_fin).toLocaleDateString())) : '');
 
             // Counters
             const docs = rel.documents || []; const imgs = rel.images || []; const rdvs = rel.rendezvous || [];
@@ -419,7 +419,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
               if (rel.doe) lines.push(`<div><span class="text-slate-500">DOE:</span> ${rel.doe.titre || ('#'+rel.doe.id)}</div>`);
               if (rel.affaire) lines.push(`<div><span class="text-slate-500">Affaire:</span> ${rel.affaire.nom_affaire || ('#'+rel.affaire.id)}</div>`);
               if (rel.site) lines.push(`<div><span class="text-slate-500">Site:</span> ${rel.site.nom_site || ('#'+rel.site.id)}</div>`);
-              det.innerHTML = lines.join('') || '<span class="text-slate-500">—</span>';
+              det.innerHTML = lines.join('') || '<span class="text-slate-500">â€”</span>';
             }
 
             // Breadcrumb
@@ -433,7 +433,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
               if (rel.maintenance) bits.push(`<a class="text-indigo-600 hover:underline" href="/maintenance.html#${rel.maintenance.id}">Voir la maintenance</a>`);
               if (rel.doe) bits.push(`<a class="text-indigo-600 hover:underline" href="/does.html#${rel.doe.id}">Voir le DOE</a>`);
               if (rel.site) bits.push(`<a class="text-indigo-600 hover:underline" href="/site.html#${rel.site.id}">Voir le site</a>`);
-              relLinks.innerHTML = bits.join(' · ');
+              relLinks.innerHTML = bits.join(' Â· ');
             }
 
             // Rendezvous list
@@ -479,7 +479,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
             return;
         }
         try {
-            const resp = await fetch(`/api/maintenances/${id}/relations`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(`/api/maintenances/${id}/relations`, { headers: { 'Authorization': `Bearer ${authToken}` } });
             if (!resp.ok) { window.location.href = '/maintenances.html'; return; }
             const rel = await resp.json();
             const m = rel.maintenance || {};
@@ -492,9 +492,9 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
 
             // DOE and Site
             const doeEl = document.getElementById('mntDoe');
-            if (doeEl) doeEl.innerHTML = rel.doe ? `<a class="text-indigo-600 hover:underline" href="/does.html#${rel.doe.id}">${rel.doe.titre || ('DOE #'+rel.doe.id)}</a>` : '<span class="text-slate-500">�</span>';
+            if (doeEl) doeEl.innerHTML = rel.doe ? `<a class="text-indigo-600 hover:underline" href="/does.html#${rel.doe.id}">${rel.doe.titre || ('DOE #'+rel.doe.id)}</a>` : '<span class="text-slate-500">ï¿½</span>';
             const siteEl = document.getElementById('mntSite');
-            if (siteEl) siteEl.innerHTML = rel.site ? `<a class="text-indigo-600 hover:underline" href="/site.html#${rel.site.id}">${rel.site.nom_site || ('Site #'+rel.site.id)}</a>` : '<span class="text-slate-500">�</span>';
+            if (siteEl) siteEl.innerHTML = rel.site ? `<a class="text-indigo-600 hover:underline" href="/site.html#${rel.site.id}">${rel.site.nom_site || ('Site #'+rel.site.id)}</a>` : '<span class="text-slate-500">ï¿½</span>';
 
             // Interventions list
             const intUl = document.getElementById('mntInterv');
@@ -536,19 +536,19 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const matricule = (location.hash||'').replace('#','').trim();
         if (!matricule) { const t = document.getElementById('agentTitle'); if (t) t.textContent = 'Agent introuvable'; return; }
         try {
-            const resp = await fetch(`/api/agents/${encodeURIComponent(matricule)}/relations`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(`/api/agents/${encodeURIComponent(matricule)}/relations`, { headers: { 'Authorization': `Bearer ${authToken}` } });
             if (!resp.ok) { window.location.href = '/agents.html'; return; }
             const rel = await resp.json();
             const ag = rel.agent || {};
             const titleEl = document.getElementById('agentTitle'); if (titleEl) titleEl.textContent = `${ag.nom||'Agent'} (${ag.matricule||matricule})`;
-            const metaEl = document.getElementById('agentMeta'); if (metaEl) metaEl.textContent = [ag.email, ag.tel, ag.admin? 'Admin' : null, ag.actif===false? 'Inactif': null].filter(Boolean).join(' · ');
+            const metaEl = document.getElementById('agentMeta'); if (metaEl) metaEl.textContent = [ag.email, ag.tel, ag.admin? 'Admin' : null, ag.actif===false? 'Inactif': null].filter(Boolean).join(' Â· ');
             const info = document.getElementById('agentInfo');
             if (info) {
                 info.innerHTML = `
-                  <div><span class="text-slate-500">Email:</span> ${ag.email||'—'}</div>
-                  <div><span class="text-slate-500">Téléphone:</span> ${ag.tel||'—'}</div>
-                  <div><span class="text-slate-500">Agence ID:</span> ${ag.agence_id||'—'}</div>
-                  <div><span class="text-slate-500">Entrée:</span> ${ag.date_entree||'—'}</div>`;
+                  <div><span class="text-slate-500">Email:</span> ${ag.email||'â€”'}</div>
+                  <div><span class="text-slate-500">TÃ©lÃ©phone:</span> ${ag.tel||'â€”'}</div>
+                  <div><span class="text-slate-500">Agence ID:</span> ${ag.agence_id||'â€”'}</div>
+                  <div><span class="text-slate-500">EntrÃ©e:</span> ${ag.date_entree||'â€”'}</div>`;
             }
             // Breadcrumb
             const bcAgent = document.getElementById('breadcrumb');
@@ -591,25 +591,25 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const id = (location.hash||'').replace('#','').trim();
         if (!id) { const t = document.getElementById('rdvTitle'); if (t) t.textContent = 'Rendez-vous introuvable'; return; }
         try {
-            const resp = await fetch(`/api/rendezvous/${id}/relations`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(`/api/rendezvous/${id}/relations`, { headers: { 'Authorization': `Bearer ${authToken}` } });
             if (!resp.ok) { window.location.href = '/rendezvous.html'; return; }
             const rel = await resp.json();
             const rdv = rel.rendezvous || {};
             const titleEl = document.getElementById('rdvTitle'); if (titleEl) titleEl.textContent = rdv.titre || ('Rendez-vous #' + rdv.id);
             const when = rdv.date_rdv ? (new Date(rdv.date_rdv).toLocaleDateString() + (rdv.heure_rdv ? ' ' + rdv.heure_rdv : '')) : '';
-            const metaEl = document.getElementById('rdvMeta'); if (metaEl) metaEl.textContent = [when, rdv.statut, rdv.sujet].filter(Boolean).join(' · ');
+            const metaEl = document.getElementById('rdvMeta'); if (metaEl) metaEl.textContent = [when, rdv.statut, rdv.sujet].filter(Boolean).join(' Â· ');
             const det = document.getElementById('rdvDetails');
             if (det) {
                 det.innerHTML = `
-                  <div><span class="text-slate-500">Intervention:</span> ${rel.intervention ? (rel.intervention.description || ('#'+rel.intervention.id)) : '—'}</div>
-                  <div><span class="text-slate-500">Site:</span> ${rel.site ? (rel.site.nom_site || ('#'+rel.site.id)) : '—'}</div>`;
+                  <div><span class="text-slate-500">Intervention:</span> ${rel.intervention ? (rel.intervention.description || ('#'+rel.intervention.id)) : 'â€”'}</div>
+                  <div><span class="text-slate-500">Site:</span> ${rel.site ? (rel.site.nom_site || ('#'+rel.site.id)) : 'â€”'}</div>`;
             }
             const links = document.getElementById('rdvLinks');
             if (links) {
                 const bits = [];
                 if (rel.intervention) bits.push(`<a class="text-indigo-600 hover:underline" href="/intervention.html#${rel.intervention.id}">Voir l'intervention</a>`);
                 if (rel.site) bits.push(`<a class="text-indigo-600 hover:underline" href="/site.html#${rel.site.id}">Voir le site</a>`);
-                links.innerHTML = bits.join(' · ');
+                links.innerHTML = bits.join(' Â· ');
             }
             // Breadcrumb
             const bcRdv = document.getElementById('breadcrumb');
@@ -639,8 +639,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
       const token = localStorage.getItem('token');
       try {
         const [afs, sts] = await Promise.all([
-          fetch('/api/affaires', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('/api/sites', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('/api/affaires', { headers: { 'Authorization': `Bearer ${authToken}` } }),
+          fetch('/api/sites', { headers: { 'Authorization': `Bearer ${authToken}` } }),
         ]);
         const affaires = afs.ok ? await afs.json() : [];
         const sites = sts.ok ? await sts.json() : [];
@@ -657,7 +657,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
     async function fetchAchats() {
       const token = localStorage.getItem('token');
       try {
-        const r = await fetch('/api/achats', { headers: { 'Authorization': `Bearer ${token}` } });
+        const r = await fetch('/api/achats', { headers: { 'Authorization': `Bearer ${authToken}` } });
         if (!r.ok) return;
         const achats = await r.json();
         if (achatListDiv) {
@@ -670,9 +670,9 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
             const ttc = (a.montant_ttc!=null? Number(a.montant_ttc).toFixed(2):'-');
             el.innerHTML = `
               <div>
-                <div class="font-semibold">${a.reference || 'Sans ref.'} � ${a.objet || ''}</div>
-                <div class="text-sm text-slate-600">Fournisseur: ${a.fournisseur || '�'} � Statut: <span class="${badgeClassFor("achat", a.statut)}">${a.statut}</span></div>
-                <div class="text-xs text-slate-500">HT: ${mht} � TVA: ${tva}% � TTC: ${ttc}</div>
+                <div class="font-semibold">${a.reference || 'Sans ref.'} ï¿½ ${a.objet || ''}</div>
+                <div class="text-sm text-slate-600">Fournisseur: ${a.fournisseur || 'ï¿½'} ï¿½ Statut: <span class="${badgeClassFor("achat", a.statut)}">${a.statut}</span></div>
+                <div class="text-xs text-slate-500">HT: ${mht} ï¿½ TVA: ${tva}% ï¿½ TTC: ${ttc}</div>
               </div>
               <div>
                 <button class="btn btn-danger delete-achat-btn" data-id="${a.id}">Supprimer</button>
@@ -683,9 +683,9 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
               el.innerHTML = `
                 <div class="card-row">
                   <div class="min-w-0">
-                    <div class="font-semibold truncate">${a.reference || 'Sans ref.'} � ${a.objet || ''}</div>
-                    <div class="text-xs text-slate-500 truncate">Fournisseur: ${a.fournisseur || '�'} � Statut: <span class="${badgeClassFor("achat", a.statut)}">${a.statut}</span></div>
-                    <div class="text-xs text-slate-500">HT: ${mht} � TVA: ${tva}%</div>
+                    <div class="font-semibold truncate">${a.reference || 'Sans ref.'} ï¿½ ${a.objet || ''}</div>
+                    <div class="text-xs text-slate-500 truncate">Fournisseur: ${a.fournisseur || 'ï¿½'} ï¿½ Statut: <span class="${badgeClassFor("achat", a.statut)}">${a.statut}</span></div>
+                    <div class="text-xs text-slate-500">HT: ${mht} ï¿½ TVA: ${tva}%</div>
                   </div>
                   <div class="shrink-0 text-right">
                     <div class="text-xs text-slate-500">TTC</div>
@@ -714,8 +714,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
           site_id: document.getElementById('a_site').value || null,
         };
         try {
-          const r = await fetch('/api/achats', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
-          if (r.ok) { addAchatForm.reset(); fetchAchats(); try{ showToast("Achat enregistr�", "success"); }catch(_){} }
+          const r = await fetch('/api/achats', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` }, body: JSON.stringify(payload) });
+          if (r.ok) { addAchatForm.reset(); fetchAchats(); try{ showToast("Achat enregistrï¿½", "success"); }catch(_){} }
         } catch (e) { console.error('Error creating achat:', e); }
       });
       if (achatListDiv) {
@@ -723,7 +723,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
           if (ev.target.classList.contains('delete-achat-btn')) {
             const id = ev.target.dataset.id; const token = localStorage.getItem('token');
             if (confirm('Supprimer cet achat ?')) {
-              try { const d = await fetch(`/api/achats/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); if (d.ok) fetchAchats(); } catch(_){}
+              try { const d = await fetch(`/api/achats/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` } }); if (d.ok) fetchAchats(); } catch(_){}
             }
           }
         });
@@ -740,8 +740,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
       const token = localStorage.getItem('token');
       try {
         const [cls, afs] = await Promise.all([
-          fetch('/api/clients', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('/api/affaires', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('/api/clients', { headers: { 'Authorization': `Bearer ${authToken}` } }),
+          fetch('/api/affaires', { headers: { 'Authorization': `Bearer ${authToken}` } }),
         ]);
         const clients = cls.ok ? await cls.json() : [];
         const affaires = afs.ok ? await afs.json() : [];
@@ -754,7 +754,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
     async function fetchFactures() {
       const token = localStorage.getItem('token');
       try {
-        const r = await fetch('/api/factures', { headers: { 'Authorization': `Bearer ${token}` } });
+        const r = await fetch('/api/factures', { headers: { 'Authorization': `Bearer ${authToken}` } });
         if (!r.ok) return; const factures = await r.json();
         if (factureListDiv) {
           factureListDiv.innerHTML = '';
@@ -767,8 +767,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
             el.innerHTML = `
               <div>
                 <div class="font-semibold">${f.reference || 'Sans ref.'}</div>
-                <div class="text-sm text-slate-600">Statut: <span class="${badgeClassFor("facture", f.statut)}">${f.statut}</span> � Client: ${f.nom_client || '�'}</div>
-                <div class="text-xs text-slate-500">HT: ${mht} � TVA: ${tva}% � TTC: ${ttc}</div>
+                <div class="text-sm text-slate-600">Statut: <span class="${badgeClassFor("facture", f.statut)}">${f.statut}</span> ï¿½ Client: ${f.nom_client || 'ï¿½'}</div>
+                <div class="text-xs text-slate-500">HT: ${mht} ï¿½ TVA: ${tva}% ï¿½ TTC: ${ttc}</div>
               </div>
               <div>
                 <button class="btn btn-danger delete-facture-btn" data-id="${f.id}">Supprimer</button>
@@ -780,8 +780,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 <div class="card-row">
                   <div class="min-w-0">
                     <div class="font-semibold truncate">${f.reference || 'Sans ref.'}</div>
-                    <div class="text-xs text-slate-500 truncate">Statut: <span class="${badgeClassFor("facture", f.statut)}">${f.statut}</span> � Client: ${f.nom_client || '�'}</div>
-                    <div class="text-xs text-slate-500">HT: ${mht} � TVA: ${tva}%</div>
+                    <div class="text-xs text-slate-500 truncate">Statut: <span class="${badgeClassFor("facture", f.statut)}">${f.statut}</span> ï¿½ Client: ${f.nom_client || 'ï¿½'}</div>
+                    <div class="text-xs text-slate-500">HT: ${mht} ï¿½ TVA: ${tva}%</div>
                   </div>
                   <div class="shrink-0 text-right">
                     <div class="text-xs text-slate-500">TTC</div>
@@ -808,8 +808,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
           affaire_id: document.getElementById('f_affaire').value || null,
         };
         try {
-          const r = await fetch('/api/factures', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
-          if (r.ok) { addFactureForm.reset(); fetchFactures(); try{ showToast("Facture enregistr�e", "success"); }catch(_){} }
+          const r = await fetch('/api/factures', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` }, body: JSON.stringify(payload) });
+          if (r.ok) { addFactureForm.reset(); fetchFactures(); try{ showToast("Facture enregistrï¿½e", "success"); }catch(_){} }
         } catch(e){ console.error('Error creating facture:', e); }
       });
       if (factureListDiv) {
@@ -817,7 +817,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
           if (ev.target.classList.contains('delete-facture-btn')) {
             const id = ev.target.dataset.id; const token = localStorage.getItem('token');
             if (confirm('Supprimer cette facture ?')) {
-              try { const d = await fetch(`/api/factures/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); if (d.ok) fetchFactures(); } catch(_){}
+              try { const d = await fetch(`/api/factures/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` } }); if (d.ok) fetchFactures(); } catch(_){}
             }
           }
         });
@@ -835,7 +835,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/agences', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) {
                 if (response.status === 401 || response.status === 403) window.location.href = '/login.html';
@@ -881,7 +881,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ titre, designation, telephone, email })
                 });
@@ -907,7 +907,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try {
                         const response = await fetch(`/api/agences/${agenceId}`, {
                             method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${authToken}` }
                         });
                         if (response.ok) {
                             fetchAgences();
@@ -920,7 +920,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const agenceId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/agences/${agenceId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const agence = await response.json();
                     
@@ -939,7 +939,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const agenceId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/agences/${agenceId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const agence = await response.json();
                     
@@ -968,7 +968,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/agents', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const agents = await response.json();
@@ -999,11 +999,11 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/agences', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const agences = await response.json();
-            agenceSelect.innerHTML = '<option value="">Sélectionner une agence</option>';
+            agenceSelect.innerHTML = '<option value="">SÃ©lectionner une agence</option>';
             agences.forEach(agence => {
                 const option = document.createElement('option');
                 option.value = agence.id;
@@ -1033,7 +1033,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ matricule, nom, email, agence_id })
                 });
@@ -1059,7 +1059,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try {
                         const response = await fetch(`/api/agents/${agentMatricule}`, {
                             method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${authToken}` }
                         });
                         if (response.ok) {
                             fetchAgents();
@@ -1072,7 +1072,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const agentMatricule = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/agents/${agentMatricule}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const agent = await response.json();
                     
@@ -1091,7 +1091,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const agentMatricule = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/agents/${agentMatricule}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const agent = await response.json();
                     
@@ -1121,7 +1121,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/adresses', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) {
                 if (response.status === 401 || response.status === 403) window.location.href = '/login.html';
@@ -1168,7 +1168,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ libelle, ligne1, code_postal, ville, pays })
                 });
@@ -1194,7 +1194,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try {
                         const response = await fetch(`/api/adresses/${adresseId}`, {
                             method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${authToken}` }
                         });
                         if (response.ok) {
                             fetchAdresses();
@@ -1207,7 +1207,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const adresseId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/adresses/${adresseId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const adresse = await response.json();
                     
@@ -1227,7 +1227,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const adresseId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/adresses/${adresseId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const adresse = await response.json();
                     
@@ -1257,7 +1257,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/clients', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const clients = await response.json();
@@ -1268,7 +1268,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 clientEl.innerHTML = `
                     <div>
                         <p class="font-semibold">${client.nom_client}</p>
-                        <p class="text-sm text-gray-600">${client.adresse_libelle || 'Adresse non spécifiée'}</p>
+                        <p class="text-sm text-gray-600">${client.adresse_libelle || 'Adresse non spÃ©cifiÃ©e'}</p>
                     </div>
                     <div>
                         <button class="delete-client-btn text-red-500 hover:text-red-700" data-id="${client.id}">Supprimer</button>
@@ -1286,11 +1286,11 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/adresses', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const adresses = await response.json();
-            adresseSelectForClient.innerHTML = '<option value="">Sélectionner une adresse</option>';
+            adresseSelectForClient.innerHTML = '<option value="">SÃ©lectionner une adresse</option>';
             adresses.forEach(adresse => {
                 const option = document.createElement('option');
                 option.value = adresse.id;
@@ -1319,7 +1319,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ nom_client, representant_nom, adresse_id })
                 });
@@ -1345,7 +1345,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try {
                         const response = await fetch(`/api/clients/${clientId}`, {
                             method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${authToken}` }
                         });
                         if (response.ok) {
                             fetchClients();
@@ -1358,7 +1358,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const clientId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/clients/${clientId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const client = await response.json();
                     
@@ -1378,7 +1378,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const clientId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/clients/${clientId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const client = await response.json();
                     
@@ -1398,7 +1398,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const clientId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/clients/${clientId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const client = await response.json();
                     
@@ -1429,7 +1429,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/sites?overview=1', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const sites = await response.json();
@@ -1440,7 +1440,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 siteEl.innerHTML = `
                     <div>
                         <p class="font-semibold">${site.nom_site}</p>
-                        <p class="text-sm text-gray-600">${site.adresse_libelle || 'Adresse non spécifiée'}</p>
+                        <p class="text-sm text-gray-600">${site.adresse_libelle || 'Adresse non spÃ©cifiÃ©e'}</p>
                     </div>
                     <div>
                         <button class="delete-site-btn text-red-500 hover:text-red-700" data-id="${site.id}">Supprimer</button>
@@ -1448,7 +1448,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     </div>
                 `;
                 try {
-                  const last = site.last_maintenance_date ? new Date(site.last_maintenance_date).toLocaleDateString() : '—';
+                  const last = site.last_maintenance_date ? new Date(site.last_maintenance_date).toLocaleDateString() : 'â€”';
                   const firstDiv = siteEl.querySelector('div');
                   if (firstDiv) {
                     firstDiv.insertAdjacentHTML('beforeend', `
@@ -1504,11 +1504,11 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/adresses', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const adresses = await response.json();
-            adresseSelectForSite.innerHTML = '<option value="">Sélectionner une adresse</option>';
+            adresseSelectForSite.innerHTML = '<option value="">SÃ©lectionner une adresse</option>';
             adresses.forEach(adresse => {
                 const option = document.createElement('option');
                 option.value = adresse.id;
@@ -1536,11 +1536,11 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ nom_site, adresse_id })
                 });
-                if (response.ok) { addSiteForm.reset(); try{ showToast("Site sauvegard�", "success"); }catch(_){};
+                if (response.ok) { addSiteForm.reset(); try{ showToast("Site sauvegardï¿½", "success"); }catch(_){};
                     document.getElementById('siteId').value = ''; // Clear hidden ID
                     document.getElementById('formTitleSite').textContent = 'Ajouter un Site';
                     document.getElementById('submitButtonSite').textContent = 'Ajouter le Site';
@@ -1561,7 +1561,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try {
                         const response = await fetch(`/api/sites/${siteId}`, {
                             method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${authToken}` }
                         });
                         if (response.ok) {
                             fetchSites();
@@ -1574,7 +1574,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const siteId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/sites/${siteId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const site = await response.json();
                     
@@ -1593,7 +1593,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const siteId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/sites/${siteId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const site = await response.json();
                     
@@ -1622,7 +1622,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/maintenances', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const maintenances = await response.json();
@@ -1663,7 +1663,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ titre, description })
                 });
@@ -1689,7 +1689,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try {
                         const response = await fetch(`/api/maintenances/${maintenanceId}`, {
                             method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${authToken}` }
                         });
                         if (response.ok) {
                             fetchMaintenances();
@@ -1702,7 +1702,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const maintenanceId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/maintenances/${maintenanceId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const maintenance = await response.json();
                     
@@ -1719,7 +1719,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const maintenanceId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/maintenances/${maintenanceId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const maintenance = await response.json();
                     
@@ -1736,7 +1736,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const maintenanceId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/maintenances/${maintenanceId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const maintenance = await response.json();
                     
@@ -1820,7 +1820,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/interventions', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             interventionsData = await response.json();
@@ -1834,11 +1834,11 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/maintenances', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const maintenances = await response.json();
-            maintenanceSelect.innerHTML = '<option value="">Sélectionner une maintenance</option>';
+            maintenanceSelect.innerHTML = '<option value="">SÃ©lectionner une maintenance</option>';
             maintenances.forEach(maintenance => {
                 const option = document.createElement('option');
                 option.value = maintenance.id;
@@ -1884,7 +1884,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ description, date_debut, maintenance_id })
                 });
@@ -1910,7 +1910,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try {
                         const response = await fetch(`/api/interventions/${interventionId}`, {
                             method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${authToken}` }
                         });
                         if (response.ok) {
                             fetchInterventions();
@@ -1923,7 +1923,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const interventionId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/interventions/${interventionId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const intervention = await response.json();
                     
@@ -1943,7 +1943,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const interventionId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/interventions/${interventionId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const intervention = await response.json();
                     
@@ -1976,7 +1976,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/rendezvous', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const rendezvous_list = await response.json();
@@ -1989,7 +1989,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                   <div class="card-row">
                     <div class="min-w-0">
                       <div class="font-semibold truncate"><a class="text-indigo-600 hover:underline" href="/rendezvous-view.html#${rdv.id}">${title}</a></div>
-                      <div class="text-xs text-slate-500 truncate">Site: ${rdv.site_nom} � Intervention: ${rdv.intervention_description}</div>
+                      <div class="text-xs text-slate-500 truncate">Site: ${rdv.site_nom} ï¿½ Intervention: ${rdv.intervention_description}</div>
                     </div>
                     <div class="shrink-0 text-right">
                       <button class="btn btn-sm btn-danger delete-rendezvous-btn" data-id="${rdv.id}">Supprimer</button>
@@ -2007,11 +2007,11 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/interventions', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const interventions = await response.json();
-            interventionSelect.innerHTML = '<option value="">Sélectionner une intervention</option>';
+            interventionSelect.innerHTML = '<option value="">SÃ©lectionner une intervention</option>';
             interventions.forEach(intervention => {
                 const option = document.createElement('option');
                 option.value = intervention.id;
@@ -2027,11 +2027,11 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/sites', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const sites = await response.json();
-            siteSelect.innerHTML = '<option value="">Sélectionner un site</option>';
+            siteSelect.innerHTML = '<option value="">SÃ©lectionner un site</option>';
             sites.forEach(site => {
                 const option = document.createElement('option');
                 option.value = site.id;
@@ -2061,7 +2061,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ titre, date_rdv, intervention_id, site_id })
                 });
@@ -2087,7 +2087,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try {
                         const response = await fetch(`/api/rendezvous/${rdvId}`, {
                             method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${authToken}` }
                         });
                         if (response.ok) {
                             fetchRendezvous();
@@ -2100,7 +2100,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const rdvId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/rendezvous/${rdvId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const rdv = await response.json();
                     
@@ -2122,7 +2122,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const rdvId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/rendezvous/${rdvId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const rdv = await response.json();
                     
@@ -2157,7 +2157,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/affaires', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const affaires = await response.json();
@@ -2186,11 +2186,11 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/clients', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const clients = await response.json();
-            clientSelectForAffaire.innerHTML = '<option value="">Sélectionner un client</option>';
+            clientSelectForAffaire.innerHTML = '<option value="">SÃ©lectionner un client</option>';
             clients.forEach(client => {
                 const option = document.createElement('option');
                 option.value = client.id;
@@ -2219,7 +2219,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ nom_affaire, description, client_id })
                 });
@@ -2245,7 +2245,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try {
                         const response = await fetch(`/api/affaires/${affaireId}`, {
                             method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${authToken}` }
                         });
                         if (response.ok) {
                             fetchAffaires();
@@ -2258,7 +2258,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const affaireId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/affaires/${affaireId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const affaire = await response.json();
                     
@@ -2290,7 +2290,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/does', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const does = await response.json();
@@ -2319,11 +2319,11 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/sites', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const sites = await response.json();
-            siteSelectForDoe.innerHTML = '<option value="">Sélectionner un site</option>';
+            siteSelectForDoe.innerHTML = '<option value="">SÃ©lectionner un site</option>';
             sites.forEach(site => {
                 const option = document.createElement('option');
                 option.value = site.id;
@@ -2339,11 +2339,11 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/affaires', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const affaires = await response.json();
-            affaireSelectForDoe.innerHTML = '<option value="">Sélectionner une affaire</option>';
+            affaireSelectForDoe.innerHTML = '<option value="">SÃ©lectionner une affaire</option>';
             affaires.forEach(affaire => {
                 const option = document.createElement('option');
                 option.value = affaire.id;
@@ -2373,7 +2373,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ titre, description, site_id, affaire_id })
                 });
@@ -2399,7 +2399,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try {
                         const response = await fetch(`/api/does/${doeId}`, {
                             method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${authToken}` }
                         });
                         if (response.ok) {
                             fetchDoes();
@@ -2412,7 +2412,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const doeId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/does/${doeId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const doe = await response.json();
                     
@@ -2445,7 +2445,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/documents', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const documents = await response.json();
@@ -2489,7 +2489,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ nom_fichier, cible_type, cible_id, nature, type_mime })
                 });
@@ -2515,7 +2515,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try {
                         const response = await fetch(`/api/documents/${docId}`, {
                             method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${authToken}` }
                         });
                         if (response.ok) {
                             fetchDocuments();
@@ -2528,7 +2528,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const docId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/documents/${docId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const doc = await response.json();
                     
@@ -2558,7 +2558,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/passeports', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const passeports = await response.json();
@@ -2589,11 +2589,11 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/agents', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const agents = await response.json();
-            agentSelectForPasseport.innerHTML = '<option value="">Sélectionner un agent</option>';
+            agentSelectForPasseport.innerHTML = '<option value="">SÃ©lectionner un agent</option>';
             agents.forEach(agent => {
                 const option = document.createElement('option');
                 option.value = agent.matricule;
@@ -2624,7 +2624,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ agent_matricule, permis, habilitations, certifications, commentaire })
                 });
@@ -2650,7 +2650,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try {
                         const response = await fetch(`/api/passeports/${passeportId}`, {
                             method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${authToken}` }
                         });
                         if (response.ok) {
                             fetchPasseports();
@@ -2663,7 +2663,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const passeportId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/passeports/${passeportId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const passeport = await response.json();
                     
@@ -2696,7 +2696,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/formations', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const formations = await response.json();
@@ -2725,11 +2725,11 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/agents', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!response.ok) return;
             const agents = await response.json();
-            agentSelectForFormation.innerHTML = '<option value="">Sélectionner un agent</option>';
+            agentSelectForFormation.innerHTML = '<option value="">SÃ©lectionner un agent</option>';
             agents.forEach(agent => {
                 const option = document.createElement('option');
                 option.value = agent.matricule;
@@ -2762,7 +2762,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ agent_matricule, type, libelle, date_obtention, date_expiration, organisme, commentaire })
                 });
@@ -2788,7 +2788,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                     try {
                         const response = await fetch(`/api/formations/${formationId}`, {
                             method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${authToken}` }
                         });
                         if (response.ok) {
                             fetchFormations();
@@ -2801,7 +2801,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
                 const formationId = event.target.dataset.id;
                 try {
                     const response = await fetch(`/api/formations/${formationId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     const formation = await response.json();
                     
@@ -2854,11 +2854,11 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         cb();
     }
 
-    // Set up observers to inject “Voir relations / Voir détails” buttons
+    // Set up observers to inject â€œVoir relations / Voir dÃ©tailsâ€ buttons
     setupObserver(document.getElementById('siteList'), () => enhanceCards(document.getElementById('siteList'), 'edit-site-btn', 'view-site-rel', 'Voir relations'));
     setupObserver(document.getElementById('doeList'), () => enhanceCards(document.getElementById('doeList'), 'edit-doe-btn', 'view-doe-rel', 'Voir relations'));
     setupObserver(document.getElementById('agentList'), () => enhanceCards(document.getElementById('agentList'), 'edit-agent-btn', 'view-agent-rel', 'Voir relations'));
-    setupObserver(document.getElementById('rendezvousList'), () => enhanceCards(document.getElementById('rendezvousList'), 'edit-rdv-btn', 'view-rdv-rel', 'Voir détails'));
+    setupObserver(document.getElementById('rendezvousList'), () => enhanceCards(document.getElementById('rendezvousList'), 'edit-rdv-btn', 'view-rdv-rel', 'Voir dÃ©tails'));
 
     // Global handler for relation/detail views
     document.addEventListener('click', async (event) => {
@@ -2866,7 +2866,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         if (event.target.classList.contains('view-site-rel')) {
             const siteId = event.target.dataset.id;
             try {
-                const rel = await fetch(`/api/sites/${siteId}/relations`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r=>r.json());
+                const rel = await fetch(`/api/sites/${siteId}/relations`, { headers: { 'Authorization': `Bearer ${authToken}` } }).then(r=>r.json());
                 const container = document.getElementById('siteRelationsContent');
                 if (container) {
                     container.innerHTML = `
@@ -2887,7 +2887,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         } else if (event.target.classList.contains('view-doe-rel')) {
             const id = event.target.dataset.id;
             try {
-                const rel = await fetch(`/api/does/${id}/relations`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r=>r.json());
+                const rel = await fetch(`/api/does/${id}/relations`, { headers: { 'Authorization': `Bearer ${authToken}` } }).then(r=>r.json());
                 const c = document.getElementById('doeRelationsContent');
                 if (!c) return;
                 const docs = (rel.documents||[]).map(d=>`<li><a class=\"text-indigo-600 hover:underline\" target=\"_blank\" href=\"/api/documents/${d.id}/view\">${d.nom_fichier}</a></li>`).join('') || '<li class=\"text-slate-500\">Aucun</li>';
@@ -2909,7 +2909,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         } else if (event.target.classList.contains('view-agent-rel')) {
             const matricule = event.target.dataset.id;
             try {
-                const rel = await fetch(`/api/agents/${matricule}/relations`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r=>r.json());
+                const rel = await fetch(`/api/agents/${matricule}/relations`, { headers: { 'Authorization': `Bearer ${authToken}` } }).then(r=>r.json());
                 const c = document.getElementById('agentRelationsContent');
                 if (!c) return;
                 const formations = (rel.formations||[]).map(f=>`<li>${f.libelle} <span class=\"text-xs text-slate-500\">(${f.type})</span></li>`).join('') || '<li class=\"text-slate-500\">Aucune</li>';
@@ -2932,7 +2932,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         } else if (event.target.classList.contains('view-rdv-rel')) {
             const id = event.target.dataset.id;
             try {
-                const rel = await fetch(`/api/rendezvous/${id}/relations`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r=>r.json());
+                const rel = await fetch(`/api/rendezvous/${id}/relations`, { headers: { 'Authorization': `Bearer ${authToken}` } }).then(r=>r.json());
                 const c = document.getElementById('rendezvousRelationsContent');
                 if (!c) return;
                 const docs = (rel.documents||[]).map(d=>`<li><a class=\"text-indigo-600 hover:underline\" target=\"_blank\" href=\"/api/documents/${d.id}/view\">${d.nom_fichier}</a></li>`).join('') || '<li class=\"text-slate-500\">Aucun</li>';
@@ -2968,10 +2968,10 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
     }
 
     // User info in header
-    const token = localStorage.getItem('jwtToken') || localStorage.getItem('token');
-    if (token) {
+    const authToken = localStorage.getItem('jwtToken') || localStorage.getItem('token');
+    if (authToken) {
         try {
-            const base64Url = token.split('.')[1];
+            const base64Url = authToken.split('.')[1];
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
             const decodedToken = JSON.parse(atob(base64));
             const userEmail = decodedToken.email;
@@ -2983,7 +2983,7 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
 
             // Fetch agent matricule for the logged-in user
             fetch(`/api/agents?email=${userEmail}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             })
             .then(response => response.json())
             .then(agents => {
@@ -3019,6 +3019,8 @@ const showError = (message) => { if (errorMessageDiv) { errorMessageDiv.textCont
         return marked.parse(markdownText);
     }
 });
+
+
 
 
 
