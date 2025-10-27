@@ -4,54 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Créer un nouveau site</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
-  <script src="/script.js?v=1"></script>
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"></h1>
+    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="Logo" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
     <div id="user-info-container" class="d-flex align-items-center">
       <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-        Menu
-      </button>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">Menu</button>
     </div>
   </header>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
     <div class="offcanvas-header">
       <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
     </div>
     <div class="offcanvas-body">
       <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item">
-          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
-        </li>
+        <li class="nav-item"><a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
+        <li class="nav-item"><a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a></li>
+        <li class="nav-item"><a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a></li>
+        <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
+        <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
       </ul>
     </div>
   </div>
@@ -69,32 +50,48 @@
     <div class="card">
       <div class="card-body">
         <h2 class="card-title mb-4">Informations du site</h2>
-        <form id="site-new-form">
-          <div class="mb-3">
+        <form id="site-new-form" class="row g-3">
+          <div class="col-12">
             <label for="nom_site" class="form-label">Nom du Site</label>
             <input type="text" class="form-control" id="nom_site" required>
           </div>
-          <div class="mb-3">
+
+          <div class="col-12">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="toggle_new_address">
+              <label class="form-check-label" for="toggle_new_address">Saisir une nouvelle adresse</label>
+            </div>
             <label for="adresse_id" class="form-label">Adresse associée</label>
             <select class="form-select" id="adresse_id" required>
               <option value="">Sélectionner une adresse</option>
-              <option value="ADDR001">123 Rue de Paris</option>
-              <option value="ADDR002">456 Avenue de Lyon</option>
             </select>
+            <div id="new-address-fields" class="row g-2 mt-2 d-none">
+              <div class="col-12">
+                <label for="addr_libelle" class="form-label">Libellé (facultatif)</label>
+                <input type="text" class="form-control" id="addr_libelle" placeholder="Ex: Siège, Entrepôt, ...">
+              </div>
+              <div class="col-12">
+                <label for="addr_ligne1" class="form-label">Adresse (ligne 1)</label>
+                <input type="text" class="form-control" id="addr_ligne1" placeholder="N°, Rue ...">
+              </div>
+              <div class="col-md-4">
+                <label for="addr_code_postal" class="form-label">Code postal</label>
+                <input type="text" class="form-control" id="addr_code_postal">
+              </div>
+              <div class="col-md-5">
+                <label for="addr_ville" class="form-label">Ville</label>
+                <input type="text" class="form-control" id="addr_ville">
+              </div>
+              <div class="col-md-3">
+                <label for="addr_pays" class="form-label">Pays</label>
+                <input type="text" class="form-control" id="addr_pays" value="France">
+              </div>
+            </div>
           </div>
-          <div class="mb-3">
+
+          <div class="col-12">
             <label for="commentaire" class="form-label">Commentaire</label>
             <textarea class="form-control" id="commentaire" rows="3"></textarea>
-          </div>
-          <div class="mb-3">
-            <label for="statut" class="form-label">Statut</label>
-            <select class="form-select" id="statut" required>
-              <option value="en attente">En attente</option>
-              <option value="prise en charge">Prise en charge</option>
-              <option value="en cour">En cour</option>
-              <option value="fini">Fini</option>
-              <option value="sous devis">Sous devis</option>
-            </select>
           </div>
 
           <div class="d-flex gap-2">
@@ -106,21 +103,89 @@
     </div>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Retrieve logged-in user role from localStorage
-      const currentUserRole = localStorage.getItem('userRole');
-      const currentUserIsAdmin = (currentUserRole === 'admin');
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = localStorage.getItem('token');
+      let isAdmin = false;
+      try { const p = token ? JSON.parse(atob(token.split('.')[1])) : null; isAdmin = Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch {}
 
-      // Conditionally disable form fields and hide save button for non-admins
-      if (!currentUserIsAdmin) {
-        const form = document.getElementById('site-new-form');
-        form.querySelectorAll('input, select, textarea, button[type="submit"]').forEach(element => {
-          element.setAttribute('disabled', 'true');
-        });
-        document.getElementById('save-site-btn').classList.add('d-none');
+      const form = document.getElementById('site-new-form');
+      const saveBtn = document.getElementById('save-site-btn');
+      const adresseSelect = document.getElementById('adresse_id');
+      const toggleNew = document.getElementById('toggle_new_address');
+      const newAddr = document.getElementById('new-address-fields');
+
+      // Helper to build auth headers (JWT or CSRF for session)
+      async function buildHeaders(json = false) {
+        const h = json ? { 'Content-Type': 'application/json' } : {};
+        if (token) {
+          h['Authorization'] = `Bearer ${token}`;
+          return h;
+        }
+        try {
+          const rTok = await fetch('/api/csrf-token', { credentials: 'same-origin' });
+          const dTok = await rTok.json().catch(() => ({}));
+          if (dTok && dTok.csrfToken) h['CSRF-Token'] = dTok.csrfToken;
+        } catch {}
+        return h;
       }
+
+      // Load addresses
+      try {
+        const r = await fetch('/api/adresses', { headers: await buildHeaders(false), credentials: 'same-origin' });
+        if (r.ok) { const list = await r.json(); (Array.isArray(list)? list: []).forEach(a => adresseSelect.add(new Option(a.libelle || `Adresse #${a.id}`, a.id))); }
+      } catch {}
+
+      // Role guard
+      if (!isAdmin) { form.querySelectorAll('input, select, textarea, button[type="submit"]').forEach(el => el.setAttribute('disabled','true')); saveBtn?.classList.add('d-none'); }
+
+      // Toggle behavior
+      const req = (el, on) => { try { if (on) el?.setAttribute('required','true'); else el?.removeAttribute('required'); } catch{} };
+      const addrL1 = document.getElementById('addr_ligne1');
+      const addrCP = document.getElementById('addr_code_postal');
+      const addrVille = document.getElementById('addr_ville');
+      const syncRequired = (on) => { req(addrL1,on); req(addrCP,on); req(addrVille,on); if (on) adresseSelect?.removeAttribute('required'); else adresseSelect?.setAttribute('required','true'); };
+      toggleNew.addEventListener('change', () => {
+        if (toggleNew.checked) { newAddr.classList.remove('d-none'); adresseSelect.setAttribute('disabled','true'); syncRequired(true); }
+        else { newAddr.classList.add('d-none'); adresseSelect.removeAttribute('disabled'); syncRequired(false); }
+      });
+      // Apply initial state
+      toggleNew.dispatchEvent(new Event('change'));
+
+      // Submit
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!isAdmin) { alert('Action réservée aux administrateurs.'); return; }
+        const nom_site = (document.getElementById('nom_site')?.value || '').trim();
+        let adresse_id = adresseSelect.disabled ? null : (Number(adresseSelect.value) || null);
+        const commentaire = (document.getElementById('commentaire')?.value || '').trim() || null;
+        if (!nom_site) { alert('Veuillez renseigner le nom du site.'); return; }
+
+        if (toggleNew.checked) {
+          const libelle = (document.getElementById('addr_libelle')?.value || '').trim() || null;
+          const ligne1 = (addrL1?.value || '').trim();
+          const code_postal = (addrCP?.value || '').trim();
+          const ville = (addrVille?.value || '').trim();
+          const pays = (document.getElementById('addr_pays')?.value || '').trim() || null;
+          if (!ligne1 || !code_postal || !ville) { alert('Veuillez renseigner Adresse, Code postal et Ville.'); return; }
+          try {
+            const rAddr = await fetch('/api/adresses', { method: 'POST', headers: await buildHeaders(true), credentials: 'same-origin', body: JSON.stringify({ libelle, ligne1, code_postal, ville, pays }) });
+            const dAddr = await rAddr.json().catch(()=>null);
+            if (!rAddr.ok) throw new Error((dAddr && dAddr.error) || `HTTP ${rAddr.status}`);
+            adresse_id = dAddr?.id || null;
+            if (!adresse_id) throw new Error('Création adresse: id manquant');
+          } catch (err) { console.error('Erreur création adresse:', err); alert(`Échec de la création de l'adresse: ${err.message}`); return; }
+        }
+
+        if (!adresse_id) { alert('Veuillez sélectionner ou créer une adresse.'); return; }
+        try {
+          const r = await fetch('/api/sites', { method: 'POST', headers: await buildHeaders(true), credentials: 'same-origin', body: JSON.stringify({ nom_site, adresse_id, commentaire }) });
+          const data = await r.json().catch(()=>null);
+          if (!r.ok) throw new Error((data && data.error) || `HTTP ${r.status}`);
+          if (data?.id) { alert('Site créé avec succès'); location.href = `site-view.html?id=${data.id}`; } else { location.href = 'sites.html'; }
+        } catch (err) { console.error('Erreur création site:', err); alert(`Échec de la création: ${err.message}`); }
+      });
     });
   </script>
 </body>

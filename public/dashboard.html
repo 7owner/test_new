@@ -13,7 +13,7 @@
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"></h1>
+    <h1>  <a href="/dashboard.html"> <img src="/logo_logicielle.png" alt="" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
     <div id="user-info-container" class="d-flex align-items-center">
       <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
       <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
@@ -293,11 +293,53 @@
         urgentMaintenancesDiv.innerHTML = '<p class="text-gray-500 text-sm">Aucune maintenance sur site avec ticket ouvert.</p>';
       }
 
-      // Placeholder for other dashboard metrics (activeMaintenances, ongoingInterventions, etc.)
-      document.getElementById('activeMaintenances').textContent = allMaintenances.filter(m => m.etat !== 'Termine').length;
-      //document.getElementById('ongoingInterventions').textContent = allMaintenances.filter(m => m.etat === 'En_cours').length;
-      document.getElementById('activeAgents').textContent = '3'; // Example
-      document.getElementById('sitesUnderContract').textContent = allSites.length;
+      // Utilitaires d'accès API (JWT ou CSRF)
+      async function buildHeaders(json=false){
+        const h = json? { 'Content-Type':'application/json' } : {};
+        const token = localStorage.getItem('token');
+        if (token) { h['Authorization'] = `Bearer ${token}`; return h; }
+        try { const r = await fetch('/api/csrf-token', { credentials:'same-origin' }); const d = await r.json().catch(()=>({})); if (d && d.csrfToken) h['CSRF-Token'] = d.csrfToken; } catch {}
+        return h;
+      }
+
+      // Charger les métriques réelles depuis l'API
+      (async () => {
+        try {
+          // Tickets ouverts
+          const rt = await fetch('/api/tickets', { headers: await buildHeaders(false), credentials:'same-origin' });
+          if (rt.ok) {
+            const rows = await rt.json();
+            const open = (Array.isArray(rows)? rows: []).filter(t => String(t.etat) !== 'Termine').length;
+            document.getElementById('activeMaintenances').textContent = `${open}`;
+          } else {
+            document.getElementById('activeMaintenances').textContent = allMaintenances.filter(m => m.etat !== 'Termine').length;
+          }
+        } catch { document.getElementById('activeMaintenances').textContent = allMaintenances.filter(m => m.etat !== 'Termine').length; }
+
+        try {
+          // Agents actifs (compte simple pour l'instant)
+          const ra = await fetch('/api/agents', { headers: await buildHeaders(false), credentials:'same-origin' });
+          if (ra.ok) { const rows = await ra.json(); document.getElementById('activeAgents').textContent = (Array.isArray(rows)? rows.length: 0); }
+        } catch {}
+
+        try {
+          // Sites (compte simple)
+          const rs = await fetch('/api/sites', { headers: await buildHeaders(false), credentials:'same-origin' });
+          if (rs.ok) { const rows = await rs.json(); document.getElementById('sitesUnderContract').textContent = (Array.isArray(rows)? rows.length: 0); }
+        } catch {}
+
+        try {
+          // Factures
+          const rf = await fetch('/api/factures', { headers: await buildHeaders(false), credentials:'same-origin' });
+          if (rf.ok) { const rows = await rf.json(); document.getElementById('facturesCount').textContent = (Array.isArray(rows)? rows.length: 0); }
+        } catch {}
+
+        try {
+          // Règlements
+          const rr = await fetch('/api/reglements', { headers: await buildHeaders(false), credentials:'same-origin' });
+          if (rr.ok) { const rows = await rr.json(); document.getElementById('reglementsCount').textContent = (Array.isArray(rows)? rows.length: 0); }
+        } catch {}
+      })();
 
       // Chart.js example (if needed, ensure chartData is defined)
       const ctx = document.getElementById('monthlyMaintenanceChart');

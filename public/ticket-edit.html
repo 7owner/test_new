@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -251,5 +251,78 @@
       }
     });
   </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      try {
+        const token = localStorage.getItem('token');
+        const urlParams = new URLSearchParams(window.location.search);
+        const ticketId = urlParams.get('id');
+        if (!token || !ticketId) return;
+
+        // Infer admin and set email
+        let isAdmin = false;
+        try { const p = JSON.parse(atob(token.split('.')[1])); isAdmin = Array.isArray(p.roles) && p.roles.includes('ROLE_ADMIN'); const el = document.getElementById('logged-in-user-email'); if (el && p.email) el.textContent = p.email; } catch(_){}
+
+        // Load latest data from backend and overwrite form values
+        fetch(`/api/tickets/${ticketId}/relations`, { headers: { 'Authorization': `Bearer ${token}` } })
+          .then(r => r.ok ? r.json() : Promise.reject(r.status))
+          .then(data => {
+            if (!data || !data.ticket) return;
+            const t = data.ticket;
+            const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+            setVal('id', t.id);
+            setVal('doe_id', t.doe_id || '');
+            setVal('affaire_id', (data.affaire && data.affaire.id) ? data.affaire.id : '');
+            setVal('titre', t.titre || '');
+            setVal('description', t.description || '');
+            setVal('etat', t.etat || 'En_cours');
+            setVal('responsable', t.responsable || '');
+            if (data.doe && data.doe.id) {
+              const title = document.getElementById('doe-title'); const desc = document.getElementById('doe-description'); const view = document.getElementById('view-doe-btn'); const box = document.getElementById('doe-details');
+              if (title) title.textContent = data.doe.titre || '';
+              if (desc) desc.textContent = data.doe.description || '';
+              if (view) view.href = `doe-view.html?id=${data.doe.id}`;
+              if (box) box.style.display = 'block';
+            }
+            const cancel = document.getElementById('cancel-button'); if (cancel) cancel.href = `ticket-view.html?id=${t.id}`;
+            if (!isAdmin) {
+              const form = document.getElementById('ticket-edit-form'); if (form) { form.querySelectorAll('input, select, textarea').forEach(e => e.setAttribute('disabled','true')); }
+              const btn = document.getElementById('save-ticket-btn'); if (btn) btn.classList.add('d-none');
+            }
+          })
+          .catch(e => console.error('Erreur chargement ticket (edit):', e));
+
+        // Submit handler for admin
+        const form = document.getElementById('ticket-edit-form');
+        if (form) {
+          form.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            if (!isAdmin) return alert('Action réservée aux administrateurs.');
+            const id = document.getElementById('id').value;
+            const payload = {
+              titre: document.getElementById('titre').value,
+              description: document.getElementById('description').value,
+              responsable: document.getElementById('responsable').value || null,
+            };
+            try {
+              const res = await fetch(`/api/tickets/${id}`, { method: 'PUT', headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
+              if (!res.ok) {
+                if (res.status === 403) return alert('Non autorisé (admin requis).');
+                throw new Error(`HTTP ${res.status}`);
+              }
+              const updated = await res.json();
+              try { window.location.replace(`ticket-view.html?id=${updated.id}`); } catch(_) { window.location.href = `ticket-view.html?id=${updated.id}`; }
+            } catch(e) {
+              console.error('Erreur mise à jour ticket:', e);
+              alert('Échec de la sauvegarde.');
+            }
+          });
+        }
+      } catch(e) { console.error(e); }
+    });
+  </script>
 </body>
 </html>
+
+
+

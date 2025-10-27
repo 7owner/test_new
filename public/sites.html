@@ -4,61 +4,42 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestion des Sites</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
-  <script src="/script.js?v=1"></script>
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"></h1>
+    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="Logo" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
     <div id="user-info-container" class="d-flex align-items-center">
       <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-        Menu
-      </button>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">Menu</button>
     </div>
   </header>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
     <div class="offcanvas-header">
       <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
     </div>
     <div class="offcanvas-body">
       <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item">
-          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
-        </li>
+        <li class="nav-item"><a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
+        <li class="nav-item"><a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a></li>
+        <li class="nav-item"><a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a></li>
+        <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
+        <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
       </ul>
     </div>
   </div>
 
   <main class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1>🏢 SITES</h1>
+      <h1>Sites</h1>
       <a href="site-new.html" class="btn btn-primary" id="create-site-btn"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau site</a>
     </div>
 
@@ -84,158 +65,91 @@
             <th>Statut</th>
             <th>Ticket Ouvert</th>
             <th>Responsable</th>
+            <th style="cursor:pointer" id="th-dates" title="Cliquer pour trier">Dates</th>
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="sites-table-body">
-          <!-- Site data will be loaded here by JavaScript -->
-        </tbody>
+        <tbody id="sites-table-body"></tbody>
       </table>
     </div>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const allSites = [
-        {
-          id: "SITE001",
-          nom_site: "Site Central Paris",
-          adresse_id: "ADDR001",
-          statut: "en attente",
-          ticket: true,
-          responsable_matricule: null
-        },
-        {
-          id: "SITE002",
-          nom_site: "Usine Lyon",
-          adresse_id: "ADDR002",
-          statut: "prise en charge",
-          ticket: true,
-          responsable_matricule: "AGT001"
-        },
-        {
-          id: "SITE003",
-          nom_site: "Bureau Marseille",
-          adresse_id: "ADDR003",
-          statut: "en cour",
-          ticket: false,
-          responsable_matricule: null
-        },
-        {
-          id: "SITE004",
-          nom_site: "Dépôt Bordeaux",
-          adresse_id: "ADDR004",
-          statut: "fini",
-          ticket: false,
-          responsable_matricule: "AGT002"
-        },
-        {
-          id: "SITE005",
-          nom_site: "Agence Lille",
-          adresse_id: "ADDR005",
-          statut: "sous devis",
-          ticket: true,
-          responsable_matricule: null
-        }
-      ];
-
-      const allAgents = [
-        { matricule: "AGT001", nom: "Dupont", prenom: "Jean" },
-        { matricule: "AGT002", nom: "Martin", prenom: "Sophie" },
-        { matricule: "AGT003", nom: "Bernard", prenom: "Pierre" }
-      ];
-
+    document.addEventListener('DOMContentLoaded', async function() {
       const tableBody = document.getElementById('sites-table-body');
       const searchInput = document.getElementById('site-search');
       const statusFilter = document.getElementById('site-status-filter');
+      const thDates = document.getElementById('th-dates');
 
-      // Retrieve logged-in user role from localStorage
-      const currentUserRole = localStorage.getItem('userRole');
-      const currentUserIsAdmin = (currentUserRole === 'admin');
+      const token = localStorage.getItem('token');
+      const isAdmin = (() => { try { const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
+      let apiSites = [];
+      let apiAgents = [];
+      let sortAsc = true;
 
-      function getAgentName(matricule) {
-        const agent = allAgents.find(a => a.matricule === matricule);
-        return agent ? `${agent.nom} ${agent.prenom}` : 'Non assigné';
+      function fmt(iso) { if (!iso) return ''; const d = new Date(iso); return isNaN(d)?'':d.toLocaleDateString(); }
+      function getAgentName(m) { const a=(apiAgents||[]).find(x=> String(x.matricule)===String(m)); return a? `${a.nom||''} ${a.prenom||''}`.trim() : 'Non assigné'; }
+
+      async function load() {
+        tableBody.innerHTML = '<tr><td colspan="8" class="text-muted">Chargement...</td></tr>';
+        const headers = token? { 'Authorization': `Bearer ${token}` } : {};
+        try {
+          const [sRes, aRes] = await Promise.all([
+            fetch('/api/sites', { headers, credentials:'same-origin' }),
+            fetch('/api/agents', { headers, credentials:'same-origin' })
+          ]);
+          if (sRes.status===401||sRes.status===403){ try{ location.replace('/login.html'); }catch{ location.href='/login.html'; } return; }
+          apiSites = sRes.ok ? await sRes.json() : [];
+          apiAgents = aRes.ok ? await aRes.json() : [];
+          applyFilters();
+        } catch (e) {
+          tableBody.innerHTML = '<tr><td colspan="8" class="text-danger">Erreur de chargement.</td></tr>';
+        }
       }
 
-      function renderSites(sitesToRender) {
-        tableBody.innerHTML = ''; // Clear existing content
-
-        if (sitesToRender.length === 0) {
-          const row = tableBody.insertRow();
-          row.innerHTML = '<td colspan="7" class="text-center text-muted">Aucun site trouvé.</td>';
-          return;
-        }
-
-        sitesToRender.forEach(site => {
-          const row = tableBody.insertRow();
-          let statusBadgeClass = '';
-          switch (site.statut) {
-            case 'en attente':
-              statusBadgeClass = 'bg-secondary';
-              break;
-            case 'prise en charge':
-              statusBadgeClass = 'bg-info';
-              break;
-            case 'en cour':
-              statusBadgeClass = 'bg-warning';
-              break;
-            case 'fini':
-              statusBadgeClass = 'bg-success';
-              break;
-            case 'sous devis':
-              statusBadgeClass = 'bg-primary';
-              break;
-            default:
-              statusBadgeClass = 'bg-light text-dark';
-          }
-
-          const responsableName = site.responsable_matricule ? getAgentName(site.responsable_matricule) : 'Non assigné';
-
-          row.innerHTML = `
+      function render(rows) {
+        tableBody.innerHTML = '';
+        if (!rows.length) { const tr = tableBody.insertRow(); tr.innerHTML = '<td colspan="8" class="text-center text-muted">Aucun site trouvé.</td>'; return; }
+        rows.forEach(site => {
+          const tr = tableBody.insertRow();
+          const sclass = ({'en attente':'bg-secondary','prise en charge':'bg-info','en cour':'bg-warning','fini':'bg-success','sous devis':'bg-primary'})[site.statut] || 'bg-light text-dark';
+          const debut = fmt(site.date_debut); const fin = site.date_fin? fmt(site.date_fin) : 'En cours';
+          tr.innerHTML = `
             <td>${site.id}</td>
-            <td>${site.nom_site}</td>
-            <td>${site.adresse_id}</td>
-            <td><span class="badge ${statusBadgeClass}">${site.statut}</span></td>
-            <td><span class="badge bg-${site.ticket ? 'danger' : 'success'}">${site.ticket ? 'Oui' : 'Non'}</span></td>
-            <td>${responsableName}</td>
+            <td>${site.nom_site||''}</td>
+            <td>${site.adresse_id||''}</td>
+            <td><span class="badge ${sclass}">${site.statut||''}</span></td>
+            <td><span class="badge ${site.ticket? 'bg-danger':'bg-success'}">${site.ticket? 'Oui':'Non'}</span></td>
+            <td>${site.responsable_matricule? getAgentName(site.responsable_matricule): 'Non assigné'}</td>
+            <td><small>Début: ${debut||''}<br>Fin: ${fin||''}</small></td>
             <td>
               <a href="site-view.html?id=${site.id}" class="btn btn-sm btn-info me-1"><i class="bi bi-eye"></i> Voir</a>
-              ${currentUserIsAdmin ? `
-                <a href="site-edit.html?id=${site.id}" class="btn btn-sm btn-warning me-1"><i class="bi bi-pencil"></i> Modifier</a>
-                <button class="btn btn-sm btn-danger" onclick="alert('Supprimer site ${site.id}')"><i class="bi bi-trash"></i> Supprimer</button>
-              ` : ''}
-              ${site.ticket && currentUserIsAdmin ? `<button class="btn btn-sm btn-success ms-1" onclick="alert('Prendre le ticket pour ${site.id}')"><i class="bi bi-ticket"></i> Prendre le ticket</button>` : ''}
-            </td>
-          `;
+              ${isAdmin ? `<a href="site-edit.html?id=${site.id}" class="btn btn-sm btn-warning me-1"><i class="bi bi-pencil"></i> Modifier</a>` : ''}
+            </td>`;
         });
       }
 
-      function applyFilters() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const selectedStatus = statusFilter.value;
-
-        const filteredSites = allSites.filter(site => {
-          const matchesSearch = site.nom_site.toLowerCase().includes(searchTerm) ||
-                                site.id.toLowerCase().includes(searchTerm);
-          const matchesStatus = selectedStatus === '' || site.statut === selectedStatus;
-          return matchesSearch && matchesStatus;
+      function applyFilters(){
+        const term = (searchInput.value||'').toLowerCase();
+        const status = statusFilter.value;
+        let rows = (apiSites||[]).filter(s => {
+          const m = String(s.nom_site||'').toLowerCase().includes(term) || String(s.id||'').toLowerCase().includes(term);
+          const st = status ? s.statut===status : true;
+          return m && st;
         });
-
-        renderSites(filteredSites);
+        rows.sort((a,b)=>{
+          const da = a.date_debut? new Date(a.date_debut).getTime():0;
+          const db = b.date_debut? new Date(b.date_debut).getTime():0;
+          return sortAsc? (da-db):(db-da);
+        });
+        render(rows);
       }
 
       searchInput.addEventListener('input', applyFilters);
       statusFilter.addEventListener('change', applyFilters);
-
-      // Initial render
-      renderSites(allSites);
-
-      // Conditionally hide create site button for non-admins
-      if (!currentUserIsAdmin) {
-        document.getElementById('create-site-btn').classList.add('d-none');
-      }
+      thDates.addEventListener('click', ()=>{ sortAsc=!sortAsc; applyFilters(); });
+      load();
     });
   </script>
 </body>

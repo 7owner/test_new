@@ -1,0 +1,146 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmation prise de ticket</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=1"></script>
+</head>
+<body>
+  <header class="header d-flex justify-content-between align-items-center mb-4">
+    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="Logo" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">Menu</button>
+    </div>
+  </header>
+
+  <main class="container mt-5">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/dashboard.html">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/interventions.html">Interventions</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Confirmation prise de ticket</li>
+      </ol>
+    </nav>
+
+    <div class="card">
+      <div class="card-body">
+        <h2 class="card-title mb-3">Confirmer la prise du ticket</h2>
+        <div id="ticket-summary" class="mb-3 text-muted"></div>
+        <form id="prise-form" class="row g-3">
+          <div class="col-md-6">
+            <label for="actor_name" class="form-label">Votre nom (optionnel)</label>
+            <input type="text" id="actor_name" class="form-control" placeholder="Jean Dupont">
+          </div>
+          <div class="col-md-6">
+            <label for="date_debut" class="form-label">Date début</label>
+            <input type="datetime-local" id="date_debut" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label for="date_fin" class="form-label">Date fin (optionnel)</label>
+            <input type="datetime-local" id="date_fin" class="form-control">
+          </div>
+          <div class="col-12">
+            <label for="commentaire" class="form-label">Commentaire</label>
+            <textarea id="commentaire" class="form-control" rows="3" placeholder="Motif, contexte..."></textarea>
+          </div>
+          <div class="col-12 d-flex gap-2">
+            <button type="button" id="confirm" class="btn btn-primary">Confirmer</button>
+            <a id="back-link" class="btn btn-secondary">Annuler</a>
+          </div>
+        </form>
+        <div id="msg" class="mt-3"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+      const url = new URL(window.location.href);
+      const interventionId = url.searchParams.get('intervention_id');
+      const ticketIdParam = url.searchParams.get('ticket_id');
+      const token = localStorage.getItem('token');
+      const backLink = document.getElementById('back-link');
+      backLink.href = interventionId ? `/intervention-view.html?id=${encodeURIComponent(interventionId)}` : `/tickets.html`;
+
+      let ticketId = ticketIdParam || null;
+      try {
+        const sum = document.getElementById('ticket-summary');
+        if (!ticketId && interventionId) {
+          const relRes = await fetch(`/api/interventions/${interventionId}/relations`, {
+            headers: Object.assign({}, token ? { 'Authorization': `Bearer ${token}` } : {}),
+            credentials: 'same-origin'
+          });
+          if (!relRes.ok) {
+            document.getElementById('msg').textContent = `Impossible de charger les relations (HTTP ${relRes.status}).`;
+            return;
+          }
+          const rel = await relRes.json();
+          ticketId = (rel && rel.ticket && rel.ticket.id) ? rel.ticket.id : null;
+          if (rel && rel.ticket) {
+            sum.textContent = `Ticket #${rel.ticket.id} — ${rel.ticket.titre || ''}`;
+          }
+        }
+        if (ticketId && !sum.textContent) {
+          // Try to load ticket details for summary
+          const tRes = await fetch(`/api/tickets/${ticketId}/relations`, {
+            headers: Object.assign({}, token ? { 'Authorization': `Bearer ${token}` } : {}),
+            credentials: 'same-origin'
+          });
+          if (tRes.ok) {
+            const tr = await tRes.json();
+            if (tr && tr.ticket) sum.textContent = `Ticket #${tr.ticket.id} — ${tr.ticket.titre || ''}`;
+          }
+        }
+        if (!sum.textContent) sum.textContent = ticketId ? `Ticket #${ticketId}` : 'Ticket lié introuvable.';
+      } catch (e) {
+        document.getElementById('msg').textContent = 'Erreur lors du chargement des données.';
+        return;
+      }
+
+      const confirmBtn = document.getElementById('confirm');
+      confirmBtn.addEventListener('click', async () => {
+        const msg = document.getElementById('msg');
+        msg.textContent = '';
+        try {
+          if (!ticketId) { msg.textContent = 'Ticket lié introuvable.'; return; }
+          const payload = {
+            actor_name: document.getElementById('actor_name').value || null,
+            date_debut: document.getElementById('date_debut').value || null,
+            date_fin: document.getElementById('date_fin').value || null,
+            commentaire: document.getElementById('commentaire').value || null,
+          };
+          const r = await fetch(`/api/tickets/${ticketId}/take`, {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { 'Authorization': `Bearer ${token}` } : {}),
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+          });
+          if (r.ok) {
+            msg.className = 'alert alert-success';
+            msg.textContent = 'Prise effectuée: vous êtes responsable principal si aucun, sinon ajouté comme secondaire.';
+            setTimeout(() => { window.location.href = `/intervention-view.html?id=${encodeURIComponent(interventionId)}`; }, 1200);
+            return;
+          }
+          const status = r.status;
+          const ct = r.headers.get('content-type') || '';
+          let detail = '';
+          try {
+            if (ct.includes('application/json')) { const d = await r.json(); detail = d && (d.error || d.message) ? (d.error || d.message) : ''; }
+            else { detail = await r.text(); }
+          } catch {}
+          msg.className = 'alert alert-danger';
+          msg.textContent = `Echec (HTTP ${status}): ${detail || 'Action refusée.'}`;
+        } catch (e) {
+          msg.className = 'alert alert-danger';
+          msg.textContent = 'Erreur inattendue lors de la prise du ticket.';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

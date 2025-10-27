@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -96,133 +96,106 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const allInterventions = [
-        {
-          id: "INT001",
-          maintenance_id: "MNT001",
-          description: "Vérification annuelle des systèmes de sécurité",
-          date_debut: "2024-01-15",
-          date_fin: "2024-01-15",
-          status: "terminé"
-        },
-        {
-          id: "INT002",
-          maintenance_id: "MNT002",
-          description: "Réparation du système de climatisation",
-          date_debut: "2024-02-20",
-          date_fin: "2024-02-22",
-          status: "en cours"
-        },
-        {
-          id: "INT003",
-          maintenance_id: "MNT001",
-          description: "Mise à jour logicielle des équipements",
-          date_debut: "2024-03-10",
-          date_fin: "2024-03-10",
-          status: "pas commencé"
-        },
-        {
-          id: "INT004",
-          maintenance_id: "MNT003",
-          description: "Remplacement de pièces défectueuses",
-          date_debut: "2024-04-01",
-          date_fin: "2024-04-03",
-          status: "bloqué"
-        },
-        {
-          id: "INT005",
-          maintenance_id: "MNT004",
-          description: "Installation de nouveaux capteurs",
-          date_debut: "2024-05-05",
-          date_fin: "2024-05-05",
-          status: "en attente"
-        }
-      ];
+        document.addEventListener(''DOMContentLoaded'', function() {
+      const tableBody = document.getElementById(''interventions-table-body'');
+      const searchInput = document.getElementById(''intervention-search'');
+      const statusFilter = document.getElementById(''intervention-status-filter'');
 
-      const tableBody = document.getElementById('interventions-table-body');
-      const searchInput = document.getElementById('intervention-search');
-      const statusFilter = document.getElementById('intervention-status-filter');
+      const token = localStorage.getItem(''token'');
+      let currentUserIsAdmin = false; let actorEmail = '';
+      if (token) {
+        try { const p = JSON.parse(atob(token.split(''.'')[1])); const roles = Array.isArray(p.roles)?p.roles:[]; currentUserIsAdmin = roles.includes(''ROLE_ADMIN''); actorEmail = p.email||''; const el = document.getElementById(''logged-in-user-email''); if (el && actorEmail) el.textContent = actorEmail; } catch(_){}
+      }
 
-      // Retrieve logged-in user role from localStorage
-      const currentUserRole = localStorage.getItem('userRole');
-      const currentUserIsAdmin = (currentUserRole === 'admin');
+      let allInterventions = [];
 
-      function renderInterventions(interventionsToRender) {
-        tableBody.innerHTML = ''; // Clear existing content
-
-        if (interventionsToRender.length === 0) {
+      function renderInterventions(list) {
+        tableBody.innerHTML = '';
+        if (!list.length) { const row = tableBody.insertRow(); row.innerHTML = '<td colspan="7" class="text-center text-muted">Aucune intervention trouv�e.</td>'; return; }
+        list.forEach(intervention => {
           const row = tableBody.insertRow();
-          row.innerHTML = '<td colspan="7" class="text-center text-muted">Aucune intervention trouvée.</td>';
-          return;
-        }
-
-        interventionsToRender.forEach(intervention => {
-          const row = tableBody.insertRow();
+          const statusVal = intervention.status || intervention.statut || '';
           let statusBadgeClass = '';
-          switch (intervention.status) {
-            case 'pas commencé':
-              statusBadgeClass = 'bg-secondary';
-              break;
-            case 'bloqué':
-              statusBadgeClass = 'bg-danger';
-              break;
-            case 'en attente':
-              statusBadgeClass = 'bg-info';
-              break;
-            case 'en cours':
-              statusBadgeClass = 'bg-warning';
-              break;
-            case 'terminé':
-              statusBadgeClass = 'bg-success';
-              break;
-            default:
-              statusBadgeClass = 'bg-light text-dark';
+          switch (statusVal) {
+            case 'Pas_commence': statusBadgeClass = 'bg-secondary'; break;
+            case 'Bloque': statusBadgeClass = 'bg-danger'; break;
+            case 'En_attente': statusBadgeClass = 'bg-info'; break;
+            case 'En_cours': statusBadgeClass = 'bg-warning'; break;
+            case 'Termine': statusBadgeClass = 'bg-success'; break;
+            default: statusBadgeClass = 'bg-light text-dark';
           }
-
           row.innerHTML = `
             <td>${intervention.id}</td>
-            <td>${intervention.maintenance_id}</td>
-            <td>${intervention.description}</td>
-            <td>${intervention.date_debut}</td>
+            <td>${intervention.ticket_id || ''}</td>
+            <td>${intervention.description || ''}</td>
+            <td>${intervention.date_debut || ''}</td>
             <td>${intervention.date_fin || 'N/A'}</td>
-            <td><span class="badge ${statusBadgeClass}">${intervention.status}</span></td>
+            <td><span class="badge ${statusBadgeClass}">${statusVal}</span></td>
             <td>
               <a href="intervention-view.html?id=${intervention.id}" class="btn btn-sm btn-info me-1"><i class="bi bi-eye"></i> Voir</a>
               ${currentUserIsAdmin ? `
                 <a href="intervention-edit.html?id=${intervention.id}" class="btn btn-sm btn-warning me-1"><i class="bi bi-pencil"></i> Modifier</a>
-                <button class="btn btn-sm btn-danger" onclick="alert('Supprimer intervention ${intervention.id}')"><i class="bi bi-trash"></i> Supprimer</button>
+                <button class="btn btn-sm btn-danger" data-action="delete" data-id="${intervention.id}"><i class="bi bi-trash"></i> Supprimer</button>
               ` : ''}
-            </td>
-          `;
+            </td>`;
+          if (currentUserIsAdmin) {
+            const btn = row.querySelector('button[data-action="delete"]');
+            if (btn) btn.addEventListener('click', () => deleteIntervention(intervention.id));
+          }
         });
       }
 
       function applyFilters() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const selectedStatus = statusFilter.value;
-
-        const filteredInterventions = allInterventions.filter(intervention => {
-          const matchesSearch = intervention.description.toLowerCase().includes(searchTerm) ||
-                                intervention.id.toLowerCase().includes(searchTerm);
-          const matchesStatus = selectedStatus === '' || intervention.status === selectedStatus;
+        const term = (searchInput.value||'').toLowerCase();
+        const selected = statusFilter.value;
+        const filtered = allInterventions.filter(iv => {
+          const statusVal = iv.status || iv.statut || '';
+          const matchesSearch = (iv.description||'').toLowerCase().includes(term) || String(iv.id).toLowerCase().includes(term);
+          const matchesStatus = !selected || statusVal === selected;
           return matchesSearch && matchesStatus;
         });
+        renderInterventions(filtered);
+      }
 
-        renderInterventions(filteredInterventions);
+      async function fetchInterventions() {
+        if (!token) { renderInterventions([]); return; }
+        try {
+          const res = await fetch('/api/interventions', { headers: { 'Authorization': `Bearer ${token}`, 'X-Actor-Email': actorEmail }, credentials: 'same-origin' });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          allInterventions = (Array.isArray(data)?data:[]).map(i => ({
+            id: String(i.id),
+            ticket_id: i.ticket_id || '',
+            description: i.description || '',
+            date_debut: i.date_debut || '',
+            date_fin: i.date_fin || '',
+            status: i.status || i.statut || ''
+          }));
+          applyFilters();
+        } catch(e) { console.error('Erreur chargement interventions:', e); renderInterventions([]); }
+      }
+
+      async function deleteIntervention(id) {
+        if (!token || !confirm('Supprimer cette intervention ?')) return;
+        try {
+          const res = await fetch(`/api/interventions/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}`, 'X-Actor-Email': actorEmail }, credentials: 'same-origin' });
+          if (res.status === 204) { allInterventions = allInterventions.filter(i => String(i.id)!==String(id)); applyFilters(); }
+          else if (res.status === 403) alert('Action r�serv�e aux administrateurs.');
+          else alert(`Suppression �chou�e (HTTP ${res.status}).`);
+        } catch(e) { console.error('Erreur suppression intervention:', e); alert('Erreur lors de la suppression.'); }
       }
 
       searchInput.addEventListener('input', applyFilters);
       statusFilter.addEventListener('change', applyFilters);
 
-      // Initial render
-      renderInterventions(allInterventions);
-
-      // Conditionally hide create intervention button for non-admins
       if (!currentUserIsAdmin) {
-        document.querySelector('a[href="intervention-new.html"]').classList.add('d-none');
+        const link = document.querySelector('a[href="intervention-new.html"]'); if (link) link.classList.add('d-none');
       }
-    });
-  </script>
+
+      fetchInterventions();
+    });</script>
 </body>
 </html>
+
+
+

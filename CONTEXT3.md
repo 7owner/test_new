@@ -42,24 +42,20 @@ Ce document résume les modifications effectuées et l'état actuel du projet, a
 
 ## 2. Problèmes Actuels et Prochaines Étapes
 
-### 2.1. Erreurs `init.sql` persistantes
-*   **Original Error 1** : `le type « statut_intervention » existe déjà` lors de `npm start`.
-    *   **Cause** : `CREATE TYPE IF NOT EXISTS` pour les ENUMs ne semble pas fonctionner comme prévu avec le pilote `node-postgres` lors de l'exécution du script complet, ou la clause `IF NOT EXISTS` n'est pas appliquée à toutes les instructions `CREATE TYPE`.
-    *   **Résolution** : `IF NOT EXISTS` a été retiré de toutes les instructions `CREATE TYPE` dans `db/init.sql`.
-*   **Original Error 2** : `erreur de syntaxe sur ou près de « NOT »` lors de `npm start`.
-    *   **Cause** : Cette erreur était due à l'ajout incorrect de `IF NOT EXISTS` aux instructions `ALTER TABLE ... ADD CONSTRAINT`. PostgreSQL ne supporte pas `ADD CONSTRAINT IF NOT EXISTS`.
-    *   **Résolution** : `IF NOT EXISTS` a été supprimé de toutes les instructions `ALTER TABLE ... ADD CONSTRAINT` dans `db/init.sql`. Une version corrigée, `database_correction/init_fixed.sql`, a été créée et est maintenant utilisée par `server.js`.
+### 2.1. Résolution des Erreurs de Schéma et de Semence
+*   **`database_correction/init_fixed.sql`** :
+    *   Ajout de `DROP TABLE IF EXISTS ... CASCADE;` pour toutes les tables au début du script.
+    *   Ajout de `CASCADE` à toutes les instructions `DROP TYPE IF EXISTS ...;`.
+    *   Ajout de `DROP INDEX IF EXISTS ...;` avant les instructions `CREATE UNIQUE INDEX` pour assurer l'idempotence.
+*   **`database_correction/seed_fixed.sql`** :
+    *   Suppression de toutes les clauses `WHERE NOT EXISTS` des instructions `INSERT`.
+    *   Remplacement de toutes les sous-requêtes par des IDs codés en dur dans les instructions `INSERT` pour le débogage.
+    *   Simplification du fichier pour inclure uniquement les insertions `users`, `adresse`, `agence`, `agent` pour isoler le problème.
+*   **`scripts/seed.js`** :
+    *   Modification pour construire et exécuter directement les instructions SQL sous forme de littéraux de chaîne JavaScript, au lieu de lire et de diviser des fichiers externes.
+    *   Correction de l'échappement des barres obliques inverses dans les littéraux de chaîne SQL pour résoudre les erreurs `SyntaxError: Invalid or unexpected token`.
 
-### 2.2. Solution pour l'idempotence de `initializeDatabase()`
-*   **Action** : La fonction `initializeDatabase()` dans `server.js` a été rendue idempotente. Elle vérifie maintenant l'existence de la table `public.ticket` pour déterminer si le schéma est déjà en place, évitant ainsi de tenter de recréer les types et tables à chaque `npm start`.
-
-### 2.3. Enrichissement des Données de Semence (`db/seed.sql`)
-*   **Action** : Le fichier `database_correction/seed_fixed.sql` a été créé pour remplacer `db/seed.sql`.
-    *   Deux nouveaux utilisateurs ont été ajoutés (`pierre.bernard@example.com`, `marie.petit@example.com`).
-    *   Les agents `AGT003` et `AGT004` sont désormais liés à des comptes d'utilisateur.
-    *   Des données supplémentaires ont été ajoutées pour `rendezvous`, `achats`, `factures`, `reglements`, `equipe`, `agence_membre`, `agent_equipe`, `fonction`, et `agent_fonction` pour une base de données plus cohérente et complète.
-
-### 2.4. Améliorations de l'Interface Utilisateur (Header)
+### 2.2. Améliorations de l'Interface Utilisateur (Header)
 *   **Action** : Un message de bienvenue ("Bienvenue, [email de l'utilisateur]") a été ajouté entre le logo et le bouton "Menu" dans l'en-tête de la plupart des fichiers HTML du répertoire `public/`. Les pages de redirection ou d'authentification (e.g., `login.html`, `register.html`, `agent-show.html`) ont été exclues de cette modification.
 
 ## 3. Tâches en Suspens et Prochaines Étapes
@@ -68,3 +64,4 @@ Ce document résume les modifications effectuées et l'état actuel du projet, a
 *   **Génération de jetons (Requête 1)** : Implémenter l'interface utilisateur pour l'admin afin d'appeler la route `/api/invite-agent`.
 *   **Demande d'affiliation (Requête 2)** : Implémenter l'interface utilisateur pour les utilisateurs afin de soumettre une demande d'affiliation via `/api/request-affiliation`.
 *   **Styling du Dashboard (Requête 3)** : Modifier `dashboard.html` et `custom.css` pour styliser les cartes "sites", "tickets" et "Agents" en cercles.
+*   **Fonctionnalité de Mot de Passe Oublié** : Ajouter une fonctionnalité de mot de passe oublié à la page de connexion.
