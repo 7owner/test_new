@@ -173,7 +173,7 @@
       adminFilter.addEventListener('change', applyFilters);
 
       // Initial render
-      \n      (async () => {\n        try {\n          const token = localStorage.getItem('token');\n          const headers = token ? { 'Authorization': Bearer  } : {};\n          const res = await fetch('/api/agents', { headers, credentials:'same-origin' });\n          const data = res.ok ? await res.json() : [];\n          allAgents = (Array.isArray(data) ? data : []).map(a => ({\n            matricule: a.matricule,\n            nom: a.nom,\n            prenom: a.prenom,\n            email: a.email,\n            tel: a.tel || '',\n            actif: a.actif !== false,\n            admin: a.admin === true\n          }));\n        } catch(e) { console.error('Erreur chargement /api/agents:', e); allAgents = []; }\n      })();\n\nrenderAgents(allAgents);
+      \n      (async () => {\n        try {\n          const token = localStorage.getItem('token');\n          const headers = token ? { 'Authorization': 'Bearer ' } : {};\n          const res = await fetch('/api/agents', { headers, credentials:'same-origin' });\n          const data = res.ok ? await res.json() : [];\n          allAgents = (Array.isArray(data) ? data : []).map(a => ({\n            matricule: a.matricule,\n            nom: a.nom,\n            prenom: a.prenom,\n            email: a.email,\n            tel: a.tel || '',\n            actif: a.actif !== false,\n            admin: a.admin === true\n          }));\n        } catch(e) { console.error('Erreur chargement /api/agents:', e); allAgents = []; }\n      })();\n\nrenderAgents(allAgents);
     });
   </script>
 </body>
