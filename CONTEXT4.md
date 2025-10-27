@@ -59,3 +59,22 @@ Cette session a portÃ© sur lâ€™authentification par sessions/cookies, la protect
 - Forgot/reset password (Gmail SMTP configurÃ©) â†’ eâ€‘mail reÃ§u.
 - Intervention â†’ modal â€œPrendre le ticketâ€ â†’ prise principale si pas de responsable, sinon secondaire; historique visible.
 - Tickets â†’ dÃ©tail â†’ relations chargÃ©es via API (id numÃ©rique), 403 Ã©vitÃ©s.
+
+## Mises à jour rétro-annotées
+
+- Agents / Users
+  - `agents.html` utilise désormais `/api/agents` (plus de données statiques).
+  - `agent-token-new.html` charge l’agent par matricule depuis l’API et appelle `POST /api/invite-agent` (email réel, `intervention_id` via l’URL).
+  - Cohérence agents/users assurée au démarrage (création users/agents et agences si manquants).
+
+- Tickets
+  - `POST /api/tickets`: cast enum `etat_rapport` + `date_debut` par défaut; `ticket-new.html` (dates début/fin) et `ticket-view.html` (date/heure locales).
+
+- Dashboard
+  - Carte “Tickets ouverts” (X/Y) depuis l’API; graphe barres mensuel + donut “Ouverts vs Fermés”; liste des 5 tickets ouverts (triés, liens, nom site via `/api/sites`).
+
+- Sites
+  - `site-new.html` saisie d’adresse inline (Adresse/CP/Ville requis si activé) puis création; compatible JWT/CSRF.
+
+- Sessions/CSRF
+  - `trust proxy` activé; table `session` pré-créée; `connect-pg-simple` sans auto-create.

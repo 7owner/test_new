@@ -65,3 +65,23 @@ Ce document rÃ©sume les modifications effectuÃ©es et l'Ã©tat actuel du projet, a
 *   **Demande d'affiliation (RequÃªte 2)** : ImplÃ©menter l'interface utilisateur pour les utilisateurs afin de soumettre une demande d'affiliation via `/api/request-affiliation`.
 *   **Styling du Dashboard (RequÃªte 3)** : Modifier `dashboard.html` et `custom.css` pour styliser les cartes "sites", "tickets" et "Agents" en cercles.
 *   **FonctionnalitÃ© de Mot de Passe OubliÃ©** : Ajouter une fonctionnalitÃ© de mot de passe oubliÃ© Ã  la page de connexion.
+## 4. Mises à jour rétro-annotées (synchronisées avec sessions suivantes)
+
+- Agents / Users
+  - `agents.html` ne s’appuie plus sur des données statiques; les agents sont chargés via `/api/agents` (emails réels).
+  - Cohérence agents/users assurée au démarrage côté serveur (création users/agents et agences si manquants).
+  - `agent-token-new.html` charge l’agent par matricule depuis l’API et envoie une requête `POST /api/invite-agent` (email réel et `intervention_id` depuis l’URL).
+
+- Tickets
+  - `POST /api/tickets` caste `etat` en `etat_rapport` (défaut `Pas_commence`) et initialise `date_debut` si absente.
+  - `ticket-new.html` propose “Date de début/fin”; `ticket-view.html` affiche date + heure locales.
+
+- Dashboard
+  - Carte “Tickets ouverts” = X/Y réels (API); graphe barres mensuel; donut “Ouverts vs Fermés”.
+  - Panneau “Tickets ouverts” = 5 plus récents, triés par date, liens “Détails”, nom du site via `/api/sites`.
+
+- Sites
+  - `site-new.html` permet de créer une adresse inline (Adresse/CP/Ville requis si activé), puis le site; compatible JWT/CSRF.
+
+- Sessions/CSRF
+  - `trust proxy` activé; table `session` pré-créée (index inclus) pour éviter la “transaction annulée”.
