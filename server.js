@@ -35,8 +35,20 @@ app.use(express.static('public', { setHeaders: (res, filePath, stat) => {
       }
     }
   } catch(_){}
-  try { res.removeHeader('Expires'); res.removeHeader('Pragma'); } catch(_){}
-  res.setHeader('Cache-Control', 'public, max-age=604800, must-revalidate');
+
+  // For HTML files, disable caching to always reflect latest changes
+  if (/\.html$/i.test(String(filePath || ''))) {
+    try {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    } catch(_){}
+  } else {
+    // Other assets can be cached for a week
+    try { res.removeHeader('Expires'); res.removeHeader('Pragma'); } catch(_){}
+    res.setHeader('Cache-Control', 'public, max-age=604800, must-revalidate');
+  }
+
   res.setHeader('X-Content-Type-Options', 'nosniff');
 } })); // Serve static files from 'public' directory
 // Default homepage → dashboard
@@ -1066,7 +1078,22 @@ app.get('/api/agents/:matricule/relations', authenticateToken, async (req, res) 
     if (!agent) return res.status(404).json({ error: 'Agent not found' });
     const passeport = (await pool.query('SELECT * FROM passeport WHERE agent_matricule=$1', [matricule])).rows[0] || null;
     const formations = (await pool.query('SELECT * FROM formation WHERE agent_matricule=$1 ORDER BY id DESC', [matricule])).rows;
-    res.json({ agent, passeport, formations });
+    // Interventions liées via les tickets dont l'agent est responsable principal
+    const interventions = (await pool.query(
+      `SELECT i.*, t.id as ticket_id, t.titre as ticket_titre, s.id as site_id, s.nom_site as site_nom
+       FROM intervention i
+       JOIN ticket t ON i.ticket_id = t.id
+       LEFT JOIN site s ON t.site_id = s.id
+       WHERE t.responsable = $1
+       ORDER BY i.date_debut DESC NULLS LAST, i.id DESC`,
+      [matricule]
+    )).rows;
+    // Sites distincts liés à ces tickets
+    const sites = (await pool.query(
+      `SELECT DISTINCT s.* FROM ticket t JOIN site s ON t.site_id = s.id WHERE t.responsable = $1 ORDER BY s.id ASC`,
+      [matricule]
+    )).rows;
+    res.json({ agent, passeport, formations, interventions, sites });
   } catch (err) {
     console.error('Error fetching agent relations:', err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1445,10 +1472,18 @@ app.delete('/api/agents/:matricule', authenticateToken, authorizeAdmin, async (r
 
 // API Route for inviting agents and assigning to intervention
 app.post('/api/invite-agent', authenticateToken, authorizeAdmin, async (req, res) => {
-    const { email, intervention_id } = req.body;
+    const { email, intervention_id, expires_at } = req.body;
     if (!email || !intervention_id) {
         return res.status(400).json({ error: 'Email and intervention_id are required' });
     }
+    // Basic email format validation to avoid SMTP attempts with invalid addresses
+    try {
+      const em = String(email || '').trim();
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em);
+      if (!emailOk) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+    } catch (_) {}
 
     const client = await pool.connect();
     try {
@@ -1457,9 +1492,10 @@ app.post('/api/invite-agent', authenticateToken, authorizeAdmin, async (req, res
         // 1. Find or create user
         let userResult = await client.query('SELECT id FROM users WHERE email = $1', [email]);
         let userId;
+        let tempPassword = null;
         if (userResult.rows.length === 0) {
             // User does not exist, create a new one with a temporary password
-            const tempPassword = Math.random().toString(36).slice(-8); // Generate a random password
+            tempPassword = Math.random().toString(36).slice(-8); // Generate a random password
             const hashedPassword = await bcrypt.hash(tempPassword, 10);
             const newUser = await client.query(
                 'INSERT INTO users (email, password, roles) VALUES ($1, $2, $3) RETURNING id',
@@ -1470,6 +1506,40 @@ app.post('/api/invite-agent', authenticateToken, authorizeAdmin, async (req, res
             console.log(`New user created: ${email} with temp password: ${tempPassword}`);
         } else {
             userId = userResult.rows[0].id;
+        }
+
+        // Create a password reset token to let the agent define a password via UI
+        try {
+          const resetToken = crypto.randomBytes(32).toString('hex');
+          const exp = (() => {
+            if (expires_at) {
+              // expect ISO string like 2025-01-30T23:59:00
+              const d = new Date(expires_at);
+              if (!isNaN(d.getTime())) return d;
+            }
+            // default: 48h validity
+            return new Date(Date.now() + 48 * 3600 * 1000);
+          })();
+          await client.query(
+            'INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
+            [userId, resetToken, exp]
+          );
+          const host = (req.get && req.get('host')) || 'localhost:'+String(port);
+          const proto = (req.headers && req.headers['x-forwarded-proto']) || req.protocol || 'http';
+          const resetLink = `${proto}://${host}/reset-password.html?token=${resetToken}`;
+          try {
+            await sendMail({
+              to: email,
+              subject: 'Invitation à définir votre mot de passe',
+              text: `Bonjour,\n\nVous avez été invité(e) à accéder à la plateforme. Définissez votre mot de passe via ce lien: ${resetLink}\n\nCe lien expire le ${exp.toISOString()}.`,
+              html: `<p>Bonjour,</p><p>Vous avez été invité(e) à accéder à la plateforme.</p><p>Pour définir votre mot de passe, cliquez <a href="${resetLink}">ici</a>.</p><p>Ce lien expire le <strong>${exp.toISOString()}</strong>.</p>`
+            });
+          } catch (mailErr) {
+            console.warn('invite-agent: email send failed; falling back to console log:', mailErr.message);
+            console.log(`Invitation link for ${email}: ${resetLink}`);
+          }
+        } catch (e) {
+          console.warn('invite-agent: could not create/send reset token:', e.message);
         }
 
         // 2. Find or create agent and link to user
