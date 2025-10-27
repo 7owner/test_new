@@ -86,7 +86,35 @@ Ce document rÃ©sume les correctifs et Ã©volutions rÃ©alisÃ©s durant la session, 
 
 - Initialisation DB (compat Render)
   - Exécution SQL statement-par-statement avec normalisation (BOM, commentaires) et logs. Env: INIT_SQL, SEED_SQL, SKIP_DB_INIT.
-## Points connus / Dette technique
+
+- Tickets (création + vue + liste)
+  - API: lors de `POST /api/tickets`, `etat` est casté en `etat_rapport` (défaut `Pas_commence`).
+  - API: `date_debut` par défaut `CURRENT_TIMESTAMP` si manquante; cast explicite des dates.
+  - UI: `public/ticket-new.html` propose “Date de début/fin” (datetime-local) envoyées en ISO.
+  - UI: `public/ticket-view.html` affiche date + heure locales.
+  - UI: `public/tickets.html` charge les noms de sites via `/api/sites` et affiche un lien vers `site-view.html`.
+
+- Sites (création)
+  - `public/site-new.html`: switch “Saisir une nouvelle adresse”. Si activé: Adresse (ligne 1), Code postal, Ville requis (Libellé facultatif). Création via `/api/adresses` puis `/api/sites` (JWT ou CSRF).
+
+- Dashboard (synchronisé DB)
+  - Carte “Tickets ouverts”: affiche “X / Y” depuis `/api/tickets`.
+  - Graphe barres “Tickets par mois” via API; donut “Ouverts vs Fermés”.
+  - Panneau “Tickets ouverts”: 5 plus récents (tri date), badge d’état, nom du site (via `/api/sites`) et lien “Voir tout”.
+
+- Agents
+  - `public/agents.html`: suppression des données statiques; chargement depuis `/api/agents`.
+  - Cohérence agents/users assurée au démarrage (création users/agents et agences si manquants).
+  - `public/agent-token-new.html`: charge l’agent par matricule via `/api/agents` et appelle `POST /api/invite-agent`.
+
+- Sessions
+  - `trust proxy` activé et pré-création de la table `session` + index; `connect-pg-simple` sans auto-create pour éviter “transaction annulée”.
+
+- Reset password (Render)
+  - Liens de reset basés sur protocole/hôte dynamiques (`x-forwarded-proto`/`req.protocol` + `req.get('host')`).
+
+- Init DB (compat Render)
+  - Exécution SQL statement-par-statement (normalisation BOM/commentaires) + logs. Env: `INIT_SQL`, `SEED_SQL`, `SKIP_DB_INIT`.## Points connus / Dette technique
 
 - `public/script.js` est tronquÃ© (Unexpected end of input). Il a Ã©tÃ© retirÃ© des pages sensibles; Ã  rÃ©parer ou dÃ©coupler dÃ©finitivement.
 - `server.js` contient encore des doublons historiques de blocs (certains nettoyÃ©s). Une passe de nettoyage globale est Ã  prÃ©voir.
@@ -126,3 +154,4 @@ Ce document rÃ©sume les correctifs et Ã©volutions rÃ©alisÃ©s durant la session, 
 
 - Les liens de confirmation utilisent dÃ©sormais une page dÃ©diÃ©e (`public/confirmation_prise_ticket.html`) pour plus de clartÃ© et dâ€™accessibilitÃ©.
 - Le by-pass CSRF pour les requÃªtes JSON Bearer-side est une mesure pragmatique cÃ´tÃ© SPA; Ã  remplacer par un flux CSRF complet si nÃ©cessaire.
+
