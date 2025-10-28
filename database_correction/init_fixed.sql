@@ -144,6 +144,7 @@ CREATE TABLE IF NOT EXISTS agent (
     date_entree DATE,
     commentaire TEXT
 );
+ALTER TABLE agent ADD COLUMN IF NOT EXISTS tel VARCHAR(50);
 
 CREATE TABLE IF NOT EXISTS site_affaire (
     id SERIAL PRIMARY KEY,
