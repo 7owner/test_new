@@ -38,11 +38,6 @@ VALUES
 ('AGT001', 'Dupont',  'Jean',   'jean.dupont@app.com',  '0600000001', TRUE,  TRUE,  1, 3),
 ('AGT002', 'Martin',  'Sophie', 'sophie.martin@app.com','0600000002', FALSE, TRUE,  2, 2);
 
--- 4) CLIENT + SITE
-INSERT INTO client (raison_sociale, email, telephone)
-VALUES
-('EDF Renouvelables', 'contact@edf-renouvelables.fr', '0155555555'),
-('ENGIE Solutions',    'info@engie.fr',                '0166666666');
 
 INSERT INTO site (client_id, nom, adresse_id)
 VALUES
