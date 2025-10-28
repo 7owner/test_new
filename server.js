@@ -1071,32 +1071,68 @@ app.get('/api/interventions/:id/materiels', authenticateToken, async (req, res) 
 // -------------------- Relations: Agent --------------------
 app.get('/api/agents/:matricule/relations', authenticateToken, async (req, res) => {
   const { matricule } = req.params;
+
   try {
-    const agent = (await pool.query('SELECT * FROM agent WHERE matricule=$1', [matricule])).rows[0];
+    // 1) Agent principal
+    const agentResult = await pool.query('SELECT * FROM agent WHERE matricule = $1', [matricule]);
+    const agent = agentResult.rows[0];
     if (!agent) return res.status(404).json({ error: 'Agent not found' });
-    const passeport = (await pool.query('SELECT * FROM passeport WHERE agent_matricule=$1', [matricule])).rows[0] || null;
-    const formations = (await pool.query('SELECT * FROM formation WHERE agent_matricule=$1 ORDER BY id DESC', [matricule])).rows;
-    // Interventions liées via les tickets dont l'agent est responsable principal
-    const interventions = (await pool.query(
-      `SELECT i.*, t.id as ticket_id, t.titre as ticket_titre, s.id as site_id, s.nom_site as site_nom
-       FROM intervention i
-       JOIN ticket t ON i.ticket_id = t.id
-       LEFT JOIN site s ON t.site_id = s.id
-       WHERE t.responsable = $1
-       ORDER BY i.date_debut DESC NULLS LAST, i.id DESC`,
+
+    // 2) Passeport lié à l’agent
+    const passeportResult = await pool.query(
+      'SELECT * FROM passeport WHERE agent_matricule = $1',
       [matricule]
-    )).rows;
-    // Sites distincts liés à ces tickets
-    const sites = (await pool.query(
-      `SELECT DISTINCT s.* FROM ticket t JOIN site s ON t.site_id = s.id WHERE t.responsable = $1 ORDER BY s.id ASC`,
+    );
+    const passeport = passeportResult.rows[0] || null;
+
+    // 3) Formations de l’agent
+    const formationsResult = await pool.query(
+      'SELECT * FROM formation WHERE agent_matricule = $1 ORDER BY id DESC',
       [matricule]
-    )).rows;
+    );
+    const formations = formationsResult.rows;
+
+    // 4) Interventions liées via tickets dont l’agent est responsable
+    const interventionsResult = await pool.query(
+      `
+      SELECT i.*, 
+             t.id AS ticket_id, 
+             t.titre AS ticket_titre, 
+             s.id AS site_id, 
+             s.nom_site AS site_nom
+      FROM intervention i
+      JOIN ticket t ON i.ticket_id = t.id
+      JOIN ticket_responsable tr ON tr.ticket_id = t.id
+      LEFT JOIN site s ON t.site_id = s.id
+      WHERE tr.agent_matricule = $1
+      ORDER BY i.date_debut DESC NULLS LAST, i.id DESC
+      `,
+      [matricule]
+    );
+    const interventions = interventionsResult.rows;
+
+    // 5) Sites distincts associés à ces tickets
+    const sitesResult = await pool.query(
+      `
+      SELECT DISTINCT s.*
+      FROM site s
+      JOIN ticket t ON t.site_id = s.id
+      JOIN ticket_responsable tr ON tr.ticket_id = t.id
+      WHERE tr.agent_matricule = $1
+      ORDER BY s.id ASC
+      `,
+      [matricule]
+    );
+    const sites = sitesResult.rows;
+
+    // ✅ Réponse complète
     res.json({ agent, passeport, formations, interventions, sites });
   } catch (err) {
-    console.error('Error fetching agent relations:', err);
+    console.error('❌ Error fetching agent relations:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 // -------------------- Relations: Rendezvous --------------------
 app.get('/api/rendezvous/:id/relations', authenticateToken, async (req, res) => {
