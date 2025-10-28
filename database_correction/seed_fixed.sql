@@ -207,31 +207,13 @@ VALUES
 ('Ticket',2,'Document','rapport_fev.pdf'),
 ('Intervention',3,'Document','rapport_interv_mars.pdf');
 
--- 15) RENDEZVOUS + RAPPORT_TICKET
-INSERT INTO rendezvous (titre, description, date_debut, date_fin, statut, sujet, intervention_id, site_id)
-VALUES
-('RDV Paris Janv','Planification intervention', '2025-01-10 09:00','2025-01-10 10:00','Planifie','intervention',1,1),
-('RDV Lyon Fev', 'Planification intervention', '2025-02-12 14:00','2025-02-12 15:00','Planifie','intervention',14,2);
 
 INSERT INTO rapport_ticket (ticket_id, matricule, commentaire_interne, etat)
 VALUES
 (1,'AGT001','RAS – maintenance OK','Termine'),
 (14,'AGT002','Remplacement convertisseur – OK','Termine');
 
--- 16) FINANCIER : ACHAT / FACTURE / REGLEMENT
-INSERT INTO achat (affaire_id, site_id, statut)
-VALUES (1,1,'Commande'),(2,2,'Recu');
 
-INSERT INTO facture (client_id, affaire_id, statut)
-VALUES (1,1,'Emise'),(2,2,'Payee');
-
-INSERT INTO reglement (facture_id, montant)
-VALUES (2, 3500);
-
--- 17) AUDIT_LOG (entrée de test)
--- Ajuste les colonnes si ton audit_log diffère (ex: action, entity, entity_id, auteur, created_at)
-INSERT INTO audit_log (action, entity, entity_id, auteur, created_at)
-VALUES ('seed','ticket',1,'AGT001', now());
 
 -- NOTE : table "session" laissée vide (gérée par le store de session côté app).
 
