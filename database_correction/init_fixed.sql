@@ -1,4 +1,4 @@
-﻿-- --------------------------------------------------
+-- --------------------------------------------------
 -- ✅ PostgreSQL Schema Initialization (Corrected Order for Heroku)
 -- --------------------------------------------------
 
@@ -157,6 +157,15 @@ CREATE TABLE IF NOT EXISTS passeport (
     permis VARCHAR(50),
     habilitations TEXT,
     date_expiration DATE
+);
+
+CREATE TABLE IF NOT EXISTS formation (
+    id SERIAL PRIMARY KEY,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    "type" type_formation,
+    libelle VARCHAR(255) NOT NULL,
+    date_obtention DATE,
+    date_validite DATE
 );
 
 CREATE TABLE IF NOT EXISTS site_affaire (
