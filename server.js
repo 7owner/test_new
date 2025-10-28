@@ -83,13 +83,14 @@ async function initializeDatabase() {
     }
     const client = await pool.connect();
     try {
-        // Check if schema is already initialized by looking for a known table
-        const checkSchemaSql = "SELECT to_regclass('public.ticket')";
-        const schemaExists = await client.query(checkSchemaSql);
-
-        if (schemaExists.rows[0].to_regclass) {
-            console.log('Database schema already initialized. Skipping init.sql execution.');
-        } else {
+        // Force schema initialization
+        console.log('Forcing schema initialization as per user request.');
+        // The original check was:
+        // const checkSchemaSql = "SELECT to_regclass('public.ticket')";
+        // const schemaExists = await client.query(checkSchemaSql);
+        // if (schemaExists.rows[0].to_regclass) {
+        //     console.log('Database schema already initialized. Skipping init.sql execution.');
+        // } else {
             const schemaPath = INIT_SQL_PATH;
             console.log('Initializing schema from:', schemaPath);
             const schemaSqlRaw = fs.readFileSync(schemaPath, 'utf8');
