@@ -46,7 +46,7 @@ VALUES
 ('EDF Renouvelables', 'Durand Pierre', 'pierre.durand@edf-renouvelables.fr', '0155555555', 1, 'Client historique – parc solaire'),
 ('ENGIE Solutions', 'Martin Sophie', 'sophie.martin@engie.fr', '0166666666', 2, 'Client B2B – maintenance hydraulique');
 
-INSERT INTO site (client_id, nom, adresse_id)
+INSERT INTO site (client_id, nom_site, adresse_id)
 VALUES
 (1, 'Site Solaire Paris 15', 1),
 (2, 'Site Hydro Lyon',       2);
