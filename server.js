@@ -1522,15 +1522,40 @@ app.put('/api/agents/:matricule', authenticateToken, authorizeAdmin, async (req,
 });
 
 app.delete('/api/agents/:matricule', authenticateToken, authorizeAdmin, async (req, res) => {
-    const { matricule } = req.params;
-    try {
-        await pool.query('DELETE FROM agent WHERE matricule = $1', [matricule]);
-        res.status(204).send();
-    } catch (err) {
-        console.error(`Error deleting agent with matricule ${matricule}:`, err);
-        res.status(500).json({ error: 'Internal Server Error' });
+  const { matricule } = req.params;
+
+  try {
+    console.log(`🗑️ Tentative de suppression de l'agent ${matricule}...`);
+
+    // Vérifie si l’agent existe
+    const existing = await pool.query('SELECT matricule FROM agent WHERE matricule = $1', [matricule]);
+    if (existing.rowCount === 0) {
+      return res.status(404).json({ error: `Agent ${matricule} introuvable` });
     }
+
+    // Supprime d’abord les relations liées (si pas de CASCADE en DB)
+    await pool.query('DELETE FROM ticket_responsable WHERE agent_matricule = $1', [matricule]);
+    await pool.query('DELETE FROM agence_membre WHERE agent_matricule = $1', [matricule]);
+    await pool.query('DELETE FROM agent_fonction WHERE agent_matricule = $1', [matricule]);
+    await pool.query('DELETE FROM formation WHERE agent_matricule = $1', [matricule]);
+    await pool.query('DELETE FROM passeport WHERE agent_matricule = $1', [matricule]);
+
+    // Supprime l’agent
+    const result = await pool.query('DELETE FROM agent WHERE matricule = $1', [matricule]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: `Aucun agent trouvé avec le matricule ${matricule}` });
+    }
+
+    console.log(`✅ Agent ${matricule} supprimé avec succès`);
+    res.status(200).json({ message: `Agent ${matricule} supprimé avec succès` });
+
+  } catch (err) {
+    console.error(`❌ Erreur lors de la suppression de ${matricule}:`, err);
+    res.status(500).json({ error: 'Erreur interne du serveur', details: err.message });
+  }
 });
+
 
 // API Route for inviting agents and assigning to intervention
 app.post('/api/invite-agent', authenticateToken, authorizeAdmin, async (req, res) => {
