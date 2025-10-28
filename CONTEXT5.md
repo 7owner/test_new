@@ -155,3 +155,14 @@ Ce document rÃ©sume les correctifs et Ã©volutions rÃ©alisÃ©s durant la session, 
 - Les liens de confirmation utilisent dÃ©sormais une page dÃ©diÃ©e (`public/confirmation_prise_ticket.html`) pour plus de clartÃ© et dâ€™accessibilitÃ©.
 - Le by-pass CSRF pour les requÃªtes JSON Bearer-side est une mesure pragmatique cÃ´tÃ© SPA; Ã  remplacer par un flux CSRF complet si nÃ©cessaire.
 
+
+- Responsables et Agents assignés
+  - Nouvelles tables: ticket_agent, site_responsable, site_agent (migrate-assignments)
+  - Endpoints:
+    - Tickets: POST /api/tickets/:id/agents, DELETE /api/tickets/:id/agents/:matricule, POST /api/tickets/:id/responsables
+    - Sites: POST /api/sites/:id/agents, DELETE /api/sites/:id/agents/:matricule, POST /api/sites/:id/responsables
+  - Règle: un Responsable doit être admin et avoir la fonction Chef (si tables de fonction présentes)
+  - UI: ticket-view et site-view affichent désormais
+    - cartes "Responsables" et "Agents assignés" avec actions admin (ajout)
+  - Seed démo: npm run seed-demo ajoute des responsables Chef/admin et des agents assignés sur sites et tickets
+

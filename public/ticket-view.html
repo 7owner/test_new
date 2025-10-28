@@ -18,25 +18,6 @@
     </div>
   </header>
 
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-    <div class="offcanvas-header">
-      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
-    </div>
-    <div class="offcanvas-body">
-      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item"><a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
-        <li class="nav-item"><a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
-        <li class="nav-item"><a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a></li>
-        <li class="nav-item"><a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a></li>
-        <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
-        <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
-      </ul>
-    </div>
-  </div>
-
   <main class="container mt-5">
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -49,7 +30,7 @@
 
     <div class="card mb-4">
       <div class="card-body">
-        <h2 class="card-title mb-4">Informations Générales</h2>
+        <h2 class="card-title mb-4">Informations générales</h2>
         <p><strong>ID:</strong> <span id="view_id"></span></p>
         <p><strong>Titre:</strong> <span id="view_titre"></span></p>
         <p><strong>Description:</strong> <span id="view_description"></span></p>
@@ -60,15 +41,37 @@
         <p><strong>DOE:</strong> <span id="view_doe"></span></p>
         <p><strong>Affaire ID:</strong> <span id="view_affaire_id"></span></p>
         <p><strong>Site:</strong> <span id="view_site"></span></p>
-        <p><strong>Responsable:</strong> <span id="view_responsable"></span></p>
+        <p><strong>Responsable principal:</strong> <span id="view_responsable"></span></p>
       </div>
     </div>
 
     <div class="card mb-4">
       <div class="card-body">
-        <h2 class="card-title mb-4">Interventions Associées</h2>
+        <h2 class="card-title mb-4">Interventions associées</h2>
         <div id="ticket-interventions-list"></div>
         <a href="intervention-new.html" class="btn btn-primary mt-3 d-none" id="add-intervention-btn"><i class="bi bi-plus-circle me-2"></i>Ajouter une intervention</a>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="card-title mb-3">Responsables</h2>
+        <div id="ticket-responsables" class="mb-2"></div>
+        <div class="d-flex gap-2 d-none" id="ticket-resp-actions">
+          <input class="form-control form-control-sm" id="resp-matricule" placeholder="Matricule (Chef/Admin)">
+          <button class="btn btn-sm btn-outline-primary" id="add-resp-btn"><i class="bi bi-person-plus me-1"></i>Ajouter</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="card-title mb-3">Agents assignés</h2>
+        <div id="ticket-agents" class="mb-2"></div>
+        <div class="d-flex gap-2 d-none" id="ticket-agent-actions">
+          <input class="form-control form-control-sm" id="agent-matricule" placeholder="Matricule agent">
+          <button class="btn btn-sm btn-outline-primary" id="add-agent-btn"><i class="bi bi-person-plus me-1"></i>Assigner</button>
+        </div>
       </div>
     </div>
 
@@ -86,79 +89,68 @@
       const token = localStorage.getItem('token');
       const headers = token? { 'Authorization': `Bearer ${token}` } : {};
       const isAdmin = (()=>{ try{ const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles)&&p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
-
       function set(id, val){ const el=document.getElementById(id); if(el) el.textContent = val||''; }
-      function fmt(iso){
-        if(!iso) return '';
-        const d=new Date(iso);
-        return isNaN(d)? '' : d.toLocaleString(); // affiche date + heure locales
-      }
-
+      function fmt(iso){ if(!iso) return ''; const d=new Date(iso); return isNaN(d)? '' : d.toLocaleString(); }
       try {
         const res = await fetch(`/api/tickets/${ticketId}/relations`, { headers, credentials: 'same-origin' });
-        if (res.status===401||res.status===403){ try{ location.replace('/login.html'); }catch{ location.href='/login.html'; } return; }
-        if (!res.ok) throw new Error('Load failed');
-        const data = await res.json();
-        const t = data.ticket;
-        if (!t) throw new Error('Not found');
-
+        if (res.status===401||res.status===403){ location.href='/login.html'; return; }
+        const data = await res.json(); if (!res.ok) throw new Error(data && data.error || `HTTP ${res.status}`);
+        const t = data.ticket; if (!t) throw new Error('Not found');
         document.getElementById('ticket-title').textContent = t.titre || '(Sans titre)';
-        set('view_id', t.id);
-        set('view_titre', t.titre || '');
-        set('view_description', t.description || '');
-        set('view_etat', t.etat || '');
-
-        set('view_date_debut', fmt(t.date_debut));
-        set('view_date_fin', t.date_fin? fmt(t.date_fin) : 'En cours');
-        if (t.date_debut && t.date_fin) {
-          const dd=new Date(t.date_debut), df=new Date(t.date_fin); const dj=Math.floor((df-dd)/(1000*60*60*24)); set('view_duree', `${dj} jours`);
-        } else { set('view_duree',''); }
-
-        const doe = data.doe;
-        const doeEl = document.getElementById('view_doe');
+        set('view_id', t.id); set('view_titre', t.titre||''); set('view_description', t.description||''); set('view_etat', t.etat||'');
+        set('view_date_debut', fmt(t.date_debut)); set('view_date_fin', t.date_fin? fmt(t.date_fin) : 'En cours');
+        if (t.date_debut && t.date_fin) { const dd=new Date(t.date_debut), df=new Date(t.date_fin); const dj=Math.floor((df-dd)/(1000*60*60*24)); set('view_duree', `${dj} jours`); }
+        const doe = data.doe; const doeEl=document.getElementById('view_doe');
         if (doeEl) doeEl.innerHTML = (doe && doe.id) ? `<a href="doe-view.html?id=${doe.id}">${doe.titre || 'DOE'}</a>` : 'N/A';
-        const affaire = data.affaire; set('view_affaire_id', (affaire && affaire.id) ? affaire.id : 'N/A');
-
+        const affaire = data.affaire; set('view_affaire_id', (affaire && affaire.id)? affaire.id : 'N/A');
         const siteEl = document.getElementById('view_site');
         if (siteEl) {
-          const s = data.site;
-          if (s && s.id) {
-            const name = s.nom_site ? ` — ${s.nom_site}` : '';
-            siteEl.innerHTML = `<a href="site-view.html?id=${s.id}">Site #${s.id}${name}</a>`;
-          } else if (t.site_id) {
-            siteEl.innerHTML = `<a href="site-view.html?id=${t.site_id}">Site #${t.site_id}</a>`;
-          } else {
-            siteEl.textContent = 'N/A';
-          }
+          const s = data.site; if (s && s.id) { const name = s.nom_site? ` — ${s.nom_site}` : ''; siteEl.innerHTML = `<a href="site-view.html?id=${s.id}">Site #${s.id}${name}</a>`; }
+          else if (t.site_id) siteEl.innerHTML = `<a href="site-view.html?id=${t.site_id}">Site #${t.site_id}</a>`; else siteEl.textContent='N/A';
         }
-
         set('view_responsable', t.responsable || 'Non assigné');
 
-        // Interventions
-        const list = document.getElementById('ticket-interventions-list');
-        list.innerHTML = '';
+        const list = document.getElementById('ticket-interventions-list'); list.innerHTML = '';
         const items = Array.isArray(data.interventions)? data.interventions : [];
         if (!items.length) list.innerHTML = '<p class="text-muted">Aucune intervention associée.</p>';
         items.forEach(inter => {
-          const badge = (function(s){
-            switch(s){ case 'Pas_commence': return 'bg-secondary'; case 'Bloque': return 'bg-danger'; case 'En_attente': return 'bg-info'; case 'En_cours': return 'bg-warning'; case 'Termine': return 'bg-success'; default: return 'bg-light text-dark'; }
-          })(inter.status||'');
           const el = document.createElement('div'); el.className='card card-body mb-2';
-          el.innerHTML = `<div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="mb-1">${inter.description||''}</h6>
-              <small class="text-muted">Du ${inter.date_debut||''} au ${inter.date_fin||'N/A'} - <span class="badge ${badge}">${inter.status||''}</span></small>
-            </div>
-            <div>
-              <a href="intervention-view.html?id=${inter.id}" class="btn btn-sm btn-info me-1"><i class="bi bi-eye"></i> Voir</a>
-            </div>
-          </div>`;
+          el.innerHTML = `<div class=\"d-flex justify-content-between align-items-center\">`
+            + `<div><h6 class=\"mb-1\">${inter.description||''}</h6>`
+            + `<small class=\"text-muted\">Du ${fmt(inter.date_debut)||''} au ${fmt(inter.date_fin)||'N/A'}</small></div>`
+            + `<div><a href=\"intervention-view.html?id=${inter.id}\" class=\"btn btn-sm btn-info me-1\"><i class=\"bi bi-eye\"></i> Voir</a></div>`
+            + `</div>`;
           list.appendChild(el);
         });
 
-        // Admin actions
-        if (isAdmin) { document.getElementById('add-intervention-btn').classList.remove('d-none'); document.getElementById('edit-ticket-btn').classList.remove('d-none'); }
+        // Responsables et agents assignés
+        const respWrap = document.getElementById('ticket-responsables');
+        const agentsWrap = document.getElementById('ticket-agents');
+        if (respWrap) {
+          const arr = data.responsables || data.responsables_secondaires || [];
+          respWrap.innerHTML = arr.length? '' : '<span class="text-muted">Aucun responsable secondaire.</span>';
+          arr.forEach(r=>{ const el=document.createElement('div'); el.className='small'; el.textContent = (r.actor_email||r.actor_name||'') + (r.role? ` (${r.role})`: ''); respWrap.appendChild(el); });
+        }
+        if (agentsWrap) {
+          const arr = data.agents_assignes || [];
+          agentsWrap.innerHTML = arr.length? '' : '<span class="text-muted">Aucun agent assigné.</span>';
+          arr.forEach(a=>{ const el=document.createElement('div'); el.className='small'; el.textContent = a.agent_matricule; agentsWrap.appendChild(el); });
+        }
 
+        if (isAdmin) {
+          const addInt = document.getElementById('add-intervention-btn'); if (addInt) addInt.classList.remove('d-none');
+          const editBtn = document.getElementById('edit-ticket-btn'); if (editBtn) editBtn.classList.remove('d-none');
+          const respAct = document.getElementById('ticket-resp-actions'); if (respAct) respAct.classList.remove('d-none');
+          const agAct = document.getElementById('ticket-agent-actions'); if (agAct) agAct.classList.remove('d-none');
+          const addResp = document.getElementById('add-resp-btn'); if (addResp) addResp.onclick = async ()=>{
+            const m = document.getElementById('resp-matricule').value.trim(); if (!m) return alert('Matricule requis');
+            const rr = await fetch(`/api/tickets/${ticketId}/responsables`, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json', ...(token?{ 'Authorization':`Bearer ${token}` }:{}) }, body: JSON.stringify({ agent_matricule:m }) });
+            const jd = await rr.json().catch(()=>({})); if (!rr.ok) return alert(jd.error||`HTTP ${rr.status}`); location.reload(); };
+          const addAgent = document.getElementById('add-agent-btn'); if (addAgent) addAgent.onclick = async ()=>{
+            const m = document.getElementById('agent-matricule').value.trim(); if (!m) return alert('Matricule requis');
+            const rr = await fetch(`/api/tickets/${ticketId}/agents`, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json', ...(token?{ 'Authorization':`Bearer ${token}` }:{}) }, body: JSON.stringify({ agent_matricule:m }) });
+            const jd = await rr.json().catch(()=>({})); if (!rr.ok) return alert(jd.error||`HTTP ${rr.status}`); location.reload(); };
+        }
       } catch(e) {
         document.getElementById('ticket-title').textContent = 'Ticket introuvable';
       }
@@ -166,3 +158,4 @@
   </script>
 </body>
 </html>
+
