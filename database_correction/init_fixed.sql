@@ -68,7 +68,7 @@ CREATE TYPE type_formation      AS ENUM ('Habilitation','Certification','Permis'
 -- --------------------------------------------------
 -- CORE ENTITIES (Order fixed)
 -- --------------------------------------------------
-
+DROP TABLE IF EXISTS users;
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(180) UNIQUE NOT NULL,
@@ -198,7 +198,6 @@ CREATE TABLE IF NOT EXISTS intervention (
     description TEXT,
     date_debut DATE NOT NULL,
     date_fin DATE,
-    duree_heures INTEGER,
     intervention_precedente_id BIGINT,
     status statut_intervention DEFAULT 'Pas_commence' NOT NULL
 );
