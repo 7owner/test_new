@@ -32,6 +32,8 @@ DROP TABLE IF EXISTS adresse CASCADE;
 DROP TABLE IF EXISTS agent CASCADE;
 DROP TABLE IF EXISTS password_reset_tokens CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS audit_log CASCADE;
+DROP TABLE IF EXISTS ticket_responsable CASCADE;
 
 -- --------------------------------------------------
 -- Enum types
@@ -243,6 +245,26 @@ CREATE TABLE IF NOT EXISTS rapport_ticket (
     matricule VARCHAR(20),
     commentaire_interne TEXT,
     etat etat_rapport DEFAULT 'Pas_commence'
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    id SERIAL PRIMARY KEY,
+    entity TEXT NOT NULL,
+    entity_id TEXT,
+    action TEXT NOT NULL,
+    actor_email TEXT,
+    details JSONB,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS ticket_responsable (
+    id SERIAL PRIMARY KEY,
+    ticket_id INTEGER NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
+    actor_email TEXT NOT NULL,
+    role TEXT DEFAULT 'Secondaire',
+    date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    date_fin TIMESTAMP WITHOUT TIME ZONE NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS fonction (
