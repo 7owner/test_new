@@ -70,5 +70,21 @@
         // Optional: Add custom logic when offcanvas hides
       });
     }
+
+    const logoutLink = document.getElementById('logout-link');
+    if (logoutLink) {
+      logoutLink.addEventListener('click', (event) => {
+        event.preventDefault();
+        // Logout from server
+        fetch('/api/logout', { method: 'POST', credentials: 'same-origin' })
+          .finally(() => {
+            // Clear client-side session
+            localStorage.removeItem('token');
+            localStorage.removeItem('userRole');
+            // Redirect to login
+            window.location.href = '/login.html';
+          });
+      });
+    }
   });
 })();

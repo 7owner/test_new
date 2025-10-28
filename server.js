@@ -446,20 +446,32 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
+        // Fetch agent matricule
+        let matricule = null;
+        try {
+            const agentRes = await pool.query('SELECT matricule FROM agent WHERE email = $1', [user.email]);
+            if (agentRes.rows.length > 0) {
+                matricule = agentRes.rows[0].matricule;
+            }
+        } catch (e) {
+            console.error('Could not fetch agent matricule during login:', e);
+        }
+
         // Normalize roles: handle jsonb (object/array) and text stored JSON
         let roles = user.roles;
         if (typeof roles === 'string') {
             try { roles = JSON.parse(roles); } catch (_) { roles = []; }
         }
-        // Ensure roles is an array
         if (!Array.isArray(roles)) {
             roles = [];
         }
 
+        const sessionUser = { id: user.id, email: user.email, roles, matricule };
+
         // Create session
-        req.session.user = { id: user.id, email: user.email, roles };
+        req.session.user = sessionUser;
         // Also return JWT for backward compatibility (front still using it)
-        const token = jwt.sign({ id: user.id, email: user.email, roles }, JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign(sessionUser, JWT_SECRET, { expiresIn: '1h' });
         res.json({ message: 'Login successful', token, session: true });
     } catch (err) {
         console.error('Error logging in:', err);
@@ -926,7 +938,9 @@ app.get('/api/sites/:id/relations', authenticateToken, async (req, res) => {
     const rendezvous = (await pool.query('SELECT * FROM rendezvous WHERE site_id=$1 ORDER BY date_rdv DESC, id DESC', [id])).rows;
     const documents = (await pool.query("SELECT * FROM documents_repertoire WHERE cible_type='Site' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     const images = (await pool.query("SELECT id, nom_fichier, type_mime FROM images WHERE cible_type='Site' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
-    res.json({ site, adresse, affaires, does, tickets, rendezvous, documents, images });
+    const responsables = (await pool.query("SELECT agent_matricule, role, date_debut, date_fin FROM site_responsable WHERE site_id=$1 ORDER BY COALESCE(date_debut, CURRENT_TIMESTAMP) DESC, id DESC", [id])).rows;
+    const agents_assignes = (await pool.query("SELECT agent_matricule, date_debut, date_fin FROM site_agent WHERE site_id=$1 ORDER BY COALESCE(date_debut, CURRENT_TIMESTAMP) DESC, id DESC", [id])).rows;
+    res.json({ site, adresse, affaires, does, tickets, rendezvous, documents, images, responsables, agents_assignes });
   } catch (err) {
     console.error('Error fetching site relations:', err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -962,7 +976,8 @@ app.get('/api/tickets/:id/relations', authenticateToken, async (req, res) => {
     const documents = (await pool.query("SELECT * FROM documents_repertoire WHERE cible_type='Ticket' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     const images = (await pool.query("SELECT id, nom_fichier, type_mime FROM images WHERE cible_type='Ticket' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     const secondaires = (await pool.query("SELECT id, actor_email, role, date_debut, date_fin FROM ticket_responsable WHERE ticket_id=$1 ORDER BY id DESC", [id])).rows;
-    res.json({ ticket: m, doe, affaire, site, interventions, documents, images, responsables_secondaires: secondaires });
+    const agents_assignes = (await pool.query("SELECT agent_matricule, date_debut, date_fin FROM ticket_agent WHERE ticket_id=$1 ORDER BY COALESCE(date_debut, CURRENT_TIMESTAMP) DESC, id DESC", [id])).rows;
+    res.json({ ticket: m, doe, affaire, site, interventions, documents, images, responsables_secondaires: secondaires, responsables: secondaires, agents_assignes });
   } catch (err) {
     console.error('Error fetching ticket relations:', err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1426,12 +1441,27 @@ app.get('/api/agents', authenticateToken, async (req, res) => {
     }
 });
 
+app.get('/api/agents/:matricule', authenticateToken, async (req, res) => {
+    const { matricule } = req.params;
+    try {
+        const result = await pool.query('SELECT agent.*, agence.titre as agence_titre FROM agent JOIN agence ON agent.agence_id = agence.id WHERE agent.matricule = $1', [matricule]);
+        if (result.rows.length > 0) {
+            res.json(result.rows[0]);
+        } else {
+            res.status(404).json({ error: 'Agent not found' });
+        }
+    } catch (err) {
+        console.error(`Error fetching agent with matricule ${matricule}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 app.post('/api/agents', authenticateToken, authorizeAdmin, async (req, res) => {
-    const { matricule, nom, email, agence_id } = req.body;
+    const { matricule, nom, prenom, email, tel, agence_id, actif, admin } = req.body;
     try {
         const result = await pool.query(
-            'INSERT INTO agent (matricule, nom, email, agence_id) VALUES ($1, $2, $3, $4) RETURNING *',
-            [matricule, nom, email, agence_id]
+            'INSERT INTO agent (matricule, nom, prenom, email, tel, agence_id, actif, admin) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+            [matricule, nom, prenom, email, tel, agence_id, actif, admin]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -1442,11 +1472,12 @@ app.post('/api/agents', authenticateToken, authorizeAdmin, async (req, res) => {
 
 app.put('/api/agents/:matricule', authenticateToken, authorizeAdmin, async (req, res) => {
     const { matricule } = req.params;
-    const { nom, email, agence_id } = req.body; // Only allow updating these fields for simplicity
+    console.log('Received body for agent update:', req.body);
+    const { nom, prenom, email, tel, agence_id, actif, admin } = req.body;
     try {
         const result = await pool.query(
-            'UPDATE agent SET nom = $1, email = $2, agence_id = $3 WHERE matricule = $4 RETURNING *',
-            [nom, email, agence_id, matricule]
+            'UPDATE agent SET nom = $1, prenom = $2, email = $3, tel = $4, agence_id = $5, actif = $6, admin = $7 WHERE matricule = $8 RETURNING *',
+            [nom, prenom, email, tel, agence_id, actif, admin, matricule]
         );
         if (result.rows.length > 0) {
             res.json(result.rows[0]);
@@ -1455,6 +1486,9 @@ app.put('/api/agents/:matricule', authenticateToken, authorizeAdmin, async (req,
         }
     } catch (err) {
         console.error(`Error updating agent with matricule ${matricule}:`, err);
+        if (err.code === '23505') { // Unique violation
+            return res.status(409).json({ error: `L\'email ou le matricule est déjà utilisé.` });
+        }
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
@@ -2748,6 +2782,89 @@ app.post('/api/reglements', authenticateToken, authorizeAdmin, async (req, res) 
 app.delete('/api/reglements/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params; try { await pool.query('DELETE FROM reglement WHERE id=$1', [id]); res.status(204).send(); } catch (err) { console.error('Error deleting reglement:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });// Start the server
+// Ensure assignment tables for responsables/agents assignés
+async function ensureAssignmentTables() {
+  const client = await pool.connect();
+  try {
+    await client.query("CREATE TABLE IF NOT EXISTS ticket_agent (id SERIAL PRIMARY KEY, ticket_id INTEGER NOT NULL REFERENCES ticket(id) ON DELETE CASCADE, agent_matricule TEXT NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE, date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, date_fin TIMESTAMP WITHOUT TIME ZONE NULL, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_ticket_agent_ticket ON ticket_agent(ticket_id)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_ticket_agent_agent ON ticket_agent(agent_matricule)");
+    await client.query("CREATE TABLE IF NOT EXISTS site_responsable (id SERIAL PRIMARY KEY, site_id INTEGER NOT NULL REFERENCES site(id) ON DELETE CASCADE, agent_matricule TEXT NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE, role TEXT DEFAULT 'Responsable', date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL, date_fin TIMESTAMP WITHOUT TIME ZONE NULL, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_site_responsable_site ON site_responsable(site_id)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_site_responsable_agent ON site_responsable(agent_matricule)");
+    await client.query("CREATE TABLE IF NOT EXISTS site_agent (id SERIAL PRIMARY KEY, site_id INTEGER NOT NULL REFERENCES site(id) ON DELETE CASCADE, agent_matricule TEXT NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE, date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL, date_fin TIMESTAMP WITHOUT TIME ZONE NULL, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_site_agent_site ON site_agent(site_id)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_site_agent_agent ON site_agent(agent_matricule)");
+  } catch (e) { console.warn('ensureAssignmentTables failed:', e.message); } finally { client.release(); }
+}
+ensureAssignmentTables();
+
+// Validator: Chef + admin
+async function assertAgentIsChef(matricule) {
+  const a = (await pool.query('SELECT admin, email, nom FROM agent WHERE matricule=$1', [matricule])).rows[0];
+  if (!a) throw new Error('Agent not found');
+  if (!a.admin) throw new Error('Agent must be admin');
+  try {
+    const r = await pool.query("SELECT 1 FROM agent_fonction af JOIN fonction f ON f.id=af.fonction_id WHERE af.agent_matricule=$1 AND (LOWER(f.nom)='chef' OR LOWER(COALESCE(f.titre,''))='chef') LIMIT 1", [matricule]);
+    if (r.rows.length === 0) throw new Error('Agent must have fonction Chef');
+  } catch (_) { /* tolerate environment without fonction tables */ }
+}
+
+// Tickets: assign agent
+app.post('/api/tickets/:id/agents', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params; const { agent_matricule, date_debut=null, date_fin=null } = req.body;
+  if (!agent_matricule) return res.status(400).json({ error: 'agent_matricule is required' });
+  try {
+    const t = (await pool.query('SELECT id FROM ticket WHERE id=$1', [id])).rows[0]; if (!t) return res.status(404).json({ error: 'Ticket not found' });
+    const a = (await pool.query('SELECT matricule FROM agent WHERE matricule=$1', [agent_matricule])).rows[0]; if (!a) return res.status(404).json({ error: 'Agent not found' });
+    const r = await pool.query('INSERT INTO ticket_agent (ticket_id, agent_matricule, date_debut, date_fin) VALUES ($1,$2,$3,$4) RETURNING *', [id, agent_matricule, date_debut, date_fin]);
+    res.status(201).json(r.rows[0]);
+  } catch (e) { console.error('ticket add agent:', e); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+app.delete('/api/tickets/:id/agents/:matricule', authenticateToken, authorizeAdmin, async (req, res) => {
+  try { const r = await pool.query('DELETE FROM ticket_agent WHERE ticket_id=$1 AND agent_matricule=$2 RETURNING id', [req.params.id, req.params.matricule]); if (!r.rows[0]) return res.status(404).json({ error: 'Not found' }); res.json({ ok: true }); }
+  catch (e) { console.error('ticket remove agent:', e); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+// Tickets: add responsable (Chef/admin)
+app.post('/api/tickets/:id/responsables', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params; const { agent_matricule, role='Secondaire' } = req.body;
+  if (!agent_matricule) return res.status(400).json({ error: 'agent_matricule is required' });
+  try {
+    await assertAgentIsChef(agent_matricule);
+    const t = (await pool.query('SELECT id FROM ticket WHERE id=$1', [id])).rows[0]; if (!t) return res.status(404).json({ error: 'Ticket not found' });
+    const a = (await pool.query('SELECT email, nom FROM agent WHERE matricule=$1', [agent_matricule])).rows[0] || {};
+    const r = await pool.query("INSERT INTO ticket_responsable (ticket_id, actor_email, actor_name, role) VALUES ($1,$2,$3,$4) RETURNING *", [id, a.email || agent_matricule, a.nom || null, role]);
+    res.status(201).json(r.rows[0]);
+  } catch (e) { console.error('ticket add responsable:', e); res.status(400).json({ error: e.message || 'Bad Request' }); }
+});
+
+// Sites: assign agent
+app.post('/api/sites/:id/agents', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params; const { agent_matricule, date_debut=null, date_fin=null } = req.body;
+  if (!agent_matricule) return res.status(400).json({ error: 'agent_matricule is required' });
+  try {
+    const s = (await pool.query('SELECT id FROM site WHERE id=$1', [id])).rows[0]; if (!s) return res.status(404).json({ error: 'Site not found' });
+    const a = (await pool.query('SELECT matricule FROM agent WHERE matricule=$1', [agent_matricule])).rows[0]; if (!a) return res.status(404).json({ error: 'Agent not found' });
+    const r = await pool.query('INSERT INTO site_agent (site_id, agent_matricule, date_debut, date_fin) VALUES ($1,$2,$3,$4) RETURNING *', [id, agent_matricule, date_debut, date_fin]);
+    res.status(201).json(r.rows[0]);
+  } catch (e) { console.error('site add agent:', e); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+app.delete('/api/sites/:id/agents/:matricule', authenticateToken, authorizeAdmin, async (req, res) => {
+  try { const r = await pool.query('DELETE FROM site_agent WHERE site_id=$1 AND agent_matricule=$2 RETURNING id', [req.params.id, req.params.matricule]); if (!r.rows[0]) return res.status(404).json({ error: 'Not found' }); res.json({ ok: true }); }
+  catch (e) { console.error('site remove agent:', e); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+app.post('/api/sites/:id/responsables', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params; const { agent_matricule, role='Responsable' } = req.body;
+  if (!agent_matricule) return res.status(400).json({ error: 'agent_matricule is required' });
+  try {
+    await assertAgentIsChef(agent_matricule);
+    const s = (await pool.query('SELECT id FROM site WHERE id=$1', [id])).rows[0]; if (!s) return res.status(404).json({ error: 'Site not found' });
+    const r = await pool.query('INSERT INTO site_responsable (site_id, agent_matricule, role) VALUES ($1,$2,$3) RETURNING *', [id, agent_matricule, role]);
+    res.status(201).json(r.rows[0]);
+  } catch (e) { console.error('site add responsable:', e); res.status(400).json({ error: e.message || 'Bad Request' }); }
+});
+
 initializeDatabase().then(() => {
     app.listen(port, () => {
         console.log(`Server listening on port ${port}`);
