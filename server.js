@@ -119,7 +119,7 @@ async function initializeDatabase() {
             }
             await client.query('COMMIT');
             console.log('Database schema initialized successfully.');
-        }
+        
 
         // Ensure audit_log and password_reset_tokens tables exist
         try {
