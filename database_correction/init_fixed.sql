@@ -159,6 +159,7 @@ CREATE TABLE IF NOT EXISTS passeport (
     date_expiration DATE
 );
 
+DROP TABLE IF EXISTS formation CASCADE;
 CREATE TABLE IF NOT EXISTS formation (
     id SERIAL PRIMARY KEY,
     agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
