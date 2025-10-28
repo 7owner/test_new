@@ -77,12 +77,15 @@ pool.on('error', (err) => {
 
 // Function to initialize the database schema
 async function initializeDatabase() {
-    if (String(process.env.SKIP_DB_INIT || 'false').toLowerCase() === 'true') {
-        console.warn('SKIP_DB_INIT=true -> skipping DB initialization');
-        return;
-    }
     const client = await pool.connect();
     try {
+        // Acquire an advisory lock to ensure only one process initializes the DB at a time
+        await client.query('SELECT pg_advisory_lock(123456789)'); // Use a unique arbitrary number
+
+        if (String(process.env.SKIP_DB_INIT || 'false').toLowerCase() === 'true') {
+            console.warn('SKIP_DB_INIT=true -> skipping DB initialization');
+            return;
+        }
         // Force schema initialization
         console.log('Forcing schema initialization as per user request.');
         // The original check was:
@@ -156,10 +159,8 @@ async function initializeDatabase() {
         } catch (seedErr) {
             console.warn('Database seed skipped/failed:', seedErr.message);
         }
-    } catch (err) {
-        console.error('Error initializing database schema:', err);
-        // process.exit(-1); // Exit if schema creation fails critically
     } finally {
+        await client.query('SELECT pg_advisory_unlock(123456789)'); // Release the lock
         client.release();
     }
 }
