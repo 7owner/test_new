@@ -89,8 +89,8 @@ VALUES
 
 INSERT INTO formation (agent_matricule, "type", libelle, date_obtention, date_validite)
 VALUES
-('AGT001', 'Habilitation', 'H0B0',       '2025-01-15', '2026-01-15'),
-('AGT002', 'Certification','B1T Élec',   '2025-02-20', '2027-02-20');
+('AGT001', 'Habilitation'::type_formation, 'H0B0', '2025-01-15', '2026-01-15'),
+('AGT002', 'Certification'::type_formation, 'B1T Élec', '2025-02-20', '2027-02-20');
 
 -- 8) SITE_AGENT / SITE_RESPONSABLE (liaisons)
 INSERT INTO site_agent (site_id, agent_matricule) VALUES (1,'AGT001'), (2,'AGT002');
