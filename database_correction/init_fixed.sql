@@ -120,10 +120,13 @@ CREATE TABLE IF NOT EXISTS site (
     id SERIAL PRIMARY KEY,
     nom_site VARCHAR(255) NOT NULL,
     adresse_id BIGINT,
+    client_id BIGINT,
     commentaire TEXT,
     ticket BOOLEAN DEFAULT FALSE NOT NULL,
     responsable_matricule VARCHAR(20)
 );
+
+ALTER TABLE site ADD FOREIGN KEY (client_id) REFERENCES client(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS affaire (
     id SERIAL PRIMARY KEY,
