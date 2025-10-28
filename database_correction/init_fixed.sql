@@ -412,8 +412,6 @@ ALTER TABLE facture ADD FOREIGN KEY (affaire_id) REFERENCES affaire(id) ON DELET
 ALTER TABLE reglement ADD FOREIGN KEY (facture_id) REFERENCES facture(id) ON DELETE CASCADE;
 
 ALTER TABLE images ADD FOREIGN KEY (auteur_matricule) REFERENCES agent(matricule) ON DELETE SET NULL;
-ALTER TABLE documents_repertoire ADD FOREIGN KEY (cible_id) REFERENCES affaire(id) ON DELETE SET NULL;
-
 ALTER TABLE rendu_intervention ADD FOREIGN KEY (intervention_id) REFERENCES intervention(id) ON DELETE CASCADE;
 ALTER TABLE rendu_intervention_image ADD FOREIGN KEY (rendu_intervention_id) REFERENCES rendu_intervention(id) ON DELETE CASCADE;
 ALTER TABLE rendu_intervention_image ADD FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE;
