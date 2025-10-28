@@ -77,7 +77,7 @@ INSERT INTO agent_fonction (agent_matricule, fonction_id) VALUES
 INSERT INTO agent_equipe (agent_matricule, equipe_id) VALUES
 ('AGT001', 1), ('AGT002', 2);
 
-INSERT INTO agence_membre (agence_id, agent_matricule, role_agence)
+INSERT INTO agence_membre (agence_id, agent_matricule, role)
 VALUES (1, 'AGT001', 'Admin'), (2, 'AGT002', 'Membre');
 
 -- 7) PASSEPORT / FORMATION (si présents dans ton schéma – colonnes usuelles)
