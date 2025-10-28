@@ -216,8 +216,7 @@ VALUES
 (6, 'Révision pompe hydraulique');
 
 -- Associe les images aux rendus
-INSERT INTO rendu_intervention_image (rendu_intervention_id, image_id)
-VALUES (1, 1), (3, 2);
+
 
 -- ======================================================
 -- 14) IMAGES + DOCUMENTS_REPERTOIRE
@@ -227,6 +226,9 @@ INSERT INTO images (nom_fichier, type_mime, taille_octets, image_blob, auteur_ma
 VALUES
 ('photo1.jpg', 'image/jpeg', 51200, decode('FFD8FFE000104A4649460001','hex'), 'AGT001', 'Ticket', 1),
 ('photo2.jpg', 'image/jpeg', 61440, decode('FFD8FFE000104A4649460001','hex'), 'AGT002', 'Intervention', 3);
+
+INSERT INTO rendu_intervention_image (rendu_intervention_id, image_id)
+VALUES (1, 1), (3, 2);
 
 INSERT INTO documents_repertoire (cible_type, cible_id, nature, nom_fichier)
 VALUES
