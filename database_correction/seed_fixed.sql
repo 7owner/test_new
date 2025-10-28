@@ -15,8 +15,6 @@
 --   agent, agence, users, password_reset_tokens,
 --   adresse
 -- RESTART IDENTITY CASCADE;
-TRUNCATE TABLE adresse RESTART IDENTITY CASCADE;
-TRUNCATE TABLE agence RESTART IDENTITY CASCADE;
 
 -- 1) USERS
 INSERT INTO users (email, roles, password) VALUES
@@ -29,10 +27,10 @@ INSERT INTO adresse (libelle, ligne1, code_postal, ville, pays) VALUES
 ('Siège Paris', '10 Rue Lafayette', '75009', 'Paris', 'France'),
 ('Agence Lyon', '25 Avenue Foch',  '69006', 'Lyon',  'France');
 
-INSERT INTO agence (id, titre, designation, telephone, email)
+INSERT INTO agence (titre, designation, telephone, email)
 VALUES
-(1, 'Agence Paris', 'Agence principale Île-de-France', '0102030405', 'paris@agence.fr'),
-(2, 'Agence Lyon',  'Agence secondaire Rhône-Alpes',   '0472000000', 'lyon@agence.fr');
+('Agence Paris', 'Agence principale Île-de-France', '0102030405', 'paris@agence.fr'),
+('Agence Lyon',  'Agence secondaire Rhône-Alpes',   '0472000000', 'lyon@agence.fr');
 
 -- 3) AGENT (avec tel présent dans ton schéma actuel)
 INSERT INTO agent (matricule, nom, prenom, email, tel, admin, actif, agence_id, user_id)
