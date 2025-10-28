@@ -149,6 +149,14 @@ CREATE TABLE IF NOT EXISTS agent (
 );
 ALTER TABLE agent ADD COLUMN IF NOT EXISTS tel VARCHAR(50);
 
+CREATE TABLE IF NOT EXISTS passeport (
+    id SERIAL PRIMARY KEY,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    permis VARCHAR(50),
+    habilitations TEXT,
+    date_expiration DATE
+);
+
 CREATE TABLE IF NOT EXISTS site_affaire (
     id SERIAL PRIMARY KEY,
     site_id BIGINT NOT NULL,

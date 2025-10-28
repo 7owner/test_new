@@ -238,7 +238,8 @@ VALUES (2, 3500);
 -- 17) AUDIT_LOG (entrée de test)
 -- Ajuste les colonnes si ton audit_log diffère (ex: action, entity, entity_id, auteur, created_at)
 INSERT INTO audit_log (action, entity, entity_id, auteur, created_at)
-VALUES ('seed','ticket',1,'AGT001', now());
+SELECT 'seed','ticket',1,'AGT001', now()
+WHERE NOT EXISTS (SELECT 1 FROM audit_log WHERE action='seed' AND entity='ticket' AND entity_id='1' AND auteur='AGT001');
 
 -- NOTE : table "session" laissée vide (gérée par le store de session côté app).
 
