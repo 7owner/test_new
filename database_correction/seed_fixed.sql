@@ -68,7 +68,7 @@ VALUES
 (2, 2);
 
 -- 6) FONCTION / EQUIPE / LIENS RH
-INSERT INTO fonction (libelle) VALUES ('Technicien'), ('Chef de projet');
+INSERT INTO fonction (code, libelle) VALUES ('TECH','Technicien'), ('CHEF','Chef de projet');
 INSERT INTO equipe (nom)       VALUES ('Equipe Paris'), ('Equipe Lyon');
 
 INSERT INTO agent_fonction (agent_matricule, fonction_id) VALUES
