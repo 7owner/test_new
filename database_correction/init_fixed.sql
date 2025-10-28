@@ -48,20 +48,57 @@ DROP TYPE IF EXISTS mode_reglement CASCADE;
 DROP TYPE IF EXISTS role_agence CASCADE;
 DROP TYPE IF EXISTS type_formation CASCADE;
 
-CREATE TYPE statut_intervention AS ENUM ('Pas_commence','Bloque','En_attente','En_cours','Termine');
-CREATE TYPE etat_rapport        AS ENUM ('Pas_commence','En_cours','Termine');
-CREATE TYPE sujet_type          AS ENUM ('ticket','intervention');
-CREATE TYPE statut_rdv          AS ENUM ('Planifie','Confirme','Termine','Annule');
-CREATE TYPE doc_cible_type      AS ENUM (
-    'Affaire','Agent','Agence','Adresse','Client','Site','RendezVous','DOE','Ticket','Intervention',
-    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention'
-);
-CREATE TYPE doc_nature          AS ENUM ('Document','Video','Audio','Autre');
-CREATE TYPE statut_achat        AS ENUM ('Brouillon','Valide','Commande','Recu_partiel','Recu','Annule');
-CREATE TYPE statut_facture      AS ENUM ('Brouillon','Emise','Envoyee','Payee_partielle','Payee','Annulee');
-CREATE TYPE mode_reglement      AS ENUM ('Virement','Cheque','Carte','Especes','Traite','Autre');
-CREATE TYPE role_agence         AS ENUM ('Admin','Manager','Membre');
-CREATE TYPE type_formation      AS ENUM ('Habilitation','Certification','Permis');
+-- --------------------------------------------------
+-- ENUM TYPES (robust version)
+-- --------------------------------------------------
+
+DO $$ BEGIN
+    CREATE TYPE statut_intervention AS ENUM ('Pas_commence','Bloque','En_attente','En_cours','Termine');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE etat_rapport AS ENUM ('Pas_commence','En_cours','Termine');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE sujet_type AS ENUM ('ticket','intervention');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE statut_rdv AS ENUM ('Planifie','Confirme','Termine','Annule');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE doc_cible_type AS ENUM (
+        'Affaire','Agent','Agence','Adresse','Client','Site','RendezVous','DOE','Ticket','Intervention',
+        'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention'
+    );
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE doc_nature AS ENUM ('Document','Video','Audio','Autre');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE statut_achat AS ENUM ('Brouillon','Valide','Commande','Recu_partiel','Recu','Annule');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE statut_facture AS ENUM ('Brouillon','Emise','Envoyee','Payee_partielle','Payee','Annulee');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE mode_reglement AS ENUM ('Virement','Cheque','Carte','Especes','Traite','Autre');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE role_agence AS ENUM ('Admin','Manager','Membre');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE type_formation AS ENUM ('Habilitation','Certification','Permis');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
 
 -- --------------------------------------------------
 -- CORE ENTITIES (Order fixed)
