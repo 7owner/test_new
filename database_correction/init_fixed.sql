@@ -341,13 +341,7 @@ CREATE TABLE IF NOT EXISTS images (
     cible_id BIGINT
 );
 
-CREATE TABLE IF NOT EXISTS documents_repertoire (
-    id SERIAL PRIMARY KEY,
-    cible_type doc_cible_type,
-    cible_id BIGINT,
-    nature doc_nature DEFAULT 'Document',
-    nom_fichier VARCHAR(255)
-);
+
 
 CREATE TABLE IF NOT EXISTS rendu_intervention (
     id SERIAL PRIMARY KEY,
@@ -359,6 +353,15 @@ CREATE TABLE IF NOT EXISTS rendu_intervention_image (
     id SERIAL PRIMARY KEY,
     rendu_intervention_id BIGINT NOT NULL,
     image_id BIGINT NOT NULL
+);
+
+DROP TABLE IF EXISTS documents_repertoire CASCADE;
+CREATE TABLE IF NOT EXISTS documents_repertoire (
+    id SERIAL PRIMARY KEY,
+    cible_type doc_cible_type,
+    cible_id BIGINT,
+    nature doc_nature DEFAULT 'Document',
+    nom_fichier VARCHAR(255)
 );
 
 -- --------------------------------------------------
