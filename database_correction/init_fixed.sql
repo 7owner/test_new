@@ -198,6 +198,7 @@ CREATE TABLE IF NOT EXISTS intervention (
     description TEXT,
     date_debut DATE NOT NULL,
     date_fin DATE,
+    duree_heures INTEGER,
     intervention_precedente_id BIGINT,
     status statut_intervention DEFAULT 'Pas_commence' NOT NULL
 );
