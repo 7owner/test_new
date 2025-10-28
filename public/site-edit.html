@@ -4,8 +4,224 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Modifier un site</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
-  <script src="/js/site-edit.js"></script>
+</head>
+<body>
+  <header class="header d-flex justify-content-between align-items-center mb-4">
+    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="Logo" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar">Menu</button>
+    </div>
+  </header>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">Menu</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
+    </div>
+    <div class="offcanvas-body">
+      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+        <li class="nav-item"><a class="nav-link" href="/dashboard.html">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="/agents.html">Agents</a></li>
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/sites.html">Sites</a></li>
+        <li class="nav-item"><a class="nav-link" href="/interventions.html">Interventions</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" id="logout-link">Déconnexion</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <main class="container mt-5">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="dashboard.html">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="sites.html">Sites</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Modifier</li>
+      </ol>
+    </nav>
+    <h1 class="mb-4">Modifier un site</h1>
+
+    <div class="card">
+      <div class="card-body">
+        <form id="site-edit-form">
+          <div class="mb-3">
+            <label for="id" class="form-label">ID Site</label>
+            <input type="text" class="form-control" id="id" readonly>
+          </div>
+          <div class="mb-3">
+            <label for="nom_site" class="form-label">Nom du site</label>
+            <input type="text" class="form-control" id="nom_site" required>
+          </div>
+          <div class="mb-3">
+            <label for="adresse_id" class="form-label">Adresse</label>
+            <select class="form-select" id="adresse_id"></select>
+          </div>
+          <div class="mb-3">
+            <label for="responsable_matricule" class="form-label">Responsable</label>
+            <select class="form-select" id="responsable_matricule"></select>
+          </div>
+          <div class="mb-3">
+            <label for="statut" class="form-label">Statut</label>
+            <select class="form-select" id="statut" required>
+              <option value="en attente">En attente</option>
+              <option value="prise en charge">Prise en charge</option>
+              <option value="en cour">En cours</option>
+              <option value="fini">Fini</option>
+              <option value="sous devis">Sous devis</option>
+            </select>
+          </div>
+          <div class="mb-3 form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="ticket">
+            <label class="form-check-label" for="ticket">Ticket Ouvert</label>
+          </div>
+          <div class="mb-3">
+            <label for="commentaire" class="form-label">Commentaire</label>
+            <textarea class="form-control" id="commentaire" rows="4"></textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" id="save-site-btn">Enregistrer</button>
+            <a href="sites.html" class="btn btn-secondary">Annuler</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const siteId = urlParams.get('id');
+      const form = document.getElementById('site-edit-form');
+
+      const token = localStorage.getItem('token');
+      const isAdmin = (() => { try { const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
+
+      const responsableSelect = document.getElementById('responsable_matricule');
+      const adresseSelect = document.getElementById('adresse_id');
+
+      async function buildHeaders(json = false) {
+        const h = json ? { 'Content-Type': 'application/json' } : {};
+        if (token) {
+          h['Authorization'] = `Bearer ${token}`;
+          return h;
+        }
+        try {
+          const rTok = await fetch('/api/csrf-token', { credentials: 'same-origin' });
+          const dTok = await rTok.json().catch(() => ({}));
+          if (dTok && dTok.csrfToken) h['CSRF-Token'] = dTok.csrfToken;
+        } catch {}
+        return h;
+      }
+
+      async function loadRelatedData() {
+        try {
+          const headers = await buildHeaders(false);
+          const [agentsRes, adressesRes] = await Promise.all([
+            fetch('/api/agents', { headers, credentials: 'same-origin' }),
+            fetch('/api/adresses', { headers, credentials: 'same-origin' })
+          ]);
+
+          if (agentsRes.ok) {
+            const agents = await agentsRes.json();
+            responsableSelect.innerHTML = '<option value="">Non assigné</option>';
+            (Array.isArray(agents)? agents: []).forEach(a => responsableSelect.add(new Option(`${a.nom} ${a.prenom} (${a.matricule})`, a.matricule)));
+          }
+
+          if (adressesRes.ok) {
+            const adresses = await adressesRes.json();
+            adresseSelect.innerHTML = '<option value="">Aucune adresse</option>';
+            (Array.isArray(adresses)? adresses: []).forEach(a => adresseSelect.add(new Option(a.libelle || `Adresse #${a.id}`, a.id)));
+          }
+        } catch (e) {
+          console.error('Error loading related data:', e);
+        }
+      }
+
+      async function loadSiteData() {
+        if (!siteId) {
+          alert("ID de site manquant!");
+          window.location.href = "sites.html";
+          return;
+        }
+        try {
+          const headers = await buildHeaders(false);
+          const response = await fetch(`/api/sites/${siteId}`, { headers, credentials: 'same-origin' });
+          if (response.status === 401 || response.status === 403) {
+            window.location.href = '/login.html';
+            return;
+          }
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          
+          const site = await response.json();
+
+          document.getElementById('id').value = site.id;
+          document.getElementById('nom_site').value = site.nom_site || '';
+          document.getElementById('adresse_id').value = site.adresse_id || '';
+          document.getElementById('commentaire').value = site.commentaire || '';
+          document.getElementById('statut').value = site.statut || 'en attente';
+          document.getElementById('ticket').checked = site.ticket || false;
+          if (site.responsable_matricule) {
+            responsableSelect.value = site.responsable_matricule;
+          }
+
+          if (!isAdmin) {
+            form.querySelectorAll('input, select, textarea').forEach(el => el.setAttribute('disabled', 'true'));
+            document.getElementById('save-site-btn').classList.add('d-none');
+          }
+
+        } catch (e) {
+          console.error('Error loading site data:', e);
+          alert("Erreur lors du chargement des données du site.");
+          window.location.href = "sites.html";
+        }
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!isAdmin) { alert('Action réservée aux administrateurs.'); return; }
+
+        const payload = {
+          nom_site: document.getElementById('nom_site').value,
+          adresse_id: document.getElementById('adresse_id').value || null,
+          commentaire: document.getElementById('commentaire').value,
+          statut: document.getElementById('statut').value,
+          ticket: document.getElementById('ticket').checked,
+          responsable_matricule: document.getElementById('responsable_matricule').value || null,
+        };
+
+        if (!payload.nom_site) {
+          alert('Le nom du site est obligatoire.');
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/sites/${siteId}`, {
+            method: 'PUT',
+            headers: await buildHeaders(true),
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
+          });
+
+          if (response.ok) {
+            alert('Site mis à jour avec succès!');
+            window.location.href = `site-view.html?id=${siteId}`;
+          } else {
+            const errorData = await response.json().catch(() => ({ error: response.statusText }));
+            alert(`Erreur lors de la mise à jour du site: ${errorData.error}`);
+          }
+        } catch (error) {
+          console.error('Erreur lors de la mise à jour du site:', error);
+          alert('Une erreur inattendue est survenue lors de la mise à jour.');
+        }
+      });
+
+      await loadRelatedData();
+      await loadSiteData();
+    });
+  </script>
+</body>
+</html>

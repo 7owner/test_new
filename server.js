@@ -136,6 +136,8 @@ async function initializeDatabase() {
             try { await client.query("ALTER TABLE ticket ALTER COLUMN doe_id SET NOT NULL"); } catch(_) {}
             try { await client.query("ALTER TABLE ticket ALTER COLUMN affaire_id SET NOT NULL"); } catch(_) {}
             try { await client.query("ALTER TABLE ticket ALTER COLUMN description DROP NOT NULL"); } catch(_) {}
+            // Add statut to site if not exists
+            try { await client.query("ALTER TABLE site ADD COLUMN IF NOT EXISTS statut VARCHAR(50)"); } catch(_){}
             // Matériel + liaison intervention_materiel
             await client.query("CREATE TABLE IF NOT EXISTS materiel (id SERIAL PRIMARY KEY, reference TEXT UNIQUE, designation TEXT, categorie TEXT, fabricant TEXT, prix_achat NUMERIC(12,2), commentaire TEXT, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
             await client.query("ALTER TABLE materiel ADD COLUMN IF NOT EXISTS intervention_id INTEGER REFERENCES intervention(id) ON DELETE SET NULL");
@@ -261,29 +263,32 @@ ensureAgentsCoherent();
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-let mailTransport = null;
-let sendMail = async (_opts) => { console.log('Email simulation:', _opts); };
-try {
-  const nodemailer = require('nodemailer');
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-    mailTransport = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: String(process.env.SMTP_SECURE || 'false') === 'true',
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
-    sendMail = async ({ to, subject, html, text }) => {
-      const from = process.env.EMAIL_FROM || 'no-reply@example.com';
-      const info = await mailTransport.sendMail({ from, to, subject, html, text });
-      console.log('Email sent:', info.messageId);
-      return info;
-    };
-    console.log('SMTP mail transport configured');
-  } else {
-    console.log('SMTP not configured; falling back to console logging for emails');
-  }
-} catch (e) {
-  console.log('nodemailer not installed; using console email simulation');
+const sgMail = require('@sendgrid/mail');
+let sendMail = async (msg) => {
+  console.log('Email simulation:', msg);
+  return Promise.resolve();
+};
+
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  console.log('SendGrid mail transport configured.');
+  sendMail = async (msg) => {
+    const from = process.env.EMAIL_FROM || 'no-reply@example.com';
+    const msgToSend = { ...msg, from };
+    try {
+      await sgMail.send(msgToSend);
+      console.log('Email sent via SendGrid to:', msg.to);
+    } catch (error) {
+      console.error('Error sending email via SendGrid');
+      console.error(error);
+      if (error.response) {
+        console.error(error.response.body);
+      }
+      throw error;
+    }
+  };
+} else {
+  console.log('SENDGRID_API_KEY not found; falling back to console logging for emails.');
 }
 
 // Trust proxy for correct secure cookies behind proxies
@@ -1218,8 +1223,17 @@ app.get('/api/sites', authenticateToken, async (req, res) => {
 });
 app.get('/api/sites/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
+  console.log(`Fetching site with ID: ${id}`); // Debug log
+  const siteId = parseInt(id, 10);
+  if (isNaN(siteId)) {
+    return res.status(400).json({ error: 'Invalid site ID' });
+  }
   try {
-    const r = await pool.query('SELECT * FROM site WHERE id=$1', [id]);
+    const r = await pool.query('SELECT * FROM site WHERE id=$1', [siteId]);
+    console.log(`Query for site ID ${siteId} returned ${r.rowCount} rows.`);
+    if (r.rows[0]) {
+        console.log('Row data:', r.rows[0]);
+    }
     if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(r.rows[0]);
   } catch (err) {
@@ -1778,11 +1792,16 @@ app.post('/api/sites', authenticateToken, async (req, res) => {
 
 app.put('/api/sites/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
-    const { nom_site, adresse_id } = req.body;
+    const { nom_site, adresse_id, commentaire, ticket, responsable_matricule, statut } = req.body;
+
+    if (!nom_site || typeof nom_site !== 'string' || nom_site.trim() === '') {
+        return res.status(400).json({ error: 'Le champ nom_site est obligatoire.' });
+    }
+
     try {
         const result = await pool.query(
-            'UPDATE site SET nom_site = $1, adresse_id = $2 WHERE id = $3 RETURNING *',
-            [nom_site, adresse_id, id]
+            'UPDATE site SET nom_site = $1, adresse_id = $2, commentaire = $3, ticket = $4, responsable_matricule = $5, statut = $6 WHERE id = $7 RETURNING *',
+            [nom_site, adresse_id, commentaire, ticket, responsable_matricule, statut, id]
         );
         if (result.rows.length > 0) {
             res.json(result.rows[0]);
@@ -1848,7 +1867,7 @@ app.post('/api/tickets', authenticateToken, authorizeAdmin, async (req, res) => 
 
 app.put('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id } = req.params;
-    const { titre, description, responsable } = req.body;
+    const { titre, description, responsable, doe_id, affaire_id, etat } = req.body;
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -1856,8 +1875,8 @@ app.put('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, res) 
         const oldResponsable = oldTicketResult.rows[0]?.responsable;
 
         const result = await client.query(
-            'UPDATE ticket SET titre = $1, description = $2, responsable = $3 WHERE id = $4 RETURNING *',
-            [titre, description, responsable, id]
+            'UPDATE ticket SET titre = $1, description = $2, responsable = $3, doe_id = $4, affaire_id = $5, etat = $6::etat_rapport WHERE id = $7 RETURNING *',
+            [titre, description, responsable, doe_id, affaire_id, etat, id]
         );
 
         if (result.rows.length > 0) {
@@ -1874,7 +1893,11 @@ app.put('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, res) 
             res.status(404).json({ error: 'Ticket not found' });
         }
     } catch (err) {
-        await client.query('ROLLBACK');
+        try {
+            await client.query('ROLLBACK');
+        } catch (rollbackErr) {
+            console.error('Error rolling back client', rollbackErr);
+        }
         console.error(`Error updating ticket with id ${id}:`, err);
         res.status(500).json({ error: 'Internal Server Error' });
     } finally {

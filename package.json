@@ -1,40 +1,39 @@
 {
-    "name":  "projet_var_v4",
-    "version":  "1.0.0",
-    "main":  "server.js",
-    "scripts":  {
-                    "test":  "echo \"Error: no test specified\" \u0026\u0026 exit 1",
-                    "start":  "node server.js",
-                    "dev":  "node server.js",
-                    "build-css":  "postcss public/input.css -o public/style.css",
-                    "seed":  "node scripts/seed.js",
-                    "seed-year":  "node scripts/seed_year.js",
-                    "seed-demo":  "node scripts/seed_demo_relations.js",
-                    "migrate-assignments":  "node scripts/migrate_assignments.js"
-                },
-    "keywords":  [
-
-                 ],
-    "author":  "",
-    "license":  "ISC",
-    "description":  "",
-    "dependencies":  {
-                         "bcrypt":  "^6.0.0",
-                         "cors":  "^2.8.5",
-                         "dotenv":  "^17.2.3",
-                         "express":  "^5.1.0",
-                         "jsonwebtoken":  "^9.0.2",
-                         "connect-pg-simple":  "^9.0.0",
-                         "csurf":  "^1.11.0",
-                         "express-session":  "^1.17.3",
-                         "nodemailer":  "^6.9.13",
-                         "pg":  "^8.16.3"
-                     },
-    "devDependencies":  {
-                            "@tailwindcss/postcss":  "^4.1.14",
-                            "autoprefixer":  "^10.4.21",
-                            "postcss":  "^8.5.6",
-                            "postcss-cli":  "^11.0.1",
-                            "tailwindcss":  "^4.1.14"
-                        }
+    "name": "projet_var_v4",
+    "version": "1.0.0",
+    "main": "server.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "node server.js",
+        "dev": "node server.js",
+        "build-css": "postcss public/input.css -o public/style.css",
+        "seed": "node scripts/seed.js",
+        "seed-year": "node scripts/seed_year.js",
+        "seed-demo": "node scripts/seed_demo_relations.js",
+        "migrate-assignments": "node scripts/migrate_assignments.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+        "@sendgrid/mail": "^8.1.6",
+        "bcrypt": "^6.0.0",
+        "connect-pg-simple": "^9.0.0",
+        "cors": "^2.8.5",
+        "csurf": "^1.11.0",
+        "dotenv": "^17.2.3",
+        "express": "^5.1.0",
+        "express-session": "^1.17.3",
+        "jsonwebtoken": "^9.0.2",
+        "nodemailer": "^6.9.13",
+        "pg": "^8.16.3"
+    },
+    "devDependencies": {
+        "@tailwindcss/postcss": "^4.1.14",
+        "autoprefixer": "^10.4.21",
+        "postcss": "^8.5.6",
+        "postcss-cli": "^11.0.1",
+        "tailwindcss": "^4.1.14"
+    }
 }
