@@ -4,17 +4,17 @@
 -- ============================================================================
 
 -- 0) Nettoyage (réinitialise les id et respecte les FK)
-TRUNCATE
-  rendu_intervention_image, materiel_image, documents_repertoire, images,
-  rapport_ticket, rendezvous, intervention_materiel, rendu_intervention,
-  intervention, ticket_responsable, ticket_agent, ticket,
-  site_responsable, site_agent, site_affaire,
-  doe, affaire, site, client,
-  achat, reglement, facture,
-  agent_fonction, agent_equipe, agence_membre, equipe, fonction,
-  agent, agence, users, password_reset_tokens,
-  adresse
-RESTART IDENTITY CASCADE;
+-- TRUNCATE
+--   rendu_intervention_image, materiel_image, documents_repertoire, images,
+--   rapport_ticket, rendezvous, intervention_materiel, rendu_intervention,
+--   intervention, ticket_responsable, ticket_agent, ticket,
+--   site_responsable, site_agent, site_affaire,
+--   doe, affaire, site, client,
+--   achat, reglement, facture,
+--   agent_fonction, agent_equipe, agence_membre, equipe, fonction,
+--   agent, agence, users, password_reset_tokens,
+--   adresse
+-- RESTART IDENTITY CASCADE;
 
 -- 1) USERS
 INSERT INTO users (email, roles, password) VALUES
