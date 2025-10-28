@@ -31,14 +31,16 @@ SELECT 'takotuemabou@outlook.com', '["ROLE_USER"]', '$2b$10$FzYl.RlTXgB/sPKe7phz
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'takotuemabou@outlook.com');
 
 -- Seed agents
+-- AGT001 mappé à l'utilisateur ROLE_USER (takotuemabou@outlook.com)
 INSERT INTO agent (matricule, nom, prenom, admin, email, tel, actif, agence_id, user_id)
-SELECT 'AGT001', 'Dupont', 'Jean', FALSE, 'jean.dupont@example.com', '0612345678', TRUE,
+SELECT 'AGT001', 'Dupont', 'Jean', FALSE, 'takotuemabou@outlook.com', '0612345678', TRUE,
        (SELECT id FROM agence WHERE titre = 'Agence Paris' LIMIT 1),
        (SELECT id FROM users WHERE email = 'takotuemabou@outlook.com' LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM agent WHERE matricule = 'AGT001');
 
+-- AGT002 mappé à l'utilisateur ROLE_ADMIN (maboujunior777@gmail.com)
 INSERT INTO agent (matricule, nom, prenom, admin, email, tel, actif, agence_id, user_id)
-SELECT 'AGT002', 'Martin', 'Sophie', TRUE, 'sophie.martin@example.com', '0687654321', TRUE,
+SELECT 'AGT002', 'Martin', 'Sophie', TRUE, 'maboujunior777@gmail.com', '0687654321', TRUE,
        (SELECT id FROM agence WHERE titre = 'Agence Lyon' LIMIT 1),
        (SELECT id FROM users WHERE email = 'maboujunior777@gmail.com' LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM agent WHERE matricule = 'AGT002');

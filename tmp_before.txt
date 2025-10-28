@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Créer un nouveau site</title>
+  <title>Modifier un agent</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
@@ -32,10 +32,10 @@
           <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
+          <a class="nav-link active" aria-current="page" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
+          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
@@ -60,46 +60,92 @@
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="dashboard.html">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="sites.html">Gestion des Sites</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Créer</li>
+        <li class="breadcrumb-item"><a href="agents.html">Agents</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Modifier</li>
       </ol>
     </nav>
-    <h1 class="mb-4">Créer un nouveau site</h1>
+    <h1 class="mb-4">Modifier un agent</h1>
 
     <div class="card">
       <div class="card-body">
-        <h2 class="card-title mb-4">Informations du site</h2>
-        <form id="site-new-form">
+        <h2 class="card-title mb-4">Informations de l'agent</h2>
+        <form id="agent-edit-form">
           <div class="mb-3">
-            <label for="nom_site" class="form-label">Nom du Site</label>
-            <input type="text" class="form-control" id="nom_site" required>
+            <label for="matricule" class="form-label">Matricule</label>
+            <input type="text" class="form-control" id="matricule" required readonly>
           </div>
           <div class="mb-3">
-            <label for="adresse_id" class="form-label">Adresse associée</label>
-            <select class="form-select" id="adresse_id" required>
-              <option value="">Sélectionner une adresse</option>
-              <option value="ADDR001">123 Rue de Paris</option>
-              <option value="ADDR002">456 Avenue de Lyon</option>
+            <label for="nom" class="form-label">Nom</label>
+            <input type="text" class="form-control" id="nom" required>
+          </div>
+          <div class="mb-3">
+            <label for="prenom" class="form-label">Prénom</label>
+            <input type="text" class="form-control" id="prenom" required>
+          </div>
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" required>
+          </div>
+          <div class="mb-3">
+            <label for="telephone" class="form-label">Téléphone</label>
+            <input type="tel" class="form-control" id="telephone">
+          </div>
+          <div class="mb-3">
+            <label for="titre" class="form-label">Titre</label>
+            <input type="text" class="form-control" id="titre">
+          </div>
+          <div class="mb-3">
+            <label for="agence" class="form-label">Agence</label>\r\n            <select class="form-select" id="agence" required></select>
+          </div>
+          <div class="mb-3">
+            <label for="fonction" class="form-label">Fonction</label>
+            <select class="form-select" id="fonction" required>
+              <option value="">Sélectionner une fonction</option>
+              <option value="Agent">Agent</option>
+              <option value="Chef">Chef</option>
+              <option value="Manager">Manager</option>
             </select>
           </div>
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="actif">
+            <label class="form-check-label" for="actif">Actif</label>
+          </div>
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="admin">
+            <label class="form-check-label" for="admin">Administrateur</label>
+          </div>
+
+          <h3 class="mt-5 mb-3">Informations Passeport</h3>
           <div class="mb-3">
-            <label for="commentaire" class="form-label">Commentaire</label>
-            <textarea class="form-control" id="commentaire" rows="3"></textarea>
+            <label for="permis" class="form-label">Permis</label>
+            <textarea class="form-control" id="permis" rows="3"></textarea>
           </div>
           <div class="mb-3">
-            <label for="statut" class="form-label">Statut</label>
-            <select class="form-select" id="statut" required>
-              <option value="en attente">En attente</option>
-              <option value="prise en charge">Prise en charge</option>
-              <option value="en cour">En cour</option>
-              <option value="fini">Fini</option>
-              <option value="sous devis">Sous devis</option>
-            </select>
+            <label for="habilitations" class="form-label">Habilitations</label>
+            <textarea class="form-control" id="habilitations" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="certifications" class="form-label">Certifications</label>
+            <textarea class="form-control" id="certifications" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="passport_commentaire" class="form-label">Commentaire Passeport</label>
+            <textarea class="form-control" id="passport_commentaire" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <a href="agent-passport-new.html" class="btn btn-info"><i class="bi bi-journal-plus me-2"></i>Modifier Passeport</a>
+          </div>
+
+          <h3 class="mt-5 mb-3">Fichiers Associés</h3>
+          <div class="mb-3">
+            <label for="files" class="form-label">Télécharger des fichiers</label>
+            <input class="form-control" type="file" id="files" multiple>
+            <!-- Note: These files would typically be uploaded to the 'documents_repertoire' for this agent via a backend process. -->
           </div>
 
           <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary" id="save-site-btn"><i class="bi bi-save me-2"></i>Enregistrer</button>
-            <a href="sites.html" class="btn btn-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary" id="save-agent-btn"><i class="bi bi-save me-2"></i>Enregistrer les modifications</button>
+            <a href="agents.html" class="btn btn-secondary">Annuler</a>
           </div>
         </form>
       </div>
@@ -109,17 +155,112 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const matricule = urlParams.get('matricule');
+
+      // This is a placeholder for fetching actual agent data from a backend.
+      // For now, we'll use the same seed data as agents.html.
+      const agents = [
+        {
+          matricule: "AGT001",
+          nom: "Dupont",
+          prenom: "Jean",
+          email: "jean.dupont@example.com",
+          tel: "0612345678",
+          actif: true,
+          admin: false,
+          agence: "Agence A",
+          fonction: "Agent",
+          titre: "Technicien Senior",
+          permis: "Permis B, CACES R482",
+          habilitations: "H0B0, BR, B2V",
+          certifications: "SST, Travail en hauteur",
+          passport_commentaire: "A jour jusqu'au 2025-12-31."
+        },
+        {
+          matricule: "AGT002",
+          nom: "Martin",
+          prenom: "Sophie",
+          email: "sophie.martin@example.com",
+          tel: "0687654321",
+          actif: true,
+          admin: true,
+          agence: "Agence B",
+          fonction: "Manager",
+          titre: "Chef de Projet",
+          permis: "Permis B",
+          habilitations: "BR, B2V",
+          certifications: "ISO 9001",
+          passport_commentaire: "Responsable qualité."
+        },
+        {
+          matricule: "AGT003",
+          nom: "Bernard",
+          prenom: "Pierre",
+          email: "pierre.bernard@example.com",
+          tel: "0611223344",
+          actif: false,
+          admin: false,
+          agence: "Agence A",
+          fonction: "Chef",
+          titre: "Chef d'équipe",
+          permis: "Permis B",
+          habilitations: "H0B0",
+          certifications: "Secouriste",
+          passport_commentaire: "En attente de renouvellement CACES."
+        },
+        {
+          matricule: "AGT004",
+          nom: "Petit",
+          prenom: "Marie",
+          email: "marie.petit@example.com",
+          tel: "0655443322",
+          actif: true,
+          admin: false,
+          agence: "Agence C",
+          fonction: "Agent",
+          titre: "Technicien Junior",
+          permis: "Permis B",
+          habilitations: "H0B0",
+          certifications: "SST",
+          passport_commentaire: "Nouvel agent."
+        }
+      ];
+
+      const agent = agents.find(a => a.matricule === matricule);
+
       // Retrieve logged-in user role from localStorage
       const currentUserRole = localStorage.getItem('userRole');
       const currentUserIsAdmin = (currentUserRole === 'admin');
 
-      // Conditionally disable form fields and hide save button for non-admins
-      if (!currentUserIsAdmin) {
-        const form = document.getElementById('site-new-form');
-        form.querySelectorAll('input, select, textarea, button[type="submit"]').forEach(element => {
-          element.setAttribute('disabled', 'true');
-        });
-        document.getElementById('save-site-btn').classList.add('d-none');
+      if (agent) {
+        document.getElementById('matricule').value = agent.matricule;
+        document.getElementById('nom').value = agent.nom;
+        document.getElementById('prenom').value = agent.prenom;
+        document.getElementById('email').value = agent.email;
+        document.getElementById('telephone').value = agent.tel;
+        document.getElementById('titre').value = agent.titre;
+        document.getElementById('agence').value = agent.agence;
+        document.getElementById('fonction').value = agent.fonction;
+        document.getElementById('actif').checked = agent.actif;
+        document.getElementById('admin').checked = agent.admin;
+        document.getElementById('permis').value = agent.permis;
+        document.getElementById('habilitations').value = agent.habilitations;
+        document.getElementById('certifications').value = agent.certifications;
+        document.getElementById('passport_commentaire').value = agent.passport_commentaire;
+
+        // Conditionally disable form fields and hide save button for non-admins
+        if (!currentUserIsAdmin) {
+          const form = document.getElementById('agent-edit-form');
+          form.querySelectorAll('input, select, textarea').forEach(element => {
+            element.setAttribute('disabled', 'true');
+          });
+          document.getElementById('save-agent-btn').classList.add('d-none');
+        }
+
+      } else {
+        alert("Agent non trouvé!");
+        window.location.href = "agents.html";
       }
     });
   </script>

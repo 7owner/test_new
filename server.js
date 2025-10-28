@@ -12,6 +12,10 @@ const crypto = require('crypto');
 const app = express();
 const port = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'change_me_dev';
+const pathInitDefault = path.join(__dirname, 'database_correction', 'init_fixed.sql');
+const pathSeedDefault = path.join(__dirname, 'database_correction', 'seed_fixed.sql');
+const INIT_SQL_PATH = process.env.INIT_SQL || pathInitDefault;
+const SEED_SQL_PATH = process.env.SEED_SQL || pathSeedDefault;
 
 // Middleware
 app.use(cors());
@@ -31,10 +35,29 @@ app.use(express.static('public', { setHeaders: (res, filePath, stat) => {
       }
     }
   } catch(_){}
-  try { res.removeHeader('Expires'); res.removeHeader('Pragma'); } catch(_){}
-  res.setHeader('Cache-Control', 'public, max-age=604800, must-revalidate');
+
+  // For HTML files, disable caching to always reflect latest changes
+  if (/\.html$/i.test(String(filePath || ''))) {
+    try {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    } catch(_){}
+  } else {
+    // Other assets can be cached for a week
+    try { res.removeHeader('Expires'); res.removeHeader('Pragma'); } catch(_){}
+    res.setHeader('Cache-Control', 'public, max-age=604800, must-revalidate');
+  }
+
   res.setHeader('X-Content-Type-Options', 'nosniff');
 } })); // Serve static files from 'public' directory
+// Default homepage → dashboard
+try {
+  app.get('/', (_req, res) => {
+    try { res.sendFile(path.join(__dirname, 'public', 'dashboard.html')); }
+    catch { res.redirect(302, '/dashboard.html'); }
+  });
+} catch(_) {}
 // Ensure uploads directory exists
 try {
   const uploadsDir = path.join(__dirname, 'public', 'uploads', 'documents');
@@ -54,19 +77,49 @@ pool.on('error', (err) => {
 
 // Function to initialize the database schema
 async function initializeDatabase() {
+    if (String(process.env.SKIP_DB_INIT || 'false').toLowerCase() === 'true') {
+        console.warn('SKIP_DB_INIT=true -> skipping DB initialization');
+        return;
+    }
     const client = await pool.connect();
     try {
-        // Check if schema is already initialized by looking for a known table
-        const checkSchemaSql = "SELECT to_regclass('public.ticket')";
-        const schemaExists = await client.query(checkSchemaSql);
-
-        if (schemaExists.rows[0].to_regclass) {
-            console.log('Database schema already initialized. Skipping init.sql execution.');
-        } else {
-            const schemaSql = fs.readFileSync(path.join(__dirname, 'database_correction', 'init_fixed.sql')).toString();
-            await client.query(schemaSql);
+        // Force schema initialization
+        console.log('Forcing schema initialization as per user request.');
+        // The original check was:
+        // const checkSchemaSql = "SELECT to_regclass('public.ticket')";
+        // const schemaExists = await client.query(checkSchemaSql);
+        // if (schemaExists.rows[0].to_regclass) {
+        //     console.log('Database schema already initialized. Skipping init.sql execution.');
+        // } else {
+            const schemaPath = INIT_SQL_PATH;
+            console.log('Initializing schema from:', schemaPath);
+            const schemaSqlRaw = fs.readFileSync(schemaPath, 'utf8');
+            // Normalize, strip BOM and comments, then split by ';'
+            const norm = schemaSqlRaw
+              .replace(/\uFEFF/g, '')
+              .replace(/\r\n/g, '\n')
+              .replace(/\/\*[\s\S]*?\*\//g, ''); // remove /* */ blocks
+            const statements = norm
+              .split('\n')
+              .filter(line => !/^\s*--/.test(line))
+              .join('\n')
+              .split(';')
+              .map(s => s.trim())
+              .filter(s => /\S/.test(s))
+              .filter(s => /^[A-Za-z]/.test(s)); // drop any leading junk fragments
+            if (!statements.length) {
+              console.error('Schema init: no SQL statements parsed from init_fixed.sql. First 120 chars:', norm.slice(0,120));
+              throw new Error('Empty schema after parsing');
+            }
+            console.log('Schema init: executing', statements.length, 'statements. First statement head:', statements[0].slice(0,120));
+            await client.query('BEGIN');
+            for (const stmt of statements) {
+              try { await client.query(stmt); }
+              catch (e) { console.error('Schema statement failed:', stmt.slice(0,120)+'...', e.message); throw e; }
+            }
+            await client.query('COMMIT');
             console.log('Database schema initialized successfully.');
-        }
+        
 
         // Ensure audit_log and password_reset_tokens tables exist
         try {
@@ -84,6 +137,8 @@ async function initializeDatabase() {
             try { await client.query("ALTER TABLE ticket ALTER COLUMN doe_id SET NOT NULL"); } catch(_) {}
             try { await client.query("ALTER TABLE ticket ALTER COLUMN affaire_id SET NOT NULL"); } catch(_) {}
             try { await client.query("ALTER TABLE ticket ALTER COLUMN description DROP NOT NULL"); } catch(_) {}
+            // Add statut to site if not exists
+            try { await client.query("ALTER TABLE site ADD COLUMN IF NOT EXISTS statut VARCHAR(50)"); } catch(_){}
             // Matériel + liaison intervention_materiel
             await client.query("CREATE TABLE IF NOT EXISTS materiel (id SERIAL PRIMARY KEY, reference TEXT UNIQUE, designation TEXT, categorie TEXT, fabricant TEXT, prix_achat NUMERIC(12,2), commentaire TEXT, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
             await client.query("ALTER TABLE materiel ADD COLUMN IF NOT EXISTS intervention_id INTEGER REFERENCES intervention(id) ON DELETE SET NULL");
@@ -96,8 +151,31 @@ async function initializeDatabase() {
 
         // Seed data (idempotent via NOT EXISTS checks)
         try {
-            const seedSql = fs.readFileSync(path.join(__dirname, 'database_correction', 'seed_fixed.sql')).toString();
-            await client.query(seedSql);
+            const seedPath = SEED_SQL_PATH;
+            console.log('Seeding database from:', seedPath);
+            const seedRaw = fs.readFileSync(seedPath, 'utf8');
+            const normSeed = seedRaw
+              .replace(/\uFEFF/g, '')
+              .replace(/\r\n/g, '\n')
+              .replace(/\/\*[\s\S]*?\*\//g, '');
+            const seedStatements = normSeed
+              .split('\n')
+              .filter(line => !/^\s*--/.test(line))
+              .join('\n')
+              .split(';')
+              .map(s => s.trim())
+              .filter(s => /\S/.test(s))
+              .filter(s => /^[A-Za-z]/.test(s));
+            if (!seedStatements.length) {
+              console.warn('Seed: no statements parsed from seed_fixed.sql. First 120 chars:', normSeed.slice(0,120));
+            }
+            console.log('Seed: executing', seedStatements.length, 'statements. First statement head:', (seedStatements[0]||'').slice(0,120));
+            await client.query('BEGIN');
+            for (const stmt of seedStatements) {
+              try { await client.query(stmt); }
+              catch (e) { console.warn('Seed statement failed:', stmt.slice(0,120)+'...', e.message); throw e; }
+            }
+            await client.query('COMMIT');
             console.log('Database seed executed successfully.');
         } catch (seedErr) {
             console.warn('Database seed skipped/failed:', seedErr.message);
@@ -113,37 +191,122 @@ async function initializeDatabase() {
 // Initialize DB schema on startup (non-fatal if it fails)
 initializeDatabase();
 
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-let mailTransport = null;
-let sendMail = async (_opts) => { console.log('Email simulation:', _opts); };
-try {
-  const nodemailer = require('nodemailer');
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-    mailTransport = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: String(process.env.SMTP_SECURE || 'false') === 'true',
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
-    sendMail = async ({ to, subject, html, text }) => {
-      const from = process.env.EMAIL_FROM || 'no-reply@example.com';
-      const info = await mailTransport.sendMail({ from, to, subject, html, text });
-      console.log('Email sent:', info.messageId);
-      return info;
-    };
-    console.log('SMTP mail transport configured');
-  } else {
-    console.log('SMTP not configured; falling back to console logging for emails');
-  }
-} catch (e) {
-  console.log('nodemailer not installed; using console email simulation');
+// Ensure core reference data (agents coherent with users) on startup
+async function ensureAgentsCoherent() {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Agencies
+    await client.query("INSERT INTO agence (titre, designation, telephone, email) SELECT 'Agence Paris','Agence principale Paris','0102030405','paris@agence.fr' WHERE NOT EXISTS (SELECT 1 FROM agence WHERE titre='Agence Paris')");
+    await client.query("INSERT INTO agence (titre, designation, telephone, email) SELECT 'Agence Lyon','Agence secondaire Lyon','0499999999','lyon@agence.fr' WHERE NOT EXISTS (SELECT 1 FROM agence WHERE titre='Agence Lyon')");
+
+    // Users (no-ops if already present)
+    await client.query("INSERT INTO users (email, roles, password) SELECT 'maboujunior777@gmail.com','[\"ROLE_ADMIN\"]','$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq' WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='maboujunior777@gmail.com')");
+    await client.query("INSERT INTO users (email, roles, password) SELECT 'takotuemabou@outlook.com','[\"ROLE_USER\"]','$2b$10$FzYl.RlTXgB/sPKe7phzJuXk.uUfXWDWnevVIB4MuXc2NoIOW2WKq' WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='takotuemabou@outlook.com')");
+
+    // AGT001 -> takotuemabou@outlook.com (ROLE_USER)
+    await client.query(
+      "UPDATE agent a SET email=u.email, user_id=u.id, admin=FALSE, actif=TRUE, agence_id=ap.id FROM users u, agence ap WHERE a.matricule='AGT001' AND u.email='takotuemabou@outlook.com' AND ap.titre='Agence Paris'"
+    );
+    await client.query(
+      "INSERT INTO agent (matricule, nom, prenom, admin, email, tel, actif, agence_id, user_id) " +
+      "SELECT 'AGT001','Dupont','Jean',FALSE,'takotuemabou@outlook.com','0612345678',TRUE, " +
+      "(SELECT id FROM agence WHERE titre='Agence Paris' LIMIT 1), (SELECT id FROM users WHERE email='takotuemabou@outlook.com' LIMIT 1) " +
+      "WHERE NOT EXISTS (SELECT 1 FROM agent WHERE matricule='AGT001')"
+    );
+
+    // AGT002 -> maboujunior777@gmail.com (ROLE_ADMIN)
+    await client.query(
+      "UPDATE agent a SET email=u.email, user_id=u.id, admin=TRUE, actif=TRUE, agence_id=al.id FROM users u, agence al WHERE a.matricule='AGT002' AND u.email='maboujunior777@gmail.com' AND al.titre='Agence Lyon'"
+    );
+
+    // Optional agents for richer testing
+    await client.query("INSERT INTO users (email, roles, password) SELECT 'pierre.bernard@example.com','[\"ROLE_USER\"]','$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq' WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='pierre.bernard@example.com')");
+    await client.query("INSERT INTO users (email, roles, password) SELECT 'marie.petit@example.com','[\"ROLE_USER\"]','$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq' WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='marie.petit@example.com')");
+
+    // AGT003 -> pierre.bernard@example.com (Agence Paris)
+    await client.query(
+      "UPDATE agent a SET email='pierre.bernard@example.com', user_id=(SELECT id FROM users WHERE email='pierre.bernard@example.com' LIMIT 1), admin=FALSE, actif=COALESCE(actif, TRUE), agence_id=(SELECT id FROM agence WHERE titre='Agence Paris' LIMIT 1) WHERE a.matricule='AGT003'"
+    );
+    await client.query(
+      "INSERT INTO agent (matricule, nom, prenom, admin, email, tel, actif, agence_id, user_id) " +
+      "SELECT 'AGT003','Bernard','Pierre',FALSE,'pierre.bernard@example.com','0611223344',FALSE, " +
+      "(SELECT id FROM agence WHERE titre='Agence Paris' LIMIT 1), (SELECT id FROM users WHERE email='pierre.bernard@example.com' LIMIT 1) " +
+      "WHERE NOT EXISTS (SELECT 1 FROM agent WHERE matricule='AGT003')"
+    );
+
+    // AGT004 -> marie.petit@example.com (Agence Lyon)
+    await client.query(
+      "UPDATE agent a SET email='marie.petit@example.com', user_id=(SELECT id FROM users WHERE email='marie.petit@example.com' LIMIT 1), admin=FALSE, actif=TRUE, agence_id=(SELECT id FROM agence WHERE titre='Agence Lyon' LIMIT 1) WHERE a.matricule='AGT004'"
+    );
+    await client.query(
+      "INSERT INTO agent (matricule, nom, prenom, admin, email, tel, actif, agence_id, user_id) " +
+      "SELECT 'AGT004','Petit','Marie',FALSE,'marie.petit@example.com','0655443322',TRUE, " +
+      "(SELECT id FROM agence WHERE titre='Agence Lyon' LIMIT 1), (SELECT id FROM users WHERE email='marie.petit@example.com' LIMIT 1) " +
+      "WHERE NOT EXISTS (SELECT 1 FROM agent WHERE matricule='AGT004')"
+    );
+    await client.query(
+      "INSERT INTO agent (matricule, nom, prenom, admin, email, tel, actif, agence_id, user_id) " +
+      "SELECT 'AGT002','Martin','Sophie',TRUE,'maboujunior777@gmail.com','0687654321',TRUE, " +
+      "(SELECT id FROM agence WHERE titre='Agence Lyon' LIMIT 1), (SELECT id FROM users WHERE email='maboujunior777@gmail.com' LIMIT 1) " +
+      "WHERE NOT EXISTS (SELECT 1 FROM agent WHERE matricule='AGT002')"
+    );
+
+    await client.query('COMMIT');
+    console.log('Core agents/users coherence ensured.');
+  } catch (e) {
+    try { await client.query('ROLLBACK'); } catch {}
+    console.warn('ensureAgentsCoherent failed:', e.message);
+  } finally { client.release(); }
 }
 
-// Middleware to verify JWT
+ensureAgentsCoherent();
+
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const sgMail = require('@sendgrid/mail');
+let sendMail = async (msg) => {
+  console.log('Email simulation:', msg);
+  return Promise.resolve();
+};
+
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  console.log('SendGrid mail transport configured.');
+  sendMail = async (msg) => {
+    const from = process.env.EMAIL_FROM || 'no-reply@example.com';
+    const msgToSend = { ...msg, from };
+    try {
+      await sgMail.send(msgToSend);
+      console.log('Email sent via SendGrid to:', msg.to);
+    } catch (error) {
+      console.error('Error sending email via SendGrid');
+      console.error(error);
+      if (error.response) {
+        console.error(error.response.body);
+      }
+      throw error;
+    }
+  };
+} else {
+  console.log('SENDGRID_API_KEY not found; falling back to console logging for emails.');
+}
+
+// Trust proxy for correct secure cookies behind proxies
+try { app.set('trust proxy', 1); } catch {}
+
+// Pre-create session table to avoid transaction-abort issues
+async function ensureSessionTable() {
+  try {
+    await pool.query("CREATE TABLE IF NOT EXISTS \"session\" (\n      sid varchar NOT NULL PRIMARY KEY,\n      sess json NOT NULL,\n      expire timestamp(6) NOT NULL\n    );");
+    await pool.query("CREATE INDEX IF NOT EXISTS \"IDX_session_expire\" ON \"session\"(expire);");
+  } catch (e) { console.warn('ensureSessionTable failed:', e.message); }
+}
+ensureSessionTable();
+
 // Sessions setup
 app.use(session({
-  store: new PgSession({ pool, tableName: 'session', createTableIfMissing: true }),
+  store: new PgSession({ pool, tableName: 'session', createTableIfMissing: false }),
   secret: process.env.SESSION_SECRET || JWT_SECRET,
   resave: false,
   saveUninitialized: false,
@@ -289,20 +452,32 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
+        // Fetch agent matricule
+        let matricule = null;
+        try {
+            const agentRes = await pool.query('SELECT matricule FROM agent WHERE email = $1', [user.email]);
+            if (agentRes.rows.length > 0) {
+                matricule = agentRes.rows[0].matricule;
+            }
+        } catch (e) {
+            console.error('Could not fetch agent matricule during login:', e);
+        }
+
         // Normalize roles: handle jsonb (object/array) and text stored JSON
         let roles = user.roles;
         if (typeof roles === 'string') {
             try { roles = JSON.parse(roles); } catch (_) { roles = []; }
         }
-        // Ensure roles is an array
         if (!Array.isArray(roles)) {
             roles = [];
         }
 
+        const sessionUser = { id: user.id, email: user.email, roles, matricule };
+
         // Create session
-        req.session.user = { id: user.id, email: user.email, roles };
+        req.session.user = sessionUser;
         // Also return JWT for backward compatibility (front still using it)
-        const token = jwt.sign({ id: user.id, email: user.email, roles }, JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign(sessionUser, JWT_SECRET, { expiresIn: '1h' });
         res.json({ message: 'Login successful', token, session: true });
     } catch (err) {
         console.error('Error logging in:', err);
@@ -362,7 +537,9 @@ app.post('/api/forgot-password', async (req, res) => {
             [userId, resetToken, expiresAt]
         );
 
-        const resetLink = `http://localhost:${port}/reset-password.html?token=${resetToken}`;
+        const host = req.get('host');
+        const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+        const resetLink = `${proto}://${host}/reset-password.html?token=${resetToken}`;
         try {
           await sendMail({
             to: email,
@@ -444,7 +621,9 @@ app.post('/api/forgot-password', async (req, res) => {
             [userId, resetToken, expiresAt]
         );
 
-        const resetLink = `http://localhost:${port}/reset-password.html?token=${resetToken}`;
+        const host = req.get('host');
+        const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+        const resetLink = `${proto}://${host}/reset-password.html?token=${resetToken}`;
         try {
           await sendMail({
             to: email,
@@ -765,7 +944,9 @@ app.get('/api/sites/:id/relations', authenticateToken, async (req, res) => {
     const rendezvous = (await pool.query('SELECT * FROM rendezvous WHERE site_id=$1 ORDER BY date_rdv DESC, id DESC', [id])).rows;
     const documents = (await pool.query("SELECT * FROM documents_repertoire WHERE cible_type='Site' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     const images = (await pool.query("SELECT id, nom_fichier, type_mime FROM images WHERE cible_type='Site' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
-    res.json({ site, adresse, affaires, does, tickets, rendezvous, documents, images });
+    const responsables = (await pool.query("SELECT agent_matricule, role, date_debut, date_fin FROM site_responsable WHERE site_id=$1 ORDER BY COALESCE(date_debut, CURRENT_TIMESTAMP) DESC, id DESC", [id])).rows;
+    const agents_assignes = (await pool.query("SELECT agent_matricule, date_debut, date_fin FROM site_agent WHERE site_id=$1 ORDER BY COALESCE(date_debut, CURRENT_TIMESTAMP) DESC, id DESC", [id])).rows;
+    res.json({ site, adresse, affaires, does, tickets, rendezvous, documents, images, responsables, agents_assignes });
   } catch (err) {
     console.error('Error fetching site relations:', err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -801,7 +982,8 @@ app.get('/api/tickets/:id/relations', authenticateToken, async (req, res) => {
     const documents = (await pool.query("SELECT * FROM documents_repertoire WHERE cible_type='Ticket' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     const images = (await pool.query("SELECT id, nom_fichier, type_mime FROM images WHERE cible_type='Ticket' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     const secondaires = (await pool.query("SELECT id, actor_email, role, date_debut, date_fin FROM ticket_responsable WHERE ticket_id=$1 ORDER BY id DESC", [id])).rows;
-    res.json({ ticket: m, doe, affaire, site, interventions, documents, images, responsables_secondaires: secondaires });
+    const agents_assignes = (await pool.query("SELECT agent_matricule, date_debut, date_fin FROM ticket_agent WHERE ticket_id=$1 ORDER BY COALESCE(date_debut, CURRENT_TIMESTAMP) DESC, id DESC", [id])).rows;
+    res.json({ ticket: m, doe, affaire, site, interventions, documents, images, responsables_secondaires: secondaires, responsables: secondaires, agents_assignes });
   } catch (err) {
     console.error('Error fetching ticket relations:', err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -917,7 +1099,22 @@ app.get('/api/agents/:matricule/relations', authenticateToken, async (req, res) 
     if (!agent) return res.status(404).json({ error: 'Agent not found' });
     const passeport = (await pool.query('SELECT * FROM passeport WHERE agent_matricule=$1', [matricule])).rows[0] || null;
     const formations = (await pool.query('SELECT * FROM formation WHERE agent_matricule=$1 ORDER BY id DESC', [matricule])).rows;
-    res.json({ agent, passeport, formations });
+    // Interventions liées via les tickets dont l'agent est responsable principal
+    const interventions = (await pool.query(
+      `SELECT i.*, t.id as ticket_id, t.titre as ticket_titre, s.id as site_id, s.nom_site as site_nom
+       FROM intervention i
+       JOIN ticket t ON i.ticket_id = t.id
+       LEFT JOIN site s ON t.site_id = s.id
+       WHERE t.responsable = $1
+       ORDER BY i.date_debut DESC NULLS LAST, i.id DESC`,
+      [matricule]
+    )).rows;
+    // Sites distincts liés à ces tickets
+    const sites = (await pool.query(
+      `SELECT DISTINCT s.* FROM ticket t JOIN site s ON t.site_id = s.id WHERE t.responsable = $1 ORDER BY s.id ASC`,
+      [matricule]
+    )).rows;
+    res.json({ agent, passeport, formations, interventions, sites });
   } catch (err) {
     console.error('Error fetching agent relations:', err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1027,8 +1224,17 @@ app.get('/api/sites', authenticateToken, async (req, res) => {
 });
 app.get('/api/sites/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
+  console.log(`Fetching site with ID: ${id}`); // Debug log
+  const siteId = parseInt(id, 10);
+  if (isNaN(siteId)) {
+    return res.status(400).json({ error: 'Invalid site ID' });
+  }
   try {
-    const r = await pool.query('SELECT * FROM site WHERE id=$1', [id]);
+    const r = await pool.query('SELECT * FROM site WHERE id=$1', [siteId]);
+    console.log(`Query for site ID ${siteId} returned ${r.rowCount} rows.`);
+    if (r.rows[0]) {
+        console.log('Row data:', r.rows[0]);
+    }
     if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(r.rows[0]);
   } catch (err) {
@@ -1250,12 +1456,27 @@ app.get('/api/agents', authenticateToken, async (req, res) => {
     }
 });
 
+app.get('/api/agents/:matricule', authenticateToken, async (req, res) => {
+    const { matricule } = req.params;
+    try {
+        const result = await pool.query('SELECT agent.*, agence.titre as agence_titre FROM agent JOIN agence ON agent.agence_id = agence.id WHERE agent.matricule = $1', [matricule]);
+        if (result.rows.length > 0) {
+            res.json(result.rows[0]);
+        } else {
+            res.status(404).json({ error: 'Agent not found' });
+        }
+    } catch (err) {
+        console.error(`Error fetching agent with matricule ${matricule}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 app.post('/api/agents', authenticateToken, authorizeAdmin, async (req, res) => {
-    const { matricule, nom, email, agence_id } = req.body;
+    const { matricule, nom, prenom, email, tel, agence_id, actif, admin } = req.body;
     try {
         const result = await pool.query(
-            'INSERT INTO agent (matricule, nom, email, agence_id) VALUES ($1, $2, $3, $4) RETURNING *',
-            [matricule, nom, email, agence_id]
+            'INSERT INTO agent (matricule, nom, prenom, email, tel, agence_id, actif, admin) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+            [matricule, nom, prenom, email, tel, agence_id, actif, admin]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -1266,11 +1487,12 @@ app.post('/api/agents', authenticateToken, authorizeAdmin, async (req, res) => {
 
 app.put('/api/agents/:matricule', authenticateToken, authorizeAdmin, async (req, res) => {
     const { matricule } = req.params;
-    const { nom, email, agence_id } = req.body; // Only allow updating these fields for simplicity
+    console.log('Received body for agent update:', req.body);
+    const { nom, prenom, email, tel, agence_id, actif, admin } = req.body;
     try {
         const result = await pool.query(
-            'UPDATE agent SET nom = $1, email = $2, agence_id = $3 WHERE matricule = $4 RETURNING *',
-            [nom, email, agence_id, matricule]
+            'UPDATE agent SET nom = $1, prenom = $2, email = $3, tel = $4, agence_id = $5, actif = $6, admin = $7 WHERE matricule = $8 RETURNING *',
+            [nom, prenom, email, tel, agence_id, actif, admin, matricule]
         );
         if (result.rows.length > 0) {
             res.json(result.rows[0]);
@@ -1279,6 +1501,9 @@ app.put('/api/agents/:matricule', authenticateToken, authorizeAdmin, async (req,
         }
     } catch (err) {
         console.error(`Error updating agent with matricule ${matricule}:`, err);
+        if (err.code === '23505') { // Unique violation
+            return res.status(409).json({ error: `L\'email ou le matricule est déjà utilisé.` });
+        }
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
@@ -1296,10 +1521,18 @@ app.delete('/api/agents/:matricule', authenticateToken, authorizeAdmin, async (r
 
 // API Route for inviting agents and assigning to intervention
 app.post('/api/invite-agent', authenticateToken, authorizeAdmin, async (req, res) => {
-    const { email, intervention_id } = req.body;
+    const { email, intervention_id, expires_at } = req.body;
     if (!email || !intervention_id) {
         return res.status(400).json({ error: 'Email and intervention_id are required' });
     }
+    // Basic email format validation to avoid SMTP attempts with invalid addresses
+    try {
+      const em = String(email || '').trim();
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em);
+      if (!emailOk) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+    } catch (_) {}
 
     const client = await pool.connect();
     try {
@@ -1308,9 +1541,10 @@ app.post('/api/invite-agent', authenticateToken, authorizeAdmin, async (req, res
         // 1. Find or create user
         let userResult = await client.query('SELECT id FROM users WHERE email = $1', [email]);
         let userId;
+        let tempPassword = null;
         if (userResult.rows.length === 0) {
             // User does not exist, create a new one with a temporary password
-            const tempPassword = Math.random().toString(36).slice(-8); // Generate a random password
+            tempPassword = Math.random().toString(36).slice(-8); // Generate a random password
             const hashedPassword = await bcrypt.hash(tempPassword, 10);
             const newUser = await client.query(
                 'INSERT INTO users (email, password, roles) VALUES ($1, $2, $3) RETURNING id',
@@ -1321,6 +1555,40 @@ app.post('/api/invite-agent', authenticateToken, authorizeAdmin, async (req, res
             console.log(`New user created: ${email} with temp password: ${tempPassword}`);
         } else {
             userId = userResult.rows[0].id;
+        }
+
+        // Create a password reset token to let the agent define a password via UI
+        try {
+          const resetToken = crypto.randomBytes(32).toString('hex');
+          const exp = (() => {
+            if (expires_at) {
+              // expect ISO string like 2025-01-30T23:59:00
+              const d = new Date(expires_at);
+              if (!isNaN(d.getTime())) return d;
+            }
+            // default: 48h validity
+            return new Date(Date.now() + 48 * 3600 * 1000);
+          })();
+          await client.query(
+            'INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
+            [userId, resetToken, exp]
+          );
+          const host = (req.get && req.get('host')) || 'localhost:'+String(port);
+          const proto = (req.headers && req.headers['x-forwarded-proto']) || req.protocol || 'http';
+          const resetLink = `${proto}://${host}/reset-password.html?token=${resetToken}`;
+          try {
+            await sendMail({
+              to: email,
+              subject: 'Invitation à définir votre mot de passe',
+              text: `Bonjour,\n\nVous avez été invité(e) à accéder à la plateforme. Définissez votre mot de passe via ce lien: ${resetLink}\n\nCe lien expire le ${exp.toISOString()}.`,
+              html: `<p>Bonjour,</p><p>Vous avez été invité(e) à accéder à la plateforme.</p><p>Pour définir votre mot de passe, cliquez <a href="${resetLink}">ici</a>.</p><p>Ce lien expire le <strong>${exp.toISOString()}</strong>.</p>`
+            });
+          } catch (mailErr) {
+            console.warn('invite-agent: email send failed; falling back to console log:', mailErr.message);
+            console.log(`Invitation link for ${email}: ${resetLink}`);
+          }
+        } catch (e) {
+          console.warn('invite-agent: could not create/send reset token:', e.message);
         }
 
         // 2. Find or create agent and link to user
@@ -1525,11 +1793,16 @@ app.post('/api/sites', authenticateToken, async (req, res) => {
 
 app.put('/api/sites/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
-    const { nom_site, adresse_id } = req.body;
+    const { nom_site, adresse_id, commentaire, ticket, responsable_matricule, statut } = req.body;
+
+    if (!nom_site || typeof nom_site !== 'string' || nom_site.trim() === '') {
+        return res.status(400).json({ error: 'Le champ nom_site est obligatoire.' });
+    }
+
     try {
         const result = await pool.query(
-            'UPDATE site SET nom_site = $1, adresse_id = $2 WHERE id = $3 RETURNING *',
-            [nom_site, adresse_id, id]
+            'UPDATE site SET nom_site = $1, adresse_id = $2, commentaire = $3, ticket = $4, responsable_matricule = $5, statut = $6 WHERE id = $7 RETURNING *',
+            [nom_site, adresse_id, commentaire, ticket, responsable_matricule, statut, id]
         );
         if (result.rows.length > 0) {
             res.json(result.rows[0]);
@@ -1595,7 +1868,7 @@ app.post('/api/tickets', authenticateToken, authorizeAdmin, async (req, res) => 
 
 app.put('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id } = req.params;
-    const { titre, description, responsable } = req.body;
+    const { titre, description, responsable, doe_id, affaire_id, etat } = req.body;
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -1603,8 +1876,8 @@ app.put('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, res) 
         const oldResponsable = oldTicketResult.rows[0]?.responsable;
 
         const result = await client.query(
-            'UPDATE ticket SET titre = $1, description = $2, responsable = $3 WHERE id = $4 RETURNING *',
-            [titre, description, responsable, id]
+            'UPDATE ticket SET titre = $1, description = $2, responsable = $3, doe_id = $4, affaire_id = $5, etat = $6::etat_rapport WHERE id = $7 RETURNING *',
+            [titre, description, responsable, doe_id, affaire_id, etat, id]
         );
 
         if (result.rows.length > 0) {
@@ -1621,7 +1894,11 @@ app.put('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, res) 
             res.status(404).json({ error: 'Ticket not found' });
         }
     } catch (err) {
-        await client.query('ROLLBACK');
+        try {
+            await client.query('ROLLBACK');
+        } catch (rollbackErr) {
+            console.error('Error rolling back client', rollbackErr);
+        }
         console.error(`Error updating ticket with id ${id}:`, err);
         res.status(500).json({ error: 'Internal Server Error' });
     } finally {
@@ -2529,6 +2806,89 @@ app.post('/api/reglements', authenticateToken, authorizeAdmin, async (req, res) 
 app.delete('/api/reglements/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params; try { await pool.query('DELETE FROM reglement WHERE id=$1', [id]); res.status(204).send(); } catch (err) { console.error('Error deleting reglement:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });// Start the server
+// Ensure assignment tables for responsables/agents assignés
+async function ensureAssignmentTables() {
+  const client = await pool.connect();
+  try {
+    await client.query("CREATE TABLE IF NOT EXISTS ticket_agent (id SERIAL PRIMARY KEY, ticket_id INTEGER NOT NULL REFERENCES ticket(id) ON DELETE CASCADE, agent_matricule TEXT NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE, date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, date_fin TIMESTAMP WITHOUT TIME ZONE NULL, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_ticket_agent_ticket ON ticket_agent(ticket_id)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_ticket_agent_agent ON ticket_agent(agent_matricule)");
+    await client.query("CREATE TABLE IF NOT EXISTS site_responsable (id SERIAL PRIMARY KEY, site_id INTEGER NOT NULL REFERENCES site(id) ON DELETE CASCADE, agent_matricule TEXT NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE, role TEXT DEFAULT 'Responsable', date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL, date_fin TIMESTAMP WITHOUT TIME ZONE NULL, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_site_responsable_site ON site_responsable(site_id)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_site_responsable_agent ON site_responsable(agent_matricule)");
+    await client.query("CREATE TABLE IF NOT EXISTS site_agent (id SERIAL PRIMARY KEY, site_id INTEGER NOT NULL REFERENCES site(id) ON DELETE CASCADE, agent_matricule TEXT NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE, date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL, date_fin TIMESTAMP WITHOUT TIME ZONE NULL, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_site_agent_site ON site_agent(site_id)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_site_agent_agent ON site_agent(agent_matricule)");
+  } catch (e) { console.warn('ensureAssignmentTables failed:', e.message); } finally { client.release(); }
+}
+ensureAssignmentTables();
+
+// Validator: Chef + admin
+async function assertAgentIsChef(matricule) {
+  const a = (await pool.query('SELECT admin, email, nom FROM agent WHERE matricule=$1', [matricule])).rows[0];
+  if (!a) throw new Error('Agent not found');
+  if (!a.admin) throw new Error('Agent must be admin');
+  try {
+    const r = await pool.query("SELECT 1 FROM agent_fonction af JOIN fonction f ON f.id=af.fonction_id WHERE af.agent_matricule=$1 AND (LOWER(f.nom)='chef' OR LOWER(COALESCE(f.titre,''))='chef') LIMIT 1", [matricule]);
+    if (r.rows.length === 0) throw new Error('Agent must have fonction Chef');
+  } catch (_) { /* tolerate environment without fonction tables */ }
+}
+
+// Tickets: assign agent
+app.post('/api/tickets/:id/agents', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params; const { agent_matricule, date_debut=null, date_fin=null } = req.body;
+  if (!agent_matricule) return res.status(400).json({ error: 'agent_matricule is required' });
+  try {
+    const t = (await pool.query('SELECT id FROM ticket WHERE id=$1', [id])).rows[0]; if (!t) return res.status(404).json({ error: 'Ticket not found' });
+    const a = (await pool.query('SELECT matricule FROM agent WHERE matricule=$1', [agent_matricule])).rows[0]; if (!a) return res.status(404).json({ error: 'Agent not found' });
+    const r = await pool.query('INSERT INTO ticket_agent (ticket_id, agent_matricule, date_debut, date_fin) VALUES ($1,$2,$3,$4) RETURNING *', [id, agent_matricule, date_debut, date_fin]);
+    res.status(201).json(r.rows[0]);
+  } catch (e) { console.error('ticket add agent:', e); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+app.delete('/api/tickets/:id/agents/:matricule', authenticateToken, authorizeAdmin, async (req, res) => {
+  try { const r = await pool.query('DELETE FROM ticket_agent WHERE ticket_id=$1 AND agent_matricule=$2 RETURNING id', [req.params.id, req.params.matricule]); if (!r.rows[0]) return res.status(404).json({ error: 'Not found' }); res.json({ ok: true }); }
+  catch (e) { console.error('ticket remove agent:', e); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+// Tickets: add responsable (Chef/admin)
+app.post('/api/tickets/:id/responsables', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params; const { agent_matricule, role='Secondaire' } = req.body;
+  if (!agent_matricule) return res.status(400).json({ error: 'agent_matricule is required' });
+  try {
+    await assertAgentIsChef(agent_matricule);
+    const t = (await pool.query('SELECT id FROM ticket WHERE id=$1', [id])).rows[0]; if (!t) return res.status(404).json({ error: 'Ticket not found' });
+    const a = (await pool.query('SELECT email, nom FROM agent WHERE matricule=$1', [agent_matricule])).rows[0] || {};
+    const r = await pool.query("INSERT INTO ticket_responsable (ticket_id, actor_email, actor_name, role) VALUES ($1,$2,$3,$4) RETURNING *", [id, a.email || agent_matricule, a.nom || null, role]);
+    res.status(201).json(r.rows[0]);
+  } catch (e) { console.error('ticket add responsable:', e); res.status(400).json({ error: e.message || 'Bad Request' }); }
+});
+
+// Sites: assign agent
+app.post('/api/sites/:id/agents', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params; const { agent_matricule, date_debut=null, date_fin=null } = req.body;
+  if (!agent_matricule) return res.status(400).json({ error: 'agent_matricule is required' });
+  try {
+    const s = (await pool.query('SELECT id FROM site WHERE id=$1', [id])).rows[0]; if (!s) return res.status(404).json({ error: 'Site not found' });
+    const a = (await pool.query('SELECT matricule FROM agent WHERE matricule=$1', [agent_matricule])).rows[0]; if (!a) return res.status(404).json({ error: 'Agent not found' });
+    const r = await pool.query('INSERT INTO site_agent (site_id, agent_matricule, date_debut, date_fin) VALUES ($1,$2,$3,$4) RETURNING *', [id, agent_matricule, date_debut, date_fin]);
+    res.status(201).json(r.rows[0]);
+  } catch (e) { console.error('site add agent:', e); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+app.delete('/api/sites/:id/agents/:matricule', authenticateToken, authorizeAdmin, async (req, res) => {
+  try { const r = await pool.query('DELETE FROM site_agent WHERE site_id=$1 AND agent_matricule=$2 RETURNING id', [req.params.id, req.params.matricule]); if (!r.rows[0]) return res.status(404).json({ error: 'Not found' }); res.json({ ok: true }); }
+  catch (e) { console.error('site remove agent:', e); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+app.post('/api/sites/:id/responsables', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params; const { agent_matricule, role='Responsable' } = req.body;
+  if (!agent_matricule) return res.status(400).json({ error: 'agent_matricule is required' });
+  try {
+    await assertAgentIsChef(agent_matricule);
+    const s = (await pool.query('SELECT id FROM site WHERE id=$1', [id])).rows[0]; if (!s) return res.status(404).json({ error: 'Site not found' });
+    const r = await pool.query('INSERT INTO site_responsable (site_id, agent_matricule, role) VALUES ($1,$2,$3) RETURNING *', [id, agent_matricule, role]);
+    res.status(201).json(r.rows[0]);
+  } catch (e) { console.error('site add responsable:', e); res.status(400).json({ error: e.message || 'Bad Request' }); }
+});
+
 initializeDatabase().then(() => {
     app.listen(port, () => {
         console.log(`Server listening on port ${port}`);

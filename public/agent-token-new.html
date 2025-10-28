@@ -8,11 +8,15 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
-  <script src="/script.js?v=1"></script>
+  <style>
+    body { padding-bottom: 40px; }
+  </style>
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"></h1>
+    <h1 class="h4 m-0 d-flex align-items-center">
+      <img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; margin-right: 10px;"> Génération de jeton
+    </h1>
     <div id="user-info-container" class="d-flex align-items-center">
       <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
       <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
@@ -28,30 +32,14 @@
     </div>
     <div class="offcanvas-body">
       <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item">
-          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
-        </li>
+        <li class="nav-item"><a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
+        <li class="nav-item"><a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
+        <li class="nav-item"><a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a></li>
+        <li class="nav-item"><a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a></li>
+        <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
+        <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
       </ul>
     </div>
   </div>
@@ -64,30 +52,40 @@
         <li class="breadcrumb-item active" aria-current="page">Générer Jeton</li>
       </ol>
     </nav>
-    <h1 class="mb-4">Générer un Jeton d'Accès pour <span id="agent-name"></span></h1>
+
+    <h1 class="mb-2">Générer un Jeton d'Accès pour <span id="agent-name"></span></h1>
+    <div id="agent-email-warning" class="text-danger mb-4 d-none"></div>
 
     <div class="card">
       <div class="card-body">
-        <h2 class="card-title mb-4">Paramètres du Jeton</h2>
+        <h2 class="card-title mb-4 h5">Paramètres du Jeton</h2>
         <form id="token-generation-form">
           <div class="mb-3">
-            <label for="expiration-date" class="form-label">Date d'expiration</label>
-            <input type="date" class="form-control" id="expiration-date" required>
+            <label for="intervention-id" class="form-label">Intervention à attribuer</label>
+            <select id="intervention-id" class="form-select" required>
+              <option value="" selected disabled>— Sélectionner une intervention —</option>
+            </select>
+            <div class="form-text">Choisir l'intervention qui sera liée au jeton d’invitation.</div>
           </div>
-          <div class="mb-3">
-            <label for="expiration-time" class="form-label">Heure d'expiration</label>
-            <input type="time" class="form-control" id="expiration-time" value="23:59">
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <label for="expiration-date" class="form-label">Date d'expiration</label>
+              <input type="date" class="form-control" id="expiration-date" required>
+            </div>
+            <div class="col-sm-6">
+              <label for="expiration-time" class="form-label">Heure d'expiration</label>
+              <input type="time" class="form-control" id="expiration-time" value="23:59">
+            </div>
           </div>
 
-          <button type="button" id="generate-token-btn" class="btn btn-primary mb-3"><i class="bi bi-key me-2"></i>Générer et Envoyer Jeton</button>
+          <div class="mt-4 d-flex align-items-center gap-2">
+            <button type="button" id="generate-token-btn" class="btn btn-primary"><i class="bi bi-key me-2"></i>Générer et Envoyer Jeton</button>
+            <a href="agents.html" class="btn btn-secondary">Retour aux agents</a>
+          </div>
 
-          <div id="generated-token-display" class="alert alert-success d-none" role="alert">
+          <div id="generated-token-display" class="alert alert-success d-none mt-3" role="alert">
             <strong>Jeton généré:</strong> <span id="generated-token"></span>
             <p class="mt-2 mb-0">Un email a été envoyé à l'agent avec les instructions pour définir son mot de passe.</p>
-          </div>
-
-          <div class="d-flex gap-2">
-            <a href="agents.html" class="btn btn-secondary">Retour aux agents</a>
           </div>
         </form>
       </div>
@@ -100,88 +98,120 @@
       const urlParams = new URLSearchParams(window.location.search);
       const agentMatricule = urlParams.get('matricule');
 
-      const allAgents = [
-        {
-          matricule: "AGT001",
-          nom: "Dupont",
-          prenom: "Jean",
-          email: "jean.dupont@example.com",
-          tel: "0612345678",
-          actif: true,
-          admin: false,
-          agence: "Agence A",
-          fonction: "Agent"
-        },
-        {
-          matricule: "AGT002",
-          nom: "Martin",
-          prenom: "Sophie",
-          email: "sophie.martin@example.com",
-          tel: "0687654321",
-          actif: true,
-          admin: true,
-          agence: "Agence B",
-          fonction: "Manager"
-        },
-        {
-          matricule: "AGT003",
-          nom: "Bernard",
-          prenom: "Pierre",
-          email: "pierre.bernard@example.com",
-          tel: "0611223344",
-          actif: false,
-          admin: false,
-          agence: "Agence A",
-          fonction: "Chef"
-        },
-        {
-          matricule: "AGT004",
-          nom: "Petit",
-          prenom: "Marie",
-          email: "marie.petit@example.com",
-          tel: "0655443322",
-          actif: true,
-          admin: false,
-          agence: "Agence C",
-          fonction: "Agent",
-          titre: "Technicien Junior"
-        }
-      ];
-
-      const agent = allAgents.find(a => a.matricule === agentMatricule);
-
-      if (agent) {
-        document.getElementById('agent-name').textContent = `${agent.nom} ${agent.prenom} (${agent.matricule})`;
-      } else {
-        document.getElementById('agent-name').textContent = 'Agent introuvable';
-      }
-
+      const agentNameEl = document.getElementById('agent-name');
+      const emailWarningEl = document.getElementById('agent-email-warning');
       const generateTokenBtn = document.getElementById('generate-token-btn');
       const generatedTokenDisplay = document.getElementById('generated-token-display');
       const generatedTokenSpan = document.getElementById('generated-token');
 
-      generateTokenBtn.addEventListener('click', function() {
-        const expirationDate = document.getElementById('expiration-date').value;
-        const expirationTime = document.getElementById('expiration-time').value;
+      const isValidEmail = (em) => {
+        if (!em) return false;
+        const s = String(em).trim();
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+      };
 
-        if (!expirationDate) {
-          alert("Veuillez sélectionner une date d'expiration.");
+      let agent = null;
+
+      const updateEmailValidityUI = () => {
+        if (!agent || !agent.email) {
+          emailWarningEl.textContent = "Email de l'agent introuvable.";
+          emailWarningEl.classList.remove('d-none');
+          generateTokenBtn.setAttribute('disabled', 'true');
           return;
         }
+        if (!isValidEmail(agent.email)) {
+          emailWarningEl.textContent = `Email invalide: ${agent.email}. Corrigez l'email de l'agent avant d'envoyer le jeton.`;
+          emailWarningEl.classList.remove('d-none');
+          generateTokenBtn.setAttribute('disabled', 'true');
+        } else {
+          emailWarningEl.textContent = '';
+          emailWarningEl.classList.add('d-none');
+          generateTokenBtn.removeAttribute('disabled');
+        }
+      };
 
-        // Simulate token generation
-        const token = `TOKEN-${Math.random().toString(36).substr(2, 9)}-${agentMatricule}-${expirationDate.replace(/-/g, '')}`;
-        generatedTokenSpan.textContent = token;
-        generatedTokenDisplay.classList.remove('d-none');
+      // Charger l'agent puis mettre à jour le nom et la validité de l'email
+      (async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+          const res = await fetch('/api/agents', { headers, credentials:'same-origin' });
+          const data = res.ok ? await res.json() : [];
+          const list = Array.isArray(data) ? data : [];
+          agent = list.find(a => String(a.matricule) === String(agentMatricule)) || null;
+          agentNameEl.textContent = agent ? (agent.nom || agent.email || agent.matricule) : 'Agent introuvable';
+        } catch(e) {
+          console.error('Erreur chargement /api/agents:', e);
+          agentNameEl.textContent = 'Agent introuvable';
+        } finally {
+          updateEmailValidityUI();
+        }
+      })();
 
-        alert(`Jeton généré et un email a été envoyé à ${agent.email} avec les instructions pour définir son mot de passe (simulation).`);
+      // Charger les interventions pour la sélection
+      (async () => {
+        const select = document.getElementById('intervention-id');
+        const presetId = new URLSearchParams(location.search).get('intervention_id');
+        try {
+          const token = localStorage.getItem('token');
+          const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+          const res = await fetch('/api/interventions', { headers, credentials: 'same-origin' });
+          const data = res.ok ? await res.json() : [];
+          const items = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
+          for (const it of items) {
+            const id = it.id ?? it.intervention_id ?? it.ID;
+            if (!id) continue;
+            const label = it.titre || it.title || it.description || `Intervention #${id}`;
+            const opt = document.createElement('option');
+            opt.value = String(id);
+            opt.textContent = `#${id} — ${label}`;
+            select.appendChild(opt);
+          }
+        } catch(e) {
+          console.warn('Erreur chargement /api/interventions:', e);
+        } finally {
+          if (presetId) {
+            const exists = Array.from(select.options).some(o => o.value === String(presetId));
+            if (!exists) {
+              const opt = document.createElement('option');
+              opt.value = String(presetId);
+              opt.textContent = `#${presetId} — (depuis l’URL)`;
+              select.appendChild(opt);
+            }
+            select.value = String(presetId);
+          }
+        }
+      })();
+
+      generateTokenBtn.addEventListener('click', async function() {
+        const expirationDate = document.getElementById('expiration-date').value;
+        const expirationTime = document.getElementById('expiration-time').value;
+        if (!expirationDate) { alert("Veuillez sélectionner une date d'expiration."); return; }
+        const interventionSelect = document.getElementById('intervention-id');
+        const interventionId = interventionSelect.value;
+        if (!agent || !agent.email) { alert("Email d'agent introuvable. Impossible d'envoyer le jeton."); return; }
+        if (!isValidEmail(agent.email)) { alert("L'email de l'agent est invalide. Veuillez corriger l'email de l'agent avant d'envoyer le jeton."); return; }
+        if (!interventionId) { alert("Veuillez sélectionner une intervention à attribuer."); return; }
+        try {
+          const token = localStorage.getItem('token');
+          const headers = { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) };
+          const expiresAt = expirationTime ? `${expirationDate}T${expirationTime}:00` : `${expirationDate}T23:59:00`;
+          const body = { email: agent.email, intervention_id: interventionId || 1, expires_at: expiresAt };
+          const r = await fetch('/api/invite-agent', { method:'POST', headers, credentials:'same-origin', body: JSON.stringify(body) });
+          const data = await r.json().catch(()=>({}));
+          if (!r.ok) throw new Error((data && data.error) || `HTTP ${r.status}`);
+          generatedTokenSpan.textContent = (data && data.token) ? data.token : (data && data.newTicketId ? `TICKET-${data.newTicketId}` : 'OK');
+          generatedTokenDisplay.classList.remove('d-none');
+          alert('Invitation envoyée à ' + (agent.email || "l'agent") + (data && data.newTicketId ? ('. Ticket lié: ' + data.newTicketId) : ''));
+        } catch(e) {
+          console.error(e);
+          alert('Échec de la génération/envoi: ' + (e && e.message ? e.message : e));
+        }
       });
 
-      // Retrieve logged-in user role from localStorage
+      // Règles d'admin côté UI
       const currentUserRole = localStorage.getItem('userRole');
       const currentUserIsAdmin = (currentUserRole === 'admin');
-
-      // Conditionally disable form fields and hide save button for non-admins
       if (!currentUserIsAdmin) {
         const form = document.getElementById('token-generation-form');
         form.querySelectorAll('input, select, textarea, button[type="button"]').forEach(element => {
@@ -193,3 +223,4 @@
   </script>
 </body>
 </html>
+

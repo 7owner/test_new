@@ -1,57 +1,35 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Modifier un ticket</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
-  <script src="/script.js?v=1"></script>
 </head>
 <body>
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"></h1>
+    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
     <div id="user-info-container" class="d-flex align-items-center">
       <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-        Menu
-      </button>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar">Menu</button>
     </div>
   </header>
 
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar">
     <div class="offcanvas-header">
-      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+      <h5 class="offcanvas-title">Menu</h5>
       <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
       <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item">
-          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
-        </li>
+        <li class="nav-item"><a class="nav-link" href="/dashboard.html">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="/agents.html">Agents</a></li>
+        <li class="nav-item"><a class="nav-link" href="/sites.html">Sites</a></li>
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/tickets.html">Tickets</a></li>
+        <li class="nav-item"><a class="nav-link" href="/interventions.html">Interventions</a></li>
       </ul>
     </div>
   </div>
@@ -60,7 +38,7 @@
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="dashboard.html">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="tickets.html">Gestion des Tickets</a></li>
+        <li class="breadcrumb-item"><a href="tickets.html">Tickets</a></li>
         <li class="breadcrumb-item active" aria-current="page">Modifier</li>
       </ol>
     </nav>
@@ -68,7 +46,6 @@
 
     <div class="card">
       <div class="card-body">
-        <h2 class="card-title mb-4">Informations du ticket</h2>
         <form id="ticket-edit-form">
           <div class="mb-3">
             <label for="id" class="form-label">ID Ticket</label>
@@ -76,22 +53,11 @@
           </div>
           <div class="mb-3">
             <label for="doe_id" class="form-label">DOE associé</label>
-            <select class="form-select" id="doe_id">
-              <option value="">Sélectionner un DOE</option>
-            </select>
-            <div id="doe-details" class="mt-2 p-2 border rounded bg-light" style="display: none;">
-              <strong>Titre:</strong> <span id="doe-title"></span><br>
-              <strong>Description:</strong> <span id="doe-description"></span>
-              <a href="#" id="view-doe-btn" class="btn btn-sm btn-info mt-2"><i class="bi bi-eye"></i> Voir DOE</a>
-            </div>
+            <select class="form-select" id="doe_id" required></select>
           </div>
           <div class="mb-3">
             <label for="affaire_id" class="form-label">Affaire associée</label>
-            <select class="form-select" id="affaire_id">
-              <option value="">Sélectionner une affaire</option>
-              <option value="AFF001">Affaire Paris</option>
-              <option value="AFF002">Affaire Lyon</option>
-            </select>
+            <select class="form-select" id="affaire_id" required></select>
           </div>
           <div class="mb-3">
             <label for="titre" class="form-label">Titre</label>
@@ -99,7 +65,7 @@
           </div>
           <div class="mb-3">
             <label for="description" class="form-label">Description</label>
-            <textarea class="form-control" id="description" rows="3" required></textarea>
+            <textarea class="form-control" id="description" rows="3"></textarea>
           </div>
           <div class="mb-3">
             <label for="etat" class="form-label">État</label>
@@ -111,218 +77,150 @@
           </div>
           <div class="mb-3">
             <label for="responsable" class="form-label">Responsable</label>
-            <select class="form-select" id="responsable">
-              <option value="">Non assigné</option>
-              <option value="AGT001">Dupont Jean (AGT001)</option>
-              <option value="AGT002">Martin Sophie (AGT002)</option>
-            </select>
+            <select class="form-select" id="responsable"></select>
           </div>
 
           <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary" id="save-ticket-btn"><i class="bi bi-save me-2"></i>Enregistrer les modifications</button>
-            <a href="ticket-view.html?id=" class="btn btn-secondary" id="cancel-button">Annuler</a>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <a href="tickets.html" class="btn btn-secondary" id="cancel-button">Annuler</a>
           </div>
         </form>
       </div>
     </div>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const ticketId = urlParams.get('id');
-
-      const allTickets = [
-        {
-          id: "MNT001",
-          site_id: "SITE001",
-          titre: "Ticket préventif annuel",
-          description: "Vérification complète des systèmes.",
-          etat: "Pas_commence",
-          responsable: null,
-          doe_id: "DOE001",
-          affaire_id: "AFF001"
-        },
-        {
-          id: "MNT002",
-          site_id: "SITE002",
-          titre: "Réparation urgence machine",
-          description: "Réparation suite à une panne critique.",
-          etat: "En_cours",
-          responsable: "AGT001",
-          doe_id: "DOE002",
-          affaire_id: "AFF002"
-        },
-        {
-          id: "MNT003",
-          site_id: "SITE001",
-          titre: "Contrôle sécurité incendie",
-          description: "Contrôle réglementaire des équipements.",
-          etat: "Termine",
-          responsable: "AGT002",
-          doe_id: "DOE001",
-          affaire_id: "AFF001"
-        },
-        {
-          id: "MNT004",
-          site_id: "SITE005",
-          titre: "Installation nouveau matériel",
-          description: "Mise en place de nouveaux serveurs.",
-          etat: "En_cours",
-          responsable: null,
-          doe_id: null,
-          affaire_id: null
-        }
-      ];
-
-      const sampleDoes = [
-        { id: "DOE001", titre: "DOE Site Central Paris", description: "Dossier d'ouvrages exécutés pour le site central de Paris." },
-        { id: "DOE002", titre: "DOE Usine Lyon", description: "Dossier d'ouvrages exécutés pour l'usine de Lyon." }
-      ];
-
-      const doeSelect = document.getElementById('doe_id');
-      const doeDetailsDiv = document.getElementById('doe-details');
-      const doeTitleSpan = document.getElementById('doe-title');
-      const doeDescriptionSpan = document.getElementById('doe-description');
-      const viewDoeBtn = document.getElementById('view-doe-btn');
-
-      // Populate DOE dropdown
-      sampleDoes.forEach(doe => {
-        const option = document.createElement('option');
-        option.value = doe.id;
-        option.textContent = doe.titre;
-        doeSelect.appendChild(option);
-      });
-
-      doeSelect.addEventListener('change', function() {
-        const selectedDoeId = this.value;
-        const selectedDoe = sampleDoes.find(doe => doe.id === selectedDoeId);
-
-        if (selectedDoe) {
-          doeTitleSpan.textContent = selectedDoe.titre;
-          doeDescriptionSpan.textContent = selectedDoe.description;
-          viewDoeBtn.href = `doe-view.html?id=${selectedDoe.id}`; // Link to DOE view page
-          doeDetailsDiv.style.display = 'block';
-        } else {
-          doeDetailsDiv.style.display = 'none';
-        }
-      });
-
-      const ticket = allTickets.find(m => m.id === ticketId);
-
-      // Retrieve logged-in user role from localStorage
-      const currentUserRole = localStorage.getItem('userRole');
-      const currentUserIsAdmin = (currentUserRole === 'admin');
-
-      if (ticket) {
-        document.getElementById('id').value = ticket.id;
-        document.getElementById('doe_id').value = ticket.doe_id;
-        document.getElementById('affaire_id').value = ticket.affaire_id;
-        document.getElementById('titre').value = ticket.titre;
-        document.getElementById('description').value = ticket.description;
-        document.getElementById('etat').value = ticket.etat;
-        document.getElementById('responsable').value = ticket.responsable;
-
-        // Pre-fill DOE details if available
-        const selectedDoe = sampleDoes.find(doe => doe.id === ticket.doe_id);
-        if (selectedDoe) {
-          doeTitleSpan.textContent = selectedDoe.titre;
-          doeDescriptionSpan.textContent = selectedDoe.description;
-          viewDoeBtn.href = `doe-view.html?id=${selectedDoe.id}`;
-          doeDetailsDiv.style.display = 'block';
-        }
-
-        // Update cancel button link
-        document.getElementById('cancel-button').href = `ticket-view.html?id=${ticket.id}`;
-
-        // Conditionally disable form fields and hide save button for non-admins
-        if (!currentUserIsAdmin) {
-          const form = document.getElementById('ticket-edit-form');
-          form.querySelectorAll('input, select, textarea').forEach(element => {
-            element.setAttribute('disabled', 'true');
-          });
-          document.getElementById('save-ticket-btn').classList.add('d-none');
-        }
-
-      } else {
-        alert("Ticket non trouvé!");
-        window.location.href = "tickets.html";
+      if (!ticketId) {
+        alert('ID de ticket manquant');
+        window.location.href = 'tickets.html';
+        return;
       }
-    });
-  </script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      try {
-        const token = localStorage.getItem('token');
-        const urlParams = new URLSearchParams(window.location.search);
-        const ticketId = urlParams.get('id');
-        if (!token || !ticketId) return;
 
-        // Infer admin and set email
-        let isAdmin = false;
-        try { const p = JSON.parse(atob(token.split('.')[1])); isAdmin = Array.isArray(p.roles) && p.roles.includes('ROLE_ADMIN'); const el = document.getElementById('logged-in-user-email'); if (el && p.email) el.textContent = p.email; } catch(_){}
+      const token = localStorage.getItem('token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      let isAdmin = false;
+      try { 
+        const p = JSON.parse(atob(token.split('.')[1]));
+        isAdmin = Array.isArray(p.roles) && p.roles.includes('ROLE_ADMIN');
+      } catch(e) { console.error('Could not parse token', e); }
 
-        // Load latest data from backend and overwrite form values
-        fetch(`/api/tickets/${ticketId}/relations`, { headers: { 'Authorization': `Bearer ${token}` } })
-          .then(r => r.ok ? r.json() : Promise.reject(r.status))
-          .then(data => {
-            if (!data || !data.ticket) return;
-            const t = data.ticket;
-            const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
-            setVal('id', t.id);
-            setVal('doe_id', t.doe_id || '');
-            setVal('affaire_id', (data.affaire && data.affaire.id) ? data.affaire.id : '');
-            setVal('titre', t.titre || '');
-            setVal('description', t.description || '');
-            setVal('etat', t.etat || 'En_cours');
-            setVal('responsable', t.responsable || '');
-            if (data.doe && data.doe.id) {
-              const title = document.getElementById('doe-title'); const desc = document.getElementById('doe-description'); const view = document.getElementById('view-doe-btn'); const box = document.getElementById('doe-details');
-              if (title) title.textContent = data.doe.titre || '';
-              if (desc) desc.textContent = data.doe.description || '';
-              if (view) view.href = `doe-view.html?id=${data.doe.id}`;
-              if (box) box.style.display = 'block';
-            }
-            const cancel = document.getElementById('cancel-button'); if (cancel) cancel.href = `ticket-view.html?id=${t.id}`;
-            if (!isAdmin) {
-              const form = document.getElementById('ticket-edit-form'); if (form) { form.querySelectorAll('input, select, textarea').forEach(e => e.setAttribute('disabled','true')); }
-              const btn = document.getElementById('save-ticket-btn'); if (btn) btn.classList.add('d-none');
-            }
-          })
-          .catch(e => console.error('Erreur chargement ticket (edit):', e));
+      const form = document.getElementById('ticket-edit-form');
+      const doeSelect = document.getElementById('doe_id');
+      const affaireSelect = document.getElementById('affaire_id');
+      const responsableSelect = document.getElementById('responsable');
 
-        // Submit handler for admin
-        const form = document.getElementById('ticket-edit-form');
-        if (form) {
-          form.addEventListener('submit', async (ev) => {
-            ev.preventDefault();
-            if (!isAdmin) return alert('Action réservée aux administrateurs.');
-            const id = document.getElementById('id').value;
-            const payload = {
-              titre: document.getElementById('titre').value,
-              description: document.getElementById('description').value,
-              responsable: document.getElementById('responsable').value || null,
-            };
-            try {
-              const res = await fetch(`/api/tickets/${id}`, { method: 'PUT', headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
-              if (!res.ok) {
-                if (res.status === 403) return alert('Non autorisé (admin requis).');
-                throw new Error(`HTTP ${res.status}`);
-              }
-              const updated = await res.json();
-              try { window.location.replace(`ticket-view.html?id=${updated.id}`); } catch(_) { window.location.href = `ticket-view.html?id=${updated.id}`; }
-            } catch(e) {
-              console.error('Erreur mise à jour ticket:', e);
-              alert('Échec de la sauvegarde.');
-            }
-          });
+      // Fetch related data for dropdowns
+      async function fetchData() {
+        try {
+          const [does, affaires, agents, ticketRel] = await Promise.all([
+            fetch('/api/does', { headers }).then(res => res.json()),
+            fetch('/api/affaires', { headers }).then(res => res.json()),
+            fetch('/api/agents', { headers }).then(res => res.json()),
+            fetch(`/api/tickets/${ticketId}/relations`, { headers }).then(res => res.json())
+          ]);
+
+          // Populate DOES
+          doeSelect.innerHTML = '<option value="">Sélectionner un DOE</option>';
+          if (Array.isArray(does)) {
+            does.forEach(d => {
+              const opt = document.createElement('option');
+              opt.value = d.id;
+              opt.textContent = `${d.titre} (ID: ${d.id})`;
+              doeSelect.appendChild(opt);
+            });
+          }
+
+          // Populate Affaires
+          affaireSelect.innerHTML = '<option value="">Sélectionner une affaire</option>';
+          if (Array.isArray(affaires)) {
+            affaires.forEach(a => {
+              const opt = document.createElement('option');
+              opt.value = a.id;
+              opt.textContent = `${a.nom_affaire} (ID: ${a.id})`;
+              affaireSelect.appendChild(opt);
+            });
+          }
+
+          // Populate Responsables
+          responsableSelect.innerHTML = '<option value="">Non assigné</option>';
+          if (Array.isArray(agents)) {
+            agents.forEach(a => {
+              const opt = document.createElement('option');
+              opt.value = a.matricule;
+              opt.textContent = `${a.nom} ${a.prenom} (${a.matricule})`;
+              responsableSelect.appendChild(opt);
+            });
+          }
+
+          // Populate form with ticket data
+          const ticket = ticketRel.ticket;
+          if (ticket) {
+            document.getElementById('id').value = ticket.id;
+            document.getElementById('titre').value = ticket.titre || '';
+            document.getElementById('description').value = ticket.description || '';
+            document.getElementById('etat').value = ticket.etat || 'Pas_commence';
+            doeSelect.value = ticket.doe_id || '';
+            affaireSelect.value = ticket.affaire_id || '';
+            responsableSelect.value = ticket.responsable || '';
+            document.getElementById('cancel-button').href = `ticket-view.html?id=${ticket.id}`;
+          } else {
+            throw new Error('Ticket data not found');
+          }
+
+        } catch (e) {
+          console.error('Failed to load data', e);
+          alert('Erreur de chargement des données pour le formulaire.');
         }
-      } catch(e) { console.error(e); }
+      }
+
+      // Handle form submission
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        if (!isAdmin) {
+          alert('Action réservée aux administrateurs.');
+          return;
+        }
+
+        const payload = {
+          titre: document.getElementById('titre').value,
+          description: document.getElementById('description').value,
+          responsable: document.getElementById('responsable').value || null,
+          doe_id: document.getElementById('doe_id').value,
+          affaire_id: document.getElementById('affaire_id').value,
+          etat: document.getElementById('etat').value
+        };
+
+        if (!payload.doe_id || !payload.affaire_id) {
+          alert('Les champs DOE et Affaire sont obligatoires.');
+          return;
+        }
+
+        try {
+          const res = await fetch(`/api/tickets/${ticketId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...headers },
+            body: JSON.stringify(payload)
+          });
+
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+          }
+
+          alert('Ticket mis à jour avec succès !');
+          window.location.href = `ticket-view.html?id=${ticketId}`;
+        } catch (e) {
+          console.error('Failed to update ticket', e);
+          alert(`Échec de la sauvegarde: ${e.message}`);
+        }
+      });
+
+      await fetchData();
     });
   </script>
 </body>
 </html>
-
-
-
