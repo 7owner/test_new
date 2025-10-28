@@ -10,7 +10,6 @@ TRUNCATE
   intervention, ticket_responsable, ticket_agent, ticket,
   site_responsable, site_agent, site_affaire,
   doe, affaire, site, client,
-  formation,                -- ✅ garde seulement celle existante
   achat, reglement, facture,
   agent_fonction, agent_equipe, agence_membre, equipe, fonction,
   agent, agence, users, password_reset_tokens,
