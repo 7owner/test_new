@@ -950,22 +950,42 @@ app.get('/api/does/:id/relations', authenticateToken, async (req, res) => {
 app.get('/api/tickets/:id/relations', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
-    const m = (await pool.query('SELECT * FROM ticket WHERE id=$1', [id])).rows[0];
-    if (!m) return res.status(404).json({ error: 'Ticket not found' });
-    const doe = m.doe_id ? (await pool.query('SELECT * FROM doe WHERE id=$1', [m.doe_id])).rows[0] : null;
-    const affaire = m.affaire_id ? (await pool.query('SELECT * FROM affaire WHERE id=$1', [m.affaire_id])).rows[0] : null;
-    const site = doe && doe.site_id ? (await pool.query('SELECT * FROM site WHERE id=$1', [doe.site_id])).rows[0] : null;
+    const ticket = (await pool.query('SELECT * FROM ticket WHERE id=$1', [id])).rows[0];
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+
+    const doe = ticket.doe_id ? (await pool.query('SELECT * FROM doe WHERE id=$1', [ticket.doe_id])).rows[0] : null;
+    const affaire = ticket.affaire_id ? (await pool.query('SELECT * FROM affaire WHERE id=$1', [ticket.affaire_id])).rows[0] : null;
+    const site = doe?.site_id ? (await pool.query('SELECT * FROM site WHERE id=$1', [doe.site_id])).rows[0] : null;
+
     const interventions = (await pool.query('SELECT * FROM intervention WHERE ticket_id=$1 ORDER BY id DESC', [id])).rows;
     const documents = (await pool.query("SELECT * FROM documents_repertoire WHERE cible_type='Ticket' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     const images = (await pool.query("SELECT id, nom_fichier, type_mime FROM images WHERE cible_type='Ticket' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
-    const secondaires = (await pool.query("SELECT id, actor_email, role, date_debut, date_fin FROM ticket_responsable WHERE ticket_id=$1 ORDER BY id DESC", [id])).rows;
-    const agents_assignes = (await pool.query("SELECT agent_matricule, date_debut, date_fin FROM ticket_agent WHERE ticket_id=$1 ORDER BY COALESCE(date_debut, CURRENT_TIMESTAMP) DESC, id DESC", [id])).rows;
-    res.json({ ticket: m, doe, affaire, site, interventions, documents, images, responsables_secondaires: secondaires, responsables: secondaires, agents_assignes });
+
+    const responsables = (await pool.query(`
+      SELECT tr.id, tr.role, tr.date_debut, tr.date_fin,
+             a.matricule, a.nom, a.prenom
+      FROM ticket_responsable tr
+      JOIN agent a ON a.matricule = tr.agent_matricule
+      WHERE tr.ticket_id = $1
+      ORDER BY tr.id DESC
+    `, [id])).rows;
+
+    const agents_assignes = (await pool.query(`
+      SELECT ta.agent_matricule, ta.date_debut, ta.date_fin,
+             a.nom, a.prenom
+      FROM ticket_agent ta
+      JOIN agent a ON a.matricule = ta.agent_matricule
+      WHERE ta.ticket_id=$1
+      ORDER BY COALESCE(ta.date_debut, CURRENT_TIMESTAMP) DESC, ta.id DESC
+    `, [id])).rows;
+
+    res.json({ ticket, doe, affaire, site, interventions, documents, images, responsables, agents_assignes });
   } catch (err) {
     console.error('Error fetching ticket relations:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Internal Server Error', details: err.message });
   }
 });
+
 
 // -------------------- Relations: Intervention --------------------
 app.get('/api/interventions/:id/relations', authenticateToken, async (req, res) => {
