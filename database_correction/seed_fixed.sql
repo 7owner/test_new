@@ -148,7 +148,7 @@ INSERT INTO ticket_responsable (ticket_id, agent_matricule) VALUES
 (19,'AGT002'),(20,'AGT002'),(21,'AGT002'),(22,'AGT002'),(23,'AGT002'),(24,'AGT002');
 
 -- 11) INTERVENTIONS : 1 par ticket, avec dates réalistes 2025
-INSERT INTO intervention (ticket_id, date_intervention, duree_heures, statut) VALUES
+INSERT INTO intervention (ticket_id, date_debut, duree_heures, statut) VALUES
 (1,'2025-01-12',4,'Termine'),
 (2,'2025-02-16',3,'Termine'),
 (3,'2025-03-20',5,'En_cours'),
