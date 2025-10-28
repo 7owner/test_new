@@ -87,7 +87,7 @@ VALUES
 ('AGT001', 'B', 'H0B0',       '2026-06-30'),
 ('AGT002', 'B', 'B1T – Élec', '2026-09-30');
 
-INSERT INTO formation (agent_matricule, type, libelle, date_obtention, date_validite)
+INSERT INTO formation (agent_matricule, "type", libelle, date_obtention, date_validite)
 VALUES
 ('AGT001', 'Habilitation', 'H0B0',       '2025-01-15', '2026-01-15'),
 ('AGT002', 'Certification','B1T Élec',   '2025-02-20', '2027-02-20');
