@@ -52,7 +52,7 @@ VALUES
 (2, 'Site Hydro Lyon',       2);
 
 -- 5) AFFAIRE + DOE + liaisons SITE_AFFAIRE
-INSERT INTO affaire (client_id, reference, description)
+INSERT INTO affaire (client_id, nom_affaire, description)
 VALUES
 (1, 'AFF-2025-PARIS', 'Installation / maintenance PV – Paris'),
 (2, 'AFF-2025-LYON',  'Maintenance hydraulique – Lyon');
