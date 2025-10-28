@@ -174,66 +174,98 @@ INSERT INTO intervention (ticket_id, date_debut, intervention_precedente_id, sta
 (23,'2025-11-12',4,'En_cours'),
 (24,'2025-12-09',4,'Termine');
 
--- 12) MATERIEL + MATERIEL_IMAGE
-INSERT INTO materiel (nom, categorie, date_achat)
-VALUES ('Capteur Solaire 450W','Énergie','2024-11-10'),
-       ('Convertisseur Triphasé','Électrique','2025-02-12'),
-       ('Pompe Hydraulique','Hydraulique','2025-04-15');
+-- ======================================================
+-- 12) MATERIEL + MATERIEL_IMAGE + INTERVENTION_MATERIEL
+-- ======================================================
 
--- Lier quelques matériels aux interventions (intervention_materiel)
-INSERT INTO intervention_materiel (intervention_id, materiel_id) VALUES
-(1,1),(2,2),(3,3),(4,1),(5,2),(6,3);
+-- Matériels disponibles
+INSERT INTO materiel (reference, designation, categorie, fabricant, prix_achat, commentaire)
+VALUES
+('REF001', 'Capteur Solaire 450W', 'Énergie', 'SunPower', 280.00, 'Panneau photovoltaïque dernière génération'),
+('REF002', 'Convertisseur Triphasé', 'Électrique', 'Schneider', 540.00, 'Utilisé sur installation Lyon'),
+('REF003', 'Pompe Hydraulique', 'Hydraulique', 'Grundfos', 650.00, 'Maintenance annuelle requise');
+
+-- Lier quelques matériels aux interventions
+INSERT INTO intervention_materiel (intervention_id, materiel_id, quantite, commentaire)
+VALUES
+(1, 1, 2, 'Remplacement capteurs'),
+(2, 2, 1, 'Installation neuve'),
+(3, 3, 1, 'Révision pompe'),
+(4, 1, 1, 'Contrôle tension'),
+(5, 2, 1, 'Test de puissance'),
+(6, 3, 1, 'Changement joint');
 
 -- Images liées à du matériel
 INSERT INTO materiel_image (materiel_id, nom_fichier, type_mime)
-VALUES (1,'capteur.jpg','image/jpeg'),(2,'convertisseur.jpg','image/jpeg');
+VALUES
+(1, 'capteur.jpg', 'image/jpeg'),
+(2, 'convertisseur.jpg', 'image/jpeg'),
+(3, 'pompe.jpg', 'image/jpeg');
 
+-- ======================================================
 -- 13) RENDU_INTERVENTION + RENDU_INTERVENTION_IMAGE
+-- ======================================================
+
 INSERT INTO rendu_intervention (intervention_id, resume)
 VALUES
-(1,'Vérification des connexions'),
-(2,'Remplacement convertisseur'),
-(3,'Inspection câblage'),
-(4,'Nettoyage capteurs'),
-(5,'Mesure rendement'),
-(6,'Révision pompe hydraulique');
+(1, 'Vérification des connexions'),
+(2, 'Remplacement convertisseur'),
+(3, 'Inspection câblage'),
+(4, 'Nettoyage capteurs'),
+(5, 'Mesure rendement'),
+(6, 'Révision pompe hydraulique');
 
--- 14) IMAGES (génériques) + DOCUMENTS_REPERTOIRE
+-- Associe les images aux rendus
+INSERT INTO rendu_intervention_image (rendu_intervention_id, image_id)
+VALUES (1, 1), (3, 2);
+
+-- ======================================================
+-- 14) IMAGES + DOCUMENTS_REPERTOIRE
+-- ======================================================
+
 INSERT INTO images (nom_fichier, type_mime, taille_octets, image_blob, auteur_matricule, cible_type, cible_id)
 VALUES
-('photo1.jpg','image/jpeg',51200, decode('FFD8FFE000104A4649460001','hex'),'AGT001','Ticket',1),
-('photo2.jpg','image/jpeg',61440, decode('FFD8FFE000104A4649460001','hex'),'AGT002','Intervention',3);
-
--- Lier images de rendu (prend les 2 images ci-dessus comme exemple)
-INSERT INTO rendu_intervention_image (rendu_intervention_id, image_id)
-VALUES (1,1),(3,2);
+('photo1.jpg', 'image/jpeg', 51200, decode('FFD8FFE000104A4649460001','hex'), 'AGT001', 'Ticket', 1),
+('photo2.jpg', 'image/jpeg', 61440, decode('FFD8FFE000104A4649460001','hex'), 'AGT002', 'Intervention', 3);
 
 INSERT INTO documents_repertoire (cible_type, cible_id, nature, nom_fichier)
 VALUES
-('Ticket',1,'Document','rapport_janv.pdf'),
-('Ticket',2,'Document','rapport_fev.pdf'),
-('Intervention',3,'Document','rapport_interv_mars.pdf');
+('Ticket', 1, 'Document', 'rapport_janv.pdf'),
+('Ticket', 2, 'Document', 'rapport_fev.pdf'),
+('Intervention', 3, 'Document', 'rapport_interv_mars.pdf');
 
+-- ======================================================
 -- 15) RENDEZVOUS + RAPPORT_TICKET
+-- ======================================================
+
 INSERT INTO rendezvous (titre, description, date_debut, date_fin, statut, sujet, intervention_id, site_id)
 VALUES
-('RDV Paris Janv','Planification intervention', '2025-01-10 09:00','2025-01-10 10:00','Planifie','intervention',1,1),
-('RDV Lyon Fev', 'Planification intervention', '2025-02-12 14:00','2025-02-12 15:00','Planifie','intervention',14,2);
+('RDV Paris Janv', 'Planification intervention', '2025-01-10 09:00', '2025-01-10 10:00', 'Planifie', 'intervention', 1, 1),
+('RDV Lyon Fev',  'Planification intervention', '2025-02-12 14:00', '2025-02-12 15:00', 'Planifie', 'intervention', 2, 2);
 
 INSERT INTO rapport_ticket (ticket_id, matricule, commentaire_interne, etat)
 VALUES
-(1,'AGT001','RAS – maintenance OK','Termine'),
-(14,'AGT002','Remplacement convertisseur – OK','Termine');
+(1, 'AGT001', 'RAS – maintenance OK', 'Termine'),
+(2, 'AGT002', 'Remplacement convertisseur – OK', 'Termine');
 
+-- ======================================================
 -- 16) FINANCIER : ACHAT / FACTURE / REGLEMENT
-INSERT INTO achat (affaire_id, site_id, statut)
-VALUES (1,1,'Commande'),(2,2,'Recu');
+-- ======================================================
+
+INSERT INTO achat (reference, affaire_id, site_id, statut)
+VALUES
+('ACH001', 1, 1, 'Commande'),
+('ACH002', 2, 2, 'Recu');
 
 INSERT INTO facture (client_id, affaire_id, statut)
-VALUES (1,1,'Emise'),(2,2,'Payee');
+VALUES
+(1, 1, 'Emise'),
+(2, 2, 'Payee');
 
 INSERT INTO reglement (facture_id, montant)
-VALUES (2, 3500);
+VALUES
+(2, 3500.00);
+
 
 -- 17) AUDIT_LOG (entrée de test)
 -- Ajuste les colonnes si ton audit_log diffère (ex: action, entity, entity_id, auteur, created_at)
