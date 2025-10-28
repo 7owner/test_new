@@ -123,33 +123,6 @@ async function initializeDatabase() {
 
         // Ensure audit_log and password_reset_tokens tables exist
         try {
-            await client.query("CREATE TABLE IF NOT EXISTS audit_log (id SERIAL PRIMARY KEY, entity TEXT NOT NULL, entity_id TEXT, action TEXT NOT NULL, actor_email TEXT, details JSONB, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
-            await client.query("CREATE TABLE IF NOT EXISTS password_reset_tokens (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, token VARCHAR(255) UNIQUE NOT NULL, expires_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
-            await client.query("CREATE TABLE IF NOT EXISTS adresse (id SERIAL PRIMARY KEY, libelle VARCHAR(255), ligne1 VARCHAR(255), ligne2 VARCHAR(255), code_postal VARCHAR(40), ville VARCHAR(120), region VARCHAR(120), pays VARCHAR(120), date_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, date_fin TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL);");
-            await client.query("CREATE TABLE IF NOT EXISTS agence (id SERIAL PRIMARY KEY, titre VARCHAR(255) NOT NULL, designation VARCHAR(255), adresse_id BIGINT, telephone VARCHAR(50), email VARCHAR(255), date_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, date_fin TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL);");
-            await client.query("CREATE TABLE IF NOT EXISTS ticket_responsable (id SERIAL PRIMARY KEY, ticket_id INTEGER NOT NULL REFERENCES ticket(id) ON DELETE CASCADE, actor_email TEXT NOT NULL, role TEXT DEFAULT 'Secondaire', date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL, date_fin TIMESTAMP WITHOUT TIME ZONE NULL, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
-            await client.query("ALTER TABLE ticket_responsable ADD COLUMN IF NOT EXISTS actor_name TEXT");
-            await client.query("ALTER TABLE ticket_responsable ADD COLUMN IF NOT EXISTS commentaire TEXT");
-            // Ticket: ensure site_id exists and FK
-            await client.query("ALTER TABLE ticket ADD COLUMN IF NOT EXISTS site_id BIGINT");
-            try { await client.query("ALTER TABLE ticket ADD CONSTRAINT fk_ticket_site FOREIGN KEY (site_id) REFERENCES site(id) ON UPDATE CASCADE ON DELETE SET NULL"); } catch(_) {}
-            // Backfill ticket.site_id from DOE if missing
-            try { await client.query("UPDATE ticket t SET site_id = d.site_id FROM doe d WHERE t.doe_id = d.id AND t.site_id IS NULL"); } catch(_) {}
-            // Contrainte: seules les relations (FK) sont obligatoires; description facultative
-            try { await client.query("ALTER TABLE ticket ALTER COLUMN doe_id SET NOT NULL"); } catch(_) {}
-            try { await client.query("ALTER TABLE ticket ALTER COLUMN affaire_id SET NOT NULL"); } catch(_) {}
-            try { await client.query("ALTER TABLE ticket ALTER COLUMN description DROP NOT NULL"); } catch(_) {}
-            // Add statut to site if not exists
-            try { await client.query("ALTER TABLE site ADD COLUMN IF NOT EXISTS statut VARCHAR(50)"); } catch(_){}
-            // Matériel + liaison intervention_materiel
-            await client.query("CREATE TABLE IF NOT EXISTS materiel (id SERIAL PRIMARY KEY, reference TEXT UNIQUE, designation TEXT, categorie TEXT, fabricant TEXT, prix_achat NUMERIC(12,2), commentaire TEXT, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
-            await client.query("ALTER TABLE materiel ADD COLUMN IF NOT EXISTS intervention_id INTEGER REFERENCES intervention(id) ON DELETE SET NULL");
-            await client.query("CREATE TABLE IF NOT EXISTS intervention_materiel (id SERIAL PRIMARY KEY, intervention_id INTEGER NOT NULL REFERENCES intervention(id) ON DELETE CASCADE, materiel_id INTEGER NOT NULL REFERENCES materiel(id) ON DELETE RESTRICT, quantite INTEGER DEFAULT 1, commentaire TEXT, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
-            await client.query("CREATE INDEX IF NOT EXISTS idx_intervention_materiel_intervention ON intervention_materiel(intervention_id)");
-            await client.query("CREATE INDEX IF NOT EXISTS idx_intervention_materiel_materiel ON intervention_materiel(materiel_id)");
-            await client.query("CREATE TABLE IF NOT EXISTS materiel_image (id SERIAL PRIMARY KEY, materiel_id INTEGER NOT NULL REFERENCES materiel(id) ON DELETE CASCADE, nom_fichier TEXT, type_mime TEXT, commentaire TEXT, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
-            await client.query("CREATE INDEX IF NOT EXISTS idx_materiel_image_materiel ON materiel_image(materiel_id)");
-            await client.query("CREATE TABLE IF NOT EXISTS passeport (id SERIAL PRIMARY KEY, agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE, permis VARCHAR(50), habilitations TEXT, date_expiration DATE);");
         } catch (auditErr) { console.warn('audit_log table ensure failed:', auditErr.message); }
 
         // Seed data (idempotent via NOT EXISTS checks)
