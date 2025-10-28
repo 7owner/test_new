@@ -147,6 +147,7 @@ async function initializeDatabase() {
             await client.query("CREATE INDEX IF NOT EXISTS idx_intervention_materiel_materiel ON intervention_materiel(materiel_id)");
             await client.query("CREATE TABLE IF NOT EXISTS materiel_image (id SERIAL PRIMARY KEY, materiel_id INTEGER NOT NULL REFERENCES materiel(id) ON DELETE CASCADE, nom_fichier TEXT, type_mime TEXT, commentaire TEXT, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
             await client.query("CREATE INDEX IF NOT EXISTS idx_materiel_image_materiel ON materiel_image(materiel_id)");
+            await client.query("CREATE TABLE IF NOT EXISTS passeport (id SERIAL PRIMARY KEY, agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE, permis VARCHAR(50), habilitations TEXT, date_expiration DATE);");
         } catch (auditErr) { console.warn('audit_log table ensure failed:', auditErr.message); }
 
         // Seed data (idempotent via NOT EXISTS checks)
