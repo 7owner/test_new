@@ -101,7 +101,13 @@
                   <a href="agent-view.html?matricule=${agent.matricule}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye me-1"></i>Voir</a>
                   ${currentUserIsAdmin ? `
                     <a href="agent-edit.html?matricule=${agent.matricule}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil me-1"></i>Modifier</a>
-                    <button class="btn btn-sm btn-outline-danger" onclick="alert('Supprimer agent ${agent.matricule}')"><i class="bi bi-trash me-1"></i>Supprimer</button>
+                    <button 
+                        class="btn btn-sm btn-outline-danger"
+                        data-action="delete"
+                        data-id="${agent.matricule}">
+                        <i class="bi bi-trash me-1"></i> Supprimer
+                      </button>
+
                     <a href="agent-token-new.html?matricule=${agent.matricule}" class="btn btn-sm btn-outline-success"><i class="bi bi-key me-1"></i>Générer Jeton</a>
                   ` : ''}
                 </div>
