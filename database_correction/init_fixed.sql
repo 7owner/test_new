@@ -195,6 +195,16 @@ CREATE TABLE IF NOT EXISTS ticket (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS ticket_historique_responsable (
+    id SERIAL PRIMARY KEY,
+    ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
+    ancien_responsable_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
+    nouveau_responsable_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
+    modifie_par_matricule VARCHAR(20),
+    date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
 CREATE TABLE IF NOT EXISTS intervention (
     id SERIAL PRIMARY KEY,
     ticket_id BIGINT NOT NULL,
@@ -244,7 +254,7 @@ CREATE TABLE IF NOT EXISTS rendezvous (
     id SERIAL PRIMARY KEY,
     titre VARCHAR(255),
     description TEXT,
-    date_debut TIMESTAMP NOT NULL,
+    date_rdv TIMESTAMP NOT NULL,
     date_fin TIMESTAMP,
     statut statut_rdv DEFAULT 'Planifie',
     sujet sujet_type DEFAULT 'intervention',
