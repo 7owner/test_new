@@ -4,48 +4,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestion des Agents</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
-  <script src="/nav.js?v=1"></script>
+  <script src="/nav.js?v=1" defer></script>
 </head>
 <body>
-  <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
+  <!-- ====================== HEADER ====================== -->
+  <header class="header d-flex justify-content-between align-items-center mb-4 p-3 border-bottom">
+    <h1 class="mb-0">
+      <a href="/dashboard.html">
+        <img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;">
+      </a>
+    </h1>
     <div id="user-info-container" class="d-flex align-items-center">
       <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar">
         Menu
       </button>
     </div>
   </header>
 
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+  <!-- ====================== MENU ====================== -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar">
     <div class="offcanvas-header">
-      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      <h5 class="offcanvas-title">Menu</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
       <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
         <li class="nav-item"><a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
+        <li class="nav-item"><a class="nav-link active" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
         <li class="nav-item"><a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
         <li class="nav-item"><a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a></li>
         <li class="nav-item"><a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a></li>
         <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
         <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
+        <li class="nav-item"><a class="nav-link text-danger" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
       </ul>
     </div>
   </div>
 
+  <!-- ====================== CONTENU PRINCIPAL ====================== -->
   <main class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1 class="mb-0">Agents</h1>
       <a href="agent-new.html" class="btn btn-primary"><i class="bi bi-person-plus me-2"></i>Créer un nouvel agent</a>
     </div>
 
-    <div class="mb-3 d-flex gap-2">
+    <div class="mb-3 d-flex gap-2 flex-wrap">
       <input type="text" class="form-control" id="agent-search" placeholder="Rechercher par nom, matricule ou email...">
       <select class="form-select" id="agent-status-filter">
         <option value="">Tous les statuts</option>
@@ -62,145 +69,138 @@
     <div id="agents-cards" class="row g-3"></div>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <!-- ====================== SCRIPTS ====================== -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      let allAgents = [];
+  document.addEventListener('DOMContentLoaded', async () => {
+    const cardsContainer = document.getElementById('agents-cards');
+    const searchInput = document.getElementById('agent-search');
+    const statusFilter = document.getElementById('agent-status-filter');
+    const adminFilter = document.getElementById('agent-admin-filter');
 
-      const cardsContainer = document.getElementById('agents-cards');
-      const searchInput = document.getElementById('agent-search');
-      const statusFilter = document.getElementById('agent-status-filter');
-      const adminFilter = document.getElementById('agent-admin-filter');
+    let allAgents = [];
+    const currentUserRole = localStorage.getItem('userRole');
+    const currentUserIsAdmin = (currentUserRole === 'admin');
 
-      const currentUserRole = localStorage.getItem('userRole');
-      const currentUserIsAdmin = (currentUserRole === 'admin');
-
-      function renderAgents(agentsToRender) {
-        cardsContainer.innerHTML = '';
-        if (!Array.isArray(agentsToRender) || agentsToRender.length === 0) {
-          cardsContainer.innerHTML = '<div class="col-12 text-center text-muted">Aucun agent trouvé.</div>';
-          return;
-        }
-        agentsToRender.forEach(agent => {
-          const col = document.createElement('div');
-          col.className = 'col-12 col-sm-6 col-lg-4';
-          col.innerHTML = `
-            <div class="card h-100">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                  <h5 class="card-title mb-1">${agent.nom || ''} ${agent.prenom || ''}</h5>
-                  <span class="badge ${agent.actif ? 'bg-success' : 'bg-danger'}">${agent.actif ? 'Actif' : 'Inactif'}</span>
-                </div>
-                <h6 class="card-subtitle text-muted mb-2">Matricule: ${agent.matricule}</h6>
-                <div class="small text-break"><i class="bi bi-envelope me-1"></i>${agent.email || '-'}</div>
-                <div class="small mb-2"><i class="bi bi-telephone me-1"></i>${agent.tel || '-'}</div>
-                <div class="mb-2">
-                  <span class="badge ${agent.admin ? 'bg-primary' : 'bg-secondary'}">${agent.admin ? 'Admin' : 'Utilisateur'}</span>
-                </div>
-                <div class="d-flex flex-wrap gap-2">
-                  <a href="agent-view.html?matricule=${agent.matricule}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye me-1"></i>Voir</a>
-                  ${currentUserIsAdmin ? `
-                    <a href="agent-edit.html?matricule=${agent.matricule}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil me-1"></i>Modifier</a>
-                    <button 
-                        class="btn btn-sm btn-outline-danger"
-                        data-action="delete"
-                        data-id="${agent.matricule}">
-                        <i class="bi bi-trash me-1"></i> Supprimer
-                      </button>
-
-                    <a href="agent-token-new.html?matricule=${agent.matricule}" class="btn btn-sm btn-outline-success"><i class="bi bi-key me-1"></i>Générer Jeton</a>
-                  ` : ''}
-                </div>
-              </div>
-            </div>`;
-          cardsContainer.appendChild(col);
-        });
-      }
-
-      function applyFilters() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const selectedStatus = statusFilter.value;
-        const selectedAdminRole = adminFilter.value;
-
-        const filteredAgents = allAgents.filter(agent => {
-          const matchesSearch = (agent.nom || '').toLowerCase().includes(searchTerm) ||
-                                (agent.matricule || '').toLowerCase().includes(searchTerm) ||
-                                (agent.email || '').toLowerCase().includes(searchTerm);
-          const matchesStatus = selectedStatus === '' || (selectedStatus === 'actif' ? agent.actif : !agent.actif);
-          const matchesAdminRole = selectedAdminRole === '' || (selectedAdminRole === 'admin' ? agent.admin : !agent.admin);
-          return matchesSearch && matchesStatus && matchesAdminRole;
-        });
-
-        renderAgents(filteredAgents);
-      }
-
-      searchInput.addEventListener('input', applyFilters);
-      statusFilter.addEventListener('change', applyFilters);
-      adminFilter.addEventListener('change', applyFilters);
-
-      (async () => {
-        try {
-          const token = localStorage.getItem('token');
-          const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-          const res = await fetch('/api/agents', { headers, credentials: 'same-origin' });
-          const data = res.ok ? await res.json() : [];
-          allAgents = (Array.isArray(data) ? data : []).map(a => ({
-            matricule: a.matricule,
-            nom: a.nom,
-            prenom: a.prenom,
-            email: a.email,
-            tel: a.tel || '',
-            actif: a.actif !== false,
-            admin: a.admin === true
-          }));
-        } catch (e) {
-          console.error('Erreur chargement /api/agents:', e);
-          allAgents = [];
-        }
+    async function fetchAgents() {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const res = await fetch('/api/agents', { headers, credentials: 'same-origin' });
+        const data = res.ok ? await res.json() : [];
+        allAgents = (Array.isArray(data) ? data : []).map(a => ({
+          matricule: a.matricule,
+          nom: a.nom,
+          prenom: a.prenom,
+          email: a.email,
+          tel: a.tel || '',
+          actif: a.actif !== false,
+          admin: a.admin === true
+        }));
         renderAgents(allAgents);
-      })();
-    });
-  </script>
-  <script>
-document.addEventListener('DOMContentLoaded', () => {
-  document.body.addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-action="delete"]');
-    if (!btn) return;
-
-    const matricule = btn.getAttribute('data-id');
-    if (!matricule) return alert('Matricule non trouvé.');
-
-    const confirmDelete = confirm(`Voulez-vous vraiment supprimer l'agent ${matricule} ?`);
-    if (!confirmDelete) return;
-
-    try {
-      const token = localStorage.getItem('token'); // ton JWT stocké lors du login
-
-      const response = await fetch(`/api/agents/${matricule}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        alert(`✅ ${result.message}`);
-        // Optionnel : retirer l’agent de la liste sans recharger la page
-        btn.closest('.agent-card')?.remove();
-      } else {
-        alert(`❌ ${result.error || 'Erreur lors de la suppression'}`);
-        console.error('Erreur:', result);
+      } catch (e) {
+        console.error('Erreur chargement /api/agents:', e);
       }
-    } catch (err) {
-      console.error('Erreur de communication avec le serveur:', err);
-      alert('❌ Impossible de contacter le serveur.');
     }
+
+    function renderAgents(list) {
+      cardsContainer.innerHTML = '';
+      if (!list.length) {
+        cardsContainer.innerHTML = '<div class="col-12 text-center text-muted">Aucun agent trouvé.</div>';
+        return;
+      }
+      list.forEach(agent => {
+        const col = document.createElement('div');
+        col.className = 'col-12 col-sm-6 col-lg-4';
+        col.innerHTML = `
+          <div class="card h-100 agent-card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start">
+                <h5 class="card-title mb-1">${agent.nom || ''} ${agent.prenom || ''}</h5>
+                <span class="badge ${agent.actif ? 'bg-success' : 'bg-danger'}">${agent.actif ? 'Actif' : 'Inactif'}</span>
+              </div>
+              <h6 class="card-subtitle text-muted mb-2">Matricule: ${agent.matricule}</h6>
+              <div class="small text-break"><i class="bi bi-envelope me-1"></i>${agent.email || '-'}</div>
+              <div class="small mb-2"><i class="bi bi-telephone me-1"></i>${agent.tel || '-'}</div>
+              <div class="mb-2">
+                <span class="badge ${agent.admin ? 'bg-primary' : 'bg-secondary'}">${agent.admin ? 'Admin' : 'Utilisateur'}</span>
+              </div>
+              <div class="d-flex flex-wrap gap-2">
+                <a href="agent-view.html?matricule=${agent.matricule}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye me-1"></i>Voir</a>
+                ${currentUserIsAdmin ? `
+                  <a href="agent-edit.html?matricule=${agent.matricule}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil me-1"></i>Modifier</a>
+                  <button class="btn btn-sm btn-outline-danger" data-action="delete" data-id="${agent.matricule}">
+                    <i class="bi bi-trash me-1"></i>Supprimer
+                  </button>
+                  <a href="agent-token-new.html?matricule=${agent.matricule}" class="btn btn-sm btn-outline-success"><i class="bi bi-key me-1"></i>Générer Jeton</a>
+                ` : ''}
+              </div>
+            </div>
+          </div>`;
+        cardsContainer.appendChild(col);
+      });
+    }
+
+    function applyFilters() {
+      const term = searchInput.value.toLowerCase();
+      const status = statusFilter.value;
+      const adminRole = adminFilter.value;
+
+      const filtered = allAgents.filter(a => {
+        const matchesTerm = (a.nom || '').toLowerCase().includes(term) ||
+                            (a.matricule || '').toLowerCase().includes(term) ||
+                            (a.email || '').toLowerCase().includes(term);
+        const matchesStatus = !status || (status === 'actif' ? a.actif : !a.actif);
+        const matchesAdmin = !adminRole || (adminRole === 'admin' ? a.admin : !a.admin);
+        return matchesTerm && matchesStatus && matchesAdmin;
+      });
+      renderAgents(filtered);
+    }
+
+    searchInput.addEventListener('input', applyFilters);
+    statusFilter.addEventListener('change', applyFilters);
+    adminFilter.addEventListener('change', applyFilters);
+
+    await fetchAgents();
   });
-});
-</script>
+  </script>
+
+  <script>
+  // ======== Suppression agent ========
+  document.addEventListener('DOMContentLoaded', () => {
+    document.body.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-action="delete"]');
+      if (!btn) return;
+
+      const matricule = btn.getAttribute('data-id');
+      if (!matricule) return alert('Matricule non trouvé.');
+
+      const confirmDelete = confirm(`Voulez-vous vraiment supprimer l'agent ${matricule} ?`);
+      if (!confirmDelete) return;
+
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/agents/${matricule}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          alert(`✅ ${result.message}`);
+          btn.closest('.agent-card')?.remove();
+        } else {
+          alert(`❌ ${result.error || 'Erreur lors de la suppression'}`);
+        }
+      } catch (err) {
+        console.error('Erreur de communication avec le serveur:', err);
+        alert('❌ Impossible de contacter le serveur.');
+      }
+    });
+  });
+  </script>
 
 </body>
 </html>
-
