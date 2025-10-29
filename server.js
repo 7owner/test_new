@@ -179,7 +179,7 @@ async function ensureAgentsCoherent() {
 
     // Users (no-ops if already present)
     await client.query("INSERT INTO users (email, roles, password) SELECT 'maboujunior777@gmail.com','[\"ROLE_ADMIN\"]','$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq' WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='maboujunior777@gmail.com')");
-    await client.query("INSERT INTO users (email, roles, password) SELECT 'takotuemabou@outlook.com','[\"ROLE_USER\"]','$2b$10$FzYl.RlTXgB/sPKe7phzJuXk.uUfXWDWnevVIB4MuXc2NoIOW2WKq' WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='takotuemabou@outlook.com')");
+    //await client.query("INSERT INTO users (email, roles, password) SELECT 'takotuemabou@outlook.com','[\"ROLE_USER\"]','$2b$10$FzYl.RlTXgB/sPKe7phzJuXk.uUfXWDWnevVIB4MuXc2NoIOW2WKq' WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='takotuemabou@outlook.com')");
 
     // AGT001 -> takotuemabou@outlook.com (ROLE_USER)
     await client.query(
@@ -1934,8 +1934,8 @@ app.put('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, res) 
         const oldResponsable = oldTicketResult.rows[0]?.responsable;
 
         const result = await client.query(
-            'UPDATE ticket SET titre = $1, description = $2, doe_id = $3, affaire_id = $4, etat = $5::etat_rapport WHERE id = $6 RETURNING *',
-            [titre, description, doe_id, affaire_id, etat, id]
+            'UPDATE ticket SET titre = $1, description = $2, responsable = $3, doe_id = $4, affaire_id = $5, etat = $6::etat_rapport WHERE id = $7 RETURNING *',
+            [titre, description, responsable, doe_id, affaire_id, etat, id]
         );
 
         if (result.rows.length > 0) {
