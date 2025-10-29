@@ -20,7 +20,8 @@
 INSERT INTO users (email, roles, password) VALUES
 ('admin@app.com', '["ROLE_ADMIN"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq'),
 ('sophie.martin@app.com', '["ROLE_USER"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq'),
-('jean.dupont@app.com',  '["ROLE_USER"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq');
+('jean.dupont@app.com',  '["ROLE_USER"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq'),
+('pierre.durand@app.com',  '["ROLE_USER"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq');
 
 -- 2) ADRESSE + AGENCE
 INSERT INTO adresse (libelle, ligne1, code_postal, ville, pays) VALUES
@@ -36,7 +37,8 @@ VALUES
 INSERT INTO agent (matricule, nom, prenom, email, tel, admin, actif, agence_id, user_id)
 VALUES
 ('AGT001', 'Dupont',  'Jean',   'jean.dupont@app.com',  '0600000001', TRUE,  TRUE,  1, 3),
-('AGT002', 'Martin',  'Sophie', 'sophie.martin@app.com','0600000002', FALSE, TRUE,  2, 2);
+('AGT002', 'Martin',  'Sophie', 'sophie.martin@app.com','0600000002', FALSE, TRUE,  2, 2),
+('AGT003', 'Durand',  'Pierre', 'pierre.durand@app.com','0600000003', FALSE, TRUE,  1, 4);
 
 -- CLIENTS
 INSERT INTO client (
