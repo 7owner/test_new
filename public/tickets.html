@@ -71,7 +71,7 @@
         <option value="">Tous les États</option>
         <option value="Pas_commence">Pas commencé</option>
         <option value="En_cours">En cours</option>
-        <option value="Terminé">Terminé</option>
+        <option value="Termine">Terminé</option>
       </select>
       <select class="form-select" id="ticket-responsible-filter">
         <option value="">Tous les responsables</option>
@@ -95,7 +95,7 @@
             <th>ID</th>
             <th>Titre</th>
             <th>Description</th>
-            <th>�tat</th>
+            <th>Etat</th>
             <th>Site</th>
             <th>Responsable</th>
             <th>Actions</th>
@@ -202,7 +202,7 @@
           affaire_id: "AFF001",
           titre: "Contrôle sécurité incendie",
           description: "Contrôle réglementaire des équipements de sécurité incendie.",
-          etat: "Terminé",
+          etat: "Termine",
           responsable: "AGT002",
           site_id: "SITE001",
           date_intervention: "2024-03-10" // Added for demonstration
@@ -292,7 +292,7 @@
         switch (etat) {
           case 'Pas_commence': return 'bg-secondary';
           case 'En_cours': return 'bg-warning';
-          case 'Terminé': return 'bg-success';
+          case 'Termine': return 'bg-success';
           default: return 'bg-light text-dark';
         }
       }
@@ -301,8 +301,8 @@
         openTicketsContainer.innerHTML = '';
         closedTicketsTableBody.innerHTML = '';
 
-        const openTickets = ticketsToRender.filter(t => t.etat !== 'Terminé');
-        const closedTickets = ticketsToRender.filter(t => t.etat === 'Terminé');
+        const openTickets = ticketsToRender.filter(t => t.etat !== 'Termine');
+        const closedTickets = ticketsToRender.filter(t => t.etat === 'Termine');
 
         // Render open tickets as cards
         if (openTickets.length > 0) {
