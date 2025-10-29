@@ -48,10 +48,11 @@ VALUES
 ('EDF Renouvelables', 'Durand Pierre', 'pierre.durand@edf-renouvelables.fr', '0155555555', 1, 'Client historique – parc solaire'),
 ('ENGIE Solutions', 'Martin Sophie', 'sophie.martin@engie.fr', '0166666666', 2, 'Client B2B – maintenance hydraulique');
 
-INSERT INTO site (client_id, nom_site, adresse_id)
+INSERT INTO site (client_id, nom_site, adresse_id, statut)
 VALUES
-(1, 'Site Solaire Paris 15', 1),
-(2, 'Site Hydro Lyon',       2);
+(1, 'Site Solaire Paris 15', 1, 'en attente'),
+(2, 'Site Hydro Lyon',       2, 'prise en charge');
+
 
 -- 5) AFFAIRE + DOE + liaisons SITE_AFFAIRE
 INSERT INTO affaire (client_id, nom_affaire, description)

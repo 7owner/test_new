@@ -161,6 +161,46 @@
       })();
     });
   </script>
+  <script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.body.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-action="delete"]');
+    if (!btn) return;
+
+    const matricule = btn.getAttribute('data-id');
+    if (!matricule) return alert('Matricule non trouvé.');
+
+    const confirmDelete = confirm(`Voulez-vous vraiment supprimer l'agent ${matricule} ?`);
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem('token'); // ton JWT stocké lors du login
+
+      const response = await fetch(`/api/agents/${matricule}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert(`✅ ${result.message}`);
+        // Optionnel : retirer l’agent de la liste sans recharger la page
+        btn.closest('.agent-card')?.remove();
+      } else {
+        alert(`❌ ${result.error || 'Erreur lors de la suppression'}`);
+        console.error('Erreur:', result);
+      }
+    } catch (err) {
+      console.error('Erreur de communication avec le serveur:', err);
+      alert('❌ Impossible de contacter le serveur.');
+    }
+  });
+});
+</script>
+
 </body>
 </html>
 
