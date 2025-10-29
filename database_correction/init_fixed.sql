@@ -193,6 +193,8 @@ CREATE TABLE IF NOT EXISTS ticket (
     titre VARCHAR(255) NOT NULL,
     description TEXT,
     etat etat_rapport DEFAULT 'Pas_commence',
+    date_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_fin TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
