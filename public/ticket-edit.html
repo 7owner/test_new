@@ -111,7 +111,7 @@
       const form = document.getElementById('ticket-edit-form');
       const doeSelect = document.getElementById('doe_id');
       const affaireSelect = document.getElementById('affaire_id');
-      const responsableSelect = document.getElementById('responsable');
+      //const responsableSelect = document.getElementById('responsable');
 
       // Fetch related data for dropdowns
       async function fetchData() {
@@ -145,7 +145,7 @@
             });
           }
 
-          // Populate Responsables
+         /* // Populate Responsables
           responsableSelect.innerHTML = '<option value="">Non assigné</option>';
           if (Array.isArray(agents)) {
             agents.forEach(a => {
@@ -154,7 +154,7 @@
               opt.textContent = `${a.nom} ${a.prenom} (${a.matricule})`;
               responsableSelect.appendChild(opt);
             });
-          }
+          }*/
 
           // Populate form with ticket data
           const ticket = ticketRel.ticket;
@@ -188,7 +188,7 @@
         const payload = {
           titre: document.getElementById('titre').value,
           description: document.getElementById('description').value,
-          responsable: document.getElementById('responsable').value || null,
+          //responsable: document.getElementById('responsable').value || null,
           doe_id: document.getElementById('doe_id').value,
           affaire_id: document.getElementById('affaire_id').value,
           etat: document.getElementById('etat').value
