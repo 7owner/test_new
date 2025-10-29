@@ -747,6 +747,7 @@ app.get('/api/documents/:id', authenticateToken, async (req, res) => {
   }
 });
 
+
 // Upload document via JSON base64 and save to disk
 app.post('/api/documents', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
@@ -844,6 +845,40 @@ app.delete('/api/documents/:id', authenticateToken, authorizeAdmin, async (req, 
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+// -------------------- Statistiques mensuelles (tickets par mois) --------------------
+app.get('/api/stats/tickets/monthly', authenticateToken, async (req, res) => {
+  try {
+    // Requête SQL : compte le nombre de tickets créés par mois
+    const result = await pool.query(`
+      SELECT 
+        EXTRACT(MONTH FROM date_debut) AS mois,
+        COUNT(*) AS nb_tickets
+      FROM ticket
+      WHERE date_debut IS NOT NULL
+      GROUP BY mois
+      ORDER BY mois
+    `);
+
+    // Tableau des 12 mois
+    const labels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
+    const values = new Array(12).fill(0);
+
+    // Remplissage avec les données SQL
+    for (const row of result.rows) {
+      const moisIndex = parseInt(row.mois, 10) - 1;
+      if (moisIndex >= 0 && moisIndex < 12) {
+        values[moisIndex] = parseInt(row.nb_tickets, 10);
+      }
+    }
+
+    res.json({ labels, values });
+  } catch (err) {
+    console.error('Erreur stats mensuelles:', err);
+    res.status(500).json({ error: 'Erreur interne du serveur', details: err.message });
+  }
+});
+
 
 // -------------------- Images API --------------------
 // List images (no blobs)
