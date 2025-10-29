@@ -1650,16 +1650,22 @@ app.post('/api/invite-agent', authenticateToken, authorizeAdmin, async (req, res
         }
 
         // 2. Find or create agent and link to user
-        let agentResult = await client.query('SELECT matricule FROM agent WHERE user_id = $1', [userId]);
+        let agentResult = await client.query('SELECT matricule FROM agent WHERE email = $1', [email]);
         let agentMatricule;
         if (agentResult.rows.length === 0) {
-            // Agent does not exist, create a new one
-            const newMatricule = `AGT${Math.floor(100 + Math.random() * 900)}`; // Simple random matricule
-            const newAgent = await client.query(
-                'INSERT INTO agent (matricule, nom, prenom, email, agence_id, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING matricule',
-                [newMatricule, 'InvitÃ©', 'Agent', email, 1, userId] // Assuming agence_id 1 exists
-            );
-            agentMatricule = newAgent.rows[0].matricule;
+            // No agent found by email, try by user_id
+            agentResult = await client.query('SELECT matricule FROM agent WHERE user_id = $1', [userId]);
+            if (agentResult.rows.length === 0) {
+                // Agent does not exist, create a new one
+                const newMatricule = `AGT${Math.floor(100 + Math.random() * 900)}`; // Simple random matricule
+                const newAgent = await client.query(
+                    'INSERT INTO agent (matricule, nom, prenom, email, agence_id, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING matricule',
+                    [newMatricule, 'InvitÃ©', 'Agent', email, 1, userId] // Assuming agence_id 1 exists
+                );
+                agentMatricule = newAgent.rows[0].matricule;
+            } else {
+                agentMatricule = agentResult.rows[0].matricule;
+            }
         } else {
             agentMatricule = agentResult.rows[0].matricule;
         }
