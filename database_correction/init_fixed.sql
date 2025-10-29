@@ -125,8 +125,10 @@ CREATE TABLE IF NOT EXISTS site (
     client_id BIGINT,
     commentaire TEXT,
     ticket BOOLEAN DEFAULT FALSE NOT NULL,
-    responsable_matricule VARCHAR(20)
+    responsable_matricule VARCHAR(20),
+    statut VARCHAR(50) DEFAULT 'en attente'  -- ✅ Nouveau champ
 );
+
 
 ALTER TABLE site ADD FOREIGN KEY (client_id) REFERENCES client(id) ON DELETE SET NULL;
 
