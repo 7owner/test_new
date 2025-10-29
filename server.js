@@ -1934,8 +1934,8 @@ app.put('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, res) 
         const oldResponsable = oldTicketResult.rows[0]?.responsable;
 
         const result = await client.query(
-            'UPDATE ticket SET titre = $1, description = $2, responsable = $3, doe_id = $4, affaire_id = $5, etat = $6::etat_rapport WHERE id = $7 RETURNING *',
-            [titre, description, responsable, doe_id, affaire_id, etat, id]
+            'UPDATE ticket SET titre = $1, description = $2, doe_id = $3, affaire_id = $4, etat = $5::etat_rapport WHERE id = $6 RETURNING *',
+            [titre, description, doe_id, affaire_id, etat, id]
         );
 
         if (result.rows.length > 0) {

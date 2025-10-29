@@ -184,12 +184,15 @@ CREATE TABLE IF NOT EXISTS doe (
 
 CREATE TABLE IF NOT EXISTS ticket (
     id SERIAL PRIMARY KEY,
-    doe_id BIGINT,
-    affaire_id BIGINT,
-    site_id BIGINT,
-    titre VARCHAR(255),
+    doe_id BIGINT REFERENCES doe(id) ON DELETE SET NULL,
+    affaire_id BIGINT REFERENCES affaire(id) ON DELETE SET NULL,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    responsable VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
+    titre VARCHAR(255) NOT NULL,
     description TEXT,
-    etat etat_rapport DEFAULT 'Pas_commence'
+    etat etat_rapport DEFAULT 'Pas_commence',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS intervention (

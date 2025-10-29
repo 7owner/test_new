@@ -98,34 +98,36 @@ INSERT INTO site_responsable (site_id, agent_matricule) VALUES (1,'AGT001'), (2,
 
 -- 9) TICKETS sur 12 mois (2025) – 12 pour Paris + 12 pour Lyon (24 total)
 -- Paris (affaire_id=1, doe_id=1) : Janv→Déc
-INSERT INTO ticket (doe_id, affaire_id, titre, description, etat) VALUES
-(1,1,'Ticket Janv Paris','Inspection janvier 2025','En_cours'),
-(1,1,'Ticket Fev Paris','Inspection février 2025','Termine'),
-(1,1,'Ticket Mars Paris','Inspection mars 2025','En_cours'),
-(1,1,'Ticket Avr Paris','Inspection avril 2025','Termine'),
-(1,1,'Ticket Mai Paris','Inspection mai 2025','En_cours'),
-(1,1,'Ticket Juin Paris','Inspection juin 2025','En_cours'),
-(1,1,'Ticket Juil Paris','Inspection juillet 2025','Termine'),
-(1,1,'Ticket Aout Paris','Inspection août 2025','Termine'),
-(1,1,'Ticket Sept Paris','Inspection septembre 2025','En_cours'),
-(1,1,'Ticket Oct Paris','Inspection octobre 2025','En_cours'),
-(1,1,'Ticket Nov Paris','Inspection novembre 2025','En_cours'),
-(1,1,'Ticket Dec Paris','Inspection décembre 2025','Termine');
+INSERT INTO ticket (doe_id, affaire_id, site_id, responsable, titre, description, etat)
+VALUES
+(1, 1, 1, 'AGT001', 'Ticket Janv Paris', 'Inspection janvier 2025', 'En_cours'),
+(1, 1, 1, 'AGT002', 'Ticket Fev Paris', 'Inspection février 2025', 'Termine'),
+(1, 1, 1, 'AGT001', 'Ticket Mars Paris', 'Inspection mars 2025', 'En_cours'),
+(1, 1, 1, 'AGT003', 'Ticket Avr Paris', 'Inspection avril 2025', 'Termine'),
+(1, 1, 1, 'AGT002', 'Ticket Mai Paris', 'Inspection mai 2025', 'En_cours'),
+(1, 1, 1, 'AGT001', 'Ticket Juin Paris', 'Inspection juin 2025', 'En_cours'),
+(1, 1, 1, 'AGT003', 'Ticket Juil Paris', 'Inspection juillet 2025', 'Termine'),
+(1, 1, 1, 'AGT002', 'Ticket Aout Paris', 'Inspection août 2025', 'Termine'),
+(1, 1, 1, 'AGT001', 'Ticket Sept Paris', 'Inspection septembre 2025', 'En_cours'),
+(1, 1, 1, 'AGT002', 'Ticket Oct Paris', 'Inspection octobre 2025', 'En_cours'),
+(1, 1, 1, 'AGT003', 'Ticket Nov Paris', 'Inspection novembre 2025', 'En_cours'),
+(1, 1, 1, 'AGT001', 'Ticket Dec Paris', 'Inspection décembre 2025', 'Termine');
 
 -- Lyon (affaire_id=2, doe_id=2) : Janv→Déc
-INSERT INTO ticket (doe_id, affaire_id, titre, description, etat) VALUES
-(2,2,'Ticket Janv Lyon','Maintenance janvier 2025','En_cours'),
-(2,2,'Ticket Fev Lyon','Maintenance février 2025','Termine'),
-(2,2,'Ticket Mars Lyon','Maintenance mars 2025','En_cours'),
-(2,2,'Ticket Avr Lyon','Maintenance avril 2025','Termine'),
-(2,2,'Ticket Mai Lyon','Maintenance mai 2025','En_cours'),
-(2,2,'Ticket Juin Lyon','Maintenance juin 2025','En_cours'),
-(2,2,'Ticket Juil Lyon','Maintenance juillet 2025','Termine'),
-(2,2,'Ticket Aout Lyon','Maintenance août 2025','Termine'),
-(2,2,'Ticket Sept Lyon','Maintenance septembre 2025','En_cours'),
-(2,2,'Ticket Oct Lyon','Maintenance octobre 2025','En_cours'),
-(2,2,'Ticket Nov Lyon','Maintenance novembre 2025','En_cours'),
-(2,2,'Ticket Dec Lyon','Maintenance décembre 2025','Termine');
+INSERT INTO ticket (doe_id, affaire_id, site_id, responsable, titre, description, etat)
+VALUES
+(2,2,2,'Ticket Janv Lyon','Maintenance janvier 2025','En_cours'),
+(2,2,2,'Ticket Fev Lyon','Maintenance février 2025','Termine'),
+(2,2,2,'Ticket Mars Lyon','Maintenance mars 2025','En_cours'),
+(2,2,2,'Ticket Avr Lyon','Maintenance avril 2025','Termine'),
+(2,2,2,'Ticket Mai Lyon','Maintenance mai 2025','En_cours'),
+(2,2,2,'Ticket Juin Lyon','Maintenance juin 2025','En_cours'),
+(2,2,2,'Ticket Juil Lyon','Maintenance juillet 2025','Termine'),
+(2,2,2,'Ticket Aout Lyon','Maintenance août 2025','Termine'),
+(2,2,2,'Ticket Sept Lyon','Maintenance septembre 2025','En_cours'),
+(2,2,2,'Ticket Oct Lyon','Maintenance octobre 2025','En_cours'),
+(2,2,2,'Ticket Nov Lyon','Maintenance novembre 2025','En_cours'),
+(2,2,2,'Ticket Dec Lyon','Maintenance décembre 2025','Termine');
 
 -- 10) TICKET_AGENT / TICKET_RESPONSABLE (ex. Paris → AGT001, Lyon → AGT002)
 -- Lie les 24 tickets aux agents correspondants.
@@ -146,6 +148,27 @@ INSERT INTO ticket_agent (ticket_id, agent_matricule) VALUES
 INSERT INTO ticket_responsable (ticket_id, agent_matricule) VALUES
 (13,'AGT002'),(14,'AGT002'),(15,'AGT002'),(16,'AGT002'),(17,'AGT002'),(18,'AGT002'),
 (19,'AGT002'),(20,'AGT002'),(21,'AGT002'),(22,'AGT002'),(23,'AGT002'),(24,'AGT002');
+
+INSERT INTO ticket_historique_responsable (
+    ticket_id,
+    ancien_responsable_matricule,
+    nouveau_responsable_matricule,
+    modifie_par_matricule,
+    date_modification
+)
+VALUES
+(1, NULL, 'AGT001', 'ADM001', '2025-01-10 10:00:00'),
+(2, 'AGT001', 'AGT002', 'ADM001', '2025-02-15 14:30:00'),
+(3, NULL, 'AGT003', 'ADM001', '2025-03-05 09:00:00'),
+(4, 'AGT003', 'AGT001', 'ADM001', '2025-04-12 11:00:00'),
+(5, 'AGT002', 'AGT001', 'ADM001', '2025-05-18 16:45:00'),
+(6, NULL, 'AGT002', 'ADM001', '2025-06-02 08:00:00'),
+(7, 'AGT003', 'AGT002', 'ADM001', '2025-07-09 09:30:00'),
+(8, 'AGT002', 'AGT003', 'ADM001', '2025-08-11 13:20:00'),
+(9, 'AGT001', 'AGT003', 'ADM001', '2025-09-14 10:15:00'),
+(10, 'AGT003', 'AGT001', 'ADM001', '2025-10-22 15:00:00'),
+(11, 'AGT002', 'AGT001', 'ADM001', '2025-11-04 11:45:00'),
+(12, 'AGT001', 'AGT002', 'ADM001', '2025-12-19 17:30:00');
 
 -- 11) INTERVENTIONS : 1 par ticket, avec dates réalistes 2025
 INSERT INTO intervention (ticket_id, date_debut, intervention_precedente_id, status) VALUES
