@@ -265,7 +265,7 @@ VALUES
 -- 15) RENDEZVOUS + RAPPORT_TICKET
 -- ======================================================
 
-INSERT INTO rendezvous (titre, description, date_debut, date_fin, statut, sujet, intervention_id, site_id)
+INSERT INTO rendezvous (titre, description, date_rdv, date_fin, statut, sujet, intervention_id, site_id)
 VALUES
 ('RDV Paris Janv', 'Planification intervention', '2025-01-10 09:00', '2025-01-10 10:00', 'Planifie', 'intervention', 1, 1),
 ('RDV Lyon Fev',  'Planification intervention', '2025-02-12 14:00', '2025-02-12 15:00', 'Planifie', 'intervention', 2, 2);
