@@ -16,29 +16,10 @@ Cette session ajoute le flux Client (role ROLE_CLIENT): creation de client avec 
   - envoyer une demande d'intervention,
   - consulter l'historique des demandes.
 
-## Mises à jour et corrections effectuées par l'agent
+## Mises à jour et corrections effectuées par l'agent (liées au client)
 
 ### Mises à jour du schéma de base de données (`database_correction/init_fixed.sql`)
-- Ajout des définitions de table pour `audit_log` et `ticket_historique_responsable`.
-- Correction de la colonne `actor_email` en `agent_matricule` dans la table `ticket_responsable` avec ajout de la contrainte de clé étrangère.
-- Ajout de la colonne `duree_heures` à la table `intervention`.
-- Ajout des colonnes `date_debut` et `date_fin` à la table `ticket`.
 - Ajout de la définition de la table `demande_client`.
-- Correction de la colonne `type` dans la table `formation` en la citant (`"type"`) pour éviter les conflits avec les mots-clés réservés.
-
-### Mises à jour des données de base (`database_correction/seed_fixed.sql`)
-- Rendu de l'insertion `audit_log` idempotente.
-- Suppression des instructions `TRUNCATE` (la réinitialisation de la base de données est gérée par `init_fixed.sql`).
-- Suppression des IDs explicites des insertions `agence` (les IDs sont générés automatiquement).
-- Ajout de l'agent `AGT003` et de l'utilisateur correspondant pour résoudre les violations de clé étrangère.
-- Correction de l'insertion des tickets de Lyon pour inclure le `responsable` (`AGT002`).
-
-### Mises à jour de la logique serveur (`server.js`)
-- Suppression des créations de table explicites redondantes (la création du schéma est centralisée dans `init_fixed.sql`).
-- Implémentation d'un verrou consultatif au niveau de la base de données pour garantir une initialisation du schéma unique et éviter les deadlocks.
-- Amélioration de la logique de création d'agent dans l'endpoint `invite-agent` pour prévenir les erreurs de doublons d'e-mails.
-- Modification de la requête `/api/sites/:id/relations` pour utiliser `date_debut` au lieu de `date_rdv` pour le tri des rendez-vous.
-- Ajout d'une vérification de l'existence du schéma dans `initializeDatabase` pour empêcher l'écrasement de la base de données lors des redémarrages ultérieurs.
 
 ### Mises à jour de l'interface utilisateur (Frontend)
 - Création de `public/client-new.html` pour le formulaire d'enregistrement des clients.

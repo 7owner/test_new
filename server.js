@@ -2992,6 +2992,84 @@ app.post('/api/sites/:id/responsables', authenticateToken, authorizeAdmin, async
   } catch (e) { console.error('site add responsable:', e); res.status(400).json({ error: e.message || 'Bad Request' }); }
 });
 
+// --- Client registration: create user with ROLE_CLIENT and linked client ---
+app.post('/api/clients/register', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { email, password, nom_client, representant_nom, representant_tel, adresse_id, commentaire } = req.body || {};
+  if (!email || !password || !nom_client) return res.status(400).json({ error: 'email, password, nom_client are required' });
+  const cx = await pool.connect();
+  try {
+    await cx.query('BEGIN');
+    const exists = await cx.query('SELECT id FROM users WHERE email=$1', [email]);
+    if (exists.rows[0]) { await cx.query('ROLLBACK'); return res.status(409).json({ error: 'User already exists' }); }
+    const hashed = await bcrypt.hash(password, 10);
+    const ures = await cx.query('INSERT INTO users (email, password, roles) VALUES ($1,$2,$3) RETURNING id,email,roles', [email, hashed, JSON.stringify(['ROLE_CLIENT'])]);
+    const u = ures.rows[0];
+    const cres = await cx.query(
+      'INSERT INTO client (nom_client, representant_nom, representant_email, representant_tel, adresse_id, commentaire) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
+      [nom_client, representant_nom || null, email, representant_tel || null, adresse_id || null, commentaire || null]
+    );
+    const cli = cres.rows[0];
+    try { await cx.query('UPDATE client SET user_id=$1 WHERE id=$2', [u.id, cli.id]); } catch(_) {}
+    await cx.query('COMMIT');
+    return res.status(201).json({ user: u, client: cli });
+  } catch (e) {
+    try { await cx.query('ROLLBACK'); } catch(_) {}
+    console.error('clients/register failed:', e);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  } finally { cx.release(); }
+});
+
+// --- Client-owned sites ---
+app.get('/api/client/sites', authenticateToken, async (req, res) => {
+  try {
+    const email = req.user && req.user.email;
+    if (!email) return res.status(401).json({ error: 'Unauthorized' });
+    const c = (await pool.query('SELECT id FROM client WHERE representant_email=$1 LIMIT 1', [email])).rows[0];
+    if (!c) return res.json([]);
+    const r = await pool.query('SELECT * FROM site WHERE client_id=$1 ORDER BY id DESC', [c.id]);
+    return res.json(r.rows);
+  } catch (e) { console.error('client sites list:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
+});
+app.post('/api/client/sites', authenticateToken, async (req, res) => {
+  try {
+    const email = req.user && req.user.email;
+    if (!email) return res.status(401).json({ error: 'Unauthorized' });
+    const c = (await pool.query('SELECT id FROM client WHERE representant_email=$1 LIMIT 1', [email])).rows[0];
+    if (!c) return res.status(400).json({ error: 'Client record not found for this user' });
+    const { nom_site, adresse_id, commentaire } = req.body || {};
+    if (!nom_site) return res.status(400).json({ error: 'nom_site is required' });
+    const r = await pool.query('INSERT INTO site (nom_site, adresse_id, client_id, commentaire) VALUES ($1,$2,$3,$4) RETURNING *', [nom_site, adresse_id || null, c.id, commentaire || null]);
+    return res.status(201).json(r.rows[0]);
+  } catch (e) { console.error('client site create:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+// --- Client demandes (requests) ---
+app.get('/api/demandes_client/mine', authenticateToken, async (req, res) => {
+  try {
+    const email = req.user && req.user.email;
+    if (!email) return res.status(401).json({ error: 'Unauthorized' });
+    const c = (await pool.query('SELECT id FROM client WHERE representant_email=$1 LIMIT 1', [email])).rows[0];
+    if (!c) return res.json([]);
+    const r = await pool.query("SELECT d.*, s.nom_site FROM demande_client d LEFT JOIN site s ON d.site_id=s.id WHERE d.client_id=$1 ORDER BY d.created_at DESC", [c.id]);
+    return res.json(r.rows);
+  } catch (e) { console.error('demandes mine:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
+});
+app.post('/api/demandes_client', authenticateToken, async (req, res) => {
+  try {
+    const email = req.user && req.user.email;
+    if (!email) return res.status(401).json({ error: 'Unauthorized' });
+    const c = (await pool.query('SELECT id FROM client WHERE representant_email=$1 LIMIT 1', [email])).rows[0];
+    if (!c) return res.status(400).json({ error: 'Client record not found for this user' });
+    const { site_id, description } = req.body || {};
+    if (!description) return res.status(400).json({ error: 'description is required' });
+    if (site_id) {
+      const s = (await pool.query('SELECT id FROM site WHERE id=$1 AND client_id=$2', [site_id, c.id])).rows[0];
+      if (!s) return res.status(403).json({ error: 'Site does not belong to client' });
+    }
+    const r = await pool.query('INSERT INTO demande_client (client_id, site_id, description) VALUES ($1,$2,$3) RETURNING *', [c.id, site_id || null, description]);
+    return res.status(201).json(r.rows[0]);
+  } catch (e) { console.error('demande create:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
+});
 initializeDatabase().then(() => {
     app.listen(port, () => {
         console.log(`Server listening on port ${port}`);

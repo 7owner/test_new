@@ -18,10 +18,11 @@
 
 -- 1) USERS
 INSERT INTO users (email, roles, password) VALUES
-('admin@app.com', '["ROLE_ADMIN"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq'),
+('maboujunior777@gmail.com', '["ROLE_ADMIN"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq'),
 ('sophie.martin@app.com', '["ROLE_USER"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq'),
 ('jean.dupont@app.com',  '["ROLE_USER"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq'),
-('pierre.durand@app.com',  '["ROLE_USER"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq');
+('pierre.durand@app.com',  '["ROLE_USER"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq'),
+('client1@app.com', '["ROLE_CLIENT"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq');
 
 -- 2) ADRESSE + AGENCE
 INSERT INTO adresse (libelle, ligne1, code_postal, ville, pays) VALUES
@@ -46,12 +47,20 @@ INSERT INTO client (
 )
 VALUES
 ('EDF Renouvelables', 'Durand Pierre', 'pierre.durand@edf-renouvelables.fr', '0155555555', 1, 'Client historique – parc solaire'),
-('ENGIE Solutions', 'Martin Sophie', 'sophie.martin@engie.fr', '0166666666', 2, 'Client B2B – maintenance hydraulique');
+('ENGIE Solutions', 'Martin Sophie', 'sophie.martin@engie.fr', '0166666666', 2, 'Client B2B – maintenance hydraulique'),
+('Client Demo', 'Client One', 'client1@app.com', '0177777777', 1, 'Compte de demonstration client');
 
 INSERT INTO site (client_id, nom_site, adresse_id, statut)
 VALUES
 (1, 'Site Solaire Paris 15', 1, 'en attente'),
-(2, 'Site Hydro Lyon',       2, 'prise en charge');
+(2, 'Site Hydro Lyon',       2, 'prise en charge'),
+(3, 'Site Client Demo',      1, 'en attente');
+
+-- Demandes d'intervention (client demo)
+INSERT INTO demande_client (client_id, site_id, description, status)
+VALUES
+(3, 3, 'Demande: verification installation', 'En_attente'),
+(3, NULL, 'Demande: conseil avant nouveau site', 'En_attente');
 
 
 -- 5) AFFAIRE + DOE + liaisons SITE_AFFAIRE

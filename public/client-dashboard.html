@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord Client</title>
+    <link rel="stylesheet" href="custom.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+    <div id="navbar-placeholder"></div>
+
+    <div class="container mt-5">
+        <h1>Bienvenue sur votre Tableau de Bord Client</h1>
+        <p>Gérez vos sites, faites des demandes d'intervention et consultez votre historique.</p>
+
+        <!-- Section Sites -->
+        <div class="card mt-4">
+            <div class="card-header">
+                Vos Sites
+            </div>
+            <div class="card-body">
+                <button class="btn btn-primary mb-3" id="createSiteBtn">Ajouter un nouveau site</button>
+                <div id="sitesList" class="list-group">
+                    <!-- Les sites du client seront chargés ici -->
+                    <p class="text-muted">Aucun site enregistré pour le moment.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Mon Profil -->
+        <div class="card mt-4">
+            <div class="card-header">
+                Mon Profil
+            </div>
+            <div class="card-body" id="clientProfile">
+                <p><strong>Nom du Client:</strong> <span id="profileNomClient"></span></p>
+                <p><strong>Email du Représentant:</strong> <span id="profileRepresentantEmail"></span></p>
+                <p><strong>Téléphone du Représentant:</strong> <span id="profileRepresentantTel"></span></p>
+                <p><strong>Commentaire:</strong> <span id="profileCommentaire"></span></p>
+            </div>
+        </div>
+
+        <!-- Section Demandes d'Intervention -->
+        <div class="card mt-4">
+            <div class="card-header">
+                Vos Demandes d'Intervention
+            </div>
+            <div class="card-body">
+                <button class="btn btn-primary mb-3" id="createDemandeBtn">Faire une nouvelle demande</button>
+                <div id="demandesList" class="list-group">
+                    <!-- Les demandes du client seront chargées ici -->
+                    <p class="text-muted">Aucune demande d'intervention pour le moment.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Historique des Interventions -->
+        <div class="card mt-4">
+            <div class="card-header">
+                Historique de vos Interventions
+            </div>
+            <div class="card-body">
+                <div id="historiqueInterventions">
+                    <!-- L'historique des interventions sera chargé ici -->
+                    <p class="text-muted">Aucun historique d'intervention disponible.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="nav.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('jwtToken');
+            if (!token) {
+                window.location.href = '/login.html'; // Rediriger si non connecté
+                return;
+            }
+
+            // TODO: Implémenter la logique pour charger les sites, les demandes et l'historique
+            // Ces fonctions feront des appels API aux endpoints dédiés aux clients.
+
+            async function fetchClientProfile() {
+                try {
+                    const response = await fetch('/api/client/profile', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const profile = await response.json();
+                    document.getElementById('profileNomClient').textContent = profile.nom_client || 'N/A';
+                    document.getElementById('profileRepresentantEmail').textContent = profile.representant_email || 'N/A';
+                    document.getElementById('profileRepresentantTel').textContent = profile.representant_tel || 'N/A';
+                    document.getElementById('profileCommentaire').textContent = profile.commentaire || 'N/A';
+                } catch (error) {
+                    console.error('Erreur lors du chargement du profil client:', error);
+                    // Gérer l'affichage d'une erreur à l'utilisateur
+                }
+            }
+
+            fetchClientProfile();
+
+            // Exemple de redirection pour la création de site (à implémenter)
+            document.getElementById('createSiteBtn').addEventListener('click', () => {
+                alert('Redirection vers la page de création de site (à implémenter)');
+                // window.location.href = '/client-site-new.html';
+            });
+
+            // Exemple de redirection pour la création de demande (à implémenter)
+            document.getElementById('createDemandeBtn').addEventListener('click', () => {
+                alert('Redirection vers la page de création de demande (à implémenter)');
+                // window.location.href = '/client-demande-new.html';
+            });
+        });
+    </script>
+</body>
+</html>
