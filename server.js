@@ -88,14 +88,18 @@ async function initializeDatabase() {
         }
         // Force schema initialization
         console.log('Forcing schema initialization as per user request.');
-        // The original check was:
-        // const checkSchemaSql = "SELECT to_regclass('public.ticket')";
-        // const schemaExists = await client.query(checkSchemaSql);
-        // if (schemaExists.rows[0].to_regclass) {
-        //     console.log('Database schema already initialized. Skipping init.sql execution.');
-        // } else {
-            const schemaPath = INIT_SQL_PATH;
-            console.log('Initializing schema from:', schemaPath);
+
+        // Check if schema is already initialized by looking for a key table (e.g., users)
+        const checkSchemaSql = "SELECT to_regclass('public.users')";
+        const schemaExists = await client.query(checkSchemaSql);
+
+        if (schemaExists.rows[0].to_regclass) {
+            console.log('Database schema already initialized. Skipping init.sql and seed.sql execution.');
+            return; // Exit function if schema exists
+        }
+
+        const schemaPath = INIT_SQL_PATH;
+        console.log('Initializing schema from:', schemaPath);
             const schemaSqlRaw = fs.readFileSync(schemaPath, 'utf8');
             // Normalize, strip BOM and comments, then split by ';'
             const norm = schemaSqlRaw
