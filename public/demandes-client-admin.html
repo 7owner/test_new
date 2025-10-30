@@ -47,8 +47,8 @@
               <option value="">Tous</option>
               <option value="En_attente">En attente</option>
               <option value="En_cours">En cours</option>
-              <option value="Traitee">Traitée</option>
-              <option value="Rejetee">Rejetée</option>
+              <option value="Traitee">TraitÃ©e</option>
+              <option value="Rejetee">RejetÃ©e</option>
             </select>
           </div>
         </div>
@@ -61,14 +61,14 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="nav.js"></script>
+  <script src="/nav.js?v=2"></script>
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('jwtToken'); // Use jwtToken as per nav.js
+    const token = localStorage.getItem('token'); // Use jwtToken as per nav.js
     if (!token) { location.href = '/login.html'; return; }
     let roles = [];
     try { const p = JSON.parse(atob(token.split('.')[1])); roles = Array.isArray(p.roles)?p.roles:[]; } catch {}
-    if (!roles.includes('ROLE_ADMIN')) { alert('Accès admin requis'); location.href = '/dashboard.html'; return; }
+    if (!roles.includes('ROLE_ADMIN')) { alert('AccÃ¨s admin requis'); location.href = '/dashboard.html'; return; }
 
     const demandsContainer = document.getElementById('demandsContainer');
     const filterClientInput = document.getElementById('filterClient');
@@ -110,7 +110,7 @@
           <h6 class="card-subtitle mb-2 text-muted">${d.nom_client || 'N/A'} (${d.representant_email || 'N/A'})</h6>
           <p class="card-text mb-1"><strong>Site:</strong> ${d.nom_site || 'N/A'} (ID: ${d.site_id || '-'})</p>
           <p class="card-text">${d.description || 'Pas de description.'}</p>
-          <small class="text-muted">Créée le: ${new Date(d.created_at).toLocaleDateString()}</small>
+          <small class="text-muted">CrÃ©Ã©e le: ${new Date(d.created_at).toLocaleDateString()}</small>
         </div>
         <div class="card-footer bg-transparent border-top-0 d-flex flex-wrap justify-content-end">
           ${statusSel.map(s => `<button class="btn btn-sm btn-outline-primary me-1 mb-1 status-btn" data-id="${d.id}" data-status="${s}">${s.replace('_', ' ')}</button>`).join('')}
@@ -132,7 +132,7 @@
         const id = e.target.dataset.id;
         try {
           const r = await await fetchJSON(`/api/demandes_client/${id}/convert-to-ticket`, { method:'POST' });
-          alert('Ticket créé: #' + (r.ticket && r.ticket.id));
+          alert('Ticket crÃ©Ã©: #' + (r.ticket && r.ticket.id));
           await load();
         } catch(err) { alert(err.message); }
       });
@@ -154,7 +154,7 @@
       try {
         const data = await fetchJSON(url);
         if (data.length === 0) {
-          demandsContainer.innerHTML = '<p class="text-muted">Aucune demande client à afficher.</p>';
+          demandsContainer.innerHTML = '<p class="text-muted">Aucune demande client Ã  afficher.</p>';
         } else {
           data.forEach(d => demandsContainer.appendChild(createDemandCard(d)));
         }
