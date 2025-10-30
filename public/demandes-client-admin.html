@@ -1,27 +1,83 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
   <title>Demandes Client - Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 20px; }
-    h1 { margin: 0 0 1rem 0; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ddd; padding: 8px; }
-    th { background: #f3f3f3; text-align: left; }
-    .actions button { margin-right: .35rem; }
-    .tag { display:inline-block; padding:2px 6px; border-radius:4px; background:#eee; }
+    .sort-arrow {
+      display: inline-block;
+      width: 0;
+      height: 0;
+      margin-left: 5px;
+      vertical-align: middle;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-bottom: 4px solid #000; /* Default arrow up */
+    }
+    .sort-arrow.asc {
+      border-bottom: 4px solid #000;
+      border-top: none;
+    }
+    .sort-arrow.desc {
+      border-top: 4px solid #000;
+      border-bottom: none;
+    }
   </style>
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+
+  <div class="container mt-4">
+    <h1 class="mb-4">Demandes Client - Administration</h1>
+
+    <div class="card mb-4">
+      <div class="card-header">Filtres</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="filterClient" class="form-label">Filtrer par Client:</label>
+            <input type="text" id="filterClient" class="form-control" placeholder="Nom du client ou email">
+          </div>
+          <div class="col-md-6">
+            <label for="filterStatus" class="form-label">Filtrer par Statut:</label>
+            <select id="filterStatus" class="form-select">
+              <option value="">Tous</option>
+              <option value="En_attente">En attente</option>
+              <option value="En_cours">En cours</option>
+              <option value="Traitee">Traitée</option>
+              <option value="Rejetee">Rejetée</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="demandsContainer" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+      <!-- Demandes will be loaded here as cards -->
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="nav.js"></script>
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('jwtToken'); // Use jwtToken as per nav.js
     if (!token) { location.href = '/login.html'; return; }
     let roles = [];
     try { const p = JSON.parse(atob(token.split('.')[1])); roles = Array.isArray(p.roles)?p.roles:[]; } catch {}
-    if (!roles.includes('ROLE_ADMIN')) { alert('Acces admin requis'); location.href = '/dashboard.html'; return; }
+    if (!roles.includes('ROLE_ADMIN')) { alert('Accès admin requis'); location.href = '/dashboard.html'; return; }
 
-    const tbody = document.getElementById('tbody');
+    const demandsContainer = document.getElementById('demandsContainer');
+    const filterClientInput = document.getElementById('filterClient');
+    const filterStatusSelect = document.getElementById('filterStatus');
+    const tableHeaders = document.querySelectorAll('th[data-sort]'); // Keep for sorting logic, even if not visually present
+
+    let currentSort = { column: 'id', direction: 'desc' }; // Default sort
+    let currentFilter = { client: '', status: '' };
+
     const statusSel = ['En_attente','En_cours','Traitee','Rejetee'];
 
     async function fetchJSON(url, opts) {
@@ -32,64 +88,108 @@
       return body;
     }
 
-    function row(d) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>#${d.id}</td>
-        <td>${d.nom_client||''}<br><small>${d.representant_email||''}</small></td>
-        <td>${d.site_id||'-'} ${d.nom_site?(' - '+d.nom_site):''}</td>
-        <td><span class="tag">${d.status||'En_attente'}</span></td>
-        <td>${d.description||''}</td>
-        <td class="actions"></td>
+    function createDemandCard(d) {
+      const col = document.createElement('div');
+      col.className = 'col';
+      const card = document.createElement('div');
+      card.className = 'card h-100 shadow-sm';
+      
+      const badgeClass = (s => {
+        switch(String(s || '').toLowerCase()) {
+          case 'en_attente': return 'bg-secondary';
+          case 'en_cours': return 'bg-info';
+          case 'traitee': return 'bg-success';
+          case 'rejetee': return 'bg-danger';
+          default: return 'bg-light text-dark';
+        }
+      })(d.status);
+
+      card.innerHTML = `
+        <div class="card-body">
+          <h5 class="card-title">Demande #${d.id} <span class="badge ${badgeClass}">${String(d.status || 'En_attente').replace('_', ' ')}</span></h5>
+          <h6 class="card-subtitle mb-2 text-muted">${d.nom_client || 'N/A'} (${d.representant_email || 'N/A'})</h6>
+          <p class="card-text mb-1"><strong>Site:</strong> ${d.nom_site || 'N/A'} (ID: ${d.site_id || '-'})</p>
+          <p class="card-text">${d.description || 'Pas de description.'}</p>
+          <small class="text-muted">Créée le: ${new Date(d.created_at).toLocaleDateString()}</small>
+        </div>
+        <div class="card-footer bg-transparent border-top-0 d-flex flex-wrap justify-content-end">
+          ${statusSel.map(s => `<button class="btn btn-sm btn-outline-primary me-1 mb-1 status-btn" data-id="${d.id}" data-status="${s}">${s.replace('_', ' ')}</button>`).join('')}
+          <button class="btn btn-sm btn-success mb-1 convert-btn" data-id="${d.id}">Convertir en ticket</button>
+        </div>
       `;
-      const actions = tr.querySelector('.actions');
-      statusSel.forEach(s => {
-        const b = document.createElement('button');
-        b.textContent = s;
-        b.addEventListener('click', async () => {
-          try { await fetchJSON(`/api/demandes_client/${d.id}/status`, { method:'PUT', body: JSON.stringify({ status: s }) }); await load(); }
-          catch(e){ alert(e.message); }
+
+      card.querySelectorAll('.status-btn').forEach(button => {
+        button.addEventListener('click', async (e) => {
+          const id = e.target.dataset.id;
+          const status = e.target.dataset.status;
+          try {
+            await fetchJSON(`/api/demandes_client/${id}/status`, { method:'PUT', body: JSON.stringify({ status: status }) });
+            await load();
+          } catch(err){ alert(err.message); }
         });
-        actions.appendChild(b);
       });
-      const conv = document.createElement('button');
-      conv.textContent = 'Convertir en ticket';
-      conv.addEventListener('click', async () => {
-        try { const r = await fetchJSON(`/api/demandes_client/${d.id}/convert-to-ticket`, { method:'POST' });
-          alert('Ticket cree: #' + (r.ticket && r.ticket.id));
+      card.querySelector('.convert-btn').addEventListener('click', async (e) => {
+        const id = e.target.dataset.id;
+        try {
+          const r = await await fetchJSON(`/api/demandes_client/${id}/convert-to-ticket`, { method:'POST' });
+          alert('Ticket créé: #' + (r.ticket && r.ticket.id));
           await load();
-        } catch(e) { alert(e.message); }
+        } catch(err) { alert(err.message); }
       });
-      actions.appendChild(conv);
-      return tr;
+      col.appendChild(card);
+      return col;
     }
 
     async function load() {
-      tbody.innerHTML='';
+      demandsContainer.innerHTML='';
+      let url = '/api/demandes_client?';
+      if (currentFilter.client) {
+        url += `client=${encodeURIComponent(currentFilter.client)}&`;
+      }
+      if (currentFilter.status) {
+        url += `status=${encodeURIComponent(currentFilter.status)}&`;
+      }
+      url += `sort=${currentSort.column}&direction=${currentSort.direction}`;
+
       try {
-        const data = await fetchJSON('/api/demandes_client');
-        data.forEach(d => tbody.appendChild(row(d)));
+        const data = await fetchJSON(url);
+        if (data.length === 0) {
+          demandsContainer.innerHTML = '<p class="text-muted">Aucune demande client à afficher.</p>';
+        } else {
+          data.forEach(d => demandsContainer.appendChild(createDemandCard(d)));
+        }
       } catch(e) { console.error(e); alert('Chargement impossible: ' + e.message); }
     }
+
+    filterClientInput.addEventListener('input', () => {
+      currentFilter.client = filterClientInput.value;
+      load();
+    });
+
+    filterStatusSelect.addEventListener('change', () => {
+      currentFilter.status = filterStatusSelect.value;
+      load();
+    });
+
+    // Sorting logic for cards (optional, can be removed if not needed for cards)
+    // For now, keeping it but it won't visually update arrows on cards
+    tableHeaders.forEach(header => {
+      header.addEventListener('click', () => {
+        const column = header.dataset.sort;
+        if (currentSort.column === column) {
+          currentSort.direction = (currentSort.direction === 'asc' ? 'desc' : 'asc');
+        } else {
+          currentSort.column = column;
+          currentSort.direction = 'asc';
+        }
+        // Visual update for sort arrows is not directly applicable to cards
+        // If needed, implement a different visual feedback for card sorting
+        load();
+      });
+    });
 
     load();
   });
   </script>
-</head>
-<body>
-  <h1>Demandes Client - Admin</h1>
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Client</th>
-        <th>Site</th>
-        <th>Status</th>
-        <th>Description</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
 </body>
 </html>
