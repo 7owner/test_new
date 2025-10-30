@@ -3070,6 +3070,61 @@ app.post('/api/demandes_client', authenticateToken, async (req, res) => {
     return res.status(201).json(r.rows[0]);
   } catch (e) { console.error('demande create:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
 });
+
+// --- Admin: demandes listing and workflow ---
+// List all demandes with client/site (admin)
+app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (_req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT d.*, c.nom_client, c.representant_email, s.nom_site
+       FROM demande_client d
+       LEFT JOIN client c ON d.client_id=c.id
+       LEFT JOIN site s   ON d.site_id=s.id
+       ORDER BY d.created_at DESC`);
+    return res.json(r.rows);
+  } catch (e) { console.error('demandes list:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+// Update demande status (admin)
+app.put('/api/demandes_client/:id/status', authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    const { id } = req.params; const { status } = req.body || {};
+    const allowed = ['En_attente','En_cours','Traitee','Rejetee'];
+    if (!allowed.includes(String(status||'').trim())) return res.status(400).json({ error: 'Invalid status' });
+    const r = await pool.query('UPDATE demande_client SET status=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2 RETURNING *', [status, id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    return res.json(r.rows[0]);
+  } catch (e) { console.error('demande status update:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+// Convert demande -> Ticket (admin)
+app.post('/api/demandes_client/:id/convert-to-ticket', authenticateToken, authorizeAdmin, async (req, res) => {
+  const cx = await pool.connect();
+  try {
+    const { id } = req.params;
+    await cx.query('BEGIN');
+    const d = (await cx.query('SELECT * FROM demande_client WHERE id=$1 FOR UPDATE', [id])).rows[0];
+    if (!d) { await cx.query('ROLLBACK'); return res.status(404).json({ error: 'Demande not found' }); }
+    // Optionally pick doe/affaire from site
+    let doe_id = null, affaire_id = null;
+    if (d.site_id) {
+      const rel = (await cx.query('SELECT id, affaire_id FROM doe WHERE site_id=$1 ORDER BY id ASC LIMIT 1', [d.site_id])).rows[0];
+      if (rel) { doe_id = rel.id; affaire_id = rel.affaire_id || null; }
+    }
+    const titre = `Demande client #${d.id}`;
+    const desc = d.description || null;
+    const t = (await cx.query(
+      'INSERT INTO ticket (doe_id, affaire_id, site_id, responsable, titre, description, etat) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+      [doe_id, affaire_id, d.site_id || null, null, titre, desc, 'Pas_commence']
+    )).rows[0];
+    await cx.query("UPDATE demande_client SET status='Traitee', updated_at=CURRENT_TIMESTAMP WHERE id=$1", [id]);
+    await cx.query('COMMIT');
+    return res.status(201).json({ ticket: t, demande: { id: d.id, status: 'Traitee' } });
+  } catch (e) {
+    try { await cx.query('ROLLBACK'); } catch(_) {}
+    console.error('demande convert:', e); return res.status(500).json({ error: 'Internal Server Error' });
+  } finally { cx.release(); }
+});
 initializeDatabase().then(() => {
     app.listen(port, () => {
         console.log(`Server listening on port ${port}`);

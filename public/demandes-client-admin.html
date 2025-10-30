@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Demandes Client - Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 20px; }
+    h1 { margin: 0 0 1rem 0; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f3f3f3; text-align: left; }
+    .actions button { margin-right: .35rem; }
+    .tag { display:inline-block; padding:2px 6px; border-radius:4px; background:#eee; }
+  </style>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    if (!token) { location.href = '/login.html'; return; }
+    let roles = [];
+    try { const p = JSON.parse(atob(token.split('.')[1])); roles = Array.isArray(p.roles)?p.roles:[]; } catch {}
+    if (!roles.includes('ROLE_ADMIN')) { alert('Acces admin requis'); location.href = '/dashboard.html'; return; }
+
+    const tbody = document.getElementById('tbody');
+    const statusSel = ['En_attente','En_cours','Traitee','Rejetee'];
+
+    async function fetchJSON(url, opts) {
+      const res = await fetch(url, Object.assign({ headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } }, opts||{}));
+      const ct = res.headers.get('content-type')||'';
+      const body = ct.includes('application/json') ? await res.json() : null;
+      if (!res.ok) throw new Error((body && body.error) || res.statusText);
+      return body;
+    }
+
+    function row(d) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>#${d.id}</td>
+        <td>${d.nom_client||''}<br><small>${d.representant_email||''}</small></td>
+        <td>${d.site_id||'-'} ${d.nom_site?(' - '+d.nom_site):''}</td>
+        <td><span class="tag">${d.status||'En_attente'}</span></td>
+        <td>${d.description||''}</td>
+        <td class="actions"></td>
+      `;
+      const actions = tr.querySelector('.actions');
+      statusSel.forEach(s => {
+        const b = document.createElement('button');
+        b.textContent = s;
+        b.addEventListener('click', async () => {
+          try { await fetchJSON(`/api/demandes_client/${d.id}/status`, { method:'PUT', body: JSON.stringify({ status: s }) }); await load(); }
+          catch(e){ alert(e.message); }
+        });
+        actions.appendChild(b);
+      });
+      const conv = document.createElement('button');
+      conv.textContent = 'Convertir en ticket';
+      conv.addEventListener('click', async () => {
+        try { const r = await fetchJSON(`/api/demandes_client/${d.id}/convert-to-ticket`, { method:'POST' });
+          alert('Ticket cree: #' + (r.ticket && r.ticket.id));
+          await load();
+        } catch(e) { alert(e.message); }
+      });
+      actions.appendChild(conv);
+      return tr;
+    }
+
+    async function load() {
+      tbody.innerHTML='';
+      try {
+        const data = await fetchJSON('/api/demandes_client');
+        data.forEach(d => tbody.appendChild(row(d)));
+      } catch(e) { console.error(e); alert('Chargement impossible: ' + e.message); }
+    }
+
+    load();
+  });
+  </script>
+</head>
+<body>
+  <h1>Demandes Client - Admin</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Client</th>
+        <th>Site</th>
+        <th>Status</th>
+        <th>Description</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</body>
+</html>

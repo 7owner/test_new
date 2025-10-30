@@ -48,6 +48,24 @@
             const p = JSON.parse(atob(t.split('.')[1]));
             const span = document.getElementById('logged-in-user-email');
             if (span && p && p.email) span.textContent = p.email;
+
+            // Inject client dashboard link into offcanvas nav if ROLE_CLIENT
+            try {
+              const roles = Array.isArray(p && p.roles) ? p.roles : [];
+              if (roles.includes('ROLE_CLIENT')) {
+                const navList = document.querySelector('.offcanvas-body ul.navbar-nav');
+                if (navList && !navList.querySelector('a[href="/client-dashboard.html"]')) {
+                  const li = document.createElement('li');
+                  li.className = 'nav-item';
+                  const a = document.createElement('a');
+                  a.className = 'nav-link';
+                  a.href = '/client-dashboard.html';
+                  a.textContent = 'Espace Client';
+                  li.appendChild(a);
+                  navList.appendChild(li);
+                }
+              }
+            } catch(_){}
           } catch {}
         }
       } catch {}

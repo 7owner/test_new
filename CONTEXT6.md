@@ -1,5 +1,10 @@
 # Contexte du Projet : projet_var_v4 (Session 6)
 
+TL;DR
+- Rôle client (ROLE_CLIENT) avec espace dédié et workflow demandes d'intervention.
+- Admin peut créer un client + user (ROLE_CLIENT).
+- Client peut gérer ses sites et demandes; Admin peut traiter les demandes et les convertir en tickets (etat Pas_commence).
+
 Cette session ajoute le flux Client (role ROLE_CLIENT): creation de client avec user lie, dashboard client, gestion de sites clients et demandes d'intervention (demande_client).
 
 ## Nouveautes
@@ -15,6 +20,9 @@ Cette session ajoute le flux Client (role ROLE_CLIENT): creation de client avec 
   - lister/creer ses sites,
   - envoyer une demande d'intervention,
   - consulter l'historique des demandes.
+- Nouvelle page admin `public/demandes-client-admin.html`: liste les demandes avec actions pour changer le status et convertir en ticket.
+- Dashboard admin: ajout d'un lien vers `demandes-client-admin.html` dans le menu (public/dashboard.html).
+ - Navigation: injection automatique (nav.js) d'un lien "Espace Client" vers `/client-dashboard.html` quand le JWT contient `ROLE_CLIENT`.
 
 ## Mises à jour et corrections effectuées par l'agent (liées au client)
 
@@ -34,10 +42,15 @@ Cette session ajoute le flux Client (role ROLE_CLIENT): creation de client avec 
   - Creer un site -> visible dans la liste; verif en DB: `site.client_id` = client.
   - Envoyer une demande -> visible dans la liste; en DB: `demande_client(client_id, site_id, description)`.
 - Verifier la securite: un client ne peut pas creer une demande sur un site qui ne lui appartient pas.
+ - Admin demandes:
+   - Ouvrir `/demandes-client-admin.html` (ROLE_ADMIN requis) et verifier: listing, changement de status, conversion en ticket (etat `Pas_commence`).
 
 ## Suivi et prochaines etapes
 
-- Ajouter un etat/trajectoire pour `demande_client.status` (ex: En_attente, En_cours, Traitee, Rejetee) et les endpoints admin pour traiter/convertir en ticket.
+- Workflow demandes client (admin):
+  - GET /api/demandes_client (liste admin avec jointures client/site)
+  - PUT /api/demandes_client/:id/status (En_attente|En_cours|Traitee|Rejetee)
+  - POST /api/demandes_client/:id/convert-to-ticket -> cree un ticket avec etat 'Pas_commence' (essaie de lier doe/affaire si disponibles pour le site) et marque la demande 'Traitee'
 - Eventuelle colonne `client.user_id` officielle dans le schema si non presente.
 - Ameliorer l'UI (toasts, validations, selection de site depuis liste, etc.).
 
