@@ -21,12 +21,14 @@ async function run() {
       .map(s => s.trim())
       .filter(Boolean);
     console.log('Applying seed_fixed.sql statements:', statements.length);
-    await client.query('BEGIN');
     for (const stmt of statements) {
+      if (!stmt) continue;
       try {
-        if (!stmt) continue;
+        await client.query('BEGIN');
         await client.query(stmt);
+        await client.query('COMMIT');
       } catch (e) {
+        try { await client.query('ROLLBACK'); } catch {}
         if (e && e.code === '23505') {
           console.warn('Skip duplicate:', stmt.slice(0, 120));
           continue;
@@ -34,7 +36,6 @@ async function run() {
         console.warn('Seed statement failed, continuing:', e.message, 'Stmt head:', stmt.slice(0,120));
       }
     }
-    await client.query('COMMIT');
     console.log('seed_fixed applied');
   } catch (e) {
     try { await client.query('ROLLBACK'); } catch {}
@@ -47,4 +48,3 @@ async function run() {
 }
 
 run();
-
