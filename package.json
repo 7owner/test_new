@@ -10,7 +10,8 @@
         "seed": "node scripts/seed.js",
         "seed-year": "node scripts/seed_year.js",
         "seed-demo": "node scripts/seed_demo_relations.js",
-        "migrate-assignments": "node scripts/migrate_assignments.js"
+        "migrate-assignments": "node scripts/migrate_assignments.js",
+        "fix-seed-users": "node scripts/fix_seed_users.js"
     },
     "keywords": [],
     "author": "",
