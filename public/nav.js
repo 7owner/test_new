@@ -29,11 +29,9 @@
           };
         } catch(_){}
       }
-    } catch (_) {
-      // If CSRF token fetching fails, it might indicate an expired or invalid JWT
-      localStorage.removeItem('token');
-      localStorage.removeItem('userRole');
-      try { window.location.replace('/login.html'); } catch { window.location.href = '/login.html'; }
+    } catch (e) {
+      // Be tolerant: do not force logout on CSRF fetch failure; allow JWT-only flows
+      try { console.warn('CSRF token fetch failed (tolerated):', (e && e.message) || e); } catch(_) {}
     }
   }
 
