@@ -34,6 +34,7 @@ DROP TABLE IF EXISTS password_reset_tokens CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS audit_log CASCADE;
 DROP TABLE IF EXISTS ticket_responsable CASCADE;
+DROP TABLE IF EXISTS demande_client CASCADE;
 
 -- --------------------------------------------------
 -- Enum types
@@ -358,7 +359,15 @@ CREATE TABLE IF NOT EXISTS images (
     cible_id BIGINT
 );
 
-
+CREATE TABLE IF NOT EXISTS demande_client (
+    id SERIAL PRIMARY KEY,
+    client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    description TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'En_attente',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE TABLE IF NOT EXISTS rendu_intervention (
     id SERIAL PRIMARY KEY,
