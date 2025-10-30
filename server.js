@@ -1269,6 +1269,41 @@ app.delete('/api/clients/:id', authenticateToken, authorizeAdmin, async (req, re
   }
 });
 
+// Client relations: include sites and demandes
+app.get('/api/clients/:id/relations', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const c = (await pool.query('SELECT * FROM client WHERE id=$1', [id])).rows[0];
+    if (!c) return res.status(404).json({ error: 'Not found' });
+    const sites = (await pool.query('SELECT * FROM site WHERE client_id=$1 ORDER BY id DESC', [id])).rows;
+    const demandes = (await pool.query('SELECT d.*, s.nom_site FROM demande_client d LEFT JOIN site s ON s.id=d.site_id WHERE d.client_id=$1 ORDER BY d.created_at DESC', [id])).rows;
+    res.json({ client: c, sites, demandes });
+  } catch (err) {
+    console.error('Error fetching client relations:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Admin: create demande for a specific client (optional site)
+app.post('/api/clients/:id/demandes', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { site_id=null, description } = req.body || {};
+  if (!description) return res.status(400).json({ error: 'description is required' });
+  try {
+    const c = (await pool.query('SELECT id FROM client WHERE id=$1', [id])).rows[0];
+    if (!c) return res.status(404).json({ error: 'Client not found' });
+    if (site_id) {
+      const s = (await pool.query('SELECT id FROM site WHERE id=$1 AND client_id=$2', [site_id, id])).rows[0];
+      if (!s) return res.status(403).json({ error: 'Site does not belong to client' });
+    }
+    const r = await pool.query('INSERT INTO demande_client (client_id, site_id, description) VALUES ($1,$2,$3) RETURNING *', [id, site_id || null, description]);
+    res.status(201).json(r.rows[0]);
+  } catch (err) {
+    console.error('Error creating demande for client:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // -------------------- Sites API --------------------
 app.get('/api/sites', authenticateToken, async (req, res) => {
   try {

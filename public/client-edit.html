@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Modifier Client</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=1"></script>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 16px; }
+    label { display:block; margin:.4rem 0 .2rem; }
+    input, textarea, select { padding:.5rem; width:100%; max-width:520px; }
+    button { padding:.5rem .8rem; margin-top:.6rem; }
+    .card { border:1px solid #ddd; border-radius:8px; padding:12px; background:#fff; max-width:640px; }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = localStorage.getItem('token');
+      const params = new URLSearchParams(location.search);
+      const id = params.get('id');
+      const isNew = !id;
+      const h1 = document.getElementById('title');
+      h1.textContent = isNew ? 'Créer un client' : 'Modifier le client #' + id;
+
+      async function fetchJSON(url, opts){ const r=await fetch(url,Object.assign({headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}},opts||{})); const ct=r.headers.get('content-type')||''; const b=ct.includes('application/json')?await r.json():null; if(!r.ok) throw new Error((b&&b.error)||r.statusText); return b; }
+
+      async function loadAdresses(){
+        try {
+          const adrs = await fetchJSON('/api/adresses');
+          const sel = document.getElementById('adresse_id'); sel.innerHTML = '<option value="">(aucune)</option>';
+          adrs.forEach(a=>{ const o=document.createElement('option'); o.value=a.id; o.textContent=a.libelle||('#'+a.id); sel.appendChild(o); });
+        } catch(e) { console.error(e); }
+      }
+
+      await loadAdresses();
+
+      if (!isNew) {
+        try {
+          const c = await fetchJSON('/api/clients/'+id);
+          document.getElementById('nom_client').value = c.nom_client||'';
+          document.getElementById('representant_nom').value = c.representant_nom||'';
+          document.getElementById('representant_email').value = c.representant_email||'';
+          document.getElementById('representant_tel').value = c.representant_tel||'';
+          document.getElementById('adresse_id').value = c.adresse_id||'';
+          document.getElementById('commentaire').value = c.commentaire||'';
+        } catch(e) { alert(e.message); }
+      }
+
+      document.getElementById('form').addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const payload = {
+          nom_client: document.getElementById('nom_client').value.trim(),
+          representant_nom: document.getElementById('representant_nom').value.trim()||null,
+          representant_email: document.getElementById('representant_email').value.trim()||null,
+          representant_tel: document.getElementById('representant_tel').value.trim()||null,
+          adresse_id: document.getElementById('adresse_id').value||null,
+          commentaire: document.getElementById('commentaire').value.trim()||null,
+        };
+        try {
+          if (isNew) await fetchJSON('/api/clients', { method:'POST', body: JSON.stringify(payload) });
+          else await fetchJSON('/api/clients/'+id, { method:'PUT', body: JSON.stringify(payload) });
+          alert('Client enregistré');
+          location.href = '/clients.html';
+        } catch(e) { alert(e.message); }
+      });
+    });
+  </script>
+</head>
+<body class="app-bg">
+  <h1 id="title">Modifier le client</h1>
+  <div class="card">
+    <form id="form">
+      <label for="nom_client">Nom client</label>
+      <input id="nom_client" required>
+
+      <label for="representant_nom">Représentant (nom)</label>
+      <input id="representant_nom">
+
+      <label for="representant_email">Représentant (email)</label>
+      <input id="representant_email" type="email">
+
+      <label for="representant_tel">Représentant (téléphone)</label>
+      <input id="representant_tel">
+
+      <label for="adresse_id">Adresse</label>
+      <select id="adresse_id"></select>
+
+      <label for="commentaire">Commentaire</label>
+      <textarea id="commentaire" rows="3"></textarea>
+
+      <button type="submit">Enregistrer</button>
+    </form>
+  </div>
+</body>
+</html>
+

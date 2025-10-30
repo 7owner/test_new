@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Client - Détails</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=1"></script>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 16px; }
+    .card { border:1px solid #ddd; border-radius:8px; padding:12px; margin:10px 0; background:#fff; }
+    h1,h2 { margin:.4rem 0; }
+    ul { padding-left: 1rem; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    @media (max-width:800px){ .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body class="app-bg">
+  <h1>Détails Client</h1>
+  <p>
+    <a id="editLink" href="#">Modifier ce client</a>
+  </p>
+  <div id="clientCard" class="card">Chargement...</div>
+  <div class="grid">
+    <div class="card">
+      <h2>Sites</h2>
+      <ul id="sites"></ul>
+      <hr>
+      <h3>Créer un site (Admin)</h3>
+      <label for="new_site_nom">Nom site</label>
+      <input id="new_site_nom">
+      <label for="new_site_comment">Commentaire (optionnel)</label>
+      <input id="new_site_comment">
+      <button id="btnCreateSite">Créer</button>
+    </div>
+    <div class="card">
+      <h2>Demandes d'intervention</h2>
+      <ul id="demandes"></ul>
+      <hr>
+      <h3>Créer une demande (Admin)</h3>
+      <label for="new_demande_site">Site ID (optionnel)</label>
+      <input id="new_demande_site" placeholder="ex: 12">
+      <label for="new_demande_desc">Description</label>
+      <textarea id="new_demande_desc" rows="3"></textarea>
+      <button id="btnCreateDemande">Créer</button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = localStorage.getItem('token');
+      const params = new URLSearchParams(location.search);
+      const id = params.get('id');
+      if (!id) { document.getElementById('clientCard').textContent = 'Client ID manquant'; return; }
+      async function fetchJSON(url, opts){ const r=await fetch(url,Object.assign({headers:{'Authorization':'Bearer '+token}},opts||{})); const ct=r.headers.get('content-type')||''; const b=ct.includes('application/json')?await r.json():null; if(!r.ok) throw new Error((b&&b.error)||r.statusText); return b; }
+      let isAdmin = false;
+      try {
+        const data = await fetchJSON('/api/clients/'+id+'/relations');
+        const c = data.client;
+        const cc = document.getElementById('clientCard');
+        cc.innerHTML = '<div><strong>'+ (c.nom_client||'-') +'</strong><div>Repr.: '+ (c.representant_nom||'-') +' | '+ (c.representant_email||'-') +' | '+ (c.representant_tel||'-') +'</div><div>Adresse ID: '+ (c.adresse_id||'-') +'</div></div>';
+        const sites = document.getElementById('sites');
+        sites.innerHTML = '';
+        data.sites.forEach(s=>{ const li=document.createElement('li'); li.textContent = '#'+s.id+' '+s.nom_site; sites.appendChild(li); });
+        const demandes = document.getElementById('demandes');
+        demandes.innerHTML = '';
+        data.demandes.forEach(d=>{ const li=document.createElement('li'); li.textContent = '#'+d.id+' ['+(d.status||'En_attente')+'] '+(d.nom_site||('- site:'+ (d.site_id||'-')))+' - '+(d.description||''); demandes.appendChild(li); });
+        // Role check
+        try { const p = JSON.parse(atob(token.split('.')[1])); isAdmin = Array.isArray(p.roles)&&p.roles.includes('ROLE_ADMIN'); } catch{}
+
+        // Admin actions
+        document.getElementById('btnCreateSite').addEventListener('click', async () => {
+          if (!isAdmin) return alert('Admin requis');
+          const nom_site = document.getElementById('new_site_nom').value.trim();
+          const commentaire = document.getElementById('new_site_comment').value.trim();
+          if (!nom_site) return alert('Nom requis');
+          try {
+            await fetchJSON('/api/sites', { method:'POST', body: JSON.stringify({ nom_site, client_id: id, commentaire }) });
+            alert('Site créé'); location.reload();
+          } catch(e){ alert(e.message); }
+        });
+
+        document.getElementById('btnCreateDemande').addEventListener('click', async () => {
+          if (!isAdmin) return alert('Admin requis');
+          const site_id_raw = document.getElementById('new_demande_site').value.trim();
+          const description = document.getElementById('new_demande_desc').value.trim();
+          const site_id = site_id_raw ? Number(site_id_raw) : null;
+          if (!description) return alert('Description requise');
+          try {
+            await fetchJSON('/api/clients/'+id+'/demandes', { method:'POST', body: JSON.stringify({ site_id, description }) });
+            alert('Demande créée'); location.reload();
+          } catch(e){ alert(e.message); }
+        });
+
+      } catch(e) {
+        document.getElementById('clientCard').textContent = 'Erreur: '+e.message;
+      }
+    });
+  </script>
+</body>
+</html>
+        // Set edit link
+        try { const el=document.getElementById('editLink'); if (el) el.href = '/client-edit.html?id='+encodeURIComponent(id); } catch {}
