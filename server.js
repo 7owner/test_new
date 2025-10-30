@@ -1244,18 +1244,49 @@ app.post('/api/clients', authenticateToken, authorizeAdmin, async (req, res) => 
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-app.put('/api/clients/:id', authenticateToken, async (req, res) => {
+app.put('/api/clients/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
-  const { nom_client, representant_nom, representant_email, representant_tel, adresse_id, commentaire } = req.body;
+  const { nom_client, representant_nom, representant_email, representant_tel, commentaire, adresse_ligne1, adresse_ligne2, adresse_code_postal, adresse_ville, adresse_pays } = req.body;
+  const client = await pool.connect();
   try {
-    const result = await pool.query(
+    await client.query('BEGIN');
+    let adresseId = null;
+
+    // Check if address details are provided
+    if (adresse_ligne1 || adresse_ligne2 || adresse_code_postal || adresse_ville || adresse_pays) {
+        // Try to find an existing address for the client
+        const existingClient = await client.query('SELECT adresse_id FROM client WHERE id=$1', [id]);
+        const existingAdresseId = existingClient.rows[0]?.adresse_id;
+
+        if (existingAdresseId) {
+            // Update existing address
+            const adresseResult = await client.query(
+                'UPDATE adresse SET ligne1=$1, ligne2=$2, code_postal=$3, ville=$4, pays=$5 WHERE id=$6 RETURNING id',
+                [adresse_ligne1 || null, adresse_ligne2 || null, adresse_code_postal || null, adresse_ville || null, adresse_pays || null, existingAdresseId]
+            );
+            adresseId = adresseResult.rows[0].id;
+        } else {
+            // Create new address
+            const adresseResult = await client.query(
+                'INSERT INTO adresse (ligne1, ligne2, code_postal, ville, pays) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+                [adresse_ligne1 || null, adresse_ligne2 || null, adresse_code_postal || null, adresse_ville || null, adresse_pays || null]
+            );
+            adresseId = adresseResult.rows[0].id;
+        }
+    }
+
+    const result = await client.query(
       'UPDATE client SET nom_client=$1, representant_nom=$2, representant_email=$3, representant_tel=$4, adresse_id=$5, commentaire=$6 WHERE id=$7 RETURNING *',
-      [nom_client, representant_nom, representant_email, representant_tel, adresse_id || null, commentaire || null, id]
+      [nom_client, representant_nom || null, representant_email || null, representant_tel || null, adresseId, commentaire || null, id]
     );
+    await client.query('COMMIT');
     res.json(result.rows[0] || null);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error updating client:', err);
     res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    client.release();
   }
 });
 app.delete('/api/clients/:id', authenticateToken, authorizeAdmin, async (req, res) => {
@@ -1879,17 +1910,32 @@ app.get('/api/clients', authenticateToken, async (req, res) => {
     }
 });
 
-app.post('/api/clients', authenticateToken, async (req, res) => {
-    const { nom_client, representant_nom, adresse_id } = req.body;
+app.post('/api/clients', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { nom_client, representant_nom, representant_email, representant_tel, commentaire, adresse_ligne1, adresse_ligne2, adresse_code_postal, adresse_ville, adresse_pays } = req.body;
+    const client = await pool.connect();
     try {
-        const result = await pool.query(
-            'INSERT INTO client (nom_client, representant_nom, adresse_id) VALUES ($1, $2, $3) RETURNING *',
-            [nom_client, representant_nom, adresse_id]
+        await client.query('BEGIN');
+        let adresseId = null;
+        if (adresse_ligne1 && adresse_code_postal && adresse_ville && adresse_pays) {
+            const adresseResult = await client.query(
+                'INSERT INTO adresse (ligne1, ligne2, code_postal, ville, pays) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+                [adresse_ligne1, adresse_ligne2 || null, adresse_code_postal, adresse_ville, adresse_pays]
+            );
+            adresseId = adresseResult.rows[0].id;
+        }
+
+        const result = await client.query(
+            'INSERT INTO client (nom_client, representant_nom, representant_email, representant_tel, adresse_id, commentaire) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [nom_client, representant_nom || null, representant_email || null, representant_tel || null, adresseId, commentaire || null]
         );
+        await client.query('COMMIT');
         res.status(201).json(result.rows[0]);
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('Error creating client:', err);
         res.status(500).json({ error: 'Internal Server Error' });
+    } finally {
+        client.release();
     }
 });
 
@@ -3054,6 +3100,17 @@ app.post('/api/clients/register', authenticateToken, authorizeAdmin, async (req,
   } finally { cx.release(); }
 });
 
+// --- Client profile ---
+app.get('/api/client/profile', authenticateToken, async (req, res) => {
+  try {
+    const email = req.user && req.user.email;
+    if (!email) return res.status(401).json({ error: 'Unauthorized' });
+    const c = (await pool.query('SELECT * FROM client WHERE representant_email=$1 LIMIT 1', [email])).rows[0];
+    if (!c) return res.status(404).json({ error: 'Client record not found for this user' });
+    return res.json(c);
+  } catch (e) { console.error('client profile fetch:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
 // --- Client-owned sites ---
 app.get('/api/client/sites', authenticateToken, async (req, res) => {
   try {
@@ -3108,14 +3165,47 @@ app.post('/api/demandes_client', authenticateToken, async (req, res) => {
 
 // --- Admin: demandes listing and workflow ---
 // List all demandes with client/site (admin)
-app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (_req, res) => {
+app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    const r = await pool.query(
-      `SELECT d.*, c.nom_client, c.representant_email, s.nom_site
-       FROM demande_client d
-       LEFT JOIN client c ON d.client_id=c.id
-       LEFT JOIN site s   ON d.site_id=s.id
-       ORDER BY d.created_at DESC`);
+    const { client, status, sort, direction } = req.query;
+    let query = `
+      SELECT d.*, c.nom_client, c.representant_email, s.nom_site
+      FROM demande_client d
+      LEFT JOIN client c ON d.client_id=c.id
+      LEFT JOIN site s   ON d.site_id=s.id
+    `;
+    const params = [];
+    const conditions = [];
+
+    if (client) {
+      conditions.push(`(c.nom_client ILIKE $${params.length + 1} OR c.representant_email ILIKE $${params.length + 1})`);
+      params.push(`%${client}%`);
+    }
+    if (status) {
+      conditions.push(`d.status = $${params.length + 1}`);
+      params.push(status);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(' AND ')}`;
+    }
+
+    let orderBy = 'd.created_at';
+    let orderDirection = 'DESC';
+
+    if (sort) {
+      const allowedSortColumns = ['id', 'nom_client', 'site_id', 'status', 'created_at'];
+      if (allowedSortColumns.includes(sort)) {
+        orderBy = `d.${sort}`;
+      }
+    }
+    if (direction && ['asc', 'desc'].includes(direction.toLowerCase())) {
+      orderDirection = direction.toUpperCase();
+    }
+
+    query += ` ORDER BY ${orderBy} ${orderDirection}`;
+
+    const r = await pool.query(query, params);
     return res.json(r.rows);
   } catch (e) { console.error('demandes list:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
 });

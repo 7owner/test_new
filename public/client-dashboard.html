@@ -12,8 +12,8 @@
     <div id="navbar-placeholder"></div>
 
     <div class="container mt-5">
-        <h1>Bienvenue sur votre Tableau de Bord Client</h1>
-        <p>Gérez vos sites, faites des demandes d'intervention et consultez votre historique.</p>
+        <h1 class="mb-3">Bienvenue sur votre Tableau de Bord Client</h1>
+        <p class="mb-4">Gérez vos sites, faites des demandes d'intervention et consultez votre historique.</p>
 
         <!-- Section Sites -->
         <div class="card mt-4">
@@ -80,9 +80,6 @@
                 return;
             }
 
-            // TODO: Implémenter la logique pour charger les sites, les demandes et l'historique
-            // Ces fonctions feront des appels API aux endpoints dédiés aux clients.
-
             async function fetchClientProfile() {
                 try {
                     const response = await fetch('/api/client/profile', {
@@ -100,22 +97,154 @@
                     document.getElementById('profileCommentaire').textContent = profile.commentaire || 'N/A';
                 } catch (error) {
                     console.error('Erreur lors du chargement du profil client:', error);
-                    // Gérer l'affichage d'une erreur à l'utilisateur
+                    // Gérer l\'affichage d\'une erreur à l\'utilisateur
+                }
+            }
+
+            async function fetchClientSites() {
+                try {
+                    const response = await fetch('/api/client/sites', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const sites = await response.json();
+                    const sitesListDiv = document.getElementById('sitesList');
+                    sitesListDiv.innerHTML = ''; // Clear existing content
+                    if (sites.length === 0) {
+                        sitesListDiv.innerHTML = '<p class="text-muted">Aucun site enregistré pour le moment.</p>';
+                    } else {
+                        sites.forEach(site => {
+                            const siteEl = document.createElement('div');
+                            siteEl.className = 'list-group-item list-group-item-action';
+                            siteEl.innerHTML = `
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">${site.nom_site}</h5>
+                                    <small>ID: ${site.id}</small>
+                                </div>
+                                <p class="mb-1">${site.commentaire || 'Pas de commentaire.'}</p>
+                                <small>Client ID: ${site.client_id}</small>
+                            `;
+                            sitesListDiv.appendChild(siteEl);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Erreur lors du chargement des sites client:', error);
+                    // Gérer l\'affichage d\'une erreur à l\'utilisateur
+                }
+            }
+
+            async function fetchClientDemands() {
+                try {
+                    const response = await fetch('/api/demandes_client/mine', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const demands = await response.json();
+                    const demandesListDiv = document.getElementById('demandesList');
+                    demandesListDiv.innerHTML = ''; // Clear existing content
+                    if (demands.length === 0) {
+                        demandesListDiv.innerHTML = '<p class="text-muted">Aucune demande d\'intervention pour le moment.</p>';
+                    } else {
+                        demands.forEach(demand => {
+                            const demandEl = document.createElement('div');
+                            demandEl.className = 'list-group-item list-group-item-action';
+                            demandEl.innerHTML = `
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">Demande #${demand.id} - Site: ${demand.nom_site || 'N/A'}</h5>
+                                    <small>${demand.status}</small>
+                                </div>
+                                <p class="mb-1">${demand.description}</p>
+                                <small>Créée le: ${new Date(demand.created_at).toLocaleDateString()}</small>
+                            `;
+                            demandesListDiv.appendChild(demandEl);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Erreur lors du chargement des demandes client:', error);
+                    // Gérer l\'affichage d\'une erreur à l\'utilisateur
+                }
+            }
+
+            async function fetchInterventionHistory() {
+                try {
+                    const sitesResponse = await fetch('/api/client/sites', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    if (!sitesResponse.ok) {
+                        throw new Error(`HTTP error! status: ${sitesResponse.status}`);
+                    }
+                    const sites = await sitesResponse.json();
+                    const historiqueInterventionsDiv = document.getElementById('historiqueInterventions');
+                    historiqueInterventionsDiv.innerHTML = '';
+
+                    if (sites.length === 0) {
+                        historiqueInterventionsDiv.innerHTML = '<p class="text-muted">Aucun historique d\'intervention disponible car aucun site enregistré.</p>';
+                        return;
+                    }
+
+                    let allTickets = [];
+                    for (const site of sites) {
+                        const ticketsResponse = await fetch(`/api/sites/${site.id}/relations`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        if (!ticketsResponse.ok) {
+                            console.warn(`Could not fetch tickets for site ${site.id}: ${ticketsResponse.status}`);
+                            continue;
+                        }
+                        const siteRelations = await ticketsResponse.json();
+                        if (siteRelations.tickets) {
+                            allTickets = allTickets.concat(siteRelations.tickets.map(ticket => ({ ...ticket, site_nom: site.nom_site })));
+                        }
+                    }
+
+                    if (allTickets.length === 0) {
+                        historiqueInterventionsDiv.innerHTML = '<p class="text-muted">Aucun historique d\'intervention disponible pour vos sites.</p>';
+                    } else {
+                        allTickets.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Sort by most recent
+                        allTickets.forEach(ticket => {
+                            const ticketEl = document.createElement('div');
+                            ticketEl.className = 'list-group-item list-group-item-action';
+                            ticketEl.innerHTML = `
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">Ticket #${ticket.id} - ${ticket.titre}</h5>
+                                    <small>${ticket.etat}</small>
+                                </div>
+                                <p class="mb-1">Site: ${ticket.site_nom || 'N/A'}</p>
+                                <small>Créée le: ${new Date(ticket.created_at).toLocaleDateString()}</small>
+                            `;
+                            historiqueInterventionsDiv.appendChild(ticketEl);
+                        });
+                    }
+
+                } catch (error) {
+                    console.error('Erreur lors du chargement de l\'historique des interventions:', error);
+                    // Gérer l\'affichage d\'une erreur à l\'utilisateur
                 }
             }
 
             fetchClientProfile();
+            fetchClientSites();
+            fetchClientDemands();
+            fetchInterventionHistory();
 
-            // Exemple de redirection pour la création de site (à implémenter)
             document.getElementById('createSiteBtn').addEventListener('click', () => {
-                alert('Redirection vers la page de création de site (à implémenter)');
-                // window.location.href = '/client-site-new.html';
+                window.location.href = '/site-new.html'; // Assuming a generic site creation page
             });
 
-            // Exemple de redirection pour la création de demande (à implémenter)
             document.getElementById('createDemandeBtn').addEventListener('click', () => {
-                alert('Redirection vers la page de création de demande (à implémenter)');
-                // window.location.href = '/client-demande-new.html';
+                window.location.href = '/ticket-new.html'; // Assuming a generic ticket creation page for demands
             });
         });
     </script>
