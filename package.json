@@ -13,6 +13,7 @@
         "migrate-assignments": "node scripts/migrate_assignments.js",
         "fix-seed-users": "node scripts/fix_seed_users.js",
         "ensure-demo-client": "node scripts/ensure_demo_client.js"
+        ,"seed-fixed": "node scripts/apply_seed_fixed.js"
     },
     "keywords": [],
     "author": "",
