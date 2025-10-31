@@ -1250,6 +1250,12 @@ app.put('/api/clients/:id', authenticateToken, authorizeAdmin, async (req, res) 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    // Capture old email to propagate to users if changed
+    let oldEmail = null;
+    try {
+      const rOld = await client.query('SELECT representant_email FROM client WHERE id=$1', [id]);
+      oldEmail = (rOld.rows[0] || {}).representant_email || null;
+    } catch (_) {}
     let adresseId = null;
 
     // Check if address details are provided
@@ -1279,6 +1285,18 @@ app.put('/api/clients/:id', authenticateToken, authorizeAdmin, async (req, res) 
       'UPDATE client SET nom_client=$1, representant_nom=$2, representant_email=$3, representant_tel=$4, adresse_id=$5, commentaire=$6 WHERE id=$7 RETURNING *',
       [nom_client, representant_nom || null, representant_email || null, representant_tel || null, adresseId, commentaire || null, id]
     );
+    // Propagate email change to users.email if a matching user exists
+    try {
+      if (oldEmail && representant_email && String(oldEmail).trim().toLowerCase() !== String(representant_email).trim().toLowerCase()) {
+        await client.query('UPDATE users SET email=$1 WHERE email=$2', [representant_email, oldEmail]);
+      }
+    } catch (eUp) {
+      if (eUp && eUp.code === '23505') {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ error: 'Email already in use' });
+      }
+      throw eUp;
+    }
     await client.query('COMMIT');
     res.json(result.rows[0] || null);
   } catch (err) {
