@@ -1,9 +1,9 @@
 # Contexte du Projet : projet_var_v4 (Session 6)
 
 TL;DR
-- Rôle client (ROLE_CLIENT) avec espace dédié et workflow demandes d'intervention.
-- Admin peut créer un client + user (ROLE_CLIENT).
-- Client peut gérer ses sites et demandes; Admin peut traiter les demandes et les convertir en tickets (etat Pas_commence).
+- RÃ´le client (ROLE_CLIENT) avec espace dÃ©diÃ© et workflow demandes d'intervention.
+- Admin peut crÃ©er un client + user (ROLE_CLIENT).
+- Client peut gÃ©rer ses sites et demandes; Admin peut traiter les demandes et les convertir en tickets (etat Pas_commence).
 
 Cette session ajoute le flux Client (role ROLE_CLIENT): creation de client avec user lie, dashboard client, gestion de sites clients et demandes d'intervention (demande_client).
 
@@ -24,15 +24,15 @@ Cette session ajoute le flux Client (role ROLE_CLIENT): creation de client avec 
 - Dashboard admin: ajout d'un lien vers `demandes-client-admin.html` dans le menu (public/dashboard.html).
  - Navigation: injection automatique (nav.js) d'un lien "Espace Client" vers `/client-dashboard.html` quand le JWT contient `ROLE_CLIENT`.
 
-## Mises à jour et corrections effectuées par l'agent (liées au client)
+## Mises Ã  jour et corrections effectuÃ©es par l'agent (liÃ©es au client)
 
-### Mises à jour du schéma de base de données (`database_correction/init_fixed.sql`)
-- Ajout de la définition de la table `demande_client`.
+### Mises Ã  jour du schÃ©ma de base de donnÃ©es (`database_correction/init_fixed.sql`)
+- Ajout de la dÃ©finition de la table `demande_client`.
 
-### Mises à jour de l'interface utilisateur (Frontend)
-- Création de `public/client-new.html` pour le formulaire d'enregistrement des clients.
-- Ajout d'un lien vers `client-new.html` dans le menu latéral de `public/dashboard.html`.
-- Création de la structure de base de `public/client-dashboard.html`.
+### Mises Ã  jour de l'interface utilisateur (Frontend)
+- CrÃ©ation de `public/client-new.html` pour le formulaire d'enregistrement des clients.
+- Ajout d'un lien vers `client-new.html` dans le menu latÃ©ral de `public/dashboard.html`.
+- CrÃ©ation de la structure de base de `public/client-dashboard.html`.
 
 ## A tester (manuel)
 
@@ -55,3 +55,10 @@ Cette session ajoute le flux Client (role ROLE_CLIENT): creation de client avec 
 - Ameliorer l'UI (toasts, validations, selection de site depuis liste, etc.).
 
 Derniere mise a jour: Session 6
+
+- Clients (refonte UI):
+  - `clients.html` epuree: header + bouton Nouveau Client + liste en cards via `public/js/clients.js`.
+  - `clients.js`: rendu en cartes, actions Voir/Modifier/Supprimer, masquage edit/suppr pour non-admins.
+  - `client-view.html`: fiche + actions admin (creer site/demande) + header/offcanvas Bootstrap.
+  - `client-edit.html`: formulaire complet de creation/edition.
+- Donnees: lors d'une mise a jour client, si `representant_email` change, propagation vers `users.email` (409 si deja pris).
