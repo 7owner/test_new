@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
   const token = localStorage.getItem('token');
   const list = document.getElementById('clientList');
+  let isAdmin = false;
+  try { if (token) { const p = JSON.parse(atob(token.split('.')[1])); const roles = Array.isArray(p && p.roles) ? p.roles : []; isAdmin = roles.includes('ROLE_ADMIN'); } } catch(_) {}
 
   async function fetchJSON(url, opts) {
     const res = await fetch(url, Object.assign({ headers: { 'Content-Type': 'application/json', 'Authorization': token ? ('Bearer ' + token) : undefined } }, opts || {}));
@@ -19,12 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="card-body">
         <h5 class="card-title"><i class="bi bi-person-badge me-2"></i>${c.nom_client || '(Sans nom)'} </h5>
         <h6 class="card-subtitle mb-2 text-muted">${c.representant_nom || ''} ${c.representant_email ? '('+c.representant_email+')' : ''}</h6>
-        <p class="card-text">${c.adresse_libelle || 'Adresse non spécifiée'}</p>
+        <p class="card-text">${c.adresse_libelle || 'Adresse non spÃ©cifiÃ©e'}</p>
       </div>
       <div class="card-footer bg-transparent border-top-0 d-flex gap-2 justify-content-end">
         <a href="/client-view.html?id=${c.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> Voir</a>
-        <a href="/client-edit.html?id=${c.id}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i> Modifier</a>
-        <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${c.id}"><i class="bi bi-trash"></i> Supprimer</button>
+        ${isAdmin ? `<a href="/client-edit.html?id=${c.id}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i> Modifier</a> <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${c.id}"><i class="bi bi-trash"></i> Supprimer</button>` : ``}
       </div>
     `;
     col.appendChild(card);
@@ -60,3 +61,4 @@ document.addEventListener('DOMContentLoaded', () => {
     loadClients();
   }
 });
+
