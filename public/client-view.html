@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -7,24 +7,17 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
-  <script src="/nav.js?v=1"></script>
+  <script src="/nav.js?v=2"></script>
   <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 16px; }
-    .card { border:1px solid #ddd; border-radius:8px; padding:12px; margin:10px 0; background:#fff; }
-    h1,h2 { margin:.4rem 0; }
-    ul { padding-left: 1rem; }
-    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-    @media (max-width:800px){ .grid { grid-template-columns: 1fr; } }
+    body { font-family: system-ui, Arial, sans-serif; }
   </style>
 </head>
 <body class="app-bg">
   <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1>  <a href="/dashboard.html"> <img src="/logo_logicielle.png" alt="" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
+    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
     <div id="user-info-container" class="d-flex align-items-center">
       <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="offcanvasNavbar" aria-controls="offcanvasNavbar">
-        Menu
-      </button>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">Menu</button>
     </div>
   </header>
 
@@ -35,64 +28,76 @@
     </div>
     <div class="offcanvas-body">
       <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item">
-          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/tickets.html"><i class="bi bi-tools me-2"></i>Tickets</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
-        </li>
-        <li class="nav-item">
-      <a class="nav-link" href="" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
-        </li>
+        <li class="nav-item"><a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
+        <li class="nav-item"><a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/tickets.html"><i class="bi bi-tools me-2"></i>Tickets</a></li>
+        <li class="nav-item"><a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a></li>
+        <li class="nav-item"><a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a></li>
+        <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
+        <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a></li>
+        <li class="nav-item"><a class="nav-link" href="" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
       </ul>
     </div>
   </div>
 
-  <h1>Détails Client</h1>
-  <p>
-    <a id="editLink" href="#">Modifier ce client</a>
-  </p>
-  <div id="clientCard" class="card">Chargement...</div>
-  <div class="grid">
-    <div class="card">
-      <h2>Sites</h2>
-      <ul id="sites"></ul>
-      <hr>
-      <h3>Créer un site (Admin)</h3>
-      <label for="new_site_nom">Nom site</label>
-      <input id="new_site_nom">
-      <label for="new_site_comment">Commentaire (optionnel)</label>
-      <input id="new_site_comment">
-      <button id="btnCreateSite">Créer</button>
+  <div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="mb-0">Détails Client</h1>
+      <a id="editLink" href="#" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Modifier ce client</a>
     </div>
-    <div class="card">
-      <h2>Demandes d'intervention</h2>
-      <ul id="demandes"></ul>
-      <hr>
-      <h3>Créer une demande (Admin)</h3>
-      <label for="new_demande_site">Site ID (optionnel)</label>
-      <input id="new_demande_site" placeholder="ex: 12">
-      <label for="new_demande_desc">Description</label>
-      <textarea id="new_demande_desc" rows="3"></textarea>
-      <button id="btnCreateDemande">Créer</button>
+
+    <div id="clientCard" class="card mb-3"><div class="card-body">Chargement...</div></div>
+
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-header"><strong>Sites</strong></div>
+          <div class="card-body">
+            <ul id="sites" class="mb-0"></ul>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-header"><strong>Demandes d'intervention</strong></div>
+          <div class="card-body">
+            <ul id="demandes" class="mb-0"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="adminActions" class="card mt-3" style="display:none;">
+      <div class="card-header"><strong>Actions administrateur</strong></div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <h5>Créer un site</h5>
+            <div class="mb-2">
+              <label for="new_site_nom" class="form-label">Nom site</label>
+              <input id="new_site_nom" class="form-control">
+            </div>
+            <div class="mb-2">
+              <label for="new_site_comment" class="form-label">Commentaire (optionnel)</label>
+              <input id="new_site_comment" class="form-control">
+            </div>
+            <button id="btnCreateSite" class="btn btn-primary">Créer</button>
+          </div>
+          <div class="col-md-6">
+            <h5>Créer une demande</h5>
+            <div class="mb-2">
+              <label for="new_demande_site" class="form-label">Site ID (optionnel)</label>
+              <input id="new_demande_site" class="form-control" placeholder="ex: 12">
+            </div>
+            <div class="mb-2">
+              <label for="new_demande_desc" class="form-label">Description</label>
+              <textarea id="new_demande_desc" class="form-control" rows="3"></textarea>
+            </div>
+            <button id="btnCreateDemande" class="btn btn-primary">Créer</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -101,54 +106,61 @@
       const token = localStorage.getItem('token');
       const params = new URLSearchParams(location.search);
       const id = params.get('id');
-      if (!id) { document.getElementById('clientCard').textContent = 'Client ID manquant'; return; }
-      async function fetchJSON(url, opts){ const r=await fetch(url,Object.assign({headers:{'Authorization':'Bearer '+token}},opts||{})); const ct=r.headers.get('content-type')||''; const b=ct.includes('application/json')?await r.json():null; if(!r.ok) throw new Error((b&&b.error)||r.statusText); return b; }
+      if (!id) { const cc = document.getElementById('clientCard'); if (cc) cc.innerHTML = '<div class="card-body">Client ID manquant</div>'; return; }
+
+      async function fetchJSON(url, opts){
+        const base = { headers: { 'Content-Type': 'application/json' } };
+        if (token) base.headers['Authorization'] = 'Bearer ' + token;
+        const r = await fetch(url, Object.assign(base, opts||{}));
+        const ct = r.headers.get('content-type')||''; const b = ct.includes('application/json') ? await r.json() : null; if(!r.ok) throw new Error((b&&b.error)||r.statusText); return b;
+      }
+
       let isAdmin = false;
       try {
         const data = await fetchJSON('/api/clients/'+id+'/relations');
         const c = data.client;
         const cc = document.getElementById('clientCard');
-        cc.innerHTML = '<div><strong>'+ (c.nom_client||'-') +'</strong><div>Repr.: '+ (c.representant_nom||'-') +' | '+ (c.representant_email||'-') +' | '+ (c.representant_tel||'-') +'</div><div>Adresse ID: '+ (c.adresse_id||'-') +'</div></div>';
+        cc.innerHTML = '<div class="card-body">'
+          + '<div><strong>'+ (c.nom_client||'-') +'</strong>'
+          + '<div>Repr.: '+ (c.representant_nom||'-') +' | '+ (c.representant_email||'-') +' | '+ (c.representant_tel||'-') +'</div>'
+          + '<div>Adresse ID: '+ (c.adresse_id||'-') +'</div>'
+          + '</div></div>';
+        try { const el=document.getElementById('editLink'); if (el) el.href = '/client-edit.html?id='+encodeURIComponent(id); } catch {}
+
         const sites = document.getElementById('sites');
         sites.innerHTML = '';
         data.sites.forEach(s=>{ const li=document.createElement('li'); li.textContent = '#'+s.id+' '+s.nom_site; sites.appendChild(li); });
         const demandes = document.getElementById('demandes');
         demandes.innerHTML = '';
         data.demandes.forEach(d=>{ const li=document.createElement('li'); li.textContent = '#'+d.id+' ['+(d.status||'En_attente')+'] '+(d.nom_site||('- site:'+ (d.site_id||'-')))+' - '+(d.description||''); demandes.appendChild(li); });
-        // Role check
-        try { const p = JSON.parse(atob(token.split('.')[1])); isAdmin = Array.isArray(p.roles)&&p.roles.includes('ROLE_ADMIN'); } catch{}
 
-        // Admin actions
-        document.getElementById('btnCreateSite').addEventListener('click', async () => {
+        try { const p = token ? JSON.parse(atob(token.split('.')[1])) : null; isAdmin = Array.isArray(p?.roles)&&p.roles.includes('ROLE_ADMIN'); } catch{}
+        if (isAdmin) { const box = document.getElementById('adminActions'); if (box) box.style.display = ''; }
+
+        const btnSite = document.getElementById('btnCreateSite');
+        if (btnSite) btnSite.addEventListener('click', async () => {
           if (!isAdmin) return alert('Admin requis');
           const nom_site = document.getElementById('new_site_nom').value.trim();
           const commentaire = document.getElementById('new_site_comment').value.trim();
           if (!nom_site) return alert('Nom requis');
-          try {
-            await fetchJSON('/api/sites', { method:'POST', body: JSON.stringify({ nom_site, client_id: id, commentaire }) });
-            alert('Site créé'); location.reload();
-          } catch(e){ alert(e.message); }
+          try { await fetchJSON('/api/sites', { method:'POST', body: JSON.stringify({ nom_site, client_id: Number(id), commentaire }) }); alert('Site créé'); location.reload(); }
+          catch(e){ alert(e.message); }
         });
-
-        document.getElementById('btnCreateDemande').addEventListener('click', async () => {
+        const btnDem = document.getElementById('btnCreateDemande');
+        if (btnDem) btnDem.addEventListener('click', async () => {
           if (!isAdmin) return alert('Admin requis');
           const site_id_raw = document.getElementById('new_demande_site').value.trim();
           const description = document.getElementById('new_demande_desc').value.trim();
           const site_id = site_id_raw ? Number(site_id_raw) : null;
           if (!description) return alert('Description requise');
-          try {
-            await fetchJSON('/api/clients/'+id+'/demandes', { method:'POST', body: JSON.stringify({ site_id, description }) });
-            alert('Demande créée'); location.reload();
-          } catch(e){ alert(e.message); }
+          try { await fetchJSON('/api/clients/'+id+'/demandes', { method:'POST', body: JSON.stringify({ site_id, description }) }); alert('Demande créée'); location.reload(); }
+          catch(e){ alert(e.message); }
         });
-
       } catch(e) {
-        document.getElementById('clientCard').textContent = 'Erreur: '+e.message;
+        const cc = document.getElementById('clientCard'); if (cc) cc.innerHTML = '<div class="card-body">Erreur: '+(e.message||e)+'</div>';
       }
     });
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 </body>
 </html>
-        // Set edit link
-        try { const el=document.getElementById('editLink'); if (el) el.href = '/client-edit.html?id='+encodeURIComponent(id); } catch {}
