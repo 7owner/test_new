@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -29,7 +29,7 @@
         </div>
       </div>
       <button id="logout-btn" class="btn btn-outline-danger btn-sm rounded-pill">
-        <i class="bi bi-box-arrow-right me-1"></i> Déconnexion
+        <i class="bi bi-box-arrow-right me-1"></i> DÃ©connexion
       </button>
       <button type="button" class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
         <i class="bi bi-list"></i>
@@ -55,7 +55,7 @@
         <li class="nav-item"><a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a></li>
         <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
         <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a></li>
-      </ul>
+        <li class="nav-item"><a class="nav-link" href="/client-dashboard.html"><i class="bi bi-person-workspace me-2"></i>Espace Client</a></li>`n      </ul>
     </div>
   </div>
 
@@ -110,8 +110,8 @@
       <div class="col-lg-4">
         <div class="card h-100">
           <div class="card-body">
-            <h5 class="card-title">Tickets ouverts récents</h5>
-            <div id="urgentMaintenances" class="text-muted">Aucun ticket à afficher</div>
+            <h5 class="card-title">Tickets ouverts rÃ©cents</h5>
+            <div id="urgentMaintenances" class="text-muted">Aucun ticket Ã  afficher</div>
           </div>
         </div>
       </div>
@@ -131,9 +131,9 @@
       <div class="col">
         <div class="card h-100">
           <div class="card-body">
-            <h5 class="card-title">Règlements</h5>
+            <h5 class="card-title">RÃ¨glements</h5>
             <p class="card-text fs-4 fw-bold text-secondary" id="reglementsCount">-</p>
-            <a href="/factures.html" class="btn btn-sm btn-outline-primary">Voir les Règlements</a>
+            <a href="/factures.html" class="btn btn-sm btn-outline-primary">Voir les RÃ¨glements</a>
           </div>
         </div>
       </div>
@@ -153,11 +153,11 @@
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        userLinkContainer.textContent = 'Invité';
+        userLinkContainer.textContent = 'InvitÃ©';
         return;
       }
 
-      // 🔍 Décodage du token
+      // ðŸ” DÃ©codage du token
       const payload = JSON.parse(atob(token.split('.')[1] || ''));
       const email = payload?.email || 'Utilisateur';
       const matricule = payload?.matricule || payload?.sub || null;
@@ -176,13 +176,13 @@
       }
 
       logoutBtn.addEventListener('click', () => {
-        if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
+        if (confirm('Voulez-vous vraiment vous dÃ©connecter ?')) {
           localStorage.removeItem('token');
           window.location.href = '/login.html';
         }
       });
     } catch (err) {
-      console.error('Erreur lors du décodage du token JWT:', err);
+      console.error('Erreur lors du dÃ©codage du token JWT:', err);
       userLinkContainer.textContent = 'Utilisateur';
     }
   });
@@ -199,7 +199,7 @@
 
   async function initMonthlyChart() {
     if (!window.Chart) {
-      console.error('Chart.js non chargé.');
+      console.error('Chart.js non chargÃ©.');
       return;
     }
     const canvas = document.getElementById(CANVAS_ID);
@@ -213,7 +213,7 @@
       canvas._chartInstance = null;
     }
 
-    let labels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
+    let labels = ['Jan', 'FÃ©v', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'AoÃ»t', 'Sept', 'Oct', 'Nov', 'DÃ©c'];
     let values = null;
 
     try {
@@ -244,7 +244,7 @@
         data: {
           labels,
           datasets: [{
-            label: 'Tickets créés',
+            label: 'Tickets crÃ©Ã©s',
             data: values,
             borderColor: '#0d6efd',
             backgroundColor: 'rgba(13,110,253,0.2)',
@@ -271,3 +271,4 @@
 
 </body>
 </html>
+

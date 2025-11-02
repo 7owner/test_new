@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   async function ensureSessionAndCsrf() {
     const unprotected = ['/', '/login.html', '/register.html', '/forgot-password.html', '/reset-password.html'];
     const path = location.pathname;
@@ -104,3 +104,6 @@
     }
   });
 })();
+
+
+
