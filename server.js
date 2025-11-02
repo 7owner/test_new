@@ -753,13 +753,27 @@ app.get('/api/documents/:id', authenticateToken, async (req, res) => {
 
 
 // Upload document via JSON base64 and save to disk
-app.post('/api/documents', authenticateToken, authorizeAdmin, async (req, res) => {
+app.post('/api/documents', authenticateToken, async (req, res) => {
   try {
-    const { cible_type, cible_id, nature, nom_fichier, type_mime, base64, auteur_matricule } = req.body;
-    if (!cible_type || !cible_id || !nom_fichier) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-    let taille_octets = null, chemin_fichier = null, checksum_sha256 = null;
+    const { cible_type, cible_id, nature, nom_fichier, type_mime, base64, auteur_matricule } = req.body || {};
+    if (!cible_type || !cible_id || !nom_fichier) {\n      return res.status(400).json({ error: 'Missing required fields' });\n    }\n    // Authorization: Admins allowed for all. Clients allowed only for Site they own or their own DemandeClient
+    const roles = (req.user && Array.isArray(req.user.roles)) ? req.user.roles : [];
+    const isAdmin = roles.includes('ROLE_ADMIN');
+    if (!isAdmin) {
+      const email = req.user && req.user.email;
+      if (!email) return res.status(401).json({ error: 'Unauthorized' });
+      const clientRow = (await pool.query('SELECT id FROM client WHERE representant_email=$1 LIMIT 1', [email])).rows[0];
+      if (!clientRow) return res.status(403).json({ error: 'Forbidden' });
+      if (String(cible_type) === 'Site') {
+        const ok = (await pool.query('SELECT 1 FROM site WHERE id=$1 AND client_id=$2', [cible_id, clientRow.id])).rows[0];
+        if (!ok) return res.status(403).json({ error: 'Forbidden' });
+      } else if (String(cible_type) === 'DemandeClient') {
+        const ok = (await pool.query('SELECT 1 FROM demande_client WHERE id=$1 AND client_id=$2', [cible_id, clientRow.id])).rows[0];
+        if (!ok) return res.status(403).json({ error: 'Forbidden' });
+      } else {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+    }let taille_octets = null, chemin_fichier = null, checksum_sha256 = null;
     if (base64) {
       const buffer = Buffer.from(base64, 'base64');
       taille_octets = buffer.length;
@@ -3274,4 +3288,7 @@ initializeDatabase().then(() => {
         console.log(`Serving static files from ${__dirname}/public`);
     });
 });
+
+
+
 
