@@ -35,7 +35,7 @@
 
     <div id="msg" class="alert d-none" role="alert"></div>
 
-    <form id="siteForm" class="card shadow-sm p-4">
+    <form id="siteForm" class="card shadow-sm p-4" enctype="multipart/form-data">
       <div class="mb-3">
         <label for="siteNom" class="form-label">Nom du site</label>
         <input type="text" id="siteNom" class="form-control" required>
@@ -43,6 +43,11 @@
       <div class="mb-3">
         <label for="siteCommentaire" class="form-label">Commentaire (optionnel)</label>
         <textarea id="siteCommentaire" class="form-control" rows="3"></textarea>
+      </div>
+      <div class="mb-3">
+        <label for="siteImages" class="form-label">Images (optionnel)</label>
+        <input type="file" id="siteImages" class="form-control" accept="image/*" multiple>
+        <div class="form-text">Vous pouvez sélectionner plusieurs images. L'envoi peut nécessiter des droits supplémentaires.</div>
       </div>
       <div class="d-flex gap-2">
         <button type="submit" class="btn btn-success">Enregistrer</button>
@@ -69,8 +74,41 @@
             body: JSON.stringify({ nom_site, commentaire: commentaire || null })
           });
           if (!r.ok) { const t = await safeJson(r); throw new Error(t && t.error ? t.error : `Erreur ${r.status}`); }
-          showMsg('Site créé avec succès. Redirection...', 'success');
-          setTimeout(()=> location.href = '/client-dashboard.html', 800);
+          const created = await r.json();
+          const createdId = created && created.id ? created.id : null;
+          // Optional images upload
+          const files = Array.from(document.getElementById('siteImages').files || []);
+          if (createdId && files.length) {
+            let uploaded = 0, failed = 0;
+            for (const f of files) {
+              try {
+                const base64 = await fileToBase64(f);
+                const up = await fetch('/api/documents', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                  body: JSON.stringify({
+                    cible_type: 'Site',
+                    cible_id: createdId,
+                    nature: 'Image',
+                    nom_fichier: f.name,
+                    type_mime: f.type || 'image/jpeg',
+                    base64
+                  })
+                });
+                if (!up.ok) throw new Error('upload');
+                uploaded++;
+              } catch { failed++; }
+            }
+            if (failed && !uploaded) {
+              showMsg("Site créé. Les images n'ont pas pu être envoyées (droits requis).", 'warning');
+            } else if (failed) {
+              showMsg(`Site créé. ${uploaded} image(s) envoyée(s), ${failed} échouée(s).`, 'warning');
+            } else {
+              showMsg('Site et images créés avec succès. Redirection...', 'success');
+            }
+          } else {
+            showMsg('Site créé avec succès. Redirection...', 'success');
+          }
+          setTimeout(()=> location.href = '/client-dashboard.html', 900);
         } catch (err) { showMsg(String(err.message || err), 'danger'); }
       });
 
@@ -78,10 +116,10 @@
         msg.className = `alert alert-${type}`; msg.textContent = text;
       }
       async function safeJson(resp){ try { return await resp.json(); } catch { return null; } }
+      function fileToBase64(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => { const res = String(reader.result||''); const comma = res.indexOf(','); resolve(comma>0?res.slice(comma+1):res); }; reader.onerror = reject; reader.readAsDataURL(file); }); }
     });
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-

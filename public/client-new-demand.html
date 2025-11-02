@@ -31,7 +31,7 @@
     <h1 class="mb-3">Faire une nouvelle demande</h1>
     <div id="msg" class="alert d-none" role="alert"></div>
 
-    <form id="demandeForm" class="card shadow-sm p-4">
+    <form id="demandeForm" class="card shadow-sm p-4" enctype="multipart/form-data">
       <div class="mb-3">
         <label for="demandeSiteId" class="form-label">Site (optionnel)</label>
         <select id="demandeSiteId" class="form-select">
@@ -41,6 +41,11 @@
       <div class="mb-3">
         <label for="demandeDescription" class="form-label">Description</label>
         <textarea id="demandeDescription" class="form-control" rows="4" required></textarea>
+      </div>
+      <div class="mb-3">
+        <label for="demandeImages" class="form-label">Images (optionnel)</label>
+        <input type="file" id="demandeImages" class="form-control" accept="image/*" multiple>
+        <div class="form-text">Vous pouvez sélectionner plusieurs images. L'envoi peut nécessiter des droits supplémentaires.</div>
       </div>
       <div class="d-flex gap-2">
         <button type="submit" class="btn btn-success">Envoyer</button>
@@ -80,17 +85,50 @@
             body: JSON.stringify(payload)
           });
           if (!r.ok) { const t = await safeJson(r); throw new Error(t && t.error ? t.error : `Erreur ${r.status}`); }
-          showMsg('Demande envoyée avec succès. Redirection...', 'success');
-          setTimeout(()=> location.href = '/client-dashboard.html', 800);
+          const created = await r.json();
+          const demandeId = created && created.id ? created.id : null;
+          // Optional images
+          const files = Array.from(document.getElementById('demandeImages').files || []);
+          if (demandeId && files.length) {
+            let uploaded = 0, failed = 0;
+            for (const f of files) {
+              try {
+                const base64 = await fileToBase64(f);
+                const up = await fetch('/api/documents', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                  body: JSON.stringify({
+                    cible_type: 'DemandeClient',
+                    cible_id: demandeId,
+                    nature: 'Image',
+                    nom_fichier: f.name,
+                    type_mime: f.type || 'image/jpeg',
+                    base64
+                  })
+                });
+                if (!up.ok) throw new Error('upload');
+                uploaded++;
+              } catch { failed++; }
+            }
+            if (failed && !uploaded) {
+              showMsg("Demande créée. Les images n'ont pas pu être envoyées (droits requis).", 'warning');
+            } else if (failed) {
+              showMsg(`Demande créée. ${uploaded} image(s) envoyée(s), ${failed} échouée(s).`, 'warning');
+            } else {
+              showMsg('Demande et images créées avec succès. Redirection...', 'success');
+            }
+          } else {
+            showMsg('Demande envoyée avec succès. Redirection...', 'success');
+          }
+          setTimeout(()=> location.href = '/client-dashboard.html', 900);
         } catch (err) { showMsg(String(err.message || err), 'danger'); }
       });
 
       function showMsg(text, type) { msg.className = `alert alert-${type}`; msg.textContent = text; }
       async function safeJson(resp){ try { return await resp.json(); } catch { return null; } }
+      function fileToBase64(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => { const res = String(reader.result||''); const comma = res.indexOf(','); resolve(comma>0?res.slice(comma+1):res); }; reader.onerror = reject; reader.readAsDataURL(file); }); }
     });
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
