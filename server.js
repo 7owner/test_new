@@ -756,7 +756,10 @@ app.get('/api/documents/:id', authenticateToken, async (req, res) => {
 app.post('/api/documents', authenticateToken, async (req, res) => {
   try {
     const { cible_type, cible_id, nature, nom_fichier, type_mime, base64, auteur_matricule } = req.body || {};
-    if (!cible_type || !cible_id || !nom_fichier) {\n      return res.status(400).json({ error: 'Missing required fields' });\n    }\n    // Authorization: Admins allowed for all. Clients allowed only for Site they own or their own DemandeClient
+    if (!cible_type || !cible_id || !nom_fichier) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    // Authorization: Admins allowed for all. Clients allowed only for their own Site/DemandeClient
     const roles = (req.user && Array.isArray(req.user.roles)) ? req.user.roles : [];
     const isAdmin = roles.includes('ROLE_ADMIN');
     if (!isAdmin) {
@@ -773,7 +776,9 @@ app.post('/api/documents', authenticateToken, async (req, res) => {
       } else {
         return res.status(403).json({ error: 'Forbidden' });
       }
-    }let taille_octets = null, chemin_fichier = null, checksum_sha256 = null;
+    }
+
+    let taille_octets = null, chemin_fichier = null, checksum_sha256 = null;
     if (base64) {
       const buffer = Buffer.from(base64, 'base64');
       taille_octets = buffer.length;
@@ -783,7 +788,7 @@ app.post('/api/documents', authenticateToken, async (req, res) => {
       const relPath = path.join('uploads', 'documents', safeName);
       const absPath = path.join(__dirname, 'public', relPath);
       fs.writeFileSync(absPath, buffer);
-      chemin_fichier = relPath.replace(/\\/g,'/');
+      chemin_fichier = relPath.replace(/\\/g, '/');
     }
     const result = await pool.query(
       `INSERT INTO documents_repertoire (cible_type, cible_id, nature, nom_fichier, type_mime, taille_octets, chemin_fichier, checksum_sha256, auteur_matricule)
