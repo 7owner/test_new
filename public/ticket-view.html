@@ -75,11 +75,64 @@
       </div>
     </div>
 
+    <div class="card mb-4 d-none" id="admin-actions-card">
+      <div class="card-body">
+        <h2 class="card-title mb-3">Actions Administrateur</h2>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#createAffaireModal">Créer une Affaire</button>
+          <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#createDoeModal">Créer un DOE</button>
+        </div>
+      </div>
+    </div>
+
     <div class="d-flex gap-2">
       <a href="tickets.html" class="btn btn-secondary">Retour à la liste des tickets</a>
       <a href="ticket-edit.html" class="btn btn-primary d-none" id="edit-ticket-btn"><i class="bi bi-pencil me-2"></i>Modifier le ticket</a>
     </div>
   </main>
+
+  <!-- Modal: Create Affaire -->
+  <div class="modal fade" id="createAffaireModal" tabindex="-1" aria-labelledby="createAffaireModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createAffaireModalLabel">Créer une nouvelle affaire</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="create-affaire-form">
+            <div class="mb-3">
+              <label for="affaire-nom" class="form-label">Nom de l'affaire</label>
+              <input type="text" class="form-control" id="affaire-nom" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Créer et Lier</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Create DOE -->
+  <div class="modal fade" id="createDoeModal" tabindex="-1" aria-labelledby="createDoeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createDoeModalLabel">Créer un nouveau DOE</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="create-doe-form">
+            <div class="mb-3">
+              <label for="doe-titre" class="form-label">Titre du DOE</label>
+              <input type="text" class="form-control" id="doe-titre" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Créer et Lier</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
@@ -142,14 +195,82 @@
           const editBtn = document.getElementById('edit-ticket-btn'); if (editBtn) editBtn.classList.remove('d-none');
           const respAct = document.getElementById('ticket-resp-actions'); if (respAct) respAct.classList.remove('d-none');
           const agAct = document.getElementById('ticket-agent-actions'); if (agAct) agAct.classList.remove('d-none');
-          const addResp = document.getElementById('add-resp-btn'); if (addResp) addResp.onclick = async ()=>{
-            const m = document.getElementById('resp-matricule').value.trim(); if (!m) return alert('Matricule requis');
-            const rr = await fetch(`/api/tickets/${ticketId}/responsables`, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json', ...(token?{ 'Authorization':`Bearer ${token}` }:{}) }, body: JSON.stringify({ agent_matricule:m }) });
-            const jd = await rr.json().catch(()=>({})); if (!rr.ok) return alert(jd.error||`HTTP ${rr.status}`); location.reload(); };
-          const addAgent = document.getElementById('add-agent-btn'); if (addAgent) addAgent.onclick = async ()=>{
-            const m = document.getElementById('agent-matricule').value.trim(); if (!m) return alert('Matricule requis');
-            const rr = await fetch(`/api/tickets/${ticketId}/agents`, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json', ...(token?{ 'Authorization':`Bearer ${token}` }:{}) }, body: JSON.stringify({ agent_matricule:m }) });
-            const jd = await rr.json().catch(()=>({})); if (!rr.ok) return alert(jd.error||`HTTP ${rr.status}`); location.reload(); };
+          const adminActions = document.getElementById('admin-actions-card'); if (adminActions) adminActions.classList.remove('d-none');
+
+          // Logic for creating Affaire
+          const affaireForm = document.getElementById('create-affaire-form');
+          if (affaireForm) {
+            affaireForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const nomAffaire = document.getElementById('affaire-nom').value.trim();
+              if (!nomAffaire) return alert('Le nom de l\'affaire est requis.');
+
+              const clientId = data.site?.client_id;
+              if (!clientId) return alert('Impossible de trouver le client associé à ce ticket pour créer une affaire.');
+
+              try {
+                // 1. Create the affaire
+                const affaireRes = await fetch('/api/affaires', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', ...headers },
+                  body: JSON.stringify({ nom_affaire: nomAffaire, client_id: clientId })
+                });
+                const newAffaire = await affaireRes.json();
+                if (!affaireRes.ok) throw new Error(newAffaire.error || 'Erreur lors de la création de l\'affaire');
+
+                // 2. Link to the ticket
+                const ticketUpdateRes = await fetch(`/api/tickets/${ticketId}`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json', ...headers },
+                  body: JSON.stringify({ ...t, affaire_id: newAffaire.id })
+                });
+                if (!ticketUpdateRes.ok) throw new Error('Erreur lors de la liaison de l\'affaire au ticket');
+
+                alert('Affaire créée et liée avec succès!');
+                location.reload();
+              } catch (err) {
+                alert(`Erreur: ${err.message}`);
+              }
+            });
+          }
+
+          // Logic for creating DOE
+          const doeForm = document.getElementById('create-doe-form');
+          if (doeForm) {
+            doeForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const titreDoe = document.getElementById('doe-titre').value.trim();
+              if (!titreDoe) return alert('Le titre du DOE est requis.');
+
+              const siteId = data.ticket?.site_id;
+              const affaireId = data.ticket?.affaire_id;
+              if (!siteId || !affaireId) return alert('Le site et l\'affaire doivent être liés au ticket pour créer un DOE.');
+
+              try {
+                // 1. Create the DOE
+                const doeRes = await fetch('/api/does', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', ...headers },
+                  body: JSON.stringify({ titre: titreDoe, site_id: siteId, affaire_id: affaireId })
+                });
+                const newDoe = await doeRes.json();
+                if (!doeRes.ok) throw new Error(newDoe.error || 'Erreur lors de la création du DOE');
+
+                // 2. Link to the ticket
+                const ticketUpdateRes = await fetch(`/api/tickets/${ticketId}`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json', ...headers },
+                  body: JSON.stringify({ ...t, doe_id: newDoe.id })
+                });
+                if (!ticketUpdateRes.ok) throw new Error('Erreur lors de la liaison du DOE au ticket');
+
+                alert('DOE créé et lié avec succès!');
+                location.reload();
+              } catch (err) {
+                alert(`Erreur: ${err.message}`);
+              }
+            });
+          }
         }
       } catch(e) {
         document.getElementById('ticket-title').textContent = 'Ticket introuvable';
