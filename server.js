@@ -1043,6 +1043,7 @@ app.get('/api/tickets/:id/relations', authenticateToken, async (req, res) => {
       ORDER BY COALESCE(ta.date_debut, CURRENT_TIMESTAMP) DESC, ta.id DESC
     `, [id])).rows;
 
+    console.log('Sending ticket data:', ticket);
     res.json({ ticket, doe, affaire, site, interventions, documents, images, responsables, agents_assignes });
   } catch (err) {
     console.error('Error fetching ticket relations:', err);
