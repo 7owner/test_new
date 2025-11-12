@@ -156,7 +156,6 @@
         const res = await fetch(`/api/tickets/${ticketId}/relations`, { headers, credentials: 'same-origin' });
         if (res.status===401||res.status===403){ location.href='/login.html'; return; }
         const data = await res.json();
-        console.log('Received data from server:', data);
         if (!res.ok) throw new Error(data && data.error || `HTTP ${res.status}`);
         const t = data.ticket; if (!t) throw new Error('Not found');
         document.getElementById('ticket-title').textContent = t.titre || '(Sans titre)';
@@ -175,6 +174,8 @@
             affaireEl.textContent = 'N/A';
           }
         }
+        
+        const siteEl = document.getElementById('view_site');
         
         const siteEl = document.getElementById('view_site');
         if (siteEl) {
