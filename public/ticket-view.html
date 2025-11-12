@@ -105,6 +105,10 @@
               <label for="affaire-nom" class="form-label">Nom de l'affaire</label>
               <input type="text" class="form-control" id="affaire-nom" required>
             </div>
+            <div class="mb-3">
+              <label for="affaire-description" class="form-label">Description</label>
+              <textarea class="form-control" id="affaire-description" rows="3"></textarea>
+            </div>
             <button type="submit" class="btn btn-primary">Créer et Lier</button>
           </form>
         </div>
@@ -125,6 +129,10 @@
             <div class="mb-3">
               <label for="doe-titre" class="form-label">Titre du DOE</label>
               <input type="text" class="form-control" id="doe-titre" required>
+            </div>
+            <div class="mb-3">
+              <label for="doe-description" class="form-label">Description</label>
+              <textarea class="form-control" id="doe-description" rows="3"></textarea>
             </div>
             <button type="submit" class="btn btn-primary">Créer et Lier</button>
           </form>
@@ -203,6 +211,7 @@
             affaireForm.addEventListener('submit', async (e) => {
               e.preventDefault();
               const nomAffaire = document.getElementById('affaire-nom').value.trim();
+              const descriptionAffaire = document.getElementById('affaire-description').value.trim();
               if (!nomAffaire) return alert('Le nom de l\'affaire est requis.');
 
               const clientId = data.site?.client_id;
@@ -213,7 +222,7 @@
                 const affaireRes = await fetch('/api/affaires', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', ...headers },
-                  body: JSON.stringify({ nom_affaire: nomAffaire, client_id: clientId })
+                  body: JSON.stringify({ nom_affaire: nomAffaire, client_id: clientId, description: descriptionAffaire })
                 });
                 const newAffaire = await affaireRes.json();
                 if (!affaireRes.ok) throw new Error(newAffaire.error || 'Erreur lors de la création de l\'affaire');
@@ -240,6 +249,7 @@
             doeForm.addEventListener('submit', async (e) => {
               e.preventDefault();
               const titreDoe = document.getElementById('doe-titre').value.trim();
+              const descriptionDoe = document.getElementById('doe-description').value.trim();
               if (!titreDoe) return alert('Le titre du DOE est requis.');
 
               const siteId = data.ticket?.site_id;
@@ -251,7 +261,7 @@
                 const doeRes = await fetch('/api/does', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', ...headers },
-                  body: JSON.stringify({ titre: titreDoe, site_id: siteId, affaire_id: affaireId })
+                  body: JSON.stringify({ titre: titreDoe, site_id: siteId, affaire_id: affaireId, description: descriptionDoe })
                 });
                 const newDoe = await doeRes.json();
                 if (!doeRes.ok) throw new Error(newDoe.error || 'Erreur lors de la création du DOE');

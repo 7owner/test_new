@@ -185,7 +185,8 @@ CREATE TABLE IF NOT EXISTS doe (
     id SERIAL PRIMARY KEY,
     site_id BIGINT NOT NULL,
     affaire_id BIGINT,
-    titre VARCHAR(255) NOT NULL
+    titre VARCHAR(255) NOT NULL,
+    description TEXT
 );
 
 CREATE TABLE IF NOT EXISTS ticket (
