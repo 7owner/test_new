@@ -1489,6 +1489,7 @@ app.get('/api/affaires/:id', authenticateToken, async (req, res) => {
   }
 });
 app.post('/api/affaires', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { nom_affaire, client_id, description } = req.body;
   try {
     const result = await pool.query('INSERT INTO affaire (nom_affaire, client_id, description) VALUES ($1,$2,$3) RETURNING *', [nom_affaire, client_id || null, description || null]);
     res.status(201).json(result.rows[0]);
