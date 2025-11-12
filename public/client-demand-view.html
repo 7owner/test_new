@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suivi de la Demande</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=1"></script>
+</head>
+<body>
+  <header class="header d-flex justify-content-between align-items-center mb-4">
+    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="Logo" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">Menu</button>
+    </div>
+  </header>
+
+  <main class="container mt-5">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="client-dashboard.html">Espace Client</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Suivi de Demande</li>
+      </ol>
+    </nav>
+    <h1 class="mb-4">Suivi de la Demande #<span id="demande-id"></span></h1>
+
+    <!-- Demand Details -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Détails de votre demande</h2>
+        <p><strong>Date de création:</strong> <span id="demande-date"></span></p>
+        <p><strong>Site concerné:</strong> <span id="demande-site"></span></p>
+        <p><strong>Description:</strong> <span id="demande-description"></span></p>
+        <p><strong>Statut de la demande:</strong> <span id="demande-status" class="fw-bold"></span></p>
+      </div>
+    </div>
+
+    <!-- Ticket Details -->
+    <div id="ticket-section" class="card mb-4 d-none">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Progression du Ticket</h2>
+        <p><strong>Titre du ticket:</strong> <span id="ticket-titre"></span></p>
+        <p><strong>Statut du ticket:</strong> <span id="ticket-status" class="fw-bold"></span></p>
+        <p><strong>Date de début:</strong> <span id="ticket-date-debut"></span></p>
+        <p><strong>Date de fin:</strong> <span id="ticket-date-fin"></span></p>
+      </div>
+    </div>
+
+    <!-- Responsible Agent -->
+    <div id="responsable-section" class="card mb-4 d-none">
+        <div class="card-body">
+          <h2 class="card-title mb-4">Votre Interlocuteur</h2>
+          <p><strong>Nom:</strong> <span id="responsable-nom"></span></p>
+          <p><strong>Email:</strong> <span id="responsable-email"></span></p>
+          <p><strong>Téléphone:</strong> <span id="responsable-tel"></span></p>
+        </div>
+      </div>
+
+    <!-- Interventions -->
+    <div id="interventions-section" class="card mb-4 d-none">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Interventions Planifiées ou Réalisées</h2>
+        <div id="interventions-list">
+            <p class="text-muted">Aucune intervention pour le moment.</p>
+        </div>
+      </div>
+    </div>
+
+    <a href="client-dashboard.html" class="btn btn-secondary">Retour à l'espace client</a>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      const qp = new URLSearchParams(location.search);
+      const demandeId = qp.get('id');
+      const token = localStorage.getItem('token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+      if (!demandeId) {
+        document.querySelector('main').innerHTML = '<div class="alert alert-danger">ID de demande manquant.</div>';
+        return;
+      }
+
+      function set(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val || 'N/A';
+      }
+
+      function fmt(iso) {
+        if (!iso) return 'N/A';
+        const d = new Date(iso);
+        return isNaN(d) ? 'Date invalide' : d.toLocaleString('fr-FR');
+      }
+
+      try {
+        const res = await fetch(`/api/client/demandes/${demandeId}`, { headers });
+        if (res.status === 401 || res.status === 403) {
+          location.href = '/login.html';
+          return;
+        }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `Erreur HTTP ${res.status}`);
+
+        const { demande, ticket, responsable, interventions } = data;
+
+        // Populate Demand Info
+        set('demande-id', demande.id);
+        set('demande-date', fmt(demande.created_at));
+        set('demande-site', demande.nom_site || 'Non spécifié');
+        set('demande-description', demande.description);
+        set('demande-status', demande.status);
+
+        if (ticket) {
+          document.getElementById('ticket-section').classList.remove('d-none');
+          set('ticket-titre', ticket.titre);
+          set('ticket-status', ticket.etat);
+          set('ticket-date-debut', fmt(ticket.date_debut));
+          set('ticket-date-fin', ticket.date_fin ? fmt(ticket.date_fin) : 'En cours');
+        }
+
+        if (responsable) {
+            document.getElementById('responsable-section').classList.remove('d-none');
+            set('responsable-nom', `${responsable.prenom || ''} ${responsable.nom || ''}`.trim());
+            set('responsable-email', responsable.email);
+            set('responsable-tel', responsable.tel);
+        }
+
+        if (interventions && interventions.length > 0) {
+          document.getElementById('interventions-section').classList.remove('d-none');
+          const listEl = document.getElementById('interventions-list');
+          listEl.innerHTML = ''; // Clear placeholder
+          interventions.forEach(inter => {
+            const item = document.createElement('div');
+            item.className = 'card card-body mb-2';
+            item.innerHTML = `
+              <p class="mb-1"><strong>Description:</strong> ${inter.description || 'Pas de description'}</p>
+              <small class="text-muted">Du ${fmt(inter.date_debut)} au ${inter.date_fin ? fmt(inter.date_fin) : 'en cours'}</small>
+              <small class="text-muted">Statut: ${inter.status || 'Non défini'}</small>
+            `;
+            listEl.appendChild(item);
+          });
+        }
+
+      } catch (err) {
+        document.querySelector('main').innerHTML = `<div class="alert alert-danger">Erreur: ${err.message}</div>`;
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>

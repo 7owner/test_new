@@ -3200,6 +3200,54 @@ app.post('/api/demandes_client', authenticateToken, async (req, res) => {
   } catch (e) { console.error('demande create:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
 });
 
+// --- Client: Get single demand details for tracking ---
+app.get('/api/client/demandes/:id', authenticateToken, async (req, res) => {
+  try {
+    const email = req.user && req.user.email;
+    if (!email) return res.status(401).json({ error: 'Unauthorized' });
+
+    const clientResult = await pool.query('SELECT id FROM client WHERE representant_email=$1 LIMIT 1', [email]);
+    const client = clientResult.rows[0];
+    if (!client) return res.status(404).json({ error: 'Client record not found for this user' });
+
+    const { id } = req.params;
+    const demandeResult = await pool.query(
+      "SELECT d.*, s.nom_site FROM demande_client d LEFT JOIN site s ON d.site_id = s.id WHERE d.id=$1 AND d.client_id=$2",
+      [id, client.id]
+    );
+    const demande = demandeResult.rows[0];
+
+    if (!demande) {
+      return res.status(404).json({ error: 'Demande not found or access denied' });
+    }
+
+    let ticket = null;
+    let responsable = null;
+    let interventions = [];
+
+    if (demande.ticket_id) {
+      const ticketResult = await pool.query('SELECT * FROM ticket WHERE id=$1', [demande.ticket_id]);
+      ticket = ticketResult.rows[0];
+
+      if (ticket) {
+        if (ticket.responsable) {
+          const responsableResult = await pool.query('SELECT matricule, nom, prenom, email, tel FROM agent WHERE matricule=$1', [ticket.responsable]);
+          responsable = responsableResult.rows[0];
+        }
+        const interventionsResult = await pool.query('SELECT * FROM intervention WHERE ticket_id=$1 ORDER BY date_debut DESC', [ticket.id]);
+        interventions = interventionsResult.rows;
+      }
+    }
+
+    res.json({ demande, ticket, responsable, interventions });
+
+  } catch (e) {
+    console.error(`Error fetching details for demand ${req.params.id}:`, e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 // --- Admin: demandes listing and workflow ---
 // List all demandes with client/site (admin)
 app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (req, res) => {
@@ -3279,9 +3327,9 @@ app.post('/api/demandes_client/:id/convert-to-ticket', authenticateToken, author
       'INSERT INTO ticket (doe_id, affaire_id, site_id, responsable, titre, description, etat) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
       [doe_id, affaire_id, d.site_id || null, null, titre, desc, 'Pas_commence']
     )).rows[0];
-    await cx.query("UPDATE demande_client SET status='Traitee', updated_at=CURRENT_TIMESTAMP WHERE id=$1", [id]);
+    await cx.query("UPDATE demande_client SET status='Traitee', updated_at=CURRENT_TIMESTAMP, ticket_id=$1 WHERE id=$2", [t.id, id]);
     await cx.query('COMMIT');
-    return res.status(201).json({ ticket: t, demande: { id: d.id, status: 'Traitee' } });
+    return res.status(201).json({ ticket: t, demande: { id: d.id, status: 'Traitee', ticket_id: t.id } });
   } catch (e) {
     try { await cx.query('ROLLBACK'); } catch(_) {}
     console.error('demande convert:', e); return res.status(500).json({ error: 'Internal Server Error' });

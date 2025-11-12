@@ -398,7 +398,8 @@ CREATE TABLE IF NOT EXISTS demande_client (
     description TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'En_attente',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ticket_id INTEGER REFERENCES ticket(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS rendu_intervention (

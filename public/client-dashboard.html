@@ -129,6 +129,7 @@
                 <small>Créée le: ${new Date(d.created_at).toLocaleDateString()}</small>
                 <div class="mt-2">
                   <a class="btn btn-sm btn-outline-secondary" href="/client-demand-files.html?id=${d.id}">Voir les pièces jointes</a>
+                  <a class="btn btn-sm btn-primary" href="/client-demand-view.html?id=${d.id}">Suivre</a>
                 </div>
               `;
               list.appendChild(el);
