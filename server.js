@@ -1013,7 +1013,13 @@ app.get('/api/tickets/:id/relations', authenticateToken, async (req, res) => {
 
     const doe = ticket.doe_id ? (await pool.query('SELECT * FROM doe WHERE id=$1', [ticket.doe_id])).rows[0] : null;
     const affaire = ticket.affaire_id ? (await pool.query('SELECT * FROM affaire WHERE id=$1', [ticket.affaire_id])).rows[0] : null;
-    const site = doe?.site_id ? (await pool.query('SELECT * FROM site WHERE id=$1', [doe.site_id])).rows[0] : null;
+    
+    let site = null;
+    if (ticket.site_id) {
+        site = (await pool.query('SELECT * FROM site WHERE id=$1', [ticket.site_id])).rows[0] || null;
+    } else if (doe?.site_id) {
+        site = (await pool.query('SELECT * FROM site WHERE id=$1', [doe.site_id])).rows[0] || null;
+    }
 
     const interventions = (await pool.query('SELECT * FROM intervention WHERE ticket_id=$1 ORDER BY id DESC', [id])).rows;
     const documents = (await pool.query("SELECT * FROM documents_repertoire WHERE cible_type='Ticket' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
