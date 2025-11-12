@@ -1519,6 +1519,33 @@ app.delete('/api/affaires/:id', authenticateToken, authorizeAdmin, async (req, r
   }
 });
 
+// Get Affaire relations
+app.get('/api/affaires/:id/relations', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const affaireRes = await pool.query('SELECT * FROM affaire WHERE id = $1', [id]);
+    const affaire = affaireRes.rows[0];
+    if (!affaire) {
+      return res.status(404).json({ error: 'Affaire not found' });
+    }
+
+    let client = null;
+    if (affaire.client_id) {
+      const clientRes = await pool.query('SELECT * FROM client WHERE id = $1', [affaire.client_id]);
+      client = clientRes.rows[0];
+    }
+
+    const ticketsRes = await pool.query('SELECT * FROM ticket WHERE affaire_id = $1 ORDER BY id DESC', [id]);
+    const tickets = ticketsRes.rows;
+
+    res.json({ affaire, client, tickets });
+  } catch (err) {
+    console.error(`Error fetching relations for affaire ${id}:`, err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 // -------------------- DOE API --------------------
 app.get('/api/does', authenticateToken, async (req, res) => {
   try {
@@ -2104,7 +2131,7 @@ app.put('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, res) 
         const oldResponsable = oldTicketResult.rows[0]?.responsable;
 
         const result = await client.query(
-            'UPDATE ticket SET titre = $1, description = $2, responsable = $3, doe_id = $4, affaire_id = $5, etat = $6::etat_rapport WHERE id = $7 RETURNING *',
+            'UPDATE ticket SET titre = COALESCE($1, titre), description = COALESCE($2, description), responsable = COALESCE($3, responsable), doe_id = COALESCE($4, doe_id), affaire_id = COALESCE($5, affaire_id), etat = COALESCE($6::etat_rapport, etat) WHERE id = $7 RETURNING *',
             [titre, description, responsable, doe_id, affaire_id, etat, id]
         );
 
