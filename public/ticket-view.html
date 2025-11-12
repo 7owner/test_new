@@ -176,8 +176,6 @@
         }
         
         const siteEl = document.getElementById('view_site');
-        
-        const siteEl = document.getElementById('view_site');
         if (siteEl) {
           const s = data.site; if (s && s.id) { const name = s.nom_site? ` — ${s.nom_site}` : ''; siteEl.innerHTML = `<a href="site-view.html?id=${s.id}">Site #${s.id}${name}</a>`; }
           else if (t.site_id) siteEl.innerHTML = `<a href="site-view.html?id=${t.site_id}">Site #${t.site_id}</a>`; else siteEl.textContent='N/A';
