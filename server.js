@@ -2105,7 +2105,7 @@ app.put('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, res) 
             if (oldResponsable !== responsable) {
                 await client.query(
                     'INSERT INTO ticket_historique_responsable (ticket_id, ancien_responsable_matricule, nouveau_responsable_matricule, modifie_par_matricule) VALUES ($1, $2, $3, $4)',
-                    [id, oldResponsable, responsable, req.user.email] // Assuming req.user.email holds the modifier's identifier
+                    [id, oldResponsable, responsable, req.user.matricule] // Assuming req.user.matricule holds the modifier's identifier
                 );
             }
             await client.query('COMMIT');
