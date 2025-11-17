@@ -3405,6 +3405,52 @@ app.post('/api/demandes_client/:id/convert-to-ticket', authenticateToken, author
 
 // -------------------- Messagerie API --------------------
 
+// Create a new conversation
+app.post('/api/conversations/new', authenticateToken, async (req, res) => {
+    const { message_body, recipient_email } = req.body;
+    const sender_id = req.user.id;
+
+    if (!message_body || !recipient_email) {
+        return res.status(400).json({ error: 'Message body and recipient email are required' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const recipientResult = await client.query('SELECT id FROM users WHERE email = $1', [recipient_email]);
+        if (recipientResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Recipient not found' });
+        }
+        const receiver_id = recipientResult.rows[0].id;
+
+        if (sender_id === receiver_id) {
+            return res.status(400).json({ error: 'Cannot start a conversation with yourself' });
+        }
+        
+        // Create a consistent conversation ID
+        const user1 = Math.min(sender_id, receiver_id);
+        const user2 = Math.max(sender_id, receiver_id);
+        const conversation_id = `user${user1}-user${user2}`;
+
+        const messageResult = await client.query(
+            'INSERT INTO messagerie (conversation_id, sender_id, receiver_id, body) VALUES ($1, $2, $3, $4) RETURNING *',
+            [conversation_id, sender_id, receiver_id, message_body]
+        );
+        const newMessage = messageResult.rows[0];
+
+        await client.query('COMMIT');
+        res.status(201).json(newMessage);
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error creating new conversation:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    } finally {
+        client.release();
+    }
+});
+
 // Get all conversations for a user
 app.get('/api/conversations', authenticateToken, async (req, res) => {
     try {
