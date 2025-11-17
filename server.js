@@ -995,8 +995,8 @@ app.get('/api/does/:id/relations', authenticateToken, async (req, res) => {
     const doe = (await pool.query('SELECT * FROM doe WHERE id=$1', [id])).rows[0];
     if (!doe) return res.status(404).json({ error: 'DOE not found' });
     const tickets = (await pool.query('SELECT * FROM ticket WHERE doe_id=$1 ORDER BY id DESC', [id])).rows;
-    const documents = (await pool.query("SELECT * FROM documents_repertoire WHERE cible_type='Doe' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
-    const images = (await pool.query("SELECT id, nom_fichier, type_mime FROM images WHERE cible_type='Doe' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
+    const documents = (await pool.query("SELECT * FROM documents_repertoire WHERE cible_type='DOE' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
+    const images = (await pool.query("SELECT id, nom_fichier, type_mime FROM images WHERE cible_type='DOE' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     res.json({ doe, tickets, documents, images });
   } catch (err) {
     console.error('Error fetching doe relations:', err);
