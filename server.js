@@ -3279,8 +3279,12 @@ app.get('/api/client/demandes/:id', authenticateToken, async (req, res) => {
 
       if (ticket) {
         if (ticket.responsable) {
-          const responsableResult = await pool.query('SELECT matricule, nom, prenom, email, tel FROM agent WHERE matricule=$1', [ticket.responsable]);
+          const responsableResult = await pool.query('SELECT user_id, matricule, nom, prenom, email, tel FROM agent WHERE matricule=$1', [ticket.responsable]);
           responsable = responsableResult.rows[0];
+        } else {
+          // If no responsable, assign the default admin
+          const adminUserResult = await pool.query("SELECT user_id, matricule, nom, prenom, email, tel FROM agent WHERE email = 'maboujunior777@gmail.com' LIMIT 1");
+          responsable = adminUserResult.rows[0];
         }
         const interventionsResult = await pool.query('SELECT * FROM intervention WHERE ticket_id=$1 ORDER BY date_debut DESC', [ticket.id]);
         interventions = interventionsResult.rows;

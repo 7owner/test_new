@@ -16,16 +16,6 @@
     <h1 class="mb-3">Bienvenue sur votre Tableau de Bord Client</h1>
     <p class="mb-4">Gérez vos sites, faites des demandes d'intervention et consultez votre historique.</p>
 
-    <!-- Section Messagerie -->
-    <div class="card mt-4">
-      <div class="card-header">Messagerie</div>
-      <div class="card-body">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newMessageModal">
-          Nouveau Message au Responsable
-        </button>
-      </div>
-    </div>
-
     <!-- Section Sites -->
     <div class="card mt-4">
       <div class="card-header">Vos Sites</div>
@@ -187,77 +177,6 @@
         } catch(e) { console.error('Historique:', e); }
       }
 
-      // Initial loads
-      fetchClientProfile();
-      fetchClientSites();
-      fetchClientDemands();
-      fetchInterventionHistory();
-
-      const sendMessageBtn = document.getElementById('sendMessageBtn');
-      const newMessageBody = document.getElementById('new-message-body');
-
-      sendMessageBtn.addEventListener('click', async () => {
-        const body = newMessageBody.value.trim();
-        if (!body) {
-          alert('Le message ne peut pas être vide.');
-          return;
-        }
-
-        try {
-          const response = await fetch('/api/conversations/new', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              message_body: body,
-              recipient_email: 'maboujunior777@gmail.com' // Hardcoded for now
-            })
-          });
-
-          if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.error || 'Failed to send message');
-          }
-
-          const newConversation = await response.json();
-          alert('Message envoyé!');
-          // Redirect to the new conversation
-          window.location.href = `/messagerie.html?conversation_id=${newConversation.conversation_id}`;
-
-        } catch (error) {
-          console.error('Error sending message:', error);
-          alert(error.message);
-        }
-      });
-    });
-  </script>
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- New Message Modal -->
-<div class="modal fade" id="newMessageModal" tabindex="-1" aria-labelledby="newMessageModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="newMessageModalLabel">Nouveau Message</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="newMessageForm">
-          <div class="mb-3">
-            <label for="message-body" class="col-form-label">Message:</label>
-            <textarea class="form-control" id="new-message-body" rows="5" required></textarea>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-        <button type="button" class="btn btn-primary" id="sendMessageBtn">Envoyer</button>
-      </div>
-    </div>
-  </div>
-</div>
 </body>
 </html>

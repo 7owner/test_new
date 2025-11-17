@@ -69,6 +69,26 @@
       </div>
     </div>
 
+    <!-- Messagerie Section -->
+    <div id="messagerie-section" class="card mb-4">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Messagerie</h2>
+        <div id="messages-display" class="border p-3 mb-3" style="height: 300px; overflow-y: auto;">
+            <!-- Messages will be loaded here -->
+        </div>
+        <form id="message-form">
+          <div class="mb-3">
+            <textarea id="message-body" class="form-control" rows="3" placeholder="Écrivez un message..." required></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="attachments" class="form-label">Pièce jointe (optionnel)</label>
+            <input type="file" id="attachments" class="form-control">
+          </div>
+          <button class="btn btn-primary" type="submit">Envoyer</button>
+        </form>
+      </div>
+    </div>
+
     <a href="client-dashboard.html" class="btn btn-secondary">Retour à l'espace client</a>
   </main>
 
@@ -78,12 +98,22 @@
       const qp = new URLSearchParams(location.search);
       const demandeId = qp.get('id');
       const token = localStorage.getItem('token');
+      const user = JSON.parse(atob(token.split('.')[1]));
+      const userId = user.id;
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
       if (!demandeId) {
         document.querySelector('main').innerHTML = '<div class="alert alert-danger">ID de demande manquant.</div>';
         return;
       }
+
+      const conversation_id = `demande-${demandeId}`;
+      let receiver_id = null;
+
+      const messagesDisplay = document.getElementById('messages-display');
+      const messageForm = document.getElementById('message-form');
+      const messageBodyInput = document.getElementById('message-body');
+      const attachmentsInput = document.getElementById('attachments');
 
       function set(id, val) {
         const el = document.getElementById(id);
@@ -95,6 +125,72 @@
         const d = new Date(iso);
         return isNaN(d) ? 'Date invalide' : d.toLocaleString('fr-FR');
       }
+
+      async function loadMessages() {
+        try {
+          const messages = await fetch(`/api/conversations/${conversation_id}`, { headers }).then(res => res.json());
+          messagesDisplay.innerHTML = '';
+          messages.forEach(msg => {
+            const msgElement = document.createElement('div');
+            msgElement.className = msg.sender_id === userId ? 'message-sent' : 'message-received';
+            let attachmentsHTML = '';
+            if (msg.attachments && msg.attachments.length > 0) {
+              attachmentsHTML = msg.attachments.map(att => 
+                `<br><a href="/${att.file_path}" target="_blank" download="${att.file_name}">${att.file_name}</a>`
+              ).join('');
+            }
+            msgElement.innerHTML = `
+              <p>${msg.body}</p>
+              <small>${new Date(msg.created_at).toLocaleString()}</small>
+              ${attachmentsHTML}
+            `;
+            messagesDisplay.prepend(msgElement);
+          });
+        } catch (error) {
+          console.error('Error loading messages:', error);
+          messagesDisplay.innerHTML = '<p class="text-muted">Aucun message pour le moment.</p>';
+        }
+      }
+      
+      messageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const body = messageBodyInput.value;
+        const files = attachmentsInput.files;
+        
+        if (!body && files.length === 0) return;
+        if (!receiver_id) {
+            alert("Le destinataire n'est pas défini. Impossible d'envoyer le message.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('body', body);
+        formData.append('receiver_id', receiver_id);
+
+        for (let i = 0; i < files.length; i++) {
+          formData.append('attachments', files[i]);
+        }
+
+        try {
+          const res = await fetch(`/api/conversations/${conversation_id}/messages`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: formData
+          });
+
+          if (!res.ok) {
+              const err = await res.json();
+              throw new Error(err.error || 'Failed to send message');
+          }
+
+          messageBodyInput.value = '';
+          attachmentsInput.value = '';
+          loadMessages();
+        } catch (error) {
+          console.error('Error sending message:', error);
+          alert('Erreur lors de l\\'envoi du message.');
+        }
+      });
 
       try {
         const res = await fetch(`/api/client/demandes/${demandeId}`, { headers });
@@ -127,6 +223,7 @@
             set('responsable-nom', `${responsable.prenom || ''} ${responsable.nom || ''}`.trim());
             set('responsable-email', responsable.email);
             set('responsable-tel', responsable.tel);
+            receiver_id = responsable.user_id; // Set receiver_id
         }
 
         if (interventions && interventions.length > 0) {
@@ -144,6 +241,9 @@
             listEl.appendChild(item);
           });
         }
+
+        // Load messages for the demand
+        loadMessages();
 
       } catch (err) {
         document.querySelector('main').innerHTML = `<div class="alert alert-danger">Erreur: ${err.message}</div>`;
