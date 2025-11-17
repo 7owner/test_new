@@ -8,6 +8,7 @@ const csurf = require('csurf');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const multer = require('multer');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -661,6 +662,19 @@ app.post('/api/reset-password', async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
+// Multer configuration for attachments
+const attachmentStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'public/uploads/attachments/');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: attachmentStorage });
 
 // Health endpoint
 app.get('/api/health', async (req, res) => {
@@ -3332,13 +3346,32 @@ app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (req, r
 // Update demande status (admin)
 app.put('/api/demandes_client/:id/status', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    const { id } = req.params; const { status } = req.body || {};
-    const allowed = ['En_attente','En_cours','Traitee','Rejetee'];
-    if (!allowed.includes(String(status||'').trim())) return res.status(400).json({ error: 'Invalid status' });
-    const r = await pool.query('UPDATE demande_client SET status=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2 RETURNING *', [status, id]);
+    const { id } = req.params;
+    const { status, commentaire } = req.body || {};
+    const allowed = ['En_attente', 'En_cours', 'Traitee', 'Rejetee', 'Annule'];
+    if (!allowed.includes(String(status || '').trim())) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    const updateFields = ['status=$1', 'updated_at=CURRENT_TIMESTAMP'];
+    const queryParams = [status];
+
+    if ((status === 'Rejetee' || status === 'Annule')) {
+        updateFields.push(`commentaire=$${queryParams.length + 1}`);
+        queryParams.push(commentaire || null); // Ensure comment can be null
+    }
+
+    queryParams.push(id);
+    const finalQuery = `UPDATE demande_client SET ${updateFields.join(', ')} WHERE id=$${queryParams.length} RETURNING *`;
+
+    const r = await pool.query(finalQuery, queryParams);
+
     if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
     return res.json(r.rows[0]);
-  } catch (e) { console.error('demande status update:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
+  } catch (e) {
+    console.error('demande status update:', e);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 // Convert demande -> Ticket (admin)
@@ -3369,6 +3402,118 @@ app.post('/api/demandes_client/:id/convert-to-ticket', authenticateToken, author
     console.error('demande convert:', e); return res.status(500).json({ error: 'Internal Server Error' });
   } finally { cx.release(); }
 });
+
+// -------------------- Messagerie API --------------------
+
+// Get all conversations for a user
+app.get('/api/conversations', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const result = await pool.query(
+            `SELECT DISTINCT ON (conversation_id) conversation_id, body, created_at, sender_id, receiver_id
+             FROM messagerie
+             WHERE sender_id = $1 OR receiver_id = $1
+             ORDER BY conversation_id, created_at DESC`,
+            [userId]
+        );
+
+        const conversations = await Promise.all(result.rows.map(async (convo) => {
+            const otherUserId = convo.sender_id === userId ? convo.receiver_id : convo.sender_id;
+            const otherUser = await pool.query('SELECT email FROM users WHERE id = $1', [otherUserId]);
+            return {
+                ...convo,
+                other_user_email: otherUser.rows[0].email
+            };
+        }));
+
+        res.json(conversations);
+    } catch (err) {
+        console.error('Error fetching conversations:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Get messages for a conversation
+app.get('/api/conversations/:conversation_id', authenticateToken, async (req, res) => {
+    try {
+        const { conversation_id } = req.params;
+        const userId = req.user.id;
+
+        // Check if user is part of the conversation
+        const participationCheck = await pool.query(
+            'SELECT 1 FROM messagerie WHERE conversation_id = $1 AND (sender_id = $2 OR receiver_id = $2) LIMIT 1',
+            [conversation_id, userId]
+        );
+        if (participationCheck.rows.length === 0) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
+        const messages = await pool.query(
+            'SELECT * FROM messagerie WHERE conversation_id = $1 ORDER BY created_at ASC',
+            [conversation_id]
+        );
+
+        const messagesWithAttachments = await Promise.all(messages.rows.map(async (message) => {
+            const attachments = await pool.query('SELECT * FROM messagerie_attachment WHERE message_id = $1', [message.id]);
+            return { ...message, attachments: attachments.rows };
+        }));
+
+        res.json(messagesWithAttachments);
+    } catch (err) {
+        console.error('Error fetching messages:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Send a message
+app.post('/api/conversations/:conversation_id/messages', authenticateToken, upload.array('attachments'), async (req, res) => {
+    const { conversation_id } = req.params;
+    const { body, receiver_id } = req.body;
+    const sender_id = req.user.id;
+
+    if (!body && (!req.files || req.files.length === 0)) {
+        return res.status(400).json({ error: 'Message body or attachment is required' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        
+        // Ensure receiver exists
+        const receiverExists = await client.query('SELECT id FROM users WHERE id = $1', [receiver_id]);
+        if(receiverExists.rows.length === 0) {
+            return res.status(404).json({error: 'Receiver not found'});
+        }
+
+        const messageResult = await client.query(
+            'INSERT INTO messagerie (conversation_id, sender_id, receiver_id, body) VALUES ($1, $2, $3, $4) RETURNING *',
+            [conversation_id, sender_id, receiver_id, body]
+        );
+        const newMessage = messageResult.rows[0];
+
+        if (req.files) {
+            for (const file of req.files) {
+                await client.query(
+                    'INSERT INTO messagerie_attachment (message_id, file_path, file_name, file_type, file_size) VALUES ($1, $2, $3, $4, $5)',
+                    [newMessage.id, file.path, file.originalname, file.mimetype, file.size]
+                );
+            }
+        }
+
+        await client.query('COMMIT');
+        
+        const attachments = await client.query('SELECT * FROM messagerie_attachment WHERE message_id = $1', [newMessage.id]);
+        res.status(201).json({ ...newMessage, attachments: attachments.rows });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error sending message:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    } finally {
+        client.release();
+    }
+});
+
 initializeDatabase().then(() => {
     app.listen(port, () => {
         console.log(`Server listening on port ${port}`);

@@ -62,3 +62,16 @@ Derniere mise a jour: Session 6
   - `client-view.html`: fiche + actions admin (creer site/demande) + header/offcanvas Bootstrap.
   - `client-edit.html`: formulaire complet de creation/edition.
 - Donnees: lors d'une mise a jour client, si `representant_email` change, propagation vers `users.email` (409 si deja pris).
+
+## Améliorations des demandes client (Admin) - Session 7
+
+- **Disparition des demandes traitées :**
+  - Sur la page `demandes-client-admin.html`, les demandes qui ont le statut "Traitée" sont maintenant masquées par défaut pour ne montrer que les demandes actives.
+  - L'utilisateur peut toujours voir les demandes traitées en utilisant le filtre de statut pour sélectionner "Traitée".
+
+- **Nouveaux statuts 'Annulé' et 'Rejeté' avec commentaire :**
+  - La table `demande_client` dans la base de données a été mise à jour pour inclure une colonne `commentaire` de type `TEXT`.
+  - Le statut `Annule` a été ajouté à la liste des statuts possibles for une demande client.
+  - L'endpoint API `PUT /api/demandes_client/:id/status` a été modifié pour accepter et sauvegarder un `commentaire` lorsque le statut est `Rejetee` ou `Annule`.
+  - Sur la page `demandes-client-admin.html`, lorsqu'un administrateur change le statut d'une demande pour "Rejetée" ou "Annulée", une fenêtre modale apparaît, demandant un commentaire obligatoire pour justifier ce changement de statut.
+  - Le commentaire est ensuite affiché sur la carte de la demande.

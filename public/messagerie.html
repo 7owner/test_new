@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Messagerie</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    .conversations-list {
+      height: 80vh;
+      overflow-y: auto;
+    }
+    .messages-display {
+      height: 65vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse;
+    }
+    .message-sent {
+      align-self: flex-end;
+      background-color: #dcf8c6;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+      max-width: 70%;
+    }
+    .message-received {
+      align-self: flex-start;
+      background-color: #f1f0f0;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+      max-width: 70%;
+    }
+  </style>
+</head>
+<body>
+  <header class="header d-flex justify-content-between align-items-center mb-4">
+    <h1><a href="/dashboard.html"> <img src="/logo_logicielle.png" alt="" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+        Menu
+      </button>
+    </div>
+  </header>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+        <!-- Navigation links will be injected by nav.js -->
+      </ul>
+    </div>
+  </div>
+  <div id="navbar-placeholder"></div>
+
+  <div class="container mt-4">
+    <div class="row">
+      <div class="col-md-4">
+        <h2>Conversations</h2>
+        <div id="conversations-list" class="list-group conversations-list">
+          <!-- Conversations will be loaded here -->
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div id="messages-container" class="d-none">
+          <h2 id="conversation-with"></h2>
+          <div id="messages-display" class="border p-3 mb-3 messages-display">
+            <!-- Messages will be loaded here -->
+          </div>
+          <form id="message-form">
+            <div class="input-group">
+              <input type="text" id="message-body" class="form-control" placeholder="Écrivez un message...">
+              <input type="file" id="attachments" class="form-control" multiple>
+              <button class="btn btn-primary" type="submit">Envoyer</button>
+            </div>
+          </form>
+        </div>
+        <div id="no-conversation-selected">
+            <p>Sélectionnez une conversation pour voir les messages.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/nav.js?v=2"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        location.href = '/login.html';
+        return;
+      }
+      
+      const user = JSON.parse(atob(token.split('.')[1]));
+      const userId = user.id;
+
+      const conversationsList = document.getElementById('conversations-list');
+      const messagesContainer = document.getElementById('messages-container');
+      const noConversationSelected = document.getElementById('no-conversation-selected');
+      const conversationWith = document.getElementById('conversation-with');
+      const messagesDisplay = document.getElementById('messages-display');
+      const messageForm = document.getElementById('message-form');
+      const messageBodyInput = document.getElementById('message-body');
+      const attachmentsInput = document.getElementById('attachments');
+
+      let currentConversationId = null;
+      let currentReceiverId = null;
+
+      async function fetchJSON(url, opts) {
+        const res = await fetch(url, {
+          headers: { 'Authorization': 'Bearer ' + token },
+          ...opts
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error((body && body.error) || res.statusText);
+        return body;
+      }
+      
+      async function loadConversations() {
+        try {
+          const conversations = await fetchJSON('/api/conversations');
+          conversationsList.innerHTML = '';
+          conversations.forEach(convo => {
+            const convoElement = document.createElement('a');
+            convoElement.href = '#';
+            convoElement.className = 'list-group-item list-group-item-action';
+            convoElement.dataset.conversationId = convo.conversation_id;
+            convoElement.dataset.receiverId = convo.sender_id === userId ? convo.receiver_id : convo.sender_id;
+            convoElement.innerHTML = `
+              <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">${convo.other_user_email}</h5>
+                <small>${new Date(convo.created_at).toLocaleDateString()}</small>
+              </div>
+              <p class="mb-1">${convo.body.substring(0, 50)}...</p>
+            `;
+            convoElement.addEventListener('click', (e) => {
+              e.preventDefault();
+              currentConversationId = convo.conversation_id;
+              currentReceiverId = e.currentTarget.dataset.receiverId;
+              loadMessages(currentConversationId);
+            });
+            conversationsList.appendChild(convoElement);
+          });
+        } catch (error) {
+          console.error('Error loading conversations:', error);
+        }
+      }
+
+      async function loadMessages(conversationId) {
+        try {
+          const messages = await fetchJSON(`/api/conversations/${conversationId}`);
+          messagesDisplay.innerHTML = '';
+          messages.forEach(msg => {
+            const msgElement = document.createElement('div');
+            msgElement.className = msg.sender_id === userId ? 'message-sent' : 'message-received';
+            let attachmentsHTML = '';
+            if (msg.attachments && msg.attachments.length > 0) {
+              attachmentsHTML = msg.attachments.map(att => 
+                `<br><a href="/${att.file_path}" target="_blank" download="${att.file_name}">${att.file_name}</a>`
+              ).join('');
+            }
+            msgElement.innerHTML = `
+              <p>${msg.body}</p>
+              <small>${new Date(msg.created_at).toLocaleString()}</small>
+              ${attachmentsHTML}
+            `;
+            messagesDisplay.prepend(msgElement);
+          });
+          messagesContainer.classList.remove('d-none');
+          noConversationSelected.classList.add('d-none');
+          conversationWith.textContent = `Conversation avec ${messages[0] ? (messages[0].sender_id === userId ? 'vous' : 'l\'autre') : 'quelqu\'un'}`;
+        } catch (error) {
+          console.error('Error loading messages:', error);
+        }
+      }
+
+      messageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const body = messageBodyInput.value;
+        const files = attachmentsInput.files;
+        
+        if (!body && files.length === 0) return;
+
+        const formData = new FormData();
+        formData.append('body', body);
+        formData.append('receiver_id', currentReceiverId);
+
+        for (let i = 0; i < files.length; i++) {
+          formData.append('attachments', files[i]);
+        }
+
+        try {
+          await fetch(`/api/conversations/${currentConversationId}/messages`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: formData
+          });
+          messageBodyInput.value = '';
+          attachmentsInput.value = '';
+          loadMessages(currentConversationId);
+        } catch (error) {
+          console.error('Error sending message:', error);
+        }
+      });
+
+      loadConversations();
+    });
+  </script>
+</body>
+</html>

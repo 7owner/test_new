@@ -403,6 +403,35 @@ CREATE TABLE IF NOT EXISTS demande_client (
     ticket_id INTEGER REFERENCES ticket(id) ON DELETE SET NULL
 );
 
+ALTER TABLE demande_client ADD COLUMN IF NOT EXISTS commentaire TEXT;
+
+-- Messagerie
+CREATE TABLE IF NOT EXISTS messagerie (
+    id SERIAL PRIMARY KEY,
+    conversation_id VARCHAR(255) NOT NULL, -- Could be based on ticket_id or demande_id
+    sender_id INTEGER NOT NULL REFERENCES users(id),
+    receiver_id INTEGER NOT NULL REFERENCES users(id),
+    body TEXT,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_messagerie_conversation_id ON messagerie(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_messagerie_sender_id ON messagerie(sender_id);
+CREATE INDEX IF NOT EXISTS idx_messagerie_receiver_id ON messagerie(receiver_id);
+
+CREATE TABLE IF NOT EXISTS messagerie_attachment (
+    id SERIAL PRIMARY KEY,
+    message_id INTEGER NOT NULL REFERENCES messagerie(id) ON DELETE CASCADE,
+    file_path VARCHAR(255) NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_type VARCHAR(100),
+    file_size INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_messagerie_attachment_message_id ON messagerie_attachment(message_id);
+
 CREATE TABLE IF NOT EXISTS rendu_intervention (
     id SERIAL PRIMARY KEY,
     intervention_id BIGINT NOT NULL,

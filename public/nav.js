@@ -50,8 +50,9 @@
             // Inject client dashboard link into offcanvas nav if ROLE_CLIENT
             try {
               const roles = Array.isArray(p && p.roles) ? p.roles : [];
+              const navList = document.querySelector('.offcanvas-body ul.navbar-nav');
+
               if (roles.includes('ROLE_CLIENT')) {
-                const navList = document.querySelector('.offcanvas-body ul.navbar-nav');
                 if (navList && !navList.querySelector('a[href="/client-dashboard.html"]')) {
                   const li = document.createElement('li');
                   li.className = 'nav-item';
@@ -61,6 +62,23 @@
                   a.textContent = 'Espace Client';
                   li.appendChild(a);
                   navList.appendChild(li);
+                }
+              }
+
+              // Inject Messagerie link for all authenticated users
+              if (navList && !navList.querySelector('a[href="/messagerie.html"]')) {
+                const li = document.createElement('li');
+                li.className = 'nav-item';
+                const a = document.createElement('a');
+                a.className = 'nav-link';
+                a.href = '/messagerie.html';
+                a.innerHTML = '<i class="bi bi-chat-dots-fill me-2"></i>Messagerie';
+                li.appendChild(a);
+                const dashboardLi = navList.querySelector('a[href="/dashboard.html"]')?.parentElement;
+                if (dashboardLi) {
+                  dashboardLi.insertAdjacentElement('afterend', li);
+                } else {
+                  navList.prepend(li);
                 }
               }
             } catch(_){}
