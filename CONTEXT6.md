@@ -75,3 +75,19 @@ Derniere mise a jour: Session 6
   - L'endpoint API `PUT /api/demandes_client/:id/status` a été modifié pour accepter et sauvegarder un `commentaire` lorsque le statut est `Rejetee` ou `Annule`.
   - Sur la page `demandes-client-admin.html`, lorsqu'un administrateur change le statut d'une demande pour "Rejetée" ou "Annulée", une fenêtre modale apparaît, demandant un commentaire obligatoire pour justifier ce changement de statut.
   - Le commentaire est ensuite affiché sur la carte de la demande.
+
+## Raffinements de la Messagerie (Session 8)
+
+- **Messagerie Contextualisée par Demande :**
+  - La fonctionnalité de messagerie a été déplacée depuis le tableau de bord client (`client-dashboard.html`) vers la page de détail d'une demande (`client-demand-view.html`).
+  - Les clients peuvent désormais envoyer des messages directement depuis la page de suivi d'une demande, ce qui rend la communication spécifique à cette demande.
+  - La conversation est liée à la demande via un `conversation_id` (ex: `demande-123`).
+
+- **Destinataire (Responsable) Garanti :**
+  - Le backend a été amélioré pour garantir qu'il y a toujours un destinataire pour les messages du client.
+  - Si un `responsable` est assigné au ticket lié à la demande, il devient le destinataire.
+  - Si aucun `responsable` n'est assigné, le message est envoyé par défaut à l'administrateur principal (`maboujunior777@gmail.com`).
+  - L'API `GET /api/client/demandes/:id` inclut maintenant le `user_id` du responsable pour faciliter la communication.
+
+- **Réponse du Responsable :**
+  - Le responsable (ou l'administrateur) peut voir et répondre à tous les messages des clients via la page de messagerie générale (`/messagerie.html`), qui liste toutes ses conversations.

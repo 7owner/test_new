@@ -119,6 +119,7 @@ CREATE TABLE IF NOT EXISTS client (
     representant_email VARCHAR(255),
     representant_tel VARCHAR(50),
     adresse_id BIGINT,
+    user_id INTEGER,
     commentaire TEXT
 );
 

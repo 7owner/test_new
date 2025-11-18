@@ -9,6 +9,20 @@ async function run() {
   });
   const cx = await pool.connect();
   try {
+    // Ensure user_id column exists on client table
+    const columnCheck = await cx.query("SELECT column_name FROM information_schema.columns WHERE table_name='client' AND column_name='user_id'");
+    if (columnCheck.rows.length === 0) {
+      await cx.query('ALTER TABLE client ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE SET NULL');
+      console.log('Added user_id column to client table.');
+    }
+
+    // Ensure client_id column exists on site table
+    const siteColumnCheck = await cx.query("SELECT column_name FROM information_schema.columns WHERE table_name='site' AND column_name='client_id'");
+    if (siteColumnCheck.rows.length === 0) {
+      await cx.query('ALTER TABLE site ADD COLUMN client_id INTEGER REFERENCES client(id) ON DELETE SET NULL');
+      console.log('Added client_id column to site table.');
+    }
+
     await cx.query('BEGIN');
     const email = 'client1@app.com';
     const roles = ['ROLE_CLIENT'];
@@ -29,8 +43,8 @@ async function run() {
     } else {
       console.log('Client exists for:', email);
     }
-    // Try to set client.user_id if column exists
-    try { await cx.query('UPDATE client SET user_id=$1 WHERE id=$2', [u.id, c.id]); } catch {}
+    // Set client.user_id
+    await cx.query('UPDATE client SET user_id=$1 WHERE id=$2', [u.id, c.id]);
     // Ensure site exists
     let s = (await cx.query('SELECT id FROM site WHERE client_id=$1 AND nom_site=$2', [c.id, 'Site Client Demo'])).rows[0];
     if (!s) {
