@@ -91,3 +91,13 @@ Derniere mise a jour: Session 6
 
 - **Réponse du Responsable :**
   - Le responsable (ou l'administrateur) peut voir et répondre à tous les messages des clients via la page de messagerie générale (`/messagerie.html`), qui liste toutes ses conversations.
+
+## Améliorations de l'Expérience Client et Maintenance (Session 9)
+
+- **Bouton de Déconnexion sur le Tableau de Bord Client :**
+  - Un bouton "Déconnexion" a été ajouté directement dans l'en-tête de la page `client-dashboard.html`.
+  - Cela permet aux utilisateurs clients de se déconnecter facilement de leur session sans avoir à ouvrir le menu latéral.
+
+- **Stabilisation de la Base de Données et Déploiement :**
+  - Le script de création du client de démonstration (`ensure_demo_client.js`) a été renforcé pour ajouter automatiquement des colonnes manquantes (`user_id` sur `client`, `client_id` sur `site`) avant de s'exécuter, ce qui le rend plus résilient aux schémas de base de données incomplets.
+  - La base de données de production sur Heroku a été réinitialisée (`heroku pg:reset`) pour corriger les incohérences de schéma qui empêchaient le bon fonctionnement de l'application. Le client de démonstration a ensuite été créé avec succès sur l'environnement Heroku.
