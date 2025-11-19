@@ -60,7 +60,7 @@ CREATE TYPE sujet_type          AS ENUM ('ticket','intervention');
 CREATE TYPE statut_rdv          AS ENUM ('Planifie','Confirme','Termine','Annule');
 CREATE TYPE doc_cible_type      AS ENUM (
     'Affaire','Agent','Agence','Adresse','Client','Site','RendezVous','DOE','Ticket','Intervention',
-    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention'
+    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention', 'DemandeClient'
 );
 CREATE TYPE doc_nature          AS ENUM ('Document','Video','Audio','Autre');
 CREATE TYPE statut_achat        AS ENUM ('Brouillon','Valide','Commande','Recu_partiel','Recu','Annule');
