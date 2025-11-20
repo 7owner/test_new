@@ -57,6 +57,19 @@ async function run() {
       await cx.query('INSERT INTO demande_client (client_id, site_id, description, status) VALUES ($1,$2,$3,$4)', [c.id, s.id, 'Demande: verification installation', 'En_attente']);
       console.log('Inserted a demande for client demo');
     }
+
+    // Ensure some agents exist
+    const agentCount = (await cx.query('SELECT count(*)::int AS n FROM agent')).rows[0].n;
+    if (agentCount === 0) {
+        await cx.query(`
+            INSERT INTO agent (matricule, nom, prenom, email, admin) VALUES 
+            ('AGT001', 'Leclerc', 'Thomas', 'thomas.leclerc@example.com', false),
+            ('AGT002', 'Martin', 'Sophie', 'sophie.martin@example.com', true),
+            ('AGT003', 'Bernard', 'Pierre', 'pierre.bernard@example.com', false);
+        `);
+        console.log('Inserted 3 demo agents.');
+    }
+
     await cx.query('COMMIT');
     console.log('Ensure demo client OK');
   } catch (e) {
