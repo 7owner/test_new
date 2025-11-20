@@ -53,26 +53,26 @@
       </div>
     </div>
 
+    <!-- Responsables Section -->
     <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-3">Responsables</h2>
-        <div id="ticket-responsables" class="mb-2"></div>
-        <div class="d-flex gap-2 d-none" id="ticket-resp-actions">
-          <input class="form-control form-control-sm" id="resp-matricule" placeholder="Matricule (Chef/Admin)">
-          <button class="btn btn-sm btn-outline-primary" id="add-resp-btn"><i class="bi bi-person-plus me-1"></i>Ajouter</button>
+        <div class="card-body">
+            <h2 class="card-title mb-4">Responsables</h2>
+            <ul id="responsables-list" class="list-group mb-3">
+                <!-- Responsables will be loaded here -->
+            </ul>
+            <button id="add-responsable-btn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addResponsableModal">Ajouter un responsable</button>
         </div>
-      </div>
     </div>
 
+    <!-- Agents Section -->
     <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-3">Agents assignés</h2>
-        <div id="ticket-agents" class="mb-2"></div>
-        <div class="d-flex gap-2 d-none" id="ticket-agent-actions">
-          <input class="form-control form-control-sm" id="agent-matricule" placeholder="Matricule agent">
-          <button class="btn btn-sm btn-outline-primary" id="add-agent-btn"><i class="bi bi-person-plus me-1"></i>Assigner</button>
+        <div class="card-body">
+            <h2 class="card-title mb-4">Agents Assignés</h2>
+            <ul id="agents-list" class="list-group mb-3">
+                <!-- Agents will be loaded here -->
+            </ul>
+            <button id="add-agent-btn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAgentModal">Ajouter un agent</button>
         </div>
-      </div>
     </div>
 
     <div class="card mb-4 d-none" id="admin-actions-card">
@@ -90,6 +90,58 @@
       <a href="ticket-edit.html" class="btn btn-primary d-none" id="edit-ticket-btn"><i class="bi bi-pencil me-2"></i>Modifier le ticket</a>
     </div>
   </main>
+
+  <!-- Add Responsable Modal -->
+  <div class="modal fade" id="addResponsableModal" tabindex="-1" aria-labelledby="addResponsableModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addResponsableModalLabel">Ajouter un responsable</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addResponsableForm">
+            <div class="mb-3">
+              <label for="responsable-select" class="form-label">Sélectionner un agent (doit être admin et "Chef")</label>
+              <select class="form-select" id="responsable-select" required>
+                <!-- Agent options will be loaded here -->
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-responsable-btn">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Agent Modal -->
+  <div class="modal fade" id="addAgentModal" tabindex="-1" aria-labelledby="addAgentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addAgentModalLabel">Ajouter un agent</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addAgentForm">
+            <div class="mb-3">
+              <label for="agent-select" class="form-label">Sélectionner un agent</label>
+              <select class="form-select" id="agent-select" required>
+                <!-- Agent options will be loaded here -->
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-agent-btn">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal: Create Affaire -->
   <div class="modal fade" id="createAffaireModal" tabindex="-1" aria-labelledby="createAffaireModalLabel" aria-hidden="true">
