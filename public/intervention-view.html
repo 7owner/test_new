@@ -82,11 +82,85 @@
       </div>
     </div>
 
+    <!-- Responsables Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="card-title mb-4">Responsables</h2>
+            <ul id="responsables-list" class="list-group mb-3">
+                <!-- Responsables will be loaded here -->
+            </ul>
+            <button id="add-responsable-btn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addResponsableModal">Ajouter un responsable</button>
+        </div>
+    </div>
+
+    <!-- Agents Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="card-title mb-4">Agents Assignés</h2>
+            <ul id="agents-list" class="list-group mb-3">
+                <!-- Agents will be loaded here -->
+            </ul>
+            <button id="add-agent-btn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAgentModal">Ajouter un agent</button>
+        </div>
+    </div>
+
     <div class="d-flex gap-2">
       <a href="interventions.html" class="btn btn-secondary">Retour à la liste</a>
       <a href="intervention-edit.html" class="btn btn-warning" id="edit-intervention-btn"><i class="bi bi-pencil"></i> Modifier</a>
     </div>
   </main>
+
+  <!-- Add Responsable Modal -->
+  <div class="modal fade" id="addResponsableModal" tabindex="-1" aria-labelledby="addResponsableModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addResponsableModalLabel">Ajouter un responsable</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addResponsableForm">
+            <div class="mb-3">
+              <label for="responsable-select" class="form-label">Sélectionner un agent (doit être admin et "Chef")</label>
+              <select class="form-select" id="responsable-select" required>
+                <!-- Agent options will be loaded here -->
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-responsable-btn">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Agent Modal -->
+  <div class="modal fade" id="addAgentModal" tabindex="-1" aria-labelledby="addAgentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addAgentModalLabel">Ajouter un agent</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addAgentForm">
+            <div class="mb-3">
+              <label for="agent-select" class="form-label">Sélectionner un agent</label>
+              <select class="form-select" id="agent-select" required>
+                <!-- Agent options will be loaded here -->
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-agent-btn">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal supprimé: prise de ticket via page dédiée -->
 
@@ -96,22 +170,102 @@
       const urlParams = new URLSearchParams(window.location.search);
       const interventionId = urlParams.get('id');
       const token = localStorage.getItem('token');
+      const headers = { 'Authorization': `Bearer ${token}` };
 
       let isAdmin = false;
       try {
         const p = token ? JSON.parse(atob(token.split('.')[1])) : null;
         isAdmin = Array.isArray(p && p.roles) && p.roles.includes('ROLE_ADMIN');
       } catch {}
-      const takeLink = document.getElementById('take-ticket-link'); if (!isAdmin && takeLink) takeLink.classList.add('d-none');
+
+      if (!isAdmin) {
+          document.getElementById('add-responsable-btn').style.display = 'none';
+          document.getElementById('add-agent-btn').style.display = 'none';
+      }
 
       let ticketId = null;
-      try {
-        const relRes = await fetch(`/api/interventions/${interventionId}/relations`, {
-          headers: Object.assign({}, token ? { 'Authorization': `Bearer ${token}` } : {}),
-          credentials: 'same-origin'
-        });
-        if (relRes.ok) {
-          const rel = await relRes.json();
+      let allAgents = [];
+
+      const responsableSelect = document.getElementById('responsable-select');
+      const agentSelect = document.getElementById('agent-select');
+      const responsablesList = document.getElementById('responsables-list');
+      const agentsList = document.getElementById('agents-list');
+
+      async function fetchJSON(url, opts = {}) {
+        const res = await fetch(url, { ...opts, headers: { ...headers, ...opts.headers } });
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) location.href = '/login.html';
+          const errorData = await res.json().catch(() => ({ error: `HTTP error ${res.status}` }));
+          throw new Error(errorData.error);
+        }
+        if (res.status === 204) return null;
+        return res.json();
+      }
+
+      function displayResponsables(responsables = []) {
+        responsablesList.innerHTML = '';
+        if (responsables.length > 0) {
+            responsables.forEach(r => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                li.textContent = `${r.prenom || ''} ${r.nom || ''} (${r.matricule || r.agent_matricule}) - ${r.role}`;
+                responsablesList.appendChild(li);
+            });
+        } else {
+            responsablesList.innerHTML = '<li class="list-group-item text-muted">Aucun responsable assigné.</li>';
+        }
+      }
+
+      function displayAgents(agents = []) {
+        agentsList.innerHTML = '';
+        if (agents.length > 0) {
+            agents.forEach(a => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.textContent = `${a.prenom || ''} ${a.nom || ''} (${a.agent_matricule})`;
+                if (isAdmin) {
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'btn btn-danger btn-sm';
+                    removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    removeBtn.onclick = () => removeAgent(a.agent_matricule);
+                    li.appendChild(removeBtn);
+                }
+                agentsList.appendChild(li);
+            });
+        } else {
+            agentsList.innerHTML = '<li class="list-group-item text-muted">Aucun agent assigné.</li>';
+        }
+      }
+      
+      async function removeAgent(agentMatricule) {
+        if (!ticketId || !confirm(`Voulez-vous vraiment retirer l'agent ${agentMatricule} de ce ticket ?`)) return;
+        try {
+            await fetchJSON(`/api/tickets/${ticketId}/agents/${agentMatricule}`, { method: 'DELETE' });
+            fetchAndDisplayTicketRelations();
+        } catch (error) {
+            console.error('Error removing agent:', error);
+            alert('Erreur lors du retrait de l\'agent.');
+        }
+      }
+
+      async function fetchAndDisplayTicketRelations() {
+          if (!ticketId) {
+            displayResponsables([]);
+            displayAgents([]);
+            return;
+          };
+          try {
+              const relations = await fetchJSON(`/api/tickets/${ticketId}/relations`);
+              displayResponsables(relations.responsables);
+              displayAgents(relations.agents_assignes);
+          } catch (error) {
+              console.error('Error fetching ticket relations:', error);
+          }
+      }
+      
+      async function fetchAndPopulateAll() {
+        try {
+          const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
           if (rel && rel.intervention) {
             document.getElementById('intervention-id').textContent = rel.intervention.id;
             document.getElementById('view_id').textContent = rel.intervention.id;
@@ -121,43 +275,57 @@
             document.getElementById('view_date_fin').textContent = rel.intervention.date_fin || '';
             document.getElementById('view_status').textContent = rel.intervention.status || '';
             document.getElementById('view_intervention_precedente_id').textContent = rel.intervention.intervention_precedente_id || '';
+            ticketId = rel.ticket ? rel.ticket.id : null;
           }
-          ticketId = (rel && rel.ticket && rel.ticket.id) ? rel.ticket.id : null;
-        } else {
-          if (relRes.status === 401 || relRes.status === 403) {
-            // Not authenticated/forbidden: redirect to login
-            try { window.location.replace('/login.html'); } catch { window.location.href = '/login.html'; }
-          }
-        }
-      } catch (e) {
-        console.error('Erreur chargement relations intervention', e);
-      }
 
-      if (takeLink) {
-        takeLink.classList.remove('d-none');
-        takeLink.href = `/confirmation_prise_ticket.html?intervention_id=${encodeURIComponent(interventionId)}`;
-      }
+          allAgents = await fetchJSON('/api/agents');
+          const options = allAgents.map(agent => `<option value="${agent.matricule}">${agent.nom} ${agent.prenom || ''} (${agent.matricule})</option>`).join('');
+          responsableSelect.innerHTML = options;
+          agentSelect.innerHTML = options;
+          
+          fetchAndDisplayTicketRelations();
 
-      // Charger les matériels utilisés pour l'intervention
-      try {
-        const mRes = await fetch(`/api/interventions/${interventionId}/materiels`, { headers: Object.assign({}, token? { 'Authorization': `Bearer ${token}` } : {}), credentials: 'same-origin' });
-        if (mRes.ok) {
-          const mats = await mRes.json();
-          if (Array.isArray(mats) && mats.length) {
-            const block = document.getElementById('materiels-card');
-            const list = document.getElementById('materiels-list');
-            list.innerHTML = mats.map(x => `<li>${x.reference || ''} — ${x.designation || ''}${x.quantite? ' × '+x.quantite: ''}${x.commentaire? ' ('+x.commentaire+')':''}</li>`).join('');
-            block.style.display = '';
-            const btn = document.getElementById('show-materiels-btn');
-            if (btn) {
-              btn.classList.remove('d-none');
-              btn.addEventListener('click', () => {
-                try { document.getElementById('materiels-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(_) {}
-              });
-            }
-          }
+        } catch (e) {
+          console.error('Erreur chargement initial', e);
+          document.querySelector('main').innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
         }
-      } catch (_) {}
+      }
+      
+      document.getElementById('save-responsable-btn').addEventListener('click', async () => {
+        const agent_matricule = responsableSelect.value;
+        if (!ticketId || !agent_matricule) return;
+        try {
+            await fetchJSON(`/api/tickets/${ticketId}/responsables`, {
+                method: 'POST',
+                body: JSON.stringify({ agent_matricule }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            bootstrap.Modal.getInstance(document.getElementById('addResponsableModal')).hide();
+            fetchAndDisplayTicketRelations();
+        } catch (error) {
+            console.error('Error adding responsable:', error);
+            alert(`Erreur: ${error.message}`);
+        }
+      });
+      
+      document.getElementById('save-agent-btn').addEventListener('click', async () => {
+        const agent_matricule = agentSelect.value;
+        if (!ticketId || !agent_matricule) return;
+        try {
+            await fetchJSON(`/api/tickets/${ticketId}/agents`, {
+                method: 'POST',
+                body: JSON.stringify({ agent_matricule }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            bootstrap.Modal.getInstance(document.getElementById('addAgentModal')).hide();
+            fetchAndDisplayTicketRelations();
+        } catch (error) {
+            console.error('Error adding agent:', error);
+            alert('Erreur lors de l\'ajout de l\'agent.');
+        }
+      });
+
+      fetchAndPopulateAll();
     });
   </script>
 </body>
