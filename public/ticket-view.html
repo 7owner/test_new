@@ -248,26 +248,131 @@
           list.appendChild(el);
         });
 
-        // Responsables et agents assignés
-        const respWrap = document.getElementById('ticket-responsables');
-        const agentsWrap = document.getElementById('ticket-agents');
-        if (respWrap) {
-          const arr = data.responsables || data.responsables_secondaires || [];
-          respWrap.innerHTML = arr.length? '' : '<span class="text-muted">Aucun responsable secondaire.</span>';
-          arr.forEach(r=>{ const el=document.createElement('div'); el.className='small'; el.textContent = (r.actor_email||r.actor_name||'') + (r.role? ` (${r.role})`: ''); respWrap.appendChild(el); });
-        }
-        if (agentsWrap) {
-          const arr = data.agents_assignes || [];
-          agentsWrap.innerHTML = arr.length? '' : '<span class="text-muted">Aucun agent assigné.</span>';
-          arr.forEach(a=>{ const el=document.createElement('div'); el.className='small'; el.textContent = a.agent_matricule; agentsWrap.appendChild(el); });
+// Responsables et agents assignés
+        const responsablesList = document.getElementById('responsables-list');
+        const agentsList = document.getElementById('agents-list');
+
+        function renderResponsables(arr) {
+          if (!responsablesList) return;
+          responsablesList.innerHTML = '';
+          if (!arr || !arr.length) {
+            responsablesList.innerHTML = '<li class="list-group-item text-muted">Aucun responsable.</li>';
+            return;
+          }
+          arr.forEach(r => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            const label = (r.actor_email || r.actor_name || r.agent_matricule || 'Responsable')
+              + (r.role ? ` (${r.role})` : '');
+            li.textContent = label;
+            responsablesList.appendChild(li);
+          });
         }
 
+        function renderAgents(arr) {
+          if (!agentsList) return;
+          agentsList.innerHTML = '';
+          if (!arr || !arr.length) {
+            agentsList.innerHTML = '<li class="list-group-item text-muted">Aucun agent assigné.</li>';
+            return;
+          }
+          arr.forEach(a => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.textContent = a.agent_matricule || a.matricule || 'Agent';
+            agentsList.appendChild(li);
+          });
+        }
+
+        const responsables = data.responsables || data.responsables_secondaires || [];
+        const agentsAssignes = data.agents_assignes || [];
+        renderResponsables(responsables);
+        renderAgents(agentsAssignes);
+
         if (isAdmin) {
-          const addInt = document.getElementById('add-intervention-btn'); if (addInt) addInt.classList.remove('d-none');
-          const editBtn = document.getElementById('edit-ticket-btn'); if (editBtn) editBtn.classList.remove('d-none');
-          const respAct = document.getElementById('ticket-resp-actions'); if (respAct) respAct.classList.remove('d-none');
-          const agAct = document.getElementById('ticket-agent-actions'); if (agAct) agAct.classList.remove('d-none');
-          const adminActions = document.getElementById('admin-actions-card'); if (adminActions) adminActions.classList.remove('d-none');
+          const addInt = document.getElementById('add-intervention-btn');
+          if (addInt) addInt.classList.remove('d-none');
+          const editBtn = document.getElementById('edit-ticket-btn');
+          if (editBtn) editBtn.classList.remove('d-none');
+          const adminActions = document.getElementById('admin-actions-card');
+          if (adminActions) adminActions.classList.remove('d-none');
+
+          // Chargement des agents pour les sélecteurs
+          let allAgents = [];
+          try {
+            const agentsRes = await fetch('/api/agents', { headers, credentials: 'same-origin' });
+            if (agentsRes.ok) {
+              allAgents = await agentsRes.json();
+            }
+          } catch {}
+
+          const responsableSelect = document.getElementById('responsable-select');
+          const agentSelect = document.getElementById('agent-select');
+
+          function populateSelect(selectEl, filterFn) {
+            if (!selectEl) return;
+            selectEl.innerHTML = '<option value="">-- Sélectionner --</option>';
+            (allAgents || [])
+              .filter(filterFn || (() => true))
+              .forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a.matricule;
+                opt.textContent = `${a.matricule} - ${a.nom} ${a.prenom}`;
+                selectEl.appendChild(opt);
+              });
+          }
+
+          // Responsable : admin + Chef
+          populateSelect(responsableSelect, a =>
+            Array.isArray(a.roles) && a.roles.includes('ROLE_ADMIN') &&
+            (a.fonction === 'Chef' || a.fonction === 'CHEF')
+          );
+          // Agents : tous
+          populateSelect(agentSelect);
+
+          const saveResponsableBtn = document.getElementById('save-responsable-btn');
+          if (saveResponsableBtn && responsableSelect) {
+            saveResponsableBtn.addEventListener('click', async () => {
+              const matricule = responsableSelect.value;
+              if (!matricule) return alert('Veuillez sélectionner un responsable.');
+              try {
+                const resPost = await fetch(`/api/tickets/${ticketId}/responsables`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', ...headers },
+                  credentials: 'same-origin',
+                  body: JSON.stringify({ matricule })
+                });
+                const body = await resPost.json().catch(() => ({}));
+                if (!resPost.ok) throw new Error(body.error || 'Erreur lors de l\'ajout du responsable');
+                alert('Responsable ajouté avec succès.');
+                location.reload();
+              } catch (err) {
+                alert(`Erreur: ${err.message}`);
+              }
+            });
+          }
+
+          const saveAgentBtn = document.getElementById('save-agent-btn');
+          if (saveAgentBtn && agentSelect) {
+            saveAgentBtn.addEventListener('click', async () => {
+              const matricule = agentSelect.value;
+              if (!matricule) return alert('Veuillez sélectionner un agent.');
+              try {
+                const resPost = await fetch(`/api/tickets/${ticketId}/agents`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', ...headers },
+                  credentials: 'same-origin',
+                  body: JSON.stringify({ matricule })
+                });
+                const body = await resPost.json().catch(() => ({}));
+                if (!resPost.ok) throw new Error(body.error || 'Erreur lors de l\'assignation de l\'agent');
+                alert('Agent assigné avec succès.');
+                location.reload();
+              } catch (err) {
+                alert(`Erreur: ${err.message}`);
+              }
+            });
+          }
 
           // Logic for creating Affaire
           const affaireForm = document.getElementById('create-affaire-form');
