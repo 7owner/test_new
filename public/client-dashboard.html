@@ -83,6 +83,18 @@
         });
       }
       
+      function getStatusBadge(status) {
+        const s = status || 'En cours de traitement';
+        let badgeClass = 'bg-light text-dark';
+        switch(s.toLowerCase()) {
+          case 'en cours de traitement': badgeClass = 'bg-info'; break;
+          case 'traité': badgeClass = 'bg-success'; break;
+          case 'rejeté': badgeClass = 'bg-danger'; break;
+          case 'annulé': badgeClass = 'bg-warning text-dark'; break;
+        }
+        return `<span class="badge ${badgeClass}">${s}</span>`;
+      }
+
       async function fetchClientProfile() {
         try {
           const r = await fetch('/api/client/profile', { headers: { 'Authorization': `Bearer ${token}` } });
@@ -141,7 +153,7 @@
               el.innerHTML = `
                 <div class="d-flex w-100 justify-content-between">
                   <h5 class="mb-1">Demande #${d.id} - Site: ${d.nom_site || 'N/A'}</h5>
-                  <small>${d.status}</small>
+                  <small>${getStatusBadge(d.status)}</small>
                 </div>
                 <p class="mb-1">${d.description}</p>
                 <small>Créée le: ${new Date(d.created_at).toLocaleDateString()}</small>
