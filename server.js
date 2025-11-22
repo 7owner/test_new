@@ -1040,10 +1040,16 @@ app.get('/api/tickets/:id/relations', authenticateToken, async (req, res) => {
     const images = (await pool.query("SELECT id, nom_fichier, type_mime FROM images WHERE cible_type='Ticket' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
 
     const responsables = (await pool.query(`
-      SELECT tr.id, tr.role, tr.date_debut, tr.date_fin,
-             a.matricule, a.nom, a.prenom
+      SELECT tr.id,
+             tr.role,
+             tr.date_debut,
+             tr.date_fin,
+             tr.agent_matricule,
+             a.nom,
+             a.prenom,
+             a.email
       FROM ticket_responsable tr
-      JOIN agent a ON a.matricule = tr.agent_matricule
+      LEFT JOIN agent a ON a.matricule = tr.agent_matricule
       WHERE tr.ticket_id = $1
       ORDER BY tr.id DESC
     `, [id])).rows;
@@ -2190,7 +2196,16 @@ app.delete('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, re
 app.post('/api/tickets/:id/take', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const actor = (req.user && req.user.email) || req.headers['x-actor-email'] || null;
+    const actorEmail = (req.user && req.user.email) || req.headers['x-actor-email'] || null;
+    let actorMatricule = req.user && req.user.matricule;
+    if (!actorMatricule && actorEmail) {
+      try {
+        const lookup = await pool.query('SELECT matricule FROM agent WHERE email=$1 LIMIT 1', [actorEmail]);
+        actorMatricule = lookup.rows[0] && lookup.rows[0].matricule;
+      } catch (_) {}
+    }
+    if (!actorMatricule) return res.status(400).json({ error: 'Agent matricule missing for actor' });
+    const actor = actorEmail;
     const { actor_name, date_debut, date_fin, commentaire } = req.body || {};
     if (!actor) return res.status(400).json({ error: 'Actor email missing' });
     // Block if ticket is already marked as Terminé (approximation of site closed)
@@ -2203,17 +2218,19 @@ app.post('/api/tickets/:id/take', authenticateToken, authorizeAdmin, async (req,
     const cur = await pool.query('SELECT responsable FROM ticket WHERE id=$1', [id]);
     const currentResp = cur.rows[0] && cur.rows[0].responsable;
     if (!currentResp) {
-      const up = await pool.query('UPDATE ticket SET responsable=$1 WHERE id=$2 RETURNING *', [actor, id]);
+      const up = await pool.query('UPDATE ticket SET responsable=$1 WHERE id=$2 RETURNING *', [actorMatricule, id]);
       try {
-        await pool.query('INSERT INTO ticket_historique_responsable (ticket_id, ancien_responsable_matricule, nouveau_responsable_matricule, modifie_par_matricule) VALUES ($1,$2,$3,$4)', [id, null, actor, actor]);
+        await pool.query('INSERT INTO ticket_historique_responsable (ticket_id, ancien_responsable_matricule, nouveau_responsable_matricule, modifie_par_matricule) VALUES ($1,$2,$3,$4)', [id, null, actorMatricule, actorMatricule]);
       } catch(_){}
       try { await logAudit('ticket', id, 'TAKE_PRIMARY', actor, { actor_name, date_debut, date_fin, commentaire }); } catch(_){}
       return res.status(200).json({ message: 'Assigné comme responsable principal du ticket', assignment: 'primary', ticket: up.rows[0] });
     }
 
     // Otherwise, insert as secondary responsible (history kept)
-    const r = await pool.query("INSERT INTO ticket_responsable (ticket_id, actor_email, actor_name, role, date_debut, date_fin, commentaire) VALUES ($1,$2,$3,'Secondaire',COALESCE($4, CURRENT_TIMESTAMP), $5, $6) RETURNING *",
-      [id, actor, actor_name || null, date_debut || null, date_fin || null, commentaire || null]);
+    const r = await pool.query(
+      "INSERT INTO ticket_responsable (ticket_id, agent_matricule, role, date_debut, date_fin) VALUES ($1,$2,'Secondaire',COALESCE($3, CURRENT_TIMESTAMP), $4) RETURNING *",
+      [id, actorMatricule, date_debut || null, date_fin || null]
+    );
     try { await logAudit('ticket', id, 'TAKE_SECONDARY', actor, { actor_name, date_debut, date_fin, commentaire }); } catch(_){}
     res.status(201).json({ message: 'Ajouté comme responsable secondaire', assignment: 'secondary', record: r.rows[0] });
   } catch (err) {
@@ -3126,8 +3143,7 @@ app.post('/api/tickets/:id/responsables', authenticateToken, authorizeAdmin, asy
   try {
     await assertAgentIsChef(agent_matricule);
     const t = (await pool.query('SELECT id FROM ticket WHERE id=$1', [id])).rows[0]; if (!t) return res.status(404).json({ error: 'Ticket not found' });
-    const a = (await pool.query('SELECT email, nom FROM agent WHERE matricule=$1', [agent_matricule])).rows[0] || {};
-    const r = await pool.query("INSERT INTO ticket_responsable (ticket_id, actor_email, actor_name, role) VALUES ($1,$2,$3,$4) RETURNING *", [id, a.email || agent_matricule, a.nom || null, role]);
+    const r = await pool.query("INSERT INTO ticket_responsable (ticket_id, agent_matricule, role) VALUES ($1,$2,$3) RETURNING *", [id, agent_matricule, role]);
     res.status(201).json(r.rows[0]);
   } catch (e) { console.error('ticket add responsable:', e); res.status(400).json({ error: e.message || 'Bad Request' }); }
 });
@@ -3411,10 +3427,9 @@ app.post('/api/demandes_client/:id/convert-to-ticket', authenticateToken, author
 
     // 4. Assign the current user as the primary responsible person in the dedicated table
     if (connectedUserMatricule) {
-      const agentInfo = (await cx.query('SELECT email, nom FROM agent WHERE matricule=$1', [connectedUserMatricule])).rows[0] || {};
       await cx.query(
-        "INSERT INTO ticket_responsable (ticket_id, actor_email, actor_name, role) VALUES ($1, $2, $3, $4)",
-        [t.id, agentInfo.email || req.user.email, agentInfo.nom || null, 'Principal']
+        "INSERT INTO ticket_responsable (ticket_id, agent_matricule, role) VALUES ($1, $2, $3)",
+        [t.id, connectedUserMatricule, 'Principal']
       );
     }
 
@@ -3555,9 +3570,25 @@ app.post('/api/conversations/:conversation_id/messages', authenticateToken, uplo
     try {
         await client.query('BEGIN');
         
+        if (Number(receiver_id) === sender_id) {
+          await client.query('ROLLBACK');
+          return res.status(400).json({ error: 'Cannot send a message to yourself' });
+        }
+
+        // Forbid posting in conversations where the user is not a participant
+        const convoCheck = await client.query(
+          'SELECT 1 FROM messagerie WHERE conversation_id=$1 AND (sender_id=$2 OR receiver_id=$2) LIMIT 1',
+          [conversation_id, sender_id]
+        );
+        if (convoCheck.rows.length === 0 && !conversation_id.startsWith('demande-')) {
+          await client.query('ROLLBACK');
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+        
         // Ensure receiver exists
         const receiverExists = await client.query('SELECT id FROM users WHERE id = $1', [receiver_id]);
         if(receiverExists.rows.length === 0) {
+            await client.query('ROLLBACK');
             return res.status(404).json({error: 'Receiver not found'});
         }
 
