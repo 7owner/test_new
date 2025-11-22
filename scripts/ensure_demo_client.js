@@ -54,7 +54,7 @@ async function run() {
     // Ensure a demande exists
     const dcnt = (await cx.query('SELECT count(*)::int AS n FROM demande_client WHERE client_id=$1', [c.id])).rows[0].n;
     if (dcnt === 0) {
-      await cx.query('INSERT INTO demande_client (client_id, site_id, description, status) VALUES ($1,$2,$3,$4)', [c.id, s.id, 'Demande: verification installation', 'En_attente']);
+      await cx.query('INSERT INTO demande_client (client_id, site_id, description, status) VALUES ($1,$2,$3,$4)', [c.id, s.id, 'Demande: verification installation', 'En cours de traitement']);
       console.log('Inserted a demande for client demo');
     }
 

@@ -3368,7 +3368,7 @@ app.put('/api/demandes_client/:id/status', authenticateToken, authorizeAdmin, as
   try {
     const { id } = req.params;
     const { status, commentaire } = req.body || {};
-    const allowed = ['En_attente', 'En_cours', 'Traitee', 'Rejetee', 'Annule'];
+    const allowed = ['En cours de traitement', 'Traité', 'Rejeté', 'Annulé'];
     if (!allowed.includes(String(status || '').trim())) {
       return res.status(400).json({ error: 'Invalid status' });
     }
@@ -3376,7 +3376,7 @@ app.put('/api/demandes_client/:id/status', authenticateToken, authorizeAdmin, as
     const updateFields = ['status=$1', 'updated_at=CURRENT_TIMESTAMP'];
     const queryParams = [status];
 
-    if ((status === 'Rejetee' || status === 'Annule')) {
+    if ((status === 'Rejeté' || status === 'Annulé')) {
         updateFields.push(`commentaire=$${queryParams.length + 1}`);
         queryParams.push(commentaire || null); // Ensure comment can be null
     }
@@ -3434,11 +3434,11 @@ app.post('/api/demandes_client/:id/convert-to-ticket', authenticateToken, author
     }
 
     // 5. Update the original request to link it to the new ticket
-    await cx.query("UPDATE demande_client SET status='Traitee', updated_at=CURRENT_TIMESTAMP, ticket_id=$1 WHERE id=$2", [t.id, id]);
+    await cx.query("UPDATE demande_client SET status='Traité', updated_at=CURRENT_TIMESTAMP, ticket_id=$1 WHERE id=$2", [t.id, id]);
     
     await cx.query('COMMIT');
     
-    return res.status(201).json({ ticket: t, demande: { id: d.id, status: 'Traitee', ticket_id: t.id } });
+    return res.status(201).json({ ticket: t, demande: { id: d.id, status: 'Traité', ticket_id: t.id } });
   } catch (e) {
     try { await cx.query('ROLLBACK'); } catch(_) {}
     console.error('demande convert:', e);

@@ -398,7 +398,7 @@ CREATE TABLE IF NOT EXISTS demande_client (
     client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
     site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
     description TEXT NOT NULL,
-    status VARCHAR(50) DEFAULT 'En_attente',
+    status VARCHAR(50) DEFAULT 'En cours de traitement',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ticket_id INTEGER REFERENCES ticket(id) ON DELETE SET NULL

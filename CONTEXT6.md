@@ -109,3 +109,14 @@ Derniere mise a jour: Session 6
   - Lors de l'appel à `POST /api/demandes_client/:id/convert-to-ticket`, le système identifie l'utilisateur connecté via sa session (`req.user`).
   - Une nouvelle entrée est créée dans la table `ticket_responsable` avec le `ticket_id` du nouveau ticket et les informations de l'utilisateur (email, nom), avec le rôle de `'Principal'`.
   - La colonne legacy `ticket.responsable` est également mise à jour avec le matricule de l'agent pour assurer la compatibilité.
+
+## Refonte des Statuts de Demande Client (Session 11)
+
+- **Simplification des statuts :**
+  - Le workflow des statuts pour une `demande_client` a été simplifié. Les anciens statuts (`En_attente`, `En_cours`, `Traitee`, `Rejetee`, `Annule`) ont été remplacés par un nouveau set :
+    - `En cours de traitement` (nouveau défaut, remplace `En_attente` et `En_cours`)
+    - `Traité` (remplace `Traitee` lors de la conversion en ticket)
+    - `Rejeté` (remplace `Rejetee`)
+    - `Annulé` (remplace `Annule`)
+  - Les fichiers `server.js`, `public/demandes-client-admin.html`, `database_correction/init_fixed.sql`, `scripts/ensure_demo_client.js` et `public/client-view.html` ont été mis à jour pour refléter ce nouveau système de statuts.
+  - L'orthographe a été corrigée pour utiliser des accents (`Traité`, `Rejeté`, `Annulé`).

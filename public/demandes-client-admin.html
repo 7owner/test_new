@@ -92,11 +92,10 @@
             <label for="filterStatus" class="form-label">Filtrer par Statut:</label>
             <select id="filterStatus" class="form-select">
               <option value="">Tous</option>
-              <option value="En_attente">En attente</option>
-              <option value="En_cours">En cours</option>
-              <option value="Traitee">Traitée</option>
-              <option value="Rejetee">Rejetée</option>
-              <option value="Annule">Annulée</option>
+              <option value="En cours de traitement">En cours de traitement</option>
+              <option value="Traité">Traité</option>
+              <option value="Rejeté">Rejeté</option>
+              <option value="Annulé">Annulé</option>
             </select>
           </div>
         </div>
@@ -126,7 +125,7 @@
     let currentSort = { column: 'id', direction: 'desc' }; // Default sort
     let currentFilter = { client: '', status: '' };
 
-    const statusSel = ['En_attente','En_cours','Traitee','Rejetee','Annule'];
+    const statusSel = ['En cours de traitement', 'Traité', 'Rejeté', 'Annulé'];
 
     async function fetchJSON(url, opts) {
       const res = await fetch(url, Object.assign({ headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } }, opts||{}));
@@ -169,18 +168,17 @@
       
       const badgeClass = (s => {
         switch(String(s || '').toLowerCase()) {
-          case 'en_attente': return 'bg-secondary';
-          case 'en_cours': return 'bg-info';
-          case 'traitee': return 'bg-success';
-          case 'rejetee': return 'bg-danger';
-          case 'annule': return 'bg-warning text-dark'; // Added Annule badge style
+          case 'en cours de traitement': return 'bg-info';
+          case 'traité': return 'bg-success';
+          case 'rejeté': return 'bg-danger';
+          case 'annulé': return 'bg-warning text-dark';
           default: return 'bg-light text-dark';
         }
       })(d.status);
 
       card.innerHTML = `
         <div class="card-body">
-          <h5 class="card-title">Demande #${d.id} <span class="badge ${badgeClass}">${String(d.status || 'En_attente').replace('_', ' ')}</span></h5>
+          <h5 class="card-title">Demande #${d.id} <span class="badge ${badgeClass}">${String(d.status || 'En cours de traitement')}</span></h5>
           <h6 class="card-subtitle mb-2 text-muted">${d.nom_client || 'N/A'} (${d.representant_email || 'N/A'})</h6>
           <p class="card-text mb-1"><strong>Site:</strong> ${d.nom_site || 'N/A'} (ID: ${d.site_id || '-'})</p>
           <p class="card-text">${d.description || 'Pas de description.'}</p>
@@ -188,7 +186,7 @@
           <small class="text-muted">Créée le: ${new Date(d.created_at).toLocaleDateString()}</small>
         </div>
         <div class="card-footer bg-transparent border-top-0 d-flex flex-wrap justify-content-end">
-          ${statusSel.map(s => `<button class="btn btn-sm btn-outline-primary me-1 mb-1 status-btn" data-id="${d.id}" data-status="${s}">${s.replace('_', ' ')}</button>`).join('')}
+          ${statusSel.map(s => `<button class="btn btn-sm btn-outline-primary me-1 mb-1 status-btn" data-id="${d.id}" data-status="${s}">${s}</button>`).join('')}
           <button class="btn btn-sm btn-success mb-1 convert-btn" data-id="${d.id}">Convertir en ticket</button>
         </div>
       `;
@@ -198,7 +196,7 @@
           const id = e.target.dataset.id;
           const status = e.target.dataset.status;
 
-          if (status === 'Rejetee' || status === 'Annule') {
+          if (status === 'Rejeté' || status === 'Annulé') {
             currentDemandId = id;
             currentDemandStatus = status;
             commentTextArea.value = d.commentaire || ''; // Pre-fill if comment already exists
@@ -236,8 +234,8 @@
 
       try {
         let data = await fetchJSON(url);
-        if (currentFilter.status === '') { // If filter is 'Tous', hide 'Traitee'
-            data = data.filter(d => d.status !== 'Traitee');
+        if (currentFilter.status === '') { // If filter is 'Tous', hide 'Traité'
+            data = data.filter(d => d.status !== 'Traité');
         }
 
         if (data.length === 0) {

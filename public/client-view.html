@@ -132,7 +132,7 @@
         data.sites.forEach(s=>{ const li=document.createElement('li'); li.innerHTML = '#' + s.id + ' <a href="/site-view.html?id=' + s.id + '">' + (s.nom_site||('Site '+s.id)) + '</a>'; sites.appendChild(li); });
         const demandes = document.getElementById('demandes');
         demandes.innerHTML = '';
-        data.demandes.forEach(d=>{ const li=document.createElement('li'); const sitePart = d.site_id ? (' <a href="/site-view.html?id=' + d.site_id + '">' + (d.nom_site||('Site '+d.site_id)) + '</a>') : ' (site: -)'; li.innerHTML = '#' + d.id + ' [' + (d.status||'En_attente') + ']' + sitePart + ' - ' + (d.description||''); demandes.appendChild(li); });
+        data.demandes.forEach(d=>{ const li=document.createElement('li'); const sitePart = d.site_id ? (' <a href="/site-view.html?id=' + d.site_id + '">' + (d.nom_site||('Site '+d.site_id)) + '</a>') : ' (site: -)'; li.innerHTML = '#' + d.id + ' [' + (d.status||'En cours de traitement') + ']' + sitePart + ' - ' + (d.description||''); demandes.appendChild(li); });
 
         try { const p = token ? JSON.parse(atob(token.split('.')[1])) : null; isAdmin = Array.isArray(p?.roles)&&p.roles.includes('ROLE_ADMIN'); } catch{}
         if (isAdmin) { const box = document.getElementById('adminActions'); if (box) box.style.display = ''; }
