@@ -101,3 +101,11 @@ Derniere mise a jour: Session 6
 - **Stabilisation de la Base de Données et Déploiement :**
   - Le script de création du client de démonstration (`ensure_demo_client.js`) a été renforcé pour ajouter automatiquement des colonnes manquantes (`user_id` sur `client`, `client_id` sur `site`) avant de s'exécuter, ce qui le rend plus résilient aux schémas de base de données incomplets.
   - La base de données de production sur Heroku a été réinitialisée (`heroku pg:reset`) pour corriger les incohérences de schéma qui empêchaient le bon fonctionnement de l'application. Le client de démonstration a ensuite été créé avec succès sur l'environnement Heroku.
+
+## Attribution Automatique du Responsable de Ticket (Session 10)
+
+- **Le convertisseur devient responsable :**
+  - La logique de conversion d'une "demande client" en "ticket" a été modifiée pour attribuer automatiquement la responsabilité du nouveau ticket à l'utilisateur (administrateur) qui effectue la conversion.
+  - Lors de l'appel à `POST /api/demandes_client/:id/convert-to-ticket`, le système identifie l'utilisateur connecté via sa session (`req.user`).
+  - Une nouvelle entrée est créée dans la table `ticket_responsable` avec le `ticket_id` du nouveau ticket et les informations de l'utilisateur (email, nom), avec le rôle de `'Principal'`.
+  - La colonne legacy `ticket.responsable` est également mise à jour avec le matricule de l'agent pour assurer la compatibilité.
