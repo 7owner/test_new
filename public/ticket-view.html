@@ -324,8 +324,8 @@
 
           // Responsable : admin + Chef
           populateSelect(responsableSelect, a =>
-            Array.isArray(a.roles) && a.roles.includes('ROLE_ADMIN') &&
-            (a.fonction === 'Chef' || a.fonction === 'CHEF')
+            Array.isArray(a.roles) && a.roles.includes('ROLE_ADMIN') //&&
+           // (a.fonction === 'Chef' || a.fonction === 'CHEF')
           );
           // Agents : tous
           populateSelect(agentSelect);
@@ -340,7 +340,10 @@
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', ...headers },
                   credentials: 'same-origin',
-                  body: JSON.stringify({ matricule })
+                  body:  JSON.stringify({
+                          agent_matricule: matricule, // ce que l’API demande
+                          matricule        : matricule // optionnel, pour compatibilité
+                        })
                 });
                 const body = await resPost.json().catch(() => ({}));
                 if (!resPost.ok) throw new Error(body.error || 'Erreur lors de l\'ajout du responsable');
@@ -362,7 +365,10 @@
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', ...headers },
                   credentials: 'same-origin',
-                  body: JSON.stringify({ matricule })
+                  body:  JSON.stringify({
+                          agent_matricule: matricule, // ce que l’API demande
+                          matricule        : matricule // optionnel, pour compatibilité
+                        })
                 });
                 const body = await resPost.json().catch(() => ({}));
                 if (!resPost.ok) throw new Error(body.error || 'Erreur lors de l\'assignation de l\'agent');
