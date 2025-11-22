@@ -3383,28 +3383,54 @@ app.post('/api/demandes_client/:id/convert-to-ticket', authenticateToken, author
   const cx = await pool.connect();
   try {
     const { id } = req.params;
+    const connectedUserMatricule = req.user.matricule;
+
     await cx.query('BEGIN');
+    
+    // 1. Fetch the original request
     const d = (await cx.query('SELECT * FROM demande_client WHERE id=$1 FOR UPDATE', [id])).rows[0];
-    if (!d) { await cx.query('ROLLBACK'); return res.status(404).json({ error: 'Demande not found' }); }
-    // Optionally pick doe/affaire from site
+    if (!d) {
+      await cx.query('ROLLBACK');
+      return res.status(404).json({ error: 'Demande not found' });
+    }
+
+    // 2. Find related DOE/Affaire from the site
     let doe_id = null, affaire_id = null;
     if (d.site_id) {
       const rel = (await cx.query('SELECT id, affaire_id FROM doe WHERE site_id=$1 ORDER BY id ASC LIMIT 1', [d.site_id])).rows[0];
       if (rel) { doe_id = rel.id; affaire_id = rel.affaire_id || null; }
     }
+
+    // 3. Create the new ticket, setting the legacy 'responsable' field
     const titre = `Demande client #${d.id}`;
     const desc = d.description || null;
     const t = (await cx.query(
       'INSERT INTO ticket (doe_id, affaire_id, site_id, responsable, titre, description, etat) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
-      [doe_id, affaire_id, d.site_id || null, null, titre, desc, 'Pas_commence']
+      [doe_id, affaire_id, d.site_id || null, connectedUserMatricule, titre, desc, 'Pas_commence']
     )).rows[0];
+
+    // 4. Assign the current user as the primary responsible person in the dedicated table
+    if (connectedUserMatricule) {
+      const agentInfo = (await cx.query('SELECT email, nom FROM agent WHERE matricule=$1', [connectedUserMatricule])).rows[0] || {};
+      await cx.query(
+        "INSERT INTO ticket_responsable (ticket_id, actor_email, actor_name, role) VALUES ($1, $2, $3, $4)",
+        [t.id, agentInfo.email || req.user.email, agentInfo.nom || null, 'Principal']
+      );
+    }
+
+    // 5. Update the original request to link it to the new ticket
     await cx.query("UPDATE demande_client SET status='Traitee', updated_at=CURRENT_TIMESTAMP, ticket_id=$1 WHERE id=$2", [t.id, id]);
+    
     await cx.query('COMMIT');
+    
     return res.status(201).json({ ticket: t, demande: { id: d.id, status: 'Traitee', ticket_id: t.id } });
   } catch (e) {
     try { await cx.query('ROLLBACK'); } catch(_) {}
-    console.error('demande convert:', e); return res.status(500).json({ error: 'Internal Server Error' });
-  } finally { cx.release(); }
+    console.error('demande convert:', e);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    cx.release();
+  }
 });
 
 // -------------------- Messagerie API --------------------
