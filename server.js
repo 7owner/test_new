@@ -3297,13 +3297,22 @@ app.get('/api/client/demandes/:id', authenticateToken, async (req, res) => {
         if (ticket.responsable) {
           const responsableResult = await pool.query('SELECT user_id, matricule, nom, prenom, email, tel FROM agent WHERE matricule=$1', [ticket.responsable]);
           responsable = responsableResult.rows[0];
-        } else {
-          // If no responsable, assign the default admin
-          const adminUserResult = await pool.query("SELECT user_id, matricule, nom, prenom, email, tel FROM agent WHERE email = 'maboujunior777@gmail.com' LIMIT 1");
-          responsable = adminUserResult.rows[0];
         }
         const interventionsResult = await pool.query('SELECT * FROM intervention WHERE ticket_id=$1 ORDER BY date_debut DESC', [ticket.id]);
         interventions = interventionsResult.rows;
+      }
+    }
+
+    // Fallback: ensure there is always a responsable (default admin) for messaging
+    if (!responsable) {
+      const adminUserResult = await pool.query("SELECT user_id, matricule, nom, prenom, email, tel FROM agent WHERE email = 'maboujunior777@gmail.com' LIMIT 1");
+      responsable = adminUserResult.rows[0] || null;
+      // Try to populate user_id if missing
+      if (responsable && !responsable.user_id && responsable.email) {
+        try {
+          const u = await pool.query('SELECT id FROM users WHERE email=$1 LIMIT 1', [responsable.email]);
+          responsable.user_id = (u.rows[0] || {}).id || null;
+        } catch (_) {}
       }
     }
 
@@ -3450,6 +3459,32 @@ app.post('/api/demandes_client/:id/convert-to-ticket', authenticateToken, author
 
 // -------------------- Messagerie API --------------------
 
+async function canAccessDemandConversation(conversation_id, user) {
+  const match = /^demande-(\d+)$/.exec(conversation_id || '');
+  if (!match) return false;
+  const demandId = Number(match[1]);
+  if (!Number.isFinite(demandId)) return false;
+  try {
+    const d = (await pool.query(`
+      SELECT d.id, d.client_id, d.ticket_id, c.representant_email, t.responsable
+      FROM demande_client d
+      LEFT JOIN client c ON c.id=d.client_id
+      LEFT JOIN ticket t ON t.id=d.ticket_id
+      WHERE d.id=$1
+      LIMIT 1
+    `, [demandId])).rows[0];
+    if (!d) return false;
+    const email = (user && user.email || '').toLowerCase();
+    const isClient = email && d.representant_email && d.representant_email.toLowerCase() === email;
+    const isAdmin = Array.isArray(user && user.roles) && user.roles.includes('ROLE_ADMIN');
+    const isResponsable = !!(user && user.matricule && d.responsable && d.responsable === user.matricule);
+    return isAdmin || isClient || isResponsable;
+  } catch (e) {
+    console.warn('canAccessDemandConversation failed:', e.message);
+    return false;
+  }
+}
+
 // Create a new conversation
 app.post('/api/conversations/new', authenticateToken, async (req, res) => {
     const { message_body, recipient_email } = req.body;
@@ -3530,14 +3565,17 @@ app.get('/api/conversations/:conversation_id', authenticateToken, async (req, re
         const { conversation_id } = req.params;
         const userId = req.user.id;
 
-        // Check if user is part of the conversation
-        const participationCheck = await pool.query(
-            'SELECT 1 FROM messagerie WHERE conversation_id = $1 AND (sender_id = $2 OR receiver_id = $2) LIMIT 1',
-            [conversation_id, userId]
-        );
-        if (participationCheck.rows.length === 0) {
-            return res.status(403).json({ error: 'Forbidden' });
+    // Check if user is part of the conversation, or allowed for demande-*
+    const participationCheck = await pool.query(
+      'SELECT 1 FROM messagerie WHERE conversation_id = $1 AND (sender_id = $2 OR receiver_id = $2) LIMIT 1',
+      [conversation_id, userId]
+    );
+    if (participationCheck.rows.length === 0) {
+        const allowedDemand = await canAccessDemandConversation(conversation_id, req.user);
+        if (!allowedDemand) {
+          return res.status(403).json({ error: 'Forbidden' });
         }
+    }
 
         const messages = await pool.query(
             'SELECT * FROM messagerie WHERE conversation_id = $1 ORDER BY created_at ASC',
@@ -3580,9 +3618,12 @@ app.post('/api/conversations/:conversation_id/messages', authenticateToken, uplo
           'SELECT 1 FROM messagerie WHERE conversation_id=$1 AND (sender_id=$2 OR receiver_id=$2) LIMIT 1',
           [conversation_id, sender_id]
         );
-        if (convoCheck.rows.length === 0 && !conversation_id.startsWith('demande-')) {
-          await client.query('ROLLBACK');
-          return res.status(403).json({ error: 'Forbidden' });
+        if (convoCheck.rows.length === 0) {
+          const allowedDemand = await canAccessDemandConversation(conversation_id, req.user);
+          if (!allowedDemand) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ error: 'Forbidden' });
+          }
         }
         
         // Ensure receiver exists
