@@ -3567,15 +3567,24 @@ app.post('/api/conversations/new', authenticateToken, async (req, res) => {
 app.get('/api/conversations', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
+        const { search } = req.query;
+        const queryParams = [userId];
+        let conditions = `WHERE sender_id = $1 OR receiver_id = $1`;
+
+        if (search) {
+            queryParams.push(`%${search}%`);
+            conditions += ` AND (conversation_id ILIKE $${queryParams.length} OR body ILIKE $${queryParams.length})`;
+        }
+
         const result = await pool.query(
             `SELECT DISTINCT ON (conversation_id) conversation_id, body, created_at, sender_id, receiver_id
              FROM messagerie
-             WHERE sender_id = $1 OR receiver_id = $1
+             ${conditions}
              ORDER BY conversation_id, created_at DESC`,
-            [userId]
+            queryParams
         );
 
-        const conversations = await Promise.all(result.rows.map(async (convo) => {
+        let conversations = await Promise.all(result.rows.map(async (convo) => {
             const otherUserId = convo.sender_id === userId ? convo.receiver_id : convo.sender_id;
             const otherUser = await pool.query('SELECT email FROM users WHERE id = $1', [otherUserId]);
             return {
@@ -3583,6 +3592,16 @@ app.get('/api/conversations', authenticateToken, async (req, res) => {
                 other_user_email: otherUser.rows[0].email
             };
         }));
+
+        // Filter by other_user_email in JavaScript if search term applies to it
+        if (search) {
+            const lowerCaseSearch = search.toLowerCase();
+            conversations = conversations.filter(convo => 
+                convo.other_user_email.toLowerCase().includes(lowerCaseSearch) ||
+                convo.conversation_id.toLowerCase().includes(lowerCaseSearch) ||
+                convo.body.toLowerCase().includes(lowerCaseSearch)
+            );
+        }
 
         res.json(conversations);
     } catch (err) {

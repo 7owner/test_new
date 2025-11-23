@@ -63,6 +63,9 @@
     <div class="row">
       <div class="col-md-4">
         <h2>Conversations</h2>
+        <div class="mb-3">
+          <input type="text" id="conversationFilter" class="form-control" placeholder="Filtrer les conversations...">
+        </div>
         <div id="conversations-list" class="list-group conversations-list">
           <!-- Conversations will be loaded here -->
         </div>
@@ -109,6 +112,7 @@
       const messageForm = document.getElementById('message-form');
       const messageBodyInput = document.getElementById('message-body');
       const attachmentsInput = document.getElementById('attachments');
+      const conversationFilterInput = document.getElementById('conversationFilter');
 
       let currentConversationId = null;
       let currentReceiverId = null;
@@ -135,9 +139,19 @@
       }
       
       async function loadConversations() {
+        const searchTerm = conversationFilterInput.value.trim();
+        let url = '/api/conversations';
+        if (searchTerm) {
+          url += `?search=${encodeURIComponent(searchTerm)}`;
+        }
+
         try {
-          const conversations = await fetchJSON('/api/conversations');
+          const conversations = await fetchJSON(url);
           conversationsList.innerHTML = '';
+          if (conversations.length === 0) {
+            conversationsList.innerHTML = '<p class="text-muted p-3">Aucune conversation trouvée.</p>';
+            return;
+          }
           conversations.forEach(convo => {
             const convoElement = document.createElement('a');
             convoElement.href = '#';
@@ -219,6 +233,10 @@
         } catch (error) {
           console.error('Error sending message:', error);
         }
+      });
+
+      conversationFilterInput.addEventListener('input', () => {
+        loadConversations();
       });
 
       loadConversations();
