@@ -128,17 +128,7 @@
         if (el) el.textContent = val || 'N/A';
       }
 
-      function getStatusBadge(status) {
-        const s = status || 'En cours de traitement';
-        let badgeClass = 'bg-light text-dark';
-        switch(s.toLowerCase()) {
-          case 'en cours de traitement': badgeClass = 'bg-info'; break;
-          case 'traité': badgeClass = 'bg-success'; break;
-          case 'rejeté': badgeClass = 'bg-danger'; break;
-          case 'annulé': badgeClass = 'bg-warning text-dark'; break;
-        }
-        return `<span class="badge ${badgeClass}">${s}</span>`;
-      }
+
 
       function fmt(iso) {
         if (!iso) return 'N/A';
@@ -229,7 +219,7 @@
         set('demande-date', fmt(demande.created_at));
         set('demande-site', demande.nom_site || 'Non spécifié');
         set('demande-description', demande.description);
-        document.getElementById('demande-status').innerHTML = getStatusBadge(demande.status);
+        set('demande-status', demande.status);
 
         if (ticket) {
           document.getElementById('ticket-section').classList.remove('d-none');
