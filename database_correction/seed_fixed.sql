@@ -59,8 +59,8 @@ VALUES
 -- Demandes d'intervention (client demo)
 INSERT INTO demande_client (client_id, site_id, description, status)
 VALUES
-(3, 3, 'Demande: verification installation', 'En_attente'),
-(3, NULL, 'Demande: conseil avant nouveau site', 'En_attente');
+(3, 3, 'Demande: verification installation', 'En cours de traitement'),
+(3, NULL, 'Demande: conseil avant nouveau site', 'En cours de traitement');
 
 
 -- 5) AFFAIRE + DOE + liaisons SITE_AFFAIRE
