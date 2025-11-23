@@ -120,3 +120,14 @@ Derniere mise a jour: Session 6
     - `Annulé` (remplace `Annule`)
   - Les fichiers `server.js`, `public/demandes-client-admin.html`, `database_correction/init_fixed.sql`, `scripts/ensure_demo_client.js` et `public/client-view.html` ont été mis à jour pour refléter ce nouveau système de statuts.
   - L'orthographe a été corrigée pour utiliser des accents (`Traité`, `Rejeté`, `Annulé`).
+
+## Sécurisation de la Suppression des Demandes (Session 12)
+
+- **Prévention de la suppression des demandes traitées :**
+  - Pour résoudre le problème des tickets orphelins, une nouvelle logique de suppression a été mise en place.
+  - Un nouvel endpoint `DELETE /api/demandes_client/:id` a été créé.
+  - Cet endpoint vérifie si une `demande_client` a un `ticket_id` associé. Si c'est le cas, la suppression est refusée avec une erreur 409 (Conflit) pour préserver l'intégrité des données du ticket.
+  - Seules les demandes qui n'ont pas encore été converties en ticket peuvent être supprimées.
+- **Mise à jour de l'interface d'administration :**
+  - Sur la page `demandes-client-admin.html`, un bouton 'Supprimer' a été ajouté à chaque carte de demande.
+  - Ce bouton, ainsi que le bouton 'Convertir en ticket', est automatiquement désactivé si le statut de la demande est 'Traité', empêchant ainsi les actions inappropriées sur les demandes déjà traitées.
