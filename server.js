@@ -3403,6 +3403,35 @@ app.put('/api/demandes_client/:id/status', authenticateToken, authorizeAdmin, as
   }
 });
 
+// Delete a client demand (admin)
+app.delete('/api/demandes_client/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  const cx = await pool.connect();
+  try {
+    await cx.query('BEGIN');
+    // Check if the demand has been converted to a ticket
+    const d = (await cx.query('SELECT ticket_id FROM demande_client WHERE id=$1 FOR UPDATE', [id])).rows[0];
+    if (!d) {
+      await cx.query('ROLLBACK');
+      return res.status(404).json({ error: 'Demande not found' });
+    }
+    if (d.ticket_id) {
+      await cx.query('ROLLBACK');
+      return res.status(409).json({ error: 'This demand cannot be deleted because it has been converted into a ticket.' });
+    }
+    // If not converted, proceed with deletion
+    await cx.query('DELETE FROM demande_client WHERE id=$1', [id]);
+    await cx.query('COMMIT');
+    res.status(200).json({ message: 'Demand deleted successfully.' });
+  } catch (e) {
+    try { await cx.query('ROLLBACK'); } catch (_) {}
+    console.error('Error deleting client demand:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    cx.release();
+  }
+});
+
 // Convert demande -> Ticket (admin)
 app.post('/api/demandes_client/:id/convert-to-ticket', authenticateToken, authorizeAdmin, async (req, res) => {
   const cx = await pool.connect();

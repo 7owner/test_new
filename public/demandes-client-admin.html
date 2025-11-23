@@ -187,7 +187,8 @@
         </div>
         <div class="card-footer bg-transparent border-top-0 d-flex flex-wrap justify-content-end">
           ${statusSel.map(s => `<button class="btn btn-sm btn-outline-primary me-1 mb-1 status-btn" data-id="${d.id}" data-status="${s}">${s}</button>`).join('')}
-          <button class="btn btn-sm btn-success mb-1 convert-btn" data-id="${d.id}">Convertir en ticket</button>
+          <button class="btn btn-sm btn-success mb-1 convert-btn" data-id="${d.id}" ${d.status === 'Traité' ? 'disabled' : ''}>Convertir en ticket</button>
+          <button class="btn btn-sm btn-danger mb-1 delete-btn" data-id="${d.id}" ${d.status === 'Traité' ? 'disabled' : ''}>Supprimer</button>
         </div>
       `;
 
@@ -216,6 +217,19 @@
           alert('Ticket créé: #' + (r.ticket && r.ticket.id));
           await load();
         } catch(err) { alert(err.message); }
+      });
+      card.querySelector('.delete-btn').addEventListener('click', async (e) => {
+        const id = e.target.dataset.id;
+        if (!confirm(`Êtes-vous sûr de vouloir supprimer la demande #${id} ? Cette action est irréversible.`)) {
+          return;
+        }
+        try {
+          await fetchJSON(`/api/demandes_client/${id}`, { method: 'DELETE' });
+          alert('Demande supprimée avec succès.');
+          await load();
+        } catch(err) {
+          alert(`Erreur: ${err.message}`);
+        }
       });
       col.appendChild(card);
       return col;
