@@ -3673,9 +3673,10 @@ app.post('/api/conversations/:conversation_id/messages', authenticateToken, uplo
 
         if (req.files) {
             for (const file of req.files) {
+                const webPath = path.join('uploads', 'attachments', file.filename).replace(/\\/g, '/');
                 await client.query(
                     'INSERT INTO messagerie_attachment (message_id, file_path, file_name, file_type, file_size) VALUES ($1, $2, $3, $4, $5)',
-                    [newMessage.id, file.path, file.originalname, file.mimetype, file.size]
+                    [newMessage.id, webPath, file.originalname, file.mimetype, file.size]
                 );
             }
         }

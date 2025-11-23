@@ -113,6 +113,17 @@
       let currentConversationId = null;
       let currentReceiverId = null;
 
+      function hrefForAttachment(att) {
+        if (!att || !att.file_path) return '#';
+        const p = String(att.file_path);
+        const fileName = p.split('/').filter(Boolean).slice(-1)[0];
+        const rel = p.replace(/^public\//, '');
+        if (p.includes('uploads/attachments/')) {
+          return '/' + rel.replace(/^public\//, '').replace(/^[\\/]+/, '');
+        }
+        return `/uploads/attachments/${fileName}`;
+      }
+
       async function fetchJSON(url, opts) {
         const res = await fetch(url, {
           headers: { 'Authorization': 'Bearer ' + token },
@@ -163,7 +174,7 @@
             let attachmentsHTML = '';
             if (msg.attachments && msg.attachments.length > 0) {
               attachmentsHTML = msg.attachments.map(att => 
-                `<br><a href="/${att.file_path}" target="_blank" download="${att.file_name}">${att.file_name}</a>`
+                `<br><a href="${hrefForAttachment(att)}" target="_blank" download="${att.file_name}">${att.file_name}</a>`
               ).join('');
             }
             msgElement.innerHTML = `
