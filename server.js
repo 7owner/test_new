@@ -61,8 +61,10 @@ try {
 } catch(_) {}
 // Ensure uploads directory exists
 try {
-  const uploadsDir = path.join(__dirname, 'public', 'uploads', 'documents');
-  fs.mkdirSync(uploadsDir, { recursive: true });
+  const uploadsDocumentsDir = path.join(__dirname, 'public', 'uploads', 'documents');
+  const uploadsAttachmentsDir = path.join(__dirname, 'public', 'uploads', 'attachments');
+  fs.mkdirSync(uploadsDocumentsDir, { recursive: true });
+  fs.mkdirSync(uploadsAttachmentsDir, { recursive: true });
 } catch (_) {}
 
 // PostgreSQL Connection Pool
@@ -666,7 +668,8 @@ app.post('/api/reset-password', async (req, res) => {
 // Multer configuration for attachments
 const attachmentStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'public/uploads/attachments/');
+    const dest = path.join(__dirname, 'public', 'uploads', 'attachments');
+    cb(null, dest);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
