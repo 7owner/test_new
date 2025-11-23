@@ -110,8 +110,11 @@
       }
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
+      console.log('DEBUG: DOMContentLoaded started. demandeId:', demandeId, 'userId:', userId);
+
       if (!demandeId) {
         document.querySelector('main').innerHTML = '<div class="alert alert-danger">ID de demande manquant.</div>';
+        console.log('DEBUG: demandeId is missing.');
         return;
       }
 
@@ -137,8 +140,10 @@
       }
 
       async function loadMessages() {
+        console.log('DEBUG: loadMessages started.');
         try {
           const messages = await fetch(`/api/conversations/${conversation_id}`, { headers, credentials: 'same-origin' }).then(res => res.json());
+          console.log('DEBUG: Messages fetched:', messages);
           messagesDisplay.innerHTML = '';
           messages.forEach(msg => {
             const msgElement = document.createElement('div');
@@ -203,23 +208,30 @@
         }
       });
 
+      console.log('DEBUG: Before main fetch for demand details.');
       try {
         const res = await fetch(`/api/client/demandes/${demandeId}`, { headers, credentials: 'same-origin' });
+        console.log('DEBUG: Main fetch response status:', res.status);
         if (res.status === 401 || res.status === 403) {
           location.href = '/login.html';
           return;
         }
         const data = await res.json();
+        console.log('DEBUG: Main fetch data:', data);
         if (!res.ok) throw new Error(data.error || `Erreur HTTP ${res.status}`);
 
         const { demande, ticket, responsable, interventions } = data;
+        console.log('DEBUG: Destructured data. demande:', demande, 'ticket:', ticket);
 
         // Populate Demand Info
         set('demande-id', demande.id);
+        console.log('DEBUG: demande-id set.');
         set('demande-date', fmt(demande.created_at));
         set('demande-site', demande.nom_site || 'Non spécifié');
         set('demande-description', demande.description);
         set('demande-status', demande.status);
+        console.log('DEBUG: Demand info populated.');
+
 
         if (ticket) {
           document.getElementById('ticket-section').classList.remove('d-none');
@@ -227,6 +239,9 @@
           set('ticket-status', ticket.etat);
           set('ticket-date-debut', fmt(ticket.date_debut));
           set('ticket-date-fin', ticket.date_fin ? fmt(ticket.date_fin) : 'En cours');
+          console.log('DEBUG: Ticket info populated.');
+        } else {
+          console.log('DEBUG: No ticket found.');
         }
 
         if (responsable) {
@@ -235,6 +250,9 @@
             set('responsable-email', responsable.email);
             set('responsable-tel', responsable.tel);
             receiver_id = responsable.user_id; // Set receiver_id
+            console.log('DEBUG: Responsable info populated.');
+        } else {
+          console.log('DEBUG: No responsable found.');
         }
 
         if (interventions && interventions.length > 0) {
@@ -251,14 +269,18 @@
             `;
             listEl.appendChild(item);
           });
+          console.log('DEBUG: Interventions populated.');
+        } else {
+          console.log('DEBUG: No interventions found.');
         }
 
         // Load messages for the demand
         loadMessages();
+        console.log('DEBUG: loadMessages called.');
 
       } catch (err) {
         document.querySelector('main').innerHTML = `<div class="alert alert-danger">Erreur: ${err.message}</div>`;
-        console.error(err);
+        console.error('DEBUG: Error in main try-catch block:', err);
       }
     });
   </script>
