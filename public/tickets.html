@@ -65,9 +65,24 @@
       <div class="d-flex gap-2">
         <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#createDemandeClientModal"><i class="bi bi-plus-circle me-2"></i>Créer une demande client</button>
         <!--<a href="ticket-new.html" class="btn btn-primary" id="create-ticket-btn"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau ticket</a>-->
-        <a href="/demandes-client-admin.html" class="btn btn-outline-secondary" title="Demandes clients (Admin)"><i class="bi bi-inbox me-2"></i>Demandes clients</a>
+        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#demandesClientModal" title="Demandes clients (Admin)"><i class="bi bi-inbox me-2"></i>Demandes clients</button>
       </div>
     </div>
+
+    <div class="modal fade" id="demandesClientModal" tabindex="-1" aria-labelledby="demandesClientModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="demandesClientModalLabel">Demandes Clients</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <iframe src="/demandes-client-admin.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
     <div class="mb-3 d-flex gap-2 flex-wrap">
       <input type="text" class="form-control" id="ticket-search" placeholder="Rechercher par titre ou ID…">
