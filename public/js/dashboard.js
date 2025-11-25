@@ -71,7 +71,17 @@ async function buildHeaders(json=false){
       // Compteurs
       (async () => { try { const r = await fetch('/api/agents', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('activeAgents').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
       (async () => { try { const r = await fetch('/api/sites', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('sitesUnderContract').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
-      (async () => { try { const r = await fetch('/api/interventions', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; const el=document.getElementById('interventionsCount'); if (el) el.textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
+      (async () => {
+        try {
+          const r = await fetch('/api/demandes_client', { headers: await buildHeaders(false), credentials:'same-origin' });
+          const rows = r.ok ? await r.json() : [];
+          const el = document.getElementById('demandesCount');
+          if (el) el.textContent = Array.isArray(rows) ? rows.length : 0;
+        } catch {
+          const el = document.getElementById('demandesCount');
+          if (el) el.textContent = '-';
+        }
+      })();
       (async () => { try { const r = await fetch('/api/factures', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('facturesCount').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
       (async () => { try { const r = await fetch('/api/reglements', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('reglementsCount').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
     });
