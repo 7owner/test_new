@@ -1512,9 +1512,9 @@ app.get('/api/affaires/:id', authenticateToken, async (req, res) => {
   }
 });
 app.post('/api/affaires', authenticateToken, authorizeAdmin, async (req, res) => {
-  const { nom_affaire, client_id, description } = req.body;
+  const { nom_affaire, numero_affaire, client_id, description } = req.body;
   try {
-    const result = await pool.query('INSERT INTO affaire (nom_affaire, client_id, description) VALUES ($1,$2,$3) RETURNING *', [nom_affaire, client_id || null, description || null]);
+    const result = await pool.query('INSERT INTO affaire (nom_affaire, numero_affaire, client_id, description) VALUES ($1,$2,$3,$4) RETURNING *', [nom_affaire, numero_affaire || null, client_id || null, description || null]);
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error creating affaire:', err);

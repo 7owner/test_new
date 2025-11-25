@@ -158,6 +158,10 @@
               <input type="text" class="form-control" id="affaire-nom" required>
             </div>
             <div class="mb-3">
+              <label for="affaire-numero" class="form-label">Numéro de l'affaire</label>
+              <input type="text" class="form-control" id="affaire-numero">
+            </div>
+            <div class="mb-3">
               <label for="affaire-description" class="form-label">Description</label>
               <textarea class="form-control" id="affaire-description" rows="3"></textarea>
             </div>
@@ -222,7 +226,7 @@
         const affaireEl = document.getElementById('view_affaire');
         if (affaireEl) {
           if (affaire && affaire.id) {
-            affaireEl.innerHTML = `<a href="affaire-view.html?id=${affaire.id}">${affaire.nom_affaire || 'Affaire #' + affaire.id}</a>`;
+            affaireEl.innerHTML = `<a href="affaire-view.html?id=${affaire.id}">${affaire.nom_affaire || 'Affaire #' + affaire.id} (${affaire.numero_affaire || 'N/A'})</a>`;
           } else {
             affaireEl.textContent = 'N/A';
           }
@@ -397,7 +401,7 @@
                 const affaireRes = await fetch('/api/affaires', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', ...headers },
-                  body: JSON.stringify({ nom_affaire: nomAffaire, client_id: clientId, description: descriptionAffaire })
+                  body: JSON.stringify({ nom_affaire: nomAffaire, numero_affaire: document.getElementById('affaire-numero').value.trim(), client_id: clientId, description: descriptionAffaire })
                 });
                 const newAffaire = await affaireRes.json();
                 if (!affaireRes.ok) throw new Error(newAffaire.error || 'Erreur lors de la création de l\'affaire');
