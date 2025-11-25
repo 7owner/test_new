@@ -4,262 +4,460 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestion des Tickets</title>
-
-  <!-- Bootstrap -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-  <!-- Custom -->
   <link href="/custom.css?v=1" rel="stylesheet">
-
-  <!-- Navigation -->
   <script src="/nav.js?v=1"></script>
-
+  <!-- Omit heavy global scripts on this page to avoid parse issues -->
   <style>
     .ticket-card { min-height: 100%; }
     .section-title { margin-top: 2rem; margin-bottom: 1rem; }
     .table-card { border-radius: 12px; box-shadow: 0 8px 18px rgba(0,0,0,0.05); }
   </style>
 </head>
-
 <body>
-  <!-- HEADER -->
-  <header class="d-flex justify-content-between align-items-center mb-4">
-    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="" style="height:40px;margin-right:10px;"></a></h1>
-    <div class="d-flex align-items-center">
+  <header class="header d-flex justify-content-between align-items-center mb-4">
+    <h1>
+      <a href="/dashboard.html">
+        <img src="/logo_logicielle.png" alt="" style="height: 40px; vertical-align: middle; margin-right: 10px;">
+      </a>
+    </h1>
+    <div id="user-info-container" class="d-flex align-items-center">
       <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar">
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
         Menu
       </button>
     </div>
   </header>
 
-  <!-- OFFCANVAS MENU -->
-  <div class="offcanvas offcanvas-end" id="offcanvasNavbar">
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
     <div class="offcanvas-header">
-      <h5>Menu</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
-
     <div class="offcanvas-body">
-      <ul class="navbar-nav flex-grow-1">
-        <li><a class="nav-link" href="/dashboard.html">Dashboard</a></li>
-        <li><a class="nav-link" href="/agents.html">Agents</a></li>
-        <li><a class="nav-link" href="/sites.html">Sites</a></li>
-        <li><a class="nav-link active" href="/tickets.html">Tickets</a></li>
-        <li><a class="nav-link" href="/interventions.html">Interventions</a></li>
-        <li><a class="nav-link" href="/rendezvous.html">Rendez-vous</a></li>
-        <li><a class="nav-link" href="/achats.html">Achats</a></li>
-        <li><a class="nav-link" href="/factures.html">Factures</a></li>
-        <li><a class="nav-link" id="logout-link" href="#">Déconnexion</a></li>
+      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+        <li class="nav-item">
+          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="/tickets.html"><i class="bi bi-tools me-2"></i>Tickets</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
+        </li>
       </ul>
     </div>
   </div>
 
-  <!-- MAIN -->
   <main class="container mt-5">
-
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1>Tickets</h1>
-      <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#demandesClientModal">
-        <i class="bi bi-inbox me-2"></i>Demandes clients
-      </button>
+      <div class="d-flex gap-2">
+        <!--<button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#createDemandeClientModal"><i class="bi bi-plus-circle me-2"></i>Créer une demande client</button>-->
+        <!--<a href="ticket-new.html" class="btn btn-primary" id="create-ticket-btn"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau ticket</a>-->
+        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#demandesClientModal" title="Demandes clients (Admin)"><i class="bi bi-inbox me-2"></i>Demandes clients</button>
+      </div>
     </div>
 
-    <!-- FILTRES -->
     <div class="mb-3 d-flex gap-2 flex-wrap">
-      <input type="text" id="ticket-search" class="form-control" placeholder="Rechercher par titre ou ID…">
-      <select id="ticket-status-filter" class="form-select">
+      <input type="text" class="form-control" id="ticket-search" placeholder="Rechercher par titre ou ID…">
+      <select class="form-select" id="ticket-status-filter">
         <option value="">Tous les États</option>
         <option value="Pas_commence">Pas commencé</option>
         <option value="En_cours">En cours</option>
         <option value="Termine">Terminé</option>
       </select>
-      <select id="ticket-responsible-filter" class="form-select">
+      <select class="form-select" id="ticket-responsible-filter">
         <option value="">Tous les responsables</option>
+        <option value="AGT001">Dupont Jean (AGT001)</option>
+        <option value="AGT002">Martin Sophie (AGT002)</option>
       </select>
-      <input type="date" id="ticket-date-start" class="form-control">
-      <input type="date" id="ticket-date-end" class="form-control">
+      <input type="date" class="form-control" id="ticket-date-start" title="Date début">
+      <input type="date" class="form-control" id="ticket-date-end" title="Date fin">
     </div>
 
-    <!-- TICKETS OUVERTS -->
     <h2 class="section-title">Tickets ouverts</h2>
-    <div id="open-tickets-container" class="row g-4"></div>
+    <div id="open-tickets-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+      <!-- Open ticket cards will be loaded here by JavaScript -->
+    </div>
 
-    <!-- TICKETS FERMÉS -->
     <h2 class="section-title">Tickets terminés</h2>
     <div class="card table-card mb-4">
       <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-striped table-hover">
+        <div id="closed-tickets-container" class="table-responsive">
+          <table class="table table-striped table-hover mb-0">
             <thead>
               <tr>
-                <th>ID</th><th>Titre</th><th>Description</th><th>Etat</th><th>Site</th><th>Responsable</th><th>Actions</th>
+                <th>ID</th>
+                <th>Titre</th>
+                <th>Description</th>
+                <th>Etat</th>
+                <th>Site</th>
+                <th>Responsable</th>
+                <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="closed-tickets-table-body"></tbody>
+            <tbody id="closed-tickets-table-body">
+              <!-- Closed ticket data will be loaded here by JavaScript -->
+            </tbody>
           </table>
         </div>
       </div>
     </div>
-
   </main>
 
-  <!-- MODALES (inchangées) -->
-  <!-- ... (tes modales comme dans ton fichier original) ... -->
+  <!-- Modal Demandes Clients -->
+  <div class="modal fade" id="demandesClientModal" tabindex="-1" aria-labelledby="demandesClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="demandesClientModalLabel">Demandes Clients</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe src="/demandes-client-admin.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <!-- SCRIPTS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Modal Voir Ticket -->
+  <div class="modal fade" id="viewTicketModal" tabindex="-1" aria-labelledby="viewTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="viewTicketModalLabel">Voir Ticket</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="viewTicketFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <!-- ⭐ NOUVEAU SCRIPT UNIFIÉ ET CORRIGÉ ⭐ -->
+  <!-- Modal Modifier Ticket -->
+  <div class="modal fade" id="editTicketModal" tabindex="-1" aria-labelledby="editTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editTicketModalLabel">Modifier Ticket</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="editTicketFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+  <!-- Script principal (corrigé, unique) -->
   <script>
-  document.addEventListener("DOMContentLoaded", async function () {
+    document.addEventListener('DOMContentLoaded', function() {
+      const norm = (s) => (s||'').toString().normalize('NFD').replace(/\p{Diacritic}+/gu,'').toLowerCase();
+      const renderMarkdown = (text) => { try { return (window.marked && marked.parse) ? marked.parse(text||'') : (text||''); } catch(_) { return text||''; } };
+      const state = { tickets: [], sites: new Map(), agents: new Map(), isAdmin: false };
 
-    /* ----------------------
-       VARIABLES / HELPERS
-    ------------------------ */
-    const norm = s => (s || "").normalize("NFD").replace(/\p{Diacritic}+/gu, "").toLowerCase();
+      const openTicketsContainer = document.getElementById('open-tickets-container');
+      const closedTicketsTableBody = document.getElementById('closed-tickets-table-body');
+      const searchInput = document.getElementById('ticket-search');
+      const statusFilter = document.getElementById('ticket-status-filter');
+      const responsibleFilter = document.getElementById('ticket-responsible-filter');
+      const dateStartInput = document.getElementById('ticket-date-start');
+      const dateEndInput = document.getElementById('ticket-date-end');
 
-    const state = {
-      tickets: [],
-      sites: new Map(),
-      agents: new Map(),
-      isAdmin: false
-    };
-
-    const openContainer = document.getElementById("open-tickets-container");
-    const closedBody = document.getElementById("closed-tickets-table-body");
-
-    const searchInput = document.getElementById("ticket-search");
-    const statusFilter = document.getElementById("ticket-status-filter");
-    const responsibleFilter = document.getElementById("ticket-responsible-filter");
-
-    /* ----------------------
-       AUTH / ROLES
-    ------------------------ */
-    try {
-      const token = localStorage.getItem("token");
-      if (token) {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        if (payload.roles?.includes("ROLE_ADMIN")) state.isAdmin = true;
-        document.getElementById("logged-in-user-email").textContent = payload.email;
+      function buildHeaders(json=false){
+        const h = json? { 'Content-Type':'application/json' } : {};
+        const token = localStorage.getItem('token');
+        if (token) h['Authorization'] = `Bearer ${token}`;
+        return h;
       }
-    } catch {}
 
-    /* ----------------------
-       FETCH SITES & AGENTS
-    ------------------------ */
-    async function fetchSites() {
-      const res = await fetch("/api/sites");
-      const data = res.ok ? await res.json() : [];
-      state.sites = new Map(data.map(s => [String(s.id), s.nom_site || `Site #${s.id}`]));
-    }
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          if (Array.isArray(payload.roles) && payload.roles.includes('ROLE_ADMIN')) state.isAdmin = true;
+          const emailEl = document.getElementById('logged-in-user-email');
+          if (emailEl && payload.email) emailEl.textContent = payload.email;
+        }
+      } catch(_) {}
 
-    async function fetchAgents() {
-      const res = await fetch("/api/agents");
-      const data = res.ok ? await res.json() : [];
-      state.agents = new Map(data.map(a => [String(a.matricule), `${a.nom} ${a.prenom}`]));
+      function getSiteName(site_id) {
+        if (site_id == null) return 'N/A';
+        const key = String(site_id);
+        if (state.sites.has(key)) return state.sites.get(key) || `Site #${key}`;
+        return `Site #${key}`;
+      }
+      function siteLink(site_id) {
+        if (site_id == null) return 'N/A';
+        const key = String(site_id);
+        const label = getSiteName(site_id);
+        return `<a href="site-view.html?id=${key}">${label}</a>`;
+      }
+      async function fetchSites() {
+        try {
+          const res = await fetch('/api/sites', { headers: buildHeaders(false), credentials: 'same-origin' });
+          const data = res.ok ? await res.json() : [];
+          if (Array.isArray(data)) state.sites = new Map(data.map(s => [String(s.id), s.nom_site || `Site #${s.id}`]));
+        } catch(_) {}
+      }
 
-      // mise à jour du filtre "responsable"
-      responsibleFilter.innerHTML = `<option value="">Tous les responsables</option>`;
-      state.agents.forEach((label, mat) => {
-        responsibleFilter.innerHTML += `<option value="${mat}">${label} (${mat})</option>`;
-      });
-    }
+      function getAgentName(matricule) {
+        if (!matricule) return 'Non assigné';
+        const key = String(matricule);
+        if (state.agents.has(key)) return state.agents.get(key);
+        return key;
+      }
+      async function fetchAgents() {
+        try {
+          const res = await fetch('/api/agents', { headers: buildHeaders(false), credentials:'same-origin' });
+          const rows = res.ok ? await res.json() : [];
+          state.agents = new Map((rows||[]).map(a => [String(a.matricule), `${a.nom || ''} ${a.prenom || ''}`.trim() || a.matricule]));
+          if (responsibleFilter) {
+            responsibleFilter.innerHTML = '<option value="">Tous les responsables</option>';
+            state.agents.forEach((label, mat) => {
+              const opt = document.createElement('option');
+              opt.value = mat;
+              opt.textContent = `${label} (${mat})`;
+              responsibleFilter.appendChild(opt);
+            });
+          }
+        } catch(_) {}
+      }
 
-    /* ----------------------
-       FETCH TICKETS
-    ------------------------ */
-    async function fetchTickets() {
-      const res = await fetch("/api/tickets");
-      const data = res.ok ? await res.json() : [];
-      state.tickets = data.map(t => ({
-        id: String(t.id),
-        titre: t.titre || "(Sans titre)",
-        description: t.description || "",
-        etat: t.etat || "En_cours",
-        responsable: t.responsable || null,
-        site_id: t.site_id || null,
-        date_debut: t.date_debut || null,
-        date_fin: t.date_fin || null
-      }));
-    }
+      function getStatusBadgeClass(etat) {
+        switch (etat) {
+          case 'Pas_commence': return 'bg-secondary';
+          case 'En_cours': return 'bg-warning';
+          case 'Termine': return 'bg-success';
+          default: return 'bg-light text-dark';
+        }
+      }
 
-    /* ----------------------
-       RENDERING
-    ------------------------ */
-    function render() {
-      const term = norm(searchInput.value);
-      const status = statusFilter.value;
-      const resp = responsibleFilter.value;
+      function renderTickets(ticketsToRender) {
+        openTicketsContainer.innerHTML = '';
+        closedTicketsTableBody.innerHTML = '';
 
-      const filtered = state.tickets.filter(t => {
-        return (
-          (!term || norm(t.titre).includes(term) || norm(t.description).includes(term) || t.id.includes(term)) &&
-          (!status || t.etat === status) &&
-          (!resp || t.responsable === resp)
-        );
-      });
+        const openTickets = ticketsToRender.filter(t => t.etat !== 'Termine');
+        const closedTickets = ticketsToRender.filter(t => t.etat === 'Termine');
 
-      const open = filtered.filter(t => t.etat !== "Termine");
-      const closed = filtered.filter(t => t.etat === "Termine");
+        if (openTickets.length > 0) {
+          openTickets.forEach(ticket => {
+            const responsableName = getAgentName(ticket.responsable);
+            const statusBadgeClass = getStatusBadgeClass(ticket.etat);
+            const start = ticket.date_debut ? new Date(ticket.date_debut) : null;
+            const end = ticket.date_fin ? new Date(ticket.date_fin) : null;
+            const endDisplay = end ? end.toLocaleDateString() : '—';
+            let elapsed = '—';
+            try {
+              const to = end || new Date();
+              if (start) {
+                const ms = to - start;
+                const days = Math.floor(ms/(1000*60*60*24));
+                elapsed = `${days} j`;
+              }
+            } catch(_){}
 
-      /* Tickets ouverts */
-      openContainer.innerHTML = open.length ? "" : `<p class="text-muted">Aucun ticket ouvert trouvé.</p>`;
-
-      open.forEach(t => {
-        openContainer.innerHTML += `
-          <div class="col">
-            <div class="card h-100 shadow-sm">
-              <div class="card-body">
-                <h5>${t.titre}</h5>
-                <p>${t.description}</p>
-                <small>ID : ${t.id}</small>
+            const cardCol = document.createElement('div');
+            cardCol.className = 'col';
+            cardCol.innerHTML = `
+              <div class="card h-100 shadow-sm ticket-card">
+                <div class="card-body d-flex flex-column">
+                  <h5 class="card-title d-flex justify-content-between align-items-center mb-2">
+                    <span>${ticket.titre}</span>
+                    <span class="badge ${statusBadgeClass}">${ticket.etat.replace('_', ' ')}</span>
+                  </h5>
+                  <h6 class="card-subtitle mb-2 text-muted">Site: ${siteLink(ticket.site_id)}</h6>
+                  <p class="card-text">${renderMarkdown(ticket.description)}</p>
+                  <small class="text-muted mt-auto">ID: ${ticket.id} | Responsable: ${responsableName} | Fin: ${endDisplay} | Écoulé: ${elapsed}</small>
+                  <div class="mt-3">
+                    <button class="btn btn-sm btn-info me-1" data-bs-toggle="modal" data-bs-target="#viewTicketModal" data-id="${ticket.id}"><i class="bi bi-eye"></i> Voir</button>
+                    ${state.isAdmin ? `
+                      <button class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editTicketModal" data-id="${ticket.id}"><i class="bi bi-pencil"></i> Modifier</button>
+                      <button class="btn btn-sm btn-danger" data-action="delete" data-id="${ticket.id}"><i class="bi bi-trash"></i> Supprimer</button>
+                    ` : ''}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>`;
-      });
+            `;
+            openTicketsContainer.appendChild(cardCol);
+            if (state.isAdmin) {
+              const btn = cardCol.querySelector('button[data-action="delete"]');
+              if (btn) btn.addEventListener('click', () => deleteTicket(ticket.id));
+            }
+          });
+        } else {
+          openTicketsContainer.innerHTML = '<p class="text-muted">Aucun ticket ouvert trouvé.</p>';
+        }
 
-      /* Tickets terminés */
-      closedBody.innerHTML = closed.length ? "" :
-        `<tr><td class="text-center text-muted" colspan="7">Aucun ticket terminé trouvé.</td></tr>`;
+        if (closedTickets.length > 0) {
+          closedTickets.forEach(ticket => {
+            const statusBadgeClass = getStatusBadgeClass(ticket.etat);
+            const responsableName = getAgentName(ticket.responsable);
+            const endDisplay = ticket.date_fin ? new Date(ticket.date_fin).toLocaleDateString() : '—';
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${ticket.id}</td>
+              <td>${ticket.titre}</td>
+              <td>${ticket.description}</td>
+              <td><span class="badge ${statusBadgeClass}">${ticket.etat.replace('_', ' ')}</span></td>
+              <td>${siteLink(ticket.site_id)}</td>
+              <td>${responsableName}</td>
+              <td>
+                <button class="btn btn-sm btn-info me-1" data-bs-toggle="modal" data-bs-target="#viewTicketModal" data-id="${ticket.id}"><i class="bi bi-eye"></i> Voir</button>
+                ${state.isAdmin ? `
+                  <button class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editTicketModal" data-id="${ticket.id}"><i class="bi bi-pencil"></i> Modifier</button>
+                  <button class="btn btn-sm btn-danger" data-action="delete" data-id="${ticket.id}"><i class="bi bi-trash"></i> Supprimer</button>
+                ` : ''}
+              </td>
+            `;
+            closedTicketsTableBody.appendChild(row);
+            if (state.isAdmin) {
+              const btn = row.querySelector('button[data-action="delete"]');
+              if (btn) btn.addEventListener('click', () => deleteTicket(ticket.id));
+            }
+          });
+        } else {
+          closedTicketsTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Aucun ticket Terminé trouvé.</td></tr>';
+        }
+      }
 
-      closed.forEach(t => {
-        closedBody.innerHTML += `
-          <tr>
-            <td>${t.id}</td>
-            <td>${t.titre}</td>
-            <td>${t.description}</td>
-            <td>${t.etat}</td>
-            <td>${state.sites.get(String(t.site_id)) || "N/A"}</td>
-            <td>${state.agents.get(String(t.responsable)) || "N/A"}</td>
-            <td><button class="btn btn-sm btn-info" data-id="${t.id}" data-bs-toggle="modal" data-bs-target="#viewTicketModal">Voir</button></td>
-          </tr>`;
-      });
-    }
+      function applyFilters() {
+        const searchTerm = norm(searchInput ? searchInput.value : '');
+        const selectedStatus = statusFilter ? statusFilter.value : '';
+        const selectedResponsible = responsibleFilter ? responsibleFilter.value : '';
+        const startVal = dateStartInput && dateStartInput.value ? new Date(dateStartInput.value) : null;
+        const endVal = dateEndInput && dateEndInput.value ? new Date(dateEndInput.value) : null;
 
-    /* ----------------------
-       EVENT LISTENERS
-    ------------------------ */
-    searchInput.addEventListener("input", render);
-    statusFilter.addEventListener("change", render);
-    responsibleFilter.addEventListener("change", render);
+        const filteredTickets = state.tickets.filter(ticket => {
+          const matchesSearch =
+            norm(ticket.titre).includes(searchTerm) ||
+            norm(ticket.description).includes(searchTerm) ||
+            norm(ticket.id).includes(searchTerm);
 
-    /* ----------------------
-       SEQUENCE DE CHARGEMENT
-    ------------------------ */
-    await Promise.all([
-      fetchSites(),
-      fetchAgents(),
-      fetchTickets()
-    ]);
+          const matchesStatus = selectedStatus === '' || ticket.etat === selectedStatus;
+          const matchesResponsible = selectedResponsible === '' || ticket.responsable === selectedResponsible;
 
-    render(); // affichage final avec données
+          let matchesDate = true;
+          if (startVal || endVal) {
+            const refDateStr = ticket.date_debut || ticket.date_fin;
+            if (refDateStr) {
+              const dt = new Date(refDateStr);
+              if (startVal && dt < startVal) matchesDate = false;
+              if (endVal && dt > endVal) matchesDate = false;
+            }
+          }
 
-  });
+          return matchesSearch && matchesStatus && matchesResponsible && matchesDate;
+        });
+
+        renderTickets(filteredTickets);
+      }
+
+      if (searchInput) searchInput.addEventListener('input', applyFilters);
+      if (statusFilter) statusFilter.addEventListener('change', applyFilters);
+      if (responsibleFilter) responsibleFilter.addEventListener('change', applyFilters);
+      if (dateStartInput) dateStartInput.addEventListener('change', applyFilters);
+      if (dateEndInput) dateEndInput.addEventListener('change', applyFilters);
+
+      async function fetchTickets() {
+        try {
+          const res = await fetch('/api/tickets', { headers: buildHeaders(false), credentials: 'same-origin' });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          state.tickets = (Array.isArray(data) ? data : []).map(t => ({
+            id: String(t.id),
+            doe_id: t.doe_id || null,
+            affaire_id: t.affaire_id || null,
+            titre: t.titre || '(Sans titre)',
+            description: t.description || '',
+            etat: t.etat || 'En_cours',
+            responsable: t.responsable || null,
+            site_id: t.site_id || null,
+            date_debut: t.date_debut || null,
+            date_fin: t.date_fin || null,
+          }));
+          applyFilters();
+        } catch (e) {
+          console.error('Erreur chargement /api/tickets:', e);
+          openTicketsContainer.innerHTML = '<p class="text-muted">Impossible de charger les tickets.</p>';
+        }
+      }
+
+      async function deleteTicket(id) {
+        const token = localStorage.getItem('token');
+        if (!token) return alert('Non autorisé.');
+        if (!confirm('Supprimer ce ticket ?')) return;
+        try {
+          const res = await fetch(`/api/tickets/${id}`, { method: 'DELETE', headers: buildHeaders(false), credentials: 'same-origin' });
+          if (res.status === 204) {
+            state.tickets = state.tickets.filter(t => String(t.id) !== String(id));
+            applyFilters();
+          } else if (res.status === 403) {
+            alert('Action réservée aux administrateurs.');
+          } else {
+            alert(`Suppression échouée (HTTP ${res.status}).`);
+          }
+        } catch (e) {
+          console.error('Erreur suppression ticket:', e);
+          alert('Erreur lors de la suppression.');
+        }
+      }
+
+      try {
+        const btnCreate = document.getElementById('create-ticket-btn');
+        if (btnCreate && !state.isAdmin) btnCreate.classList.add('d-none');
+      } catch(_){ }
+
+      (async () => {
+        await Promise.all([fetchSites(), fetchAgents()]);
+        await fetchTickets();
+      })();
+
+      const viewTicketModal = document.getElementById('viewTicketModal');
+      const editTicketModal = document.getElementById('editTicketModal');
+      const viewTicketFrame = document.getElementById('viewTicketFrame');
+      const editTicketFrame = document.getElementById('editTicketFrame');
+
+      if (viewTicketModal) {
+        viewTicketModal.addEventListener('show.bs.modal', function (event) {
+          const button = event.relatedTarget;
+          const ticketId = button.getAttribute('data-id');
+          viewTicketFrame.src = `/ticket-view.html?id=${ticketId}`;
+        });
+      }
+
+      if (editTicketModal) {
+        editTicketModal.addEventListener('show.bs.modal', function (event) {
+          const button = event.relatedTarget;
+          const ticketId = button.getAttribute('data-id');
+          editTicketFrame.src = `/ticket-edit.html?id=${ticketId}`;
+        });
+      }
+    });
   </script>
-
 </body>
 </html>
