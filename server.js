@@ -2256,11 +2256,14 @@ app.get('/api/interventions', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, res) => {
-    const { description, date_debut, date_fin = null, ticket_id, intervention_precedente_id = null } = req.body;
+    const { titre, description, date_debut, date_fin, ticket_id, status, intervention_precedente_id } = req.body;
+    if (!description || !date_debut || !ticket_id) {
+        return res.status(400).json({ error: 'Description, date de début et ticket ID sont requis' });
+    }
     try {
         const result = await pool.query(
-            'INSERT INTO intervention (description, date_debut, date_fin, ticket_id, intervention_precedente_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [description, date_debut, date_fin, ticket_id, intervention_precedente_id]
+            'INSERT INTO intervention (titre, description, date_debut, date_fin, ticket_id, status, intervention_precedente_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+            [titre || null, description, date_debut, date_fin, ticket_id, status || 'Pas_commence', intervention_precedente_id || null]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {

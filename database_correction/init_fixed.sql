@@ -219,6 +219,7 @@ CREATE TABLE IF NOT EXISTS ticket_historique_responsable (
 CREATE TABLE IF NOT EXISTS intervention (
     id SERIAL PRIMARY KEY,
     ticket_id BIGINT NOT NULL,
+    titre VARCHAR(255),
     description TEXT,
     date_debut DATE NOT NULL,
     date_fin DATE,
