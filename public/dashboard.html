@@ -9,9 +9,66 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
+  <style>
+    body.dashboard-bg {
+      background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.16), transparent 25%),
+                  radial-gradient(circle at 80% 0%, rgba(255,255,255,0.1), transparent 20%),
+                  linear-gradient(135deg, #5a62d6, #7a5dd6 45%, #6d7edb);
+      min-height: 100vh;
+    }
+    .metric-card {
+      background: linear-gradient(145deg, #f6f7fc, #eef2ff);
+      border: none;
+      border-radius: 18px;
+      box-shadow: 0 18px 30px rgba(41, 53, 108, 0.14);
+      padding: 18px;
+      color: #2c3350;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .metric-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 22px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+    }
+    .icon-blue { background: linear-gradient(135deg, #4da5ff, #3c68ff); }
+    .icon-green { background: linear-gradient(135deg, #32d296, #0fa968); }
+    .icon-orange { background: linear-gradient(135deg, #ffb347, #ff784b); }
+    .icon-purple { background: linear-gradient(135deg, #9d7bff, #7451ff); }
+    .metric-value {
+      font-size: 2.4rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .metric-label {
+      letter-spacing: 0.08em;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      color: #6c7693;
+      margin-bottom: 4px;
+    }
+    .metric-sub {
+      color: #1b9b6e;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .card {
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+    }
+  </style>
 </head>
 
-<body class="bg-light">
+<body class="dashboard-bg">
   <!-- HEADER avec barre utilisateur -->
   <header class="header d-flex justify-content-between align-items-center mb-4 p-3 bg-white shadow-sm rounded">
     <h1 class="m-0">
@@ -60,36 +117,68 @@
   </div>
 
   <!-- CONTENU PRINCIPAL -->
-  <main class="container mt-4">
-    <!--<h1 class="mb-4">Tableau de bord</h1>-->
-
+  <main class="container mt-4 mb-5">
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-4">
       <div class="col">
-        <div class="card h-100 circle-card tickets-card">
-          <div class="card-body">
-            <h5 class="card-title">Tickets</h5>
-            <p class="card-text fs-4 fw-bold text-primary" id="activeMaintenances">-</p>
-            <a href="/tickets.html" class="btn btn-sm btn-outline-primary">Voir les Tickets</a>
+        <div class="metric-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="metric-icon icon-blue"><i class="bi bi-tools"></i></div>
+            <div>
+              <div class="metric-label">Tickets</div>
+              <div class="metric-value" id="activeMaintenances">-</div>
+              <div class="metric-sub">Ouverts / total</div>
+            </div>
+          </div>
+          <div class="mt-auto">
+            <a href="/tickets.html" class="btn btn-outline-primary btn-sm">Voir les tickets</a>
           </div>
         </div>
       </div>
 
       <div class="col">
-        <div class="card h-100 circle-card agents-card">
-          <div class="card-body">
-            <h5 class="card-title">Agents actifs</h5>
-            <p class="card-text fs-4 fw-bold text-success" id="activeAgents">-</p>
-            <a href="/agents.html" class="btn btn-sm btn-outline-primary">Voir les Agents</a>
+        <div class="metric-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="metric-icon icon-green"><i class="bi bi-lightning-charge"></i></div>
+            <div>
+              <div class="metric-label">Interventions</div>
+              <div class="metric-value" id="interventionsCount">-</div>
+              <div class="metric-sub">Enregistrées</div>
+            </div>
+          </div>
+          <div class="mt-auto">
+            <a href="/interventions.html" class="btn btn-outline-success btn-sm">Voir les interventions</a>
           </div>
         </div>
       </div>
 
       <div class="col">
-        <div class="card h-100 circle-card sites-card">
-          <div class="card-body">
-            <h5 class="card-title">Sites</h5>
-            <p class="card-text fs-4 fw-bold text-warning" id="sitesUnderContract">-</p>
-            <a href="/sites.html" class="btn btn-sm btn-outline-primary">Voir les Sites</a>
+        <div class="metric-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="metric-icon icon-orange"><i class="bi bi-people-fill"></i></div>
+            <div>
+              <div class="metric-label">Agents actifs</div>
+              <div class="metric-value" id="activeAgents">-</div>
+              <div class="metric-sub text-warning-emphasis">Disponibles</div>
+            </div>
+          </div>
+          <div class="mt-auto">
+            <a href="/agents.html" class="btn btn-outline-warning btn-sm text-dark">Voir les agents</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="metric-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="metric-icon icon-purple"><i class="bi bi-building"></i></div>
+            <div>
+              <div class="metric-label">Sites sous contrat</div>
+              <div class="metric-value" id="sitesUnderContract">-</div>
+              <div class="metric-sub text-primary">Référencés</div>
+            </div>
+          </div>
+          <div class="mt-auto">
+            <a href="/sites.html" class="btn btn-outline-primary btn-sm">Voir les sites</a>
           </div>
         </div>
       </div>
