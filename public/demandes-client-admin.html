@@ -220,41 +220,46 @@
       });
       card.querySelector('.delete-btn').addEventListener('click', async (e) => {
         const id = e.target.dataset.id;
-        if (!confirm(`Êtes-vous sûr de vouloir supprimer la demande #${id} ? Cette action est irréversible.`)) {
-          return;
-        }
-        try {
-          await fetchJSON(`/api/demandes_client/${id}`, { method: 'DELETE' });
-          alert('Demande supprimée avec succès.');
-          await load();
-        } catch(err) {
-          alert(`Erreur: ${err.message}`);
-        }
+        currentDemandId = id; // Store the ID of the demand to be deleted
+        const deleteDemandeClientModal = new bootstrap.Modal(document.getElementById('deleteDemandeClientModal'));
+        deleteDemandeClientModal.show();
       });
       col.appendChild(card);
       return col;
     }
 
+    let currentDemandIdForDelete = null; // Variable to store the ID of the demand to be deleted
+
+    document.getElementById('confirm-delete-demand-btn').addEventListener('click', async () => {
+      const justification = document.getElementById('delete-demand-justification').value.trim();
+      if (!justification) {
+        alert('La justification est obligatoire.');
+        return;
+      }
+
+      if (!currentDemandIdForDelete) {
+        alert('Erreur: ID de la demande à supprimer non défini.');
+        return;
+      }
+
+      try {
+        await fetchJSON(`/api/demandes_client/${currentDemandIdForDelete}`, {
+          method: 'DELETE',
+          body: JSON.stringify({ justification })
+        });
+        alert('Demande supprimée avec succès.');
+        document.getElementById('delete-demand-justification').value = ''; // Clear textarea
+        bootstrap.Modal.getInstance(document.getElementById('deleteDemandeClientModal')).hide();
+        await load();
+      } catch(err) {
+        alert(`Erreur: ${err.message}`);
+      }
+    });
+
     async function load() {
       demandsContainer.innerHTML='';
       let url = '/api/demandes_client?';
       if (currentFilter.client) {
-        url += `client=${encodeURIComponent(currentFilter.client)}&`;
-      }
-      if (currentFilter.status) {
-        url += `status=${encodeURIComponent(currentFilter.status)}&`;
-      }
-      url += `sort=${currentSort.column}&direction=${currentSort.direction}`;
-
-      try {
-        let data = await fetchJSON(url);
-        if (currentFilter.status === '') { // If filter is 'Tous', hide 'Traité'
-            data = data.filter(d => d.status !== 'Traité');
-        }
-
-        if (data.length === 0) {
-          demandsContainer.innerHTML = '<p class="text-muted">Aucune demande client à afficher.</p>';
-        } else {
           data.forEach(d => demandsContainer.appendChild(createDemandCard(d)));
         }
       } catch(e) { console.error(e); alert('Chargement impossible: ' + e.message); }
@@ -309,6 +314,30 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
         <button type="button" class="btn btn-primary" id="saveCommentBtn">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Demand Modal -->
+<div class="modal fade" id="deleteDemandeClientModal" tabindex="-1" aria-labelledby="deleteDemandeClientModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteDemandeClientModalLabel">Justification de la suppression</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="delete-demand-form">
+          <div class="mb-3">
+            <label for="delete-demand-justification" class="col-form-label">Veuillez fournir une justification pour la suppression de cette demande client :</label>
+            <textarea class="form-control" id="delete-demand-justification" rows="3" required></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-danger" id="confirm-delete-demand-btn">Confirmer la suppression</button>
       </div>
     </div>
   </div>
