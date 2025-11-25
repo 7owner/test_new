@@ -109,192 +109,201 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/nav.js?v=2"></script>
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('token'); // Use jwtToken as per nav.js
-    if (!token) { location.href = '/login.html'; return; }
-    let roles = [];
-    try { const p = JSON.parse(atob(token.split('.')[1])); roles = Array.isArray(p.roles)?p.roles:[]; } catch {}
-    if (!roles.includes('ROLE_ADMIN')) { alert('Accès admin requis'); location.href = '/dashboard.html'; return; }
+<script>
+document.addEventListener('DOMContentLoaded', () => {
 
-    const demandsContainer = document.getElementById('demandsContainer');
-    const filterClientInput = document.getElementById('filterClient');
-    const filterStatusSelect = document.getElementById('filterStatus');
-    const tableHeaders = document.querySelectorAll('th[data-sort]'); // Keep for sorting logic, even if not visually present
+  const token = localStorage.getItem('token');
+  if (!token) { location.href = '/login.html'; return; }
 
-    let currentSort = { column: 'id', direction: 'desc' }; // Default sort
-    let currentFilter = { client: '', status: '' };
+  let roles = [];
+  try { const p = JSON.parse(atob(token.split('.')[1])); roles = Array.isArray(p.roles)?p.roles:[]; } catch {}
+  if (!roles.includes('ROLE_ADMIN')) { alert('Accès admin requis'); location.href = '/dashboard.html'; return; }
 
-    const statusSel = ['En cours de traitement', 'Traité', 'Rejeté', 'Annulé'];
 
-    async function fetchJSON(url, opts) {
-      const res = await fetch(url, Object.assign({ headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } }, opts||{}));
-      const ct = res.headers.get('content-type')||'';
-      const body = ct.includes('application/json') ? await res.json() : null;
-      if (!res.ok) throw new Error((body && body.error) || res.statusText);
-      return body;
-    }
+  const demandsContainer = document.getElementById('demandsContainer');
+  const filterClientInput = document.getElementById('filterClient');
+  const filterStatusSelect = document.getElementById('filterStatus');
 
-    // Comment Modal elements
-    const commentModal = new bootstrap.Modal(document.getElementById('commentModal'));
-    const commentTextArea = document.getElementById('comment-text');
-    const saveCommentBtn = document.getElementById('saveCommentBtn');
-    let currentDemandId = null;
-    let currentDemandStatus = null;
+  let currentFilter = { client: '', status: '' };
+  let currentSort = { column: "id", direction: "desc" };
 
-    saveCommentBtn.addEventListener('click', async () => {
-      const comment = commentTextArea.value.trim();
-      if (!comment) {
-        alert('Le commentaire est obligatoire pour ce statut.');
-        return;
-      }
-      try {
-        await fetchJSON(`/api/demandes_client/${currentDemandId}/status`, {
-          method: 'PUT',
-          body: JSON.stringify({ status: currentDemandStatus, commentaire: comment })
-        });
-        commentModal.hide();
-        await load();
-      } catch(err) {
-        alert(err.message);
-      }
+  const statusSel = ['En cours de traitement', 'Traité', 'Rejeté', 'Annulé'];
+
+
+  async function fetchJSON(url, opts = {}) {
+    const res = await fetch(url, {
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      },
+      ...opts
     });
 
-    function createDemandCard(d) {
-      const col = document.createElement('div');
-      col.className = 'col';
-      const card = document.createElement('div');
-      card.className = 'card h-100 shadow-sm';
-      
-      const badgeClass = (s => {
-        switch(String(s || '').toLowerCase()) {
-          case 'en cours de traitement': return 'bg-info';
-          case 'traité': return 'bg-success';
-          case 'rejeté': return 'bg-danger';
-          case 'annulé': return 'bg-warning text-dark';
-          default: return 'bg-light text-dark';
-        }
-      })(d.status);
+    const ct = res.headers.get("content-type") || "";
+    const body = ct.includes("application/json") ? await res.json() : null;
 
-      card.innerHTML = `
+    if (!res.ok) throw new Error(body?.error || res.statusText);
+    return body;
+  }
+
+
+  function createDemandCard(d) {
+    const col = document.createElement("div");
+    col.className = "col";
+
+    const badgeClass = (() => {
+      switch ((d.status || "").toLowerCase()) {
+        case "en cours de traitement": return "bg-info";
+        case "traité": return "bg-success";
+        case "rejeté": return "bg-danger";
+        case "annulé": return "bg-warning text-dark";
+        default: return "bg-light text-dark";
+      }
+    })();
+
+    col.innerHTML = `
+      <div class="card h-100 shadow-sm">
         <div class="card-body">
-          <h5 class="card-title">Demande #${d.id} <span class="badge ${badgeClass}">${String(d.status || 'En cours de traitement')}</span></h5>
-          <h6 class="card-subtitle mb-2 text-muted">${d.nom_client || 'N/A'} (${d.representant_email || 'N/A'})</h6>
-          <p class="card-text mb-1"><strong>Site:</strong> ${d.nom_site || 'N/A'} (ID: ${d.site_id || '-'})</p>
-          <p class="card-text">${d.description || 'Pas de description.'}</p>
-          ${d.commentaire ? `<p class="card-text text-danger"><strong>Commentaire:</strong> ${d.commentaire}</p>` : ''} <!-- Display comment if exists -->
-          <small class="text-muted">Créée le: ${new Date(d.created_at).toLocaleDateString()}</small>
+          <h5 class="card-title">
+            Demande #${d.id} <span class="badge ${badgeClass}">${d.status}</span>
+          </h5>
+          <h6 class="card-subtitle mb-2 text-muted">${d.nom_client} (${d.representant_email})</h6>
+          <p><strong>Site :</strong> ${d.nom_site || "N/A"}</p>
+          <p>${d.description || "Pas de description."}</p>
+          ${d.commentaire ? `<p class="text-danger"><strong>Commentaire :</strong> ${d.commentaire}</p>` : ""}
+          <small class="text-muted">Créée le : ${new Date(d.created_at).toLocaleDateString()}</small>
         </div>
-        <div class="card-footer bg-transparent border-top-0 d-flex flex-wrap justify-content-end">
-          ${statusSel.map(s => `<button class="btn btn-sm btn-outline-primary me-1 mb-1 status-btn" data-id="${d.id}" data-status="${s}">${s}</button>`).join('')}
-          <button class="btn btn-sm btn-success mb-1 convert-btn" data-id="${d.id}" ${d.status === 'Traité' ? 'disabled' : ''}>Convertir en ticket</button>
-          <button class="btn btn-sm btn-danger mb-1 delete-btn" data-id="${d.id}" ${d.status === 'Traité' ? 'disabled' : ''}>Supprimer</button>
+
+        <div class="card-footer d-flex flex-wrap justify-content-end">
+          ${statusSel.map(s => `
+            <button class="btn btn-sm btn-outline-primary me-1 mb-1 status-btn" data-id="${d.id}" data-status="${s}">
+              ${s}
+            </button>`).join("")}
+
+          <button class="btn btn-sm btn-success mb-1 convert-btn" data-id="${d.id}" ${d.status === "Traité" ? "disabled" : ""}>
+            Convertir en ticket
+          </button>
+
+          <button class="btn btn-sm btn-danger mb-1 delete-btn" data-id="${d.id}">
+            Supprimer
+          </button>
         </div>
-      `;
+      </div>
+    `;
 
-      card.querySelectorAll('.status-btn').forEach(button => {
-        button.addEventListener('click', async (e) => {
-          const id = e.target.dataset.id;
-          const status = e.target.dataset.status;
+    // --- EVENTS ---
+    col.querySelectorAll(".status-btn").forEach(btn => {
+      btn.addEventListener("click", () => updateStatus(d, btn.dataset.status));
+    });
 
-          if (status === 'Rejeté' || status === 'Annulé') {
-            currentDemandId = id;
-            currentDemandStatus = status;
-            commentTextArea.value = d.commentaire || ''; // Pre-fill if comment already exists
-            commentModal.show();
-          } else {
-            try {
-              await fetchJSON(`/api/demandes_client/${id}/status`, { method:'PUT', body: JSON.stringify({ status: status }) });
-              await load();
-            } catch(err){ alert(err.message); }
-          }
-        });
-      });
-      card.querySelector('.convert-btn').addEventListener('click', async (e) => {
-        const id = e.target.dataset.id;
-        try {
-          const r = await fetchJSON(`/api/demandes_client/${id}/convert-to-ticket`, { method:'POST' });
-          alert('Ticket créé: #' + (r.ticket && r.ticket.id));
-          await load();
-        } catch(err) { alert(err.message); }
-      });
-      card.querySelector('.delete-btn').addEventListener('click', async (e) => {
-        const id = e.target.dataset.id;
-        currentDemandId = id; // Store the ID of the demand to be deleted
-        const deleteDemandeClientModal = new bootstrap.Modal(document.getElementById('deleteDemandeClientModal'));
-        deleteDemandeClientModal.show();
-      });
-      col.appendChild(card);
-      return col;
+    col.querySelector(".convert-btn").addEventListener("click", () => convertToTicket(d.id));
+    col.querySelector(".delete-btn").addEventListener("click", () => openDeleteModal(d.id));
+
+    return col;
+  }
+
+
+  async function updateStatus(d, status) {
+    if (["Rejeté", "Annulé"].includes(status)) {
+      currentDemandId = d.id;
+      currentDemandStatus = status;
+      commentTextArea.value = d.commentaire || "";
+      commentModal.show();
+      return;
     }
 
-    let currentDemandIdForDelete = null; // Variable to store the ID of the demand to be deleted
-
-    document.getElementById('confirm-delete-demand-btn').addEventListener('click', async () => {
-      const justification = document.getElementById('delete-demand-justification').value.trim();
-      if (!justification) {
-        alert('La justification est obligatoire.');
-        return;
-      }
-
-      if (!currentDemandIdForDelete) {
-        alert('Erreur: ID de la demande à supprimer non défini.');
-        return;
-      }
-
-      try {
-        await fetchJSON(`/api/demandes_client/${currentDemandIdForDelete}`, {
-          method: 'DELETE',
-          body: JSON.stringify({ justification })
-        });
-        alert('Demande supprimée avec succès.');
-        document.getElementById('delete-demand-justification').value = ''; // Clear textarea
-        bootstrap.Modal.getInstance(document.getElementById('deleteDemandeClientModal')).hide();
-        await load();
-      } catch(err) {
-        alert(`Erreur: ${err.message}`);
-      }
-    });
-
-    async function load() {
-      demandsContainer.innerHTML='';
-      let url = '/api/demandes_client?';
-      if (currentFilter.client) {
-          data.forEach(d => demandsContainer.appendChild(createDemandCard(d)));
-        }
-      } catch(e) { console.error(e); alert('Chargement impossible: ' + e.message); }
-    }
-
-    filterClientInput.addEventListener('input', () => {
-      currentFilter.client = filterClientInput.value;
-      load();
-    });
-
-    filterStatusSelect.addEventListener('change', () => {
-      currentFilter.status = filterStatusSelect.value;
-      load();
-    });
-
-    // Sorting logic for cards (optional, can be removed if not needed for cards)
-    // For now, keeping it but it won't visually update arrows on cards
-    tableHeaders.forEach(header => {
-      header.addEventListener('click', () => {
-        const column = header.dataset.sort;
-        if (currentSort.column === column) {
-          currentSort.direction = (currentSort.direction === 'asc' ? 'desc' : 'asc');
-        } else {
-          currentSort.column = column;
-          currentSort.direction = 'asc';
-        }
-        // Visual update for sort arrows is not directly applicable to cards
-        // If needed, implement a different visual feedback for card sorting
-        load();
-      });
+    await fetchJSON(`/api/demandes_client/${d.id}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status })
     });
 
     load();
+  }
+
+
+  async function convertToTicket(id) {
+    const r = await fetchJSON(`/api/demandes_client/${id}/convert-to-ticket`, { method: "POST" });
+    alert("Ticket créé : #" + r.ticket?.id);
+    load();
+  }
+
+
+  let deleteDemandModal = new bootstrap.Modal(document.getElementById("deleteDemandeClientModal"));
+  let commentModal = new bootstrap.Modal(document.getElementById("commentModal"));
+  let currentDemandId = null;
+  let currentDemandStatus = null;
+
+
+  document.getElementById("saveCommentBtn").addEventListener("click", async () => {
+    const comment = document.getElementById("comment-text").value.trim();
+    if (!comment) return alert("Le commentaire est obligatoire.");
+
+    await fetchJSON(`/api/demandes_client/${currentDemandId}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status: currentDemandStatus, commentaire: comment })
+    });
+
+    commentModal.hide();
+    load();
   });
-  </script>
+
+
+  function openDeleteModal(id) {
+    currentDemandId = id;
+    deleteDemandModal.show();
+  }
+
+  document.getElementById("confirm-delete-demand-btn").addEventListener("click", async () => {
+    const justification = document.getElementById("delete-demand-justification").value.trim();
+    if (!justification) return alert("La justification est obligatoire.");
+
+    await fetchJSON(`/api/demandes_client/${currentDemandId}`, {
+      method: "DELETE",
+      body: JSON.stringify({ justification })
+    });
+
+    deleteDemandModal.hide();
+    load();
+  });
+
+
+  async function load() {
+    try {
+      demandsContainer.innerHTML = "<p class='text-muted'>Chargement…</p>";
+
+      let url = "/api/demandes_client?";
+      if (currentFilter.client) url += `client=${encodeURIComponent(currentFilter.client)}&`;
+      if (currentFilter.status) url += `status=${encodeURIComponent(currentFilter.status)}&`;
+      url += `sort=${currentSort.column},${currentSort.direction}`;
+
+      const data = await fetchJSON(url);
+
+      demandsContainer.innerHTML = "";
+      data.forEach(d => demandsContainer.appendChild(createDemandCard(d)));
+
+    } catch (err) {
+      console.error(err);
+      demandsContainer.innerHTML = `<p class="text-danger">Erreur : ${err.message}</p>`;
+    }
+  }
+
+
+  filterClientInput.addEventListener("input", () => {
+    currentFilter.client = filterClientInput.value;
+    load();
+  });
+
+  filterStatusSelect.addEventListener("change", () => {
+    currentFilter.status = filterStatusSelect.value;
+    load();
+  });
+
+
+  load();
+
+});
+</script>
+
   <!-- Comment Modal -->
 <div class="modal fade" id="commentModal" tabindex="-1" aria-labelledby="commentModalLabel" aria-hidden="true">
   <div class="modal-dialog">
