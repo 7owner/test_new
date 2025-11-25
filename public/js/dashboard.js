@@ -72,14 +72,22 @@ async function buildHeaders(json=false){
       (async () => { try { const r = await fetch('/api/agents', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('activeAgents').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
       (async () => { try { const r = await fetch('/api/sites', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('sitesUnderContract').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
       (async () => {
+        const elPending = document.getElementById('demandesPending');
+        const elBreakdown = document.getElementById('demandesBreakdown');
         try {
           const r = await fetch('/api/demandes_client', { headers: await buildHeaders(false), credentials:'same-origin' });
           const rows = r.ok ? await r.json() : [];
-          const el = document.getElementById('demandesCount');
-          if (el) el.textContent = Array.isArray(rows) ? rows.length : 0;
+          let pending = 0, treated = 0;
+          (Array.isArray(rows) ? rows : []).forEach(d => {
+            const s = String(d.status || d.statut || '').toLowerCase();
+            if (s.includes('traite')) treated++;
+            else pending++;
+          });
+          if (elPending) elPending.textContent = pending;
+          if (elBreakdown) elBreakdown.textContent = `${pending} en file · ${treated} traitées`;
         } catch {
-          const el = document.getElementById('demandesCount');
-          if (el) el.textContent = '-';
+          if (elPending) elPending.textContent = '-';
+          if (elBreakdown) elBreakdown.textContent = 'En file · traitées';
         }
       })();
       (async () => { try { const r = await fetch('/api/factures', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('facturesCount').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
