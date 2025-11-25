@@ -40,7 +40,7 @@
   <main class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1>Sites</h1>
-      <a href="site-new.html" class="btn btn-primary" id="create-site-btn"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau site</a>
+      <button class="btn btn-primary" id="create-site-btn" data-bs-toggle="modal" data-bs-target="#createSiteModal"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau site</button>
     </div>
 
     <div class="mb-3 d-flex gap-2 flex-wrap">
@@ -75,6 +75,48 @@
       </table>
     </div>
   </main>
+
+  <div class="modal fade" id="createSiteModal" tabindex="-1" aria-labelledby="createSiteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createSiteModalLabel">Créer un nouveau site</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe src="/site-new.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="viewSiteModal" tabindex="-1" aria-labelledby="viewSiteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="viewSiteModalLabel">Voir Site</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="viewSiteFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="editSiteModal" tabindex="-1" aria-labelledby="editSiteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editSiteModalLabel">Modifier Site</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="editSiteFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script src="/js/sites.js"></script>

@@ -48,8 +48,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             <td>${site.responsable_matricule? getAgentName(site.responsable_matricule): 'Non assigné'}</td>
             <td><small>Début: ${debut||''}<br>Fin: ${fin||''}</small></td>
             <td>
-              <a href="site-view.html?id=${site.id}" class="btn btn-sm btn-info me-1"><i class="bi bi-eye"></i> Voir</a>
-              ${isAdmin ? `<a href="site-edit.html?id=${site.id}" class="btn btn-sm btn-warning me-1"><i class="bi bi-pencil"></i> Modifier</a>` : ''}
+              <button class="btn btn-sm btn-info me-1" data-bs-toggle="modal" data-bs-target="#viewSiteModal" data-id="${site.id}"><i class="bi bi-eye"></i> Voir</button>
+              ${isAdmin ? `<button class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editSiteModal" data-id="${site.id}"><i class="bi bi-pencil"></i> Modifier</button>` : ''}
             </td>`;
         });
       }
@@ -90,4 +90,35 @@ document.addEventListener('DOMContentLoaded', async function() {
       dateEndInput.addEventListener('change', applyFilters);
       thDates.addEventListener('click', ()=>{ sortAsc=!sortAsc; applyFilters(); });
       load();
+
+      const createSiteModal = document.getElementById('createSiteModal');
+      const viewSiteModal = document.getElementById('viewSiteModal');
+      const editSiteModal = document.getElementById('editSiteModal');
+      const viewSiteFrame = document.getElementById('viewSiteFrame');
+      const editSiteFrame = document.getElementById('editSiteFrame');
+
+      if (createSiteModal) {
+        createSiteModal.addEventListener('show.bs.modal', function (event) {
+          const createSiteFrame = createSiteModal.querySelector('iframe');
+          if (createSiteFrame) {
+            createSiteFrame.src = '/site-new.html';
+          }
+        });
+      }
+
+      if (viewSiteModal) {
+        viewSiteModal.addEventListener('show.bs.modal', function (event) {
+          const button = event.relatedTarget;
+          const siteId = button.getAttribute('data-id');
+          viewSiteFrame.src = `/site-view.html?id=${siteId}`;
+        });
+      }
+
+      if (editSiteModal) {
+        editSiteModal.addEventListener('show.bs.modal', function (event) {
+          const button = event.relatedTarget;
+          const siteId = button.getAttribute('data-id');
+          editSiteFrame.src = `/site-edit.html?id=${siteId}`;
+        });
+      }
     });

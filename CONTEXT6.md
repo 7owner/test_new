@@ -10,6 +10,7 @@
 - Téléversement PJ messagerie : stockage dans `public/uploads/attachments`, lien web relatif (`uploads/attachments/<file>`), dossier créé au démarrage.
 - `client-demand-view.html` : fetch avec credentials same-origin, fallback responsable admin, liens PJ corrigés.
 - `messagerie.html` : filtres de conversation (search) pris en charge côté API, liens PJ corrigés.
+- Dashboard : redesign des cartes métriques + fond dégradé; la carte “Demandes client” affiche désormais “en file vs converties” (pending = sans ticket_id, converties = avec ticket_id).
 
 ## Branches de travail
 - `feat/dashboard` : mergée avec `origin/main` (local). À pousser si besoin.
@@ -31,6 +32,11 @@
 
 ## Mises à jour effectuées par l'agent (Recent Changes)
 
+*   **Tickets Page (`public/tickets.html`)**:
+    *   **Modal for Client Requests**: The "Demandes clients" button now opens a modal containing an `iframe` of the `demandes-client-admin.html` page.
+    *   **Modals for View/Edit Tickets**: The "Voir" and "Modifier" buttons for each ticket now open modals (`#viewTicketModal`, `#editTicketModal`) with `iframe`s pointing to the respective `ticket-view.html` and `ticket-edit.html` pages.
+    *   **Bug Fix**: Moved all modal HTML to the end of the `<body>` tag to resolve a JavaScript error related to DOM loading.
+
 *   **Ticket View Page (`public/ticket-view.html`)**:
     *   **New Modal for Adding Interventions**: Replaced the "Ajouter une intervention" link with a button that triggers a new modal (`#createInterventionModal`).
     *   **Intervention Form Fields**: The modal includes input fields for `Titre`, `Description`, `Date Début`, `Date Fin`, `Statut`, and `Intervention précédente`. The `ticket_id` is automatically linked.
@@ -39,6 +45,7 @@
         *   Updated the display of the associated Affaire on `ticket-view.html` to show the "numéro d'affaire".
 
 *   **Backend Changes (`server.js`)**:
+    *   **`POST /api/demandes_client` Endpoint**: Modified to allow admins to create requests on behalf of a client.
     *   **`POST /api/affaires` Endpoint**: Modified to accept and save the new `numero_affaire` field.
     *   **`POST /api/interventions` Endpoint**: Modified to accept and save the new `titre` field.
 
