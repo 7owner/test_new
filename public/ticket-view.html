@@ -49,7 +49,7 @@
       <div class="card-body">
         <h2 class="card-title mb-4">Interventions associées</h2>
         <div id="ticket-interventions-list"></div>
-        <a href="intervention-new.html" class="btn btn-primary mt-3 d-none" id="add-intervention-btn"><i class="bi bi-plus-circle me-2"></i>Ajouter une intervention</a>
+        <button class="btn btn-primary mt-3 d-none" id="add-intervention-btn" data-bs-toggle="modal" data-bs-target="#createInterventionModal"><i class="bi bi-plus-circle me-2"></i>Ajouter une intervention</button>
       </div>
     </div>
 
@@ -90,6 +90,51 @@
       <a href="ticket-edit.html" class="btn btn-primary d-none" id="edit-ticket-btn"><i class="bi bi-pencil me-2"></i>Modifier le ticket</a>
     </div>
   </main>
+
+  <!-- Modal: Create Intervention -->
+  <div class="modal fade" id="createInterventionModal" tabindex="-1" aria-labelledby="createInterventionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createInterventionModalLabel">Créer une nouvelle intervention</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="create-intervention-form">
+            <div class="mb-3">
+              <label for="intervention-description" class="form-label">Description</label>
+              <textarea class="form-control" id="intervention-description" rows="3" required></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="intervention-date-debut" class="form-label">Date Début</label>
+              <input type="date" class="form-control" id="intervention-date-debut" required>
+            </div>
+            <div class="mb-3">
+              <label for="intervention-date-fin" class="form-label">Date Fin</label>
+              <input type="date" class="form-control" id="intervention-date-fin">
+            </div>
+            <div class="mb-3">
+              <label for="intervention-status" class="form-label">Statut</label>
+              <select class="form-select" id="intervention-status" required>
+                <option value="Pas_commence">Pas commencé</option>
+                <option value="Bloque">Bloqué</option>
+                <option value="En_attente">En attente</option>
+                <option value="En_cours">En cours</option>
+                <option value="Termine">Terminé</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="intervention-precedente-id" class="form-label">Intervention précédente (si applicable)</label>
+              <select class="form-select" id="intervention-precedente-id">
+                <option value="">Aucune</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Créer</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Add Responsable Modal -->
   <div class="modal fade" id="addResponsableModal" tabindex="-1" aria-labelledby="addResponsableModalLabel" aria-hidden="true">
@@ -390,6 +435,7 @@
             affaireForm.addEventListener('submit', async (e) => {
               e.preventDefault();
               const nomAffaire = document.getElementById('affaire-nom').value.trim();
+              const numeroAffaire = document.getElementById('affaire-numero').value.trim();
               const descriptionAffaire = document.getElementById('affaire-description').value.trim();
               if (!nomAffaire) return alert('Le nom de l\'affaire est requis.');
 
@@ -401,7 +447,7 @@
                 const affaireRes = await fetch('/api/affaires', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', ...headers },
-                  body: JSON.stringify({ nom_affaire: nomAffaire, numero_affaire: document.getElementById('affaire-numero').value.trim(), client_id: clientId, description: descriptionAffaire })
+                  body: JSON.stringify({ nom_affaire: nomAffaire, numero_affaire: numeroAffaire, client_id: clientId, description: descriptionAffaire })
                 });
                 const newAffaire = await affaireRes.json();
                 if (!affaireRes.ok) throw new Error(newAffaire.error || 'Erreur lors de la création de l\'affaire');
@@ -418,6 +464,43 @@
                 location.reload();
               } catch (err) {
                 alert(`Erreur: ${err.message}`);
+              }
+            });
+          }
+
+          // Logic for creating Intervention
+          const interventionForm = document.getElementById('create-intervention-form');
+          if (interventionForm) {
+            const precedenteSelect = document.getElementById('intervention-precedente-id');
+            (data.interventions || []).forEach(inter => {
+                precedenteSelect.add(new Option(`INT #${inter.id} - ${inter.description.substring(0, 20)}...`, inter.id));
+            });
+
+            interventionForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const payload = {
+                description: document.getElementById('intervention-description').value,
+                date_debut: document.getElementById('intervention-date-debut').value,
+                date_fin: document.getElementById('intervention-date-fin').value || null,
+                ticket_id: ticketId,
+                status: document.getElementById('intervention-status').value,
+                intervention_precedente_id: document.getElementById('intervention-precedente-id').value || null
+              };
+
+              try {
+                const res = await fetch('/api/interventions', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', ...headers },
+                  body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                  const errorData = await res.json();
+                  throw new Error(errorData.error || `HTTP ${res.status}`);
+                }
+                alert('Intervention créée avec succès!');
+                location.reload();
+              } catch (err) {
+                alert(`Échec de la création: ${err.message}`);
               }
             });
           }
