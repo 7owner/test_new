@@ -35,6 +35,7 @@
 *   **Tickets Page (`public/tickets.html`)**:
     *   **Modal for Client Requests**: The "Demandes clients" button now opens a modal containing an `iframe` of the `demandes-client-admin.html` page.
     *   **Modals for View/Edit Tickets**: The "Voir" and "Modifier" buttons for each ticket now open modals (`#viewTicketModal`, `#editTicketModal`) with `iframe`s pointing to the respective `ticket-view.html` and `ticket-edit.html` pages.
+    *   **Mandatory Justification for Ticket Deletion**: A new modal (`#deleteTicketModal`) is now used to collect a mandatory justification when deleting a ticket. This justification is sent to the API and logged.
     *   **Bug Fix**: Moved all modal HTML to the end of the `<body>` tag to resolve a JavaScript error related to DOM loading.
 
 *   **Ticket View Page (`public/ticket-view.html`)**:
@@ -44,8 +45,16 @@
         *   Added an input field for "Numéro de l'affaire" in the "Créer une nouvelle affaire" modal.
         *   Updated the display of the associated Affaire on `ticket-view.html` to show the "numéro d'affaire".
 
+*   **Agents Page (`public/agents.html`)**:
+    *   **Modals for Create/View/Edit Agents**: The "Créer un nouvel agent" button, and the "Voir" and "Modifier" buttons for each agent, now open modals (`#createAgentModal`, `#viewAgentModal`, `#editAgentModal`) with `iframe`s pointing to the respective `agent-new.html`, `agent-view.html`, and `agent-edit.html` pages.
+
+*   **Sites Page (`public/sites.html`)**:
+    *   **Modals for Create/View/Edit Sites**: The "Créer un nouveau site" button, and the "Voir" and "Modifier" buttons for each site, now open modals (`#createSiteModal`, `#viewSiteModal`, `#editSiteModal`) with `iframe`s pointing to the respective `site-new.html`, `site-view.html`, and `site-edit.html` pages.
+
 *   **Backend Changes (`server.js`)**:
     *   **`POST /api/demandes_client` Endpoint**: Modified to allow admins to create requests on behalf of a client.
+    *   **`DELETE /api/demandes_client/:id` Endpoint**: Modified to require a `justification` for deletion, which is logged to the `audit_log` table.
+    *   **`DELETE /api/tickets/:id` Endpoint**: Modified to require a `justification` for deletion, which is logged to the `audit_log` table.
     *   **`POST /api/affaires` Endpoint**: Modified to accept and save the new `numero_affaire` field.
     *   **`POST /api/interventions` Endpoint**: Modified to accept and save the new `titre` field.
 

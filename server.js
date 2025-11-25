@@ -2186,7 +2186,14 @@ app.put('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, res) 
 
 app.delete('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id } = req.params;
+    const { justification } = req.body;
+
+    if (!justification) {
+        return res.status(400).json({ error: 'Justification is required' });
+    }
+
     try {
+        await logAudit('ticket', id, 'DELETE', req.user.email, { justification });
         await pool.query('DELETE FROM ticket WHERE id = $1', [id]);
         res.status(204).send();
     } catch (err) {
@@ -3438,6 +3445,12 @@ app.put('/api/demandes_client/:id/status', authenticateToken, authorizeAdmin, as
 // Delete a client demand (admin)
 app.delete('/api/demandes_client/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
+  const { justification } = req.body;
+
+  if (!justification) {
+      return res.status(400).json({ error: 'Justification is required' });
+  }
+
   const cx = await pool.connect();
   try {
     await cx.query('BEGIN');
@@ -3451,6 +3464,8 @@ app.delete('/api/demandes_client/:id', authenticateToken, authorizeAdmin, async 
       await cx.query('ROLLBACK');
       return res.status(409).json({ error: 'This demand cannot be deleted because it has been converted into a ticket.' });
     }
+
+    await logAudit('demande_client', id, 'DELETE', req.user.email, { justification });
     // If not converted, proceed with deletion
     await cx.query('DELETE FROM demande_client WHERE id=$1', [id]);
     await cx.query('COMMIT');
