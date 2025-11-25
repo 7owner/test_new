@@ -102,6 +102,10 @@
         <div class="modal-body">
           <form id="create-intervention-form">
             <div class="mb-3">
+              <label for="intervention-titre" class="form-label">Titre</label>
+              <input type="text" class="form-control" id="intervention-titre" required>
+            </div>
+            <div class="mb-3">
               <label for="intervention-description" class="form-label">Description</label>
               <textarea class="form-control" id="intervention-description" rows="3" required></textarea>
             </div>
@@ -479,6 +483,7 @@
             interventionForm.addEventListener('submit', async (e) => {
               e.preventDefault();
               const payload = {
+                titre: document.getElementById('intervention-titre').value,
                 description: document.getElementById('intervention-description').value,
                 date_debut: document.getElementById('intervention-date-debut').value,
                 date_fin: document.getElementById('intervention-date-fin').value || null,
