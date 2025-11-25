@@ -218,68 +218,9 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Fallback utilities if global scripts are not loaded
-      function renderMarkdown(text){ try { return (window.marked && marked.parse) ? marked.parse(text||'') : (text||''); } catch(_) { return text||''; } }
-      function makeCardsClickable(container){ try { if (!container) return; container.addEventListener('click', (ev)=>{ if (ev.target.closest('button,.btn,a[href]')) return; const card=ev.target.closest('.card'); if (!card) return; const link=card.querySelector('a[href]'); if (link) { ev.preventDefault(); location.href=link.getAttribute('href'); } }); } catch(_){} }
-      const allTickets = [
-        {
-          id: "MNT001",
-          doe_id: "DOE001",
-          affaire_id: "AFF001",
-          titre: "Maintenance préventive annuelle",
-          description: "Vérification complète des systèmes de sécurité du site.",
-          etat: "Pas_commence",
-          responsable: null,
-          site_id: "SITE001",
-          date_intervention: "2024-01-15" // Added for demonstration
-        },
-        {
-          id: "MNT002",
-          doe_id: "DOE002",
-          affaire_id: "AFF002",
-          titre: "Réparation urgence machine X",
-          description: "Réparation suite à une panne critique sur la machine X.",
-          etat: "En_cours",
-          responsable: "AGT001",
-          site_id: "SITE002",
-          date_intervention: "2024-02-20" // Added for demonstration
-        },
-        {
-          id: "MNT003",
-          doe_id: "DOE001",
-          affaire_id: "AFF001",
-          titre: "Contrôle sécurité incendie",
-          description: "Contrôle réglementaire des équipements de sécurité incendie.",
-          etat: "Termine",
-          responsable: "AGT002",
-          site_id: "SITE001",
-          date_intervention: "2024-03-10" // Added for demonstration
-        },
-        {
-          id: "MNT004",
-          doe_id: null,
-          affaire_id: null,
-          titre: "Installation nouveau matériel",
-          description: "Mise en place de nouveaux serveurs dans la salle informatique.",
-          etat: "En_cours",
-          responsable: null,
-          site_id: "SITE005",
-          date_intervention: "2024-04-01" // Added for demonstration
-        }
-      ];
-
-      // Site catalogue: prefer API, fallback to static examples
-      const allSites = [
-        { id: "SITE001", nom_site: "Site Central Paris" },
-        { id: "SITE002", nom_site: "Usine Lyon" },
-        { id: "SITE005", nom_site: "Agence Lille" }
-      ];
-      let siteMap = new Map(); // key: String(id), value: nom_site
-
-      const allAgents = [
-        { matricule: "AGT001", nom: "Dupont", prenom: "Jean" },
-        { matricule: "AGT002", nom: "Martin", prenom: "Sophie" }
-      ];
+      const norm = (s) => (s||'').toString().normalize('NFD').replace(/\p{Diacritic}+/gu,'').toLowerCase();
+      const renderMarkdown = (text) => { try { return (window.marked && marked.parse) ? marked.parse(text||'') : (text||''); } catch(_) { return text||''; } };
+      const state = { tickets: [], sites: new Map(), agents: new Map(), isAdmin: false };
 
       const openTicketsContainer = document.getElementById('open-tickets-container');
       const closedTicketsTableBody = document.getElementById('closed-tickets-table-body');
@@ -287,53 +228,64 @@
       const statusFilter = document.getElementById('ticket-status-filter');
       const responsibleFilter = document.getElementById('ticket-responsible-filter');
 
-      const currentUserRole = localStorage.getItem('userRole');
-      let currentUserIsAdmin = (currentUserRole === 'admin');
-      // Try to infer admin from JWT token roles
+      function buildHeaders(json=false){
+        const h = json? { 'Content-Type':'application/json' } : {};
+        const token = localStorage.getItem('token');
+        if (token) h['Authorization'] = `Bearer ${token}`;
+        return h;
+      }
+
       try {
         const token = localStorage.getItem('token');
         if (token) {
           const payload = JSON.parse(atob(token.split('.')[1]));
-          if (Array.isArray(payload.roles) && payload.roles.includes('ROLE_ADMIN')) {
-            currentUserIsAdmin = true;
-          }
+          if (Array.isArray(payload.roles) && payload.roles.includes('ROLE_ADMIN')) state.isAdmin = true;
           const emailEl = document.getElementById('logged-in-user-email');
           if (emailEl && payload.email) emailEl.textContent = payload.email;
         }
       } catch(_) {}
 
-      let currentTickets = [];
-
       function getSiteName(site_id) {
         if (site_id == null) return 'N/A';
         const key = String(site_id);
-        if (siteMap.has(key)) return siteMap.get(key) || `Site #${key}`;
-        const site = allSites.find(s => String(s.id) === key);
-        return site ? (site.nom_site || `Site #${key}`) : `Site #${key}`;
+        if (state.sites.has(key)) return state.sites.get(key) || `Site #${key}`;
+        return `Site #${key}`;
       }
-
       function siteLink(site_id) {
         if (site_id == null) return 'N/A';
         const key = String(site_id);
         const label = getSiteName(site_id);
         return `<a href="site-view.html?id=${key}">${label}</a>`;
       }
-
       async function fetchSites() {
         try {
-          const token = localStorage.getItem('token');
-          const res = await fetch('/api/sites', { headers: token? { 'Authorization': `Bearer ${token}` } : {}, credentials: 'same-origin' });
-          if (!res.ok) return;
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            siteMap = new Map(data.map(s => [String(s.id), s.nom_site || `Site #${s.id}`]));
-          }
-        } catch(_) { /* non bloquant */ }
+          const res = await fetch('/api/sites', { headers: buildHeaders(false), credentials: 'same-origin' });
+          const data = res.ok ? await res.json() : [];
+          if (Array.isArray(data)) state.sites = new Map(data.map(s => [String(s.id), s.nom_site || `Site #${s.id}`]));
+        } catch(_) {}
       }
 
       function getAgentName(matricule) {
-        const agent = allAgents.find(a => a.matricule === matricule);
-        return agent ? `${agent.nom} ${agent.prenom}` : 'Non assign?';
+        if (!matricule) return 'Non assigné';
+        const key = String(matricule);
+        if (state.agents.has(key)) return state.agents.get(key);
+        return key;
+      }
+      async function fetchAgents() {
+        try {
+          const res = await fetch('/api/agents', { headers: buildHeaders(false), credentials:'same-origin' });
+          const rows = res.ok ? await res.json() : [];
+          state.agents = new Map((rows||[]).map(a => [String(a.matricule), `${a.nom || ''} ${a.prenom || ''}`.trim() || a.matricule]));
+          if (responsibleFilter) {
+            responsibleFilter.innerHTML = '<option value="">Tous les responsables</option>';
+            state.agents.forEach((label, mat) => {
+              const opt = document.createElement('option');
+              opt.value = mat;
+              opt.textContent = `${label} (${mat})`;
+              responsibleFilter.appendChild(opt);
+            });
+          }
+        } catch(_) {}
       }
 
       function getStatusBadgeClass(etat) {
@@ -352,17 +304,15 @@
         const openTickets = ticketsToRender.filter(t => t.etat !== 'Termine');
         const closedTickets = ticketsToRender.filter(t => t.etat === 'Termine');
 
-        // Render open tickets as cards
         if (openTickets.length > 0) {
           openTickets.forEach(ticket => {
-            const siteName = getSiteName(ticket.site_id);
             const responsableName = getAgentName(ticket.responsable);
             const statusBadgeClass = getStatusBadgeClass(ticket.etat);
-            const start = ticket.date_debut ? new Date(ticket.date_debut) : (ticket.date_intervention ? new Date(ticket.date_intervention) : null);
+            const start = ticket.date_debut ? new Date(ticket.date_debut) : null;
             const end = ticket.date_fin ? new Date(ticket.date_fin) : null;
             const endDisplay = end ? end.toLocaleDateString() : '—';
             let elapsed = '—';
-            try { const to = end || new Date(); if (start) { const ms = to - start; const days = Math.floor(ms/(1000*60*60*24)); elapsed = `${days} j`; } } catch(_){}
+            try { const to = end || new Date(); if (start) { const ms = to - start; const days = Math.floor(ms/(1000*60*60*24)); elapsed = `${days} j`; } } catch(_){ }
 
             const cardCol = document.createElement('div');
             cardCol.className = 'col';
@@ -378,7 +328,7 @@
                   <small class="text-muted mt-auto">ID: ${ticket.id} | Responsable: ${responsableName} | Fin: ${endDisplay} | Écoulé: ${elapsed}</small>
                   <div class="mt-3">
                     <button class="btn btn-sm btn-info me-1" data-bs-toggle="modal" data-bs-target="#viewTicketModal" data-id="${ticket.id}"><i class="bi bi-eye"></i> Voir</button>
-                    ${currentUserIsAdmin ? `
+                    ${state.isAdmin ? `
                       <button class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editTicketModal" data-id="${ticket.id}"><i class="bi bi-pencil"></i> Modifier</button>
                       <button class="btn btn-sm btn-danger" data-action="delete" data-id="${ticket.id}"><i class="bi bi-trash"></i> Supprimer</button>
                     ` : ''}
@@ -387,23 +337,21 @@
               </div>
             `;
             openTicketsContainer.appendChild(cardCol);
-            if (currentUserIsAdmin) {
+            if (state.isAdmin) {
               const btn = cardCol.querySelector('button[data-action="delete"]');
               if (btn) btn.addEventListener('click', () => deleteTicket(ticket.id));
             }
           });
         } else {
-          openTicketsContainer.innerHTML = '<p class="text-muted">Aucun ticket ouvert Trouvé.</p>';
+          openTicketsContainer.innerHTML = '<p class="text-muted">Aucun ticket ouvert trouvé.</p>';
         }
 
-        // Render closed tickets in a table
         if (closedTickets.length > 0) {
           closedTickets.forEach(ticket => {
-            const row = closedTicketsTableBody.insertRow();
-            const siteName = getSiteName(ticket.site_id);
-            const responsableName = getAgentName(ticket.responsable);
             const statusBadgeClass = getStatusBadgeClass(ticket.etat);
-
+            const responsableName = getAgentName(ticket.responsable);
+            const endDisplay = ticket.date_fin ? new Date(ticket.date_fin).toLocaleDateString() : '—';
+            const row = document.createElement('tr');
             row.innerHTML = `
               <td>${ticket.id}</td>
               <td>${ticket.titre}</td>
@@ -413,38 +361,32 @@
               <td>${responsableName}</td>
               <td>
                 <button class="btn btn-sm btn-info me-1" data-bs-toggle="modal" data-bs-target="#viewTicketModal" data-id="${ticket.id}"><i class="bi bi-eye"></i> Voir</button>
-                ${currentUserIsAdmin ? `
+                ${state.isAdmin ? `
                   <button class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editTicketModal" data-id="${ticket.id}"><i class="bi bi-pencil"></i> Modifier</button>
                   <button class="btn btn-sm btn-danger" data-action="delete" data-id="${ticket.id}"><i class="bi bi-trash"></i> Supprimer</button>
                 ` : ''}
               </td>
             `;
-            if (currentUserIsAdmin) {
+            closedTicketsTableBody.appendChild(row);
+            if (state.isAdmin) {
               const btn = row.querySelector('button[data-action="delete"]');
               if (btn) btn.addEventListener('click', () => deleteTicket(ticket.id));
             }
           });
         } else {
-          closedTicketsTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Aucun ticket Terminé Trouvé.</td></tr>';
-        }
-
-        // Make cards clickable - assuming a generic function exists in script.js (or should be here)
-        if (typeof makeCardsClickable === 'function') {
-            const cardContainers = document.querySelectorAll('#open-tickets-container .card');
-            cardContainers.forEach(card => makeCardsClickable(card));
+          closedTicketsTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Aucun ticket Terminé trouvé.</td></tr>';
         }
       }
 
       function applyFilters() {
-        const searchTerm = searchInput.value.toLowerCase();
+        const searchTerm = norm(searchInput.value);
         const selectedStatus = statusFilter.value;
         const selectedResponsible = responsibleFilter.value;
 
-        const base = currentTickets.length ? currentTickets : allTickets;
-        const filteredTickets = base.filter(ticket => {
-          const matchesSearch = ticket.titre.toLowerCase().includes(searchTerm) ||
-                                ticket.description.toLowerCase().includes(searchTerm) ||
-                                ticket.id.toLowerCase().includes(searchTerm);
+        const filteredTickets = state.tickets.filter(ticket => {
+          const matchesSearch = norm(ticket.titre).includes(searchTerm) ||
+                                norm(ticket.description).includes(searchTerm) ||
+                                norm(ticket.id).includes(searchTerm);
           const matchesStatus = selectedStatus === '' || ticket.etat === selectedStatus;
           const matchesResponsible = selectedResponsible === '' || ticket.responsable === selectedResponsible;
           return matchesSearch && matchesStatus && matchesResponsible;
@@ -457,17 +399,12 @@
       statusFilter.addEventListener('change', applyFilters);
       responsibleFilter.addEventListener('change', applyFilters);
 
-      // Initial render with static data while API loads
-      renderTickets(allTickets);
-
       async function fetchTickets() {
-        const token = localStorage.getItem('token');
-        if (!token) return;
         try {
-          const res = await fetch('/api/tickets', { headers: { 'Authorization': `Bearer ${token}` }, credentials: 'same-origin' });
+          const res = await fetch('/api/tickets', { headers: buildHeaders(false), credentials: 'same-origin' });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const data = await res.json();
-          currentTickets = (Array.isArray(data) ? data : []).map(t => ({
+          state.tickets = (Array.isArray(data) ? data : []).map(t => ({
             id: String(t.id),
             doe_id: t.doe_id || null,
             affaire_id: t.affaire_id || null,
@@ -482,24 +419,23 @@
           applyFilters();
         } catch (e) {
           console.error('Erreur chargement /api/tickets:', e);
+          openTicketsContainer.innerHTML = '<p class="text-muted">Impossible de charger les tickets.</p>';
         }
       }
 
       async function deleteTicket(id) {
         const token = localStorage.getItem('token');
-        if (!token) return alert('Non autoris?.');
+        if (!token) return alert('Non autorisé.');
         if (!confirm('Supprimer ce ticket ?')) return;
         try {
-          const res = await fetch(`/api/tickets/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }, credentials: 'same-origin' });
+          const res = await fetch(`/api/tickets/${id}`, { method: 'DELETE', headers: buildHeaders(false), credentials: 'same-origin' });
           if (res.status === 204) {
-            if (currentTickets && currentTickets.length) {
-              currentTickets = currentTickets.filter(t => String(t.id) !== String(id));
-            }
+            state.tickets = state.tickets.filter(t => String(t.id) !== String(id));
             applyFilters();
           } else if (res.status === 403) {
-            alert('Action r?serv?e aux administrateurs.');
+            alert('Action réservée aux administrateurs.');
           } else {
-            alert(`Suppression ?chou?e (HTTP ${res.status}).`);
+            alert(`Suppression échouée (HTTP ${res.status}).`);
           }
         } catch (e) {
           console.error('Erreur suppression ticket:', e);
@@ -507,13 +443,15 @@
         }
       }
 
-      // Conditionally hide create ticket button for non-admins
-      if (!currentUserIsAdmin) {
-        document.getElementById('create-ticket-btn').classList.add('d-none');
-      }
+      try {
+        const btnCreate = document.getElementById('create-ticket-btn');
+        if (btnCreate && !state.isAdmin) btnCreate.classList.add('d-none');
+      } catch(_){ }
 
-      // Fetch from backend
-      fetchSites().finally(() => fetchTickets());
+      (async () => {
+        await Promise.all([fetchSites(), fetchAgents()]);
+        await fetchTickets();
+      })();
 
       const viewTicketModal = document.getElementById('viewTicketModal');
       const editTicketModal = document.getElementById('editTicketModal');
@@ -539,9 +477,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
