@@ -77,17 +77,16 @@ async function buildHeaders(json=false){
         try {
           const r = await fetch('/api/demandes_client', { headers: await buildHeaders(false), credentials:'same-origin' });
           const rows = r.ok ? await r.json() : [];
-          let pending = 0, treated = 0;
+          let pending = 0, converted = 0;
           (Array.isArray(rows) ? rows : []).forEach(d => {
-            const s = String(d.status || d.statut || '').toLowerCase();
-            if (s.includes('traite')) treated++;
+            if (d.ticket_id) converted++;
             else pending++;
           });
           if (elPending) elPending.textContent = pending;
-          if (elBreakdown) elBreakdown.textContent = `${pending} en file · ${treated} traitées`;
+          if (elBreakdown) elBreakdown.textContent = `${pending} en file · ${converted} converties`;
         } catch {
           if (elPending) elPending.textContent = '-';
-          if (elBreakdown) elBreakdown.textContent = 'En file · traitées';
+          if (elBreakdown) elBreakdown.textContent = 'En file · converties';
         }
       })();
       (async () => { try { const r = await fetch('/api/factures', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('facturesCount').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
