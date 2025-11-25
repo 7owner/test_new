@@ -140,6 +140,7 @@ ALTER TABLE site ADD FOREIGN KEY (client_id) REFERENCES client(id) ON DELETE SET
 CREATE TABLE IF NOT EXISTS affaire (
     id SERIAL PRIMARY KEY,
     nom_affaire VARCHAR(255) NOT NULL,
+    numero_affaire VARCHAR(255) UNIQUE,
     client_id BIGINT,
     description TEXT
 );
