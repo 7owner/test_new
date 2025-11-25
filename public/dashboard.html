@@ -80,9 +80,11 @@
 
     <div id="user-info-container" class="d-flex align-items-center gap-3">
       <div class="d-flex align-items-center bg-light border rounded-pill px-3 py-1 shadow-sm">
-        <i class="bi bi-person-circle text-primary fs-4 me-2"></i>
-        <div class="text-nowrap">
-          Bienvenue,<span id="user-link-container"></span>
+        <a id="user-icon-link" class="text-decoration-none" href="#" data-bs-toggle="tooltip" title="">
+          <i class="bi bi-person-circle text-primary fs-4 me-2"></i>
+        </a>
+        <div class="text-nowrap fw-medium text-secondary">
+          Bienvenue
         </div>
       </div>
       <button id="logout-btn" class="btn btn-outline-danger btn-sm rounded-pill">
@@ -199,7 +201,7 @@
       <div class="col-lg-4">
         <div class="card h-100">
           <div class="card-body">
-            <h5 class="card-title">Tickets ouverts rÃ©cents</h5>
+            <h5 class="card-title">Tickets ouverts récents</h5>
             <div id="urgentMaintenances" class="text-muted">Aucun ticket Ã  afficher</div>
           </div>
         </div>
@@ -220,7 +222,7 @@
       <div class="col">
         <div class="card h-100">
           <div class="card-body">
-            <h5 class="card-title">RÃ¨glements</h5>
+            <h5 class="card-title">Règlements</h5>
             <p class="card-text fs-4 fw-bold text-secondary" id="reglementsCount">-</p>
             <a href="/factures.html" class="btn btn-sm btn-outline-primary">Voir les RÃ¨glements</a>
           </div>
@@ -236,43 +238,36 @@
   <!-- Script du message de bienvenue -->
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const userLinkContainer = document.getElementById('user-link-container');
+    const userIconLink = document.getElementById('user-icon-link');
     const logoutBtn = document.getElementById('logout-btn');
 
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        userLinkContainer.textContent = 'InvitÃ©';
+        if (userIconLink) userIconLink.setAttribute('title', 'Invité');
         return;
       }
 
-      // ðŸ” DÃ©codage du token
+      // 🔍 Décodage du token
       const payload = JSON.parse(atob(token.split('.')[1] || ''));
       const email = payload?.email || 'Utilisateur';
       const matricule = payload?.matricule || payload?.sub || null;
 
-      if (matricule) {
-        const link = document.createElement('a');
-        link.href = `/agent-view.html?matricule=${encodeURIComponent(matricule)}`;
-        link.textContent = email;
-        link.style.color = 'var(--bs-primary)';
-        link.style.fontWeight = '500';
-        link.style.textDecoration = 'underline';
-        userLinkContainer.innerHTML = '';
-        userLinkContainer.appendChild(link);
-      } else {
-        userLinkContainer.textContent = email;
+      if (userIconLink) {
+        userIconLink.setAttribute('title', email);
+        if (matricule) userIconLink.href = `/agent-view.html?matricule=${encodeURIComponent(matricule)}`;
+        try { new bootstrap.Tooltip(userIconLink); } catch {}
       }
 
       logoutBtn.addEventListener('click', () => {
-        if (confirm('Voulez-vous vraiment vous dÃ©connecter ?')) {
+        if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
           localStorage.removeItem('token');
           window.location.href = '/login.html';
         }
       });
     } catch (err) {
-      console.error('Erreur lors du dÃ©codage du token JWT:', err);
-      userLinkContainer.textContent = 'Utilisateur';
+      console.error('Erreur lors du décodage du token JWT:', err);
+      if (userIconLink) userIconLink.setAttribute('title', 'Utilisateur');
     }
   });
   </script>

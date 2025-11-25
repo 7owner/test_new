@@ -3254,20 +3254,46 @@ app.get('/api/demandes_client/mine', authenticateToken, async (req, res) => {
   } catch (e) { console.error('demandes mine:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
 });
 app.post('/api/demandes_client', authenticateToken, async (req, res) => {
-  try {
-    const email = req.user && req.user.email;
-    if (!email) return res.status(401).json({ error: 'Unauthorized' });
-    const c = (await pool.query('SELECT id FROM client WHERE representant_email=$1 LIMIT 1', [email])).rows[0];
-    if (!c) return res.status(400).json({ error: 'Client record not found for this user' });
-    const { site_id, description } = req.body || {};
-    if (!description) return res.status(400).json({ error: 'description is required' });
-    if (site_id) {
-      const s = (await pool.query('SELECT id FROM site WHERE id=$1 AND client_id=$2', [site_id, c.id])).rows[0];
-      if (!s) return res.status(403).json({ error: 'Site does not belong to client' });
+    const { site_id, description, client_id } = req.body;
+    if (!description) {
+        return res.status(400).json({ error: 'Description is required' });
     }
-    const r = await pool.query('INSERT INTO demande_client (client_id, site_id, description) VALUES ($1,$2,$3) RETURNING *', [c.id, site_id || null, description]);
-    return res.status(201).json(r.rows[0]);
-  } catch (e) { console.error('demande create:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
+
+    const isAdmin = req.user.roles.includes('ROLE_ADMIN');
+    let finalClientId;
+
+    if (isAdmin && client_id) {
+        finalClientId = client_id;
+    } else {
+        const email = req.user.email;
+        if (!email) {
+            return res.status(401).json({ error: 'Unauthorized: User email not found in token' });
+        }
+        const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1 OR email=$1', [email])).rows[0];
+        if (!client) {
+            return res.status(403).json({ error: 'Forbidden: No client associated with this user' });
+        }
+        finalClientId = client.id;
+    }
+
+    // Verify site_id belongs to the client if provided
+    if (site_id) {
+        const site = (await pool.query('SELECT id FROM site WHERE id=$1 AND client_id=$2', [site_id, finalClientId])).rows[0];
+        if (!site) {
+            return res.status(403).json({ error: 'Forbidden: Site does not belong to this client' });
+        }
+    }
+    
+    try {
+        const result = await pool.query(
+            'INSERT INTO demande_client (client_id, site_id, description) VALUES ($1, $2, $3) RETURNING *',
+            [finalClientId, site_id || null, description]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error('Error creating client demand:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 // --- Client: Get single demand details for tracking ---
