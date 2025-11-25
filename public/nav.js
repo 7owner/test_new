@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   async function ensureSessionAndCsrf() {
     const unprotected = ['/', '/login.html', '/register.html', '/forgot-password.html', '/reset-password.html'];
     const path = location.pathname;
@@ -29,11 +29,9 @@
           };
         } catch(_){}
       }
-    } catch (_) {
-      // If CSRF token fetching fails, it might indicate an expired or invalid JWT
-      localStorage.removeItem('token');
-      localStorage.removeItem('userRole');
-      try { window.location.replace('/login.html'); } catch { window.location.href = '/login.html'; }
+    } catch (e) {
+      // Be tolerant: do not force logout on CSRF fetch failure; allow JWT-only flows
+      try { console.warn('CSRF token fetch failed (tolerated):', (e && e.message) || e); } catch(_) {}
     }
   }
 
@@ -48,6 +46,42 @@
             const p = JSON.parse(atob(t.split('.')[1]));
             const span = document.getElementById('logged-in-user-email');
             if (span && p && p.email) span.textContent = p.email;
+
+            // Inject client dashboard link into offcanvas nav if ROLE_CLIENT
+            try {
+              const roles = Array.isArray(p && p.roles) ? p.roles : [];
+              const navList = document.querySelector('.offcanvas-body ul.navbar-nav');
+
+              if (roles.includes('ROLE_CLIENT')) {
+                if (navList && !navList.querySelector('a[href="/client-dashboard.html"]')) {
+                  const li = document.createElement('li');
+                  li.className = 'nav-item';
+                  const a = document.createElement('a');
+                  a.className = 'nav-link';
+                  a.href = '/client-dashboard.html';
+                  a.textContent = 'Espace Client';
+                  li.appendChild(a);
+                  navList.appendChild(li);
+                }
+              }
+
+              // Inject Messagerie link for all authenticated users
+              if (navList && !navList.querySelector('a[href="/messagerie.html"]')) {
+                const li = document.createElement('li');
+                li.className = 'nav-item';
+                const a = document.createElement('a');
+                a.className = 'nav-link';
+                a.href = '/messagerie.html';
+                a.innerHTML = '<i class="bi bi-chat-dots-fill me-2"></i>Messagerie';
+                li.appendChild(a);
+                const dashboardLi = navList.querySelector('a[href="/dashboard.html"]')?.parentElement;
+                if (dashboardLi) {
+                  dashboardLi.insertAdjacentElement('afterend', li);
+                } else {
+                  navList.prepend(li);
+                }
+              }
+            } catch(_){}
           } catch {}
         }
       } catch {}
@@ -88,3 +122,6 @@
     }
   });
 })();
+
+
+

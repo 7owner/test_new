@@ -58,9 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
               const base64Url = data.token.split('.')[1];
               const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
               const decodedToken = JSON.parse(atob(base64));
-              localStorage.setItem('userRole', decodedToken.roles.includes('ROLE_ADMIN') ? 'admin' : 'user');
-
-              window.location.href = '/dashboard.html'; // Redirect to dashboard
+              const roles = Array.isArray(decodedToken.roles) ? decodedToken.roles : [];
+              let next = '/dashboard.html';
+              let userRole = 'user';
+              if (roles.includes('ROLE_ADMIN')) { userRole = 'admin'; next = '/dashboard.html'; }
+              else if (roles.includes('ROLE_CLIENT')) { userRole = 'client'; next = '/client-dashboard.html'; }
+              localStorage.setItem('userRole', userRole);
+              window.location.href = next; // Redirect based on role
             } else {
               errorMessageDiv.textContent = 'La connexion a échoué : jeton manquant.';
               errorMessageDiv.classList.remove('d-none');

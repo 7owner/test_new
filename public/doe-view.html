@@ -145,107 +145,122 @@
     </div>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const doeId = urlParams.get('id');
+ <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const doeId = urlParams.get('id');
 
-      const sampleDoes = [
-        { id: "DOE001", titre: "DOE Site Central Paris", description: "Dossier d'ouvrages exécutés pour le site central de Paris.", site_id: "SITE001", affaire_id: "AFF001" },
-        { id: "DOE002", titre: "DOE Usine Lyon", description: "Dossier d'ouvrages exécutés pour l'usine de Lyon.", site_id: "SITE002", affaire_id: "AFF002" }
-      ];
+    if (!doeId) {
+      document.getElementById('doe-title').textContent = 'DOE introuvable';
+      return;
+    }
 
-      const sampleDocuments = [
-        { id: "DOC001", doe_id: "DOE001", nom_fichier: "plan_site_A.pdf", commentaire: "Plan détaillé du site A." },
-        { id: "DOC002", doe_id: "DOE001", nom_fichier: "rapport_audit_B.docx", commentaire: "Rapport d'audit de sécurité du site B." },
-        { id: "DOC003", doe_id: "DOE002", nom_fichier: "schema_electrique.pdf", commentaire: "Schéma électrique de l'usine." }
-      ];
+    const token = localStorage.getItem('token');
+    const currentUserRole = localStorage.getItem('userRole');
+    const currentUserIsAdmin = (currentUserRole === 'admin');
 
-      const sampleImages = [
-        { id: "IMG001", doe_id: "DOE001", nom_fichier: "image_doe_1.jpg", commentaire: "Vue générale du site.", src: "https://via.placeholder.com/150" },
-        { id: "IMG002", doe_id: "DOE001", nom_fichier: "image_doe_2.jpg", commentaire: "Détail d'un équipement.", src: "https://via.placeholder.com/150" },
-        { id: "IMG003", doe_id: "DOE002", nom_fichier: "usine_vue_aerienne.jpg", commentaire: "Vue aérienne de l'usine.", src: "https://via.placeholder.com/150" }
-      ];
-
-      const doe = sampleDoes.find(d => d.id === doeId);
-
-      // Retrieve logged-in user role from localStorage
-      const currentUserRole = localStorage.getItem('userRole');
-      const currentUserIsAdmin = (currentUserRole === 'admin');
-
-      if (doe) {
-        document.getElementById('doe-title').textContent = doe.titre;
-        document.getElementById('view_id').textContent = doe.id;
-        document.getElementById('view_titre').textContent = doe.titre;
-        document.getElementById('view_description').textContent = doe.description;
-        document.getElementById('view_site_id').textContent = doe.site_id;
-        document.getElementById('view_affaire_id').textContent = doe.affaire_id;
-
-        // Render documents
-        const doeDocumentsList = document.getElementById('doe-documents-list');
-        doeDocumentsList.innerHTML = '';
-        const filteredDocuments = sampleDocuments.filter(doc => doc.doe_id === doeId);
-        if (filteredDocuments.length > 0) {
-          filteredDocuments.forEach(doc => {
-            const docEl = document.createElement('div');
-            docEl.className = 'doe-document-item mb-3 p-3 border rounded bg-light';
-            docEl.innerHTML = `
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <strong>Fichier:</strong> <a href="#" target="_blank">${doc.nom_fichier}</a>
-                <div>
-                  ${currentUserIsAdmin ? `
-                    <button type="button" class="btn btn-sm btn-primary me-2 edit-doe-doc-btn"><i class="bi bi-pencil"></i> Modifier</button>
-                    <button type="button" class="btn btn-sm btn-danger delete-doe-doc-btn"><i class="bi bi-trash"></i> Supprimer</button>
-                  ` : ''}
-                </div>
-              </div>
-              <p class="mb-0"><strong>Commentaire:</strong> ${doc.commentaire}</p>
-            `;
-            doeDocumentsList.appendChild(docEl);
-          });
-        } else {
-          doeDocumentsList.innerHTML = '<p class="text-muted">Aucun document associé.</p>';
+    try {
+      // On utilise la route relations qui renvoie doe + documents + images
+      const resp = await fetch(`/api/does/${doeId}/relations`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
+      });
 
-        // Render images
-        const doeImagesList = document.getElementById('doe-images-list');
-        doeImagesList.innerHTML = '';
-        const filteredImages = sampleImages.filter(img => img.doe_id === doeId);
-        if (filteredImages.length > 0) {
-          filteredImages.forEach(img => {
-            const imgCol = document.createElement('div');
-            imgCol.className = 'col';
-            imgCol.innerHTML = `
-              <div class="doe-image-item border rounded bg-light p-2">
-                <img src="${img.src}" class="img-fluid mb-2" alt="${img.nom_fichier}">
-                <p class="mb-1"><strong>Fichier:</strong> ${img.nom_fichier}</p>
-                <p class="mb-0"><strong>Commentaire:</strong> ${img.commentaire}</p>
-                <div class="d-flex justify-content-end gap-2 mt-2">
-                  ${currentUserIsAdmin ? `
-                    <button type="button" class="btn btn-sm btn-primary edit-doe-image-btn"><i class="bi bi-pencil"></i> Modifier</button>
-                    <button type="button" class="btn btn-sm btn-danger delete-doe-image-btn"><i class="bi bi-trash"></i> Supprimer</button>
-                  ` : ''}
-                </div>
-              </div>
-            `;
-            doeImagesList.appendChild(imgCol);
-          });
-        } else {
-          doeImagesList.innerHTML = '<p class="text-muted">Aucune image associée.</p>';
-        }
-
-        // Conditionally hide admin-specific buttons
-        if (!currentUserIsAdmin) {
-          document.getElementById('add-doe-doc-btn').classList.add('d-none');
-          document.getElementById('add-doe-image-btn').classList.add('d-none');
-          document.getElementById('edit-doe-btn').classList.add('d-none');
-        }
-
-      } else {
+      if (!resp.ok) {
         document.getElementById('doe-title').textContent = 'DOE introuvable';
+        return;
       }
-    });
-  </script>
+
+      const { doe, documents, images } = await resp.json();
+      if (!doe) {
+        document.getElementById('doe-title').textContent = 'DOE introuvable';
+        return;
+      }
+
+      // Infos DOE
+      document.getElementById('doe-title').textContent = doe.titre || `DOE #${doe.id}`;
+      document.getElementById('view_id').textContent = doe.id;
+      document.getElementById('view_titre').textContent = doe.titre || '';
+      document.getElementById('view_description').textContent = doe.description || '';
+      document.getElementById('view_site_id').textContent = doe.site_id || '';
+      document.getElementById('view_affaire_id').textContent = doe.affaire_id || '';
+
+      // Documents DOE
+      const doeDocumentsList = document.getElementById('doe-documents-list');
+      doeDocumentsList.innerHTML = '';
+      if (documents && documents.length) {
+        documents.forEach(doc => {
+          const docEl = document.createElement('div');
+          docEl.className = 'doe-document-item mb-3 p-3 border rounded bg-light';
+          const safeName = doc.nom_fichier || `Document #${doc.id}`;
+          const viewUrl = `/api/documents/${doc.id}/view`;
+          docEl.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <strong>Fichier:</strong> <a href="${viewUrl}" target="_blank" rel="noopener noreferrer">${safeName}</a>
+              <div>
+                ${currentUserIsAdmin ? `
+                  <button type="button" class="btn btn-sm btn-primary me-2 edit-doe-doc-btn" data-doc-id="${doc.id}">
+                    <i class="bi bi-pencil"></i> Modifier
+                  </button>
+                  <button type="button" class="btn btn-sm btn-danger delete-doe-doc-btn" data-doc-id="${doc.id}">
+                    <i class="bi bi-trash"></i> Supprimer
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+            <p class="mb-0"><strong>Nature:</strong> ${doc.nature || ''}</p>
+          `;
+          doeDocumentsList.appendChild(docEl);
+        });
+      } else {
+        doeDocumentsList.innerHTML = '<p class="text-muted">Aucun document associé.</p>';
+      }
+
+      // Images DOE
+      const doeImagesList = document.getElementById('doe-images-list');
+      doeImagesList.innerHTML = '';
+      if (images && images.length) {
+        images.forEach(img => {
+          const imgCol = document.createElement('div');
+          imgCol.className = 'col';
+          const viewUrl = `/api/images/${img.id}/view`;
+          const safeName = img.nom_fichier || `Image #${img.id}`;
+          imgCol.innerHTML = `
+            <div class="doe-image-item border rounded bg-light p-2">
+              <img src="${viewUrl}" class="img-fluid mb-2" alt="${safeName}">
+              <p class="mb-1"><strong>Fichier:</strong> ${safeName}</p>
+              <div class="d-flex justify-content-end gap-2 mt-2">
+                ${currentUserIsAdmin ? `
+                  <button type="button" class="btn btn-sm btn-primary edit-doe-image-btn" data-image-id="${img.id}">
+                    <i class="bi bi-pencil"></i> Modifier
+                  </button>
+                  <button type="button" class="btn btn-sm btn-danger delete-doe-image-btn" data-image-id="${img.id}">
+                    <i class="bi bi-trash"></i> Supprimer
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `;
+          doeImagesList.appendChild(imgCol);
+        });
+      } else {
+        doeImagesList.innerHTML = '<p class="text-muted">Aucune image associée.</p>';
+      }
+
+      // Boutons admin
+      if (!currentUserIsAdmin) {
+        document.getElementById('add-doe-doc-btn').classList.add('d-none');
+        document.getElementById('add-doe-image-btn').classList.add('d-none');
+        document.getElementById('edit-doe-btn').classList.add('d-none');
+      }
+    } catch (e) {
+      console.error('Erreur chargement DOE', e);
+      document.getElementById('doe-title').textContent = 'DOE introuvable';
+    }
+  });
+</script>
 </body>
 </html>

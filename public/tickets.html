@@ -62,7 +62,10 @@
   <main class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1>Tickets</h1>
-      <!--<a href="ticket-new.html" class="btn btn-primary" id="create-ticket-btn"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau ticket</a>-->
+      <div class="d-flex gap-2">
+        <!--<a href="ticket-new.html" class="btn btn-primary" id="create-ticket-btn"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau ticket</a>-->
+        <a href="/demandes-client-admin.html" class="btn btn-outline-secondary" title="Demandes clients (Admin)"><i class="bi bi-inbox me-2"></i>Demandes clients</a>
+      </div>
     </div>
 
     <div class="mb-3 d-flex gap-2 flex-wrap">
@@ -71,7 +74,7 @@
         <option value="">Tous les États</option>
         <option value="Pas_commence">Pas commencé</option>
         <option value="En_cours">En cours</option>
-        <option value="Terminé">Terminé</option>
+        <option value="Termine">Terminé</option>
       </select>
       <select class="form-select" id="ticket-responsible-filter">
         <option value="">Tous les responsables</option>
@@ -95,7 +98,7 @@
             <th>ID</th>
             <th>Titre</th>
             <th>Description</th>
-            <th>�tat</th>
+            <th>Etat</th>
             <th>Site</th>
             <th>Responsable</th>
             <th>Actions</th>
@@ -202,7 +205,7 @@
           affaire_id: "AFF001",
           titre: "Contrôle sécurité incendie",
           description: "Contrôle réglementaire des équipements de sécurité incendie.",
-          etat: "Terminé",
+          etat: "Termine",
           responsable: "AGT002",
           site_id: "SITE001",
           date_intervention: "2024-03-10" // Added for demonstration
@@ -292,7 +295,7 @@
         switch (etat) {
           case 'Pas_commence': return 'bg-secondary';
           case 'En_cours': return 'bg-warning';
-          case 'Terminé': return 'bg-success';
+          case 'Termine': return 'bg-success';
           default: return 'bg-light text-dark';
         }
       }
@@ -301,8 +304,8 @@
         openTicketsContainer.innerHTML = '';
         closedTicketsTableBody.innerHTML = '';
 
-        const openTickets = ticketsToRender.filter(t => t.etat !== 'Terminé');
-        const closedTickets = ticketsToRender.filter(t => t.etat === 'Terminé');
+        const openTickets = ticketsToRender.filter(t => t.etat !== 'Termine');
+        const closedTickets = ticketsToRender.filter(t => t.etat === 'Termine');
 
         // Render open tickets as cards
         if (openTickets.length > 0) {

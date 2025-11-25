@@ -1,4 +1,4 @@
-﻿-- --------------------------------------------------
+-- --------------------------------------------------
 -- ✅ PostgreSQL Schema Initialization (Corrected Order for Heroku)
 -- --------------------------------------------------
 
@@ -32,6 +32,12 @@ DROP TABLE IF EXISTS adresse CASCADE;
 DROP TABLE IF EXISTS agent CASCADE;
 DROP TABLE IF EXISTS password_reset_tokens CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS audit_log CASCADE;
+DROP TABLE IF EXISTS ticket_responsable CASCADE;
+DROP TABLE IF EXISTS site_responsable CASCADE;
+DROP TABLE IF EXISTS site_agent CASCADE;
+DROP TABLE IF EXISTS ticket_agent CASCADE;
+DROP TABLE IF EXISTS demande_client CASCADE;
 
 -- --------------------------------------------------
 -- Enum types
@@ -54,7 +60,7 @@ CREATE TYPE sujet_type          AS ENUM ('ticket','intervention');
 CREATE TYPE statut_rdv          AS ENUM ('Planifie','Confirme','Termine','Annule');
 CREATE TYPE doc_cible_type      AS ENUM (
     'Affaire','Agent','Agence','Adresse','Client','Site','RendezVous','DOE','Ticket','Intervention',
-    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention'
+    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention', 'DemandeClient'
 );
 CREATE TYPE doc_nature          AS ENUM ('Document','Video','Audio','Autre');
 CREATE TYPE statut_achat        AS ENUM ('Brouillon','Valide','Commande','Recu_partiel','Recu','Annule');
@@ -66,7 +72,7 @@ CREATE TYPE type_formation      AS ENUM ('Habilitation','Certification','Permis'
 -- --------------------------------------------------
 -- CORE ENTITIES (Order fixed)
 -- --------------------------------------------------
-
+DROP TABLE IF EXISTS users;
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(180) UNIQUE NOT NULL,
@@ -113,6 +119,7 @@ CREATE TABLE IF NOT EXISTS client (
     representant_email VARCHAR(255),
     representant_tel VARCHAR(50),
     adresse_id BIGINT,
+    user_id INTEGER,
     commentaire TEXT
 );
 
@@ -120,10 +127,15 @@ CREATE TABLE IF NOT EXISTS site (
     id SERIAL PRIMARY KEY,
     nom_site VARCHAR(255) NOT NULL,
     adresse_id BIGINT,
+    client_id BIGINT,
     commentaire TEXT,
     ticket BOOLEAN DEFAULT FALSE NOT NULL,
-    responsable_matricule VARCHAR(20)
+    responsable_matricule VARCHAR(20),
+    statut VARCHAR(50) DEFAULT 'en attente'  -- ✅ Nouveau champ
 );
+
+
+ALTER TABLE site ADD FOREIGN KEY (client_id) REFERENCES client(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS affaire (
     id SERIAL PRIMARY KEY,
@@ -146,6 +158,24 @@ CREATE TABLE IF NOT EXISTS agent (
 );
 ALTER TABLE agent ADD COLUMN IF NOT EXISTS tel VARCHAR(50);
 
+CREATE TABLE IF NOT EXISTS passeport (
+    id SERIAL PRIMARY KEY,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    permis VARCHAR(50),
+    habilitations TEXT,
+    date_expiration DATE
+);
+
+DROP TABLE IF EXISTS formation CASCADE;
+CREATE TABLE IF NOT EXISTS formation (
+    id SERIAL PRIMARY KEY,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    "type" type_formation,
+    libelle VARCHAR(255) NOT NULL,
+    date_obtention DATE,
+    date_validite DATE
+);
+
 CREATE TABLE IF NOT EXISTS site_affaire (
     id SERIAL PRIMARY KEY,
     site_id BIGINT NOT NULL,
@@ -156,18 +186,34 @@ CREATE TABLE IF NOT EXISTS doe (
     id SERIAL PRIMARY KEY,
     site_id BIGINT NOT NULL,
     affaire_id BIGINT,
-    titre VARCHAR(255) NOT NULL
+    titre VARCHAR(255) NOT NULL,
+    description TEXT
 );
 
 CREATE TABLE IF NOT EXISTS ticket (
     id SERIAL PRIMARY KEY,
-    doe_id BIGINT,
-    affaire_id BIGINT,
-    site_id BIGINT,
-    titre VARCHAR(255),
+    doe_id BIGINT REFERENCES doe(id) ON DELETE SET NULL,
+    affaire_id BIGINT REFERENCES affaire(id) ON DELETE SET NULL,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    responsable VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
+    titre VARCHAR(255) NOT NULL,
     description TEXT,
-    etat etat_rapport DEFAULT 'Pas_commence'
+    etat etat_rapport DEFAULT 'Pas_commence',
+    date_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_fin TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS ticket_historique_responsable (
+    id SERIAL PRIMARY KEY,
+    ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
+    ancien_responsable_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
+    nouveau_responsable_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
+    modifie_par_matricule VARCHAR(20),
+    date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 
 CREATE TABLE IF NOT EXISTS intervention (
     id SERIAL PRIMARY KEY,
@@ -218,7 +264,7 @@ CREATE TABLE IF NOT EXISTS rendezvous (
     id SERIAL PRIMARY KEY,
     titre VARCHAR(255),
     description TEXT,
-    date_debut TIMESTAMP NOT NULL,
+    date_rdv TIMESTAMP NOT NULL,
     date_fin TIMESTAMP,
     statut statut_rdv DEFAULT 'Planifie',
     sujet sujet_type DEFAULT 'intervention',
@@ -232,6 +278,55 @@ CREATE TABLE IF NOT EXISTS rapport_ticket (
     matricule VARCHAR(20),
     commentaire_interne TEXT,
     etat etat_rapport DEFAULT 'Pas_commence'
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    id SERIAL PRIMARY KEY,
+    entity TEXT NOT NULL,
+    entity_id TEXT,
+    action TEXT NOT NULL,
+    actor_email TEXT,
+    details JSONB,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS ticket_responsable (
+    id SERIAL PRIMARY KEY,
+    ticket_id INTEGER NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    role TEXT DEFAULT 'Secondaire',
+    date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    date_fin TIMESTAMP WITHOUT TIME ZONE NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Agent assignments for tickets
+CREATE TABLE IF NOT EXISTS ticket_agent (
+    id SERIAL PRIMARY KEY,
+    ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    date_fin TIMESTAMP WITHOUT TIME ZONE NULL
+);
+
+-- Site agent assignments
+CREATE TABLE IF NOT EXISTS site_agent (
+    id SERIAL PRIMARY KEY,
+    site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    date_fin TIMESTAMP WITHOUT TIME ZONE NULL
+);
+
+-- Site responsables
+CREATE TABLE IF NOT EXISTS site_responsable (
+    id SERIAL PRIMARY KEY,
+    site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    role TEXT DEFAULT 'Responsable',
+    date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    date_fin TIMESTAMP WITHOUT TIME ZONE NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS fonction (
@@ -298,13 +393,45 @@ CREATE TABLE IF NOT EXISTS images (
     cible_id BIGINT
 );
 
-CREATE TABLE IF NOT EXISTS documents_repertoire (
+CREATE TABLE IF NOT EXISTS demande_client (
     id SERIAL PRIMARY KEY,
-    cible_type doc_cible_type,
-    cible_id BIGINT,
-    nature doc_nature DEFAULT 'Document',
-    nom_fichier VARCHAR(255)
+    client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    description TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'En cours de traitement',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ticket_id INTEGER REFERENCES ticket(id) ON DELETE SET NULL
 );
+
+ALTER TABLE demande_client ADD COLUMN IF NOT EXISTS commentaire TEXT;
+
+-- Messagerie
+CREATE TABLE IF NOT EXISTS messagerie (
+    id SERIAL PRIMARY KEY,
+    conversation_id VARCHAR(255) NOT NULL, -- Could be based on ticket_id or demande_id
+    sender_id INTEGER NOT NULL REFERENCES users(id),
+    receiver_id INTEGER NOT NULL REFERENCES users(id),
+    body TEXT,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_messagerie_conversation_id ON messagerie(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_messagerie_sender_id ON messagerie(sender_id);
+CREATE INDEX IF NOT EXISTS idx_messagerie_receiver_id ON messagerie(receiver_id);
+
+CREATE TABLE IF NOT EXISTS messagerie_attachment (
+    id SERIAL PRIMARY KEY,
+    message_id INTEGER NOT NULL REFERENCES messagerie(id) ON DELETE CASCADE,
+    file_path VARCHAR(255) NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_type VARCHAR(100),
+    file_size INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_messagerie_attachment_message_id ON messagerie_attachment(message_id);
 
 CREATE TABLE IF NOT EXISTS rendu_intervention (
     id SERIAL PRIMARY KEY,
@@ -317,6 +444,17 @@ CREATE TABLE IF NOT EXISTS rendu_intervention_image (
     rendu_intervention_id BIGINT NOT NULL,
     image_id BIGINT NOT NULL
 );
+
+DROP TABLE IF EXISTS documents_repertoire CASCADE;
+CREATE TABLE IF NOT EXISTS documents_repertoire (
+    id SERIAL PRIMARY KEY,
+    cible_type doc_cible_type,
+    cible_id BIGINT,
+    nature doc_nature DEFAULT 'Document',
+    nom_fichier VARCHAR(255)
+);
+
+ALTER TABLE documents_repertoire ADD COLUMN IF NOT EXISTS auteur_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL;
 
 -- --------------------------------------------------
 -- FOREIGN KEYS
@@ -366,8 +504,6 @@ ALTER TABLE facture ADD FOREIGN KEY (affaire_id) REFERENCES affaire(id) ON DELET
 ALTER TABLE reglement ADD FOREIGN KEY (facture_id) REFERENCES facture(id) ON DELETE CASCADE;
 
 ALTER TABLE images ADD FOREIGN KEY (auteur_matricule) REFERENCES agent(matricule) ON DELETE SET NULL;
-ALTER TABLE documents_repertoire ADD FOREIGN KEY (cible_id) REFERENCES affaire(id) ON DELETE SET NULL;
-
 ALTER TABLE rendu_intervention ADD FOREIGN KEY (intervention_id) REFERENCES intervention(id) ON DELETE CASCADE;
 ALTER TABLE rendu_intervention_image ADD FOREIGN KEY (rendu_intervention_id) REFERENCES rendu_intervention(id) ON DELETE CASCADE;
 ALTER TABLE rendu_intervention_image ADD FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE;

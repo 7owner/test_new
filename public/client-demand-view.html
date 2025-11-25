@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suivi de la Demande</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=1"></script>
+</head>
+<body>
+  <header class="header d-flex justify-content-between align-items-center mb-4">
+    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="Logo" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">Menu</button>
+    </div>
+  </header>
+
+  <main class="container mt-5">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="client-dashboard.html">Espace Client</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Suivi de Demande</li>
+      </ol>
+    </nav>
+    <h1 class="mb-4">Suivi de la Demande #<span id="demande-id"></span></h1>
+
+    <!-- Demand Details -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Détails de votre demande</h2>
+        <p><strong>Date de création:</strong> <span id="demande-date"></span></p>
+        <p><strong>Site concerné:</strong> <span id="demande-site"></span></p>
+        <p><strong>Description:</strong> <span id="demande-description"></span></p>
+        <p><strong>Statut de la demande:</strong> <span id="demande-status" class="fw-bold"></span></p>
+      </div>
+    </div>
+
+    <!-- Ticket Details -->
+    <div id="ticket-section" class="card mb-4 d-none">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Progression du Ticket</h2>
+        <p><strong>Titre du ticket:</strong> <span id="ticket-titre"></span></p>
+        <p><strong>Statut du ticket:</strong> <span id="ticket-status" class="fw-bold"></span></p>
+        <p><strong>Date de début:</strong> <span id="ticket-date-debut"></span></p>
+        <p><strong>Date de fin:</strong> <span id="ticket-date-fin"></span></p>
+      </div>
+    </div>
+
+    <!-- Responsible Agent -->
+    <div id="responsable-section" class="card mb-4 d-none">
+        <div class="card-body">
+          <h2 class="card-title mb-4">Votre Interlocuteur</h2>
+          <p><strong>Nom:</strong> <span id="responsable-nom"></span></p>
+          <p><strong>Email:</strong> <span id="responsable-email"></span></p>
+          <p><strong>Téléphone:</strong> <span id="responsable-tel"></span></p>
+        </div>
+      </div>
+
+    <!-- Interventions -->
+    <div id="interventions-section" class="card mb-4 d-none">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Interventions Planifiées ou Réalisées</h2>
+        <div id="interventions-list">
+            <p class="text-muted">Aucune intervention pour le moment.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messagerie Section -->
+    <div id="messagerie-section" class="card mb-4">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Messagerie</h2>
+        <div id="messages-display" class="border p-3 mb-3" style="height: 300px; overflow-y: auto;">
+            <!-- Messages will be loaded here -->
+        </div>
+        <form id="message-form">
+          <div class="mb-3">
+            <textarea id="message-body" class="form-control" rows="3" placeholder="Écrivez un message..." required></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="attachments" class="form-label">Pièce jointe (optionnel)</label>
+            <input type="file" id="attachments" class="form-control">
+          </div>
+          <button class="btn btn-primary" type="submit">Envoyer</button>
+        </form>
+      </div>
+    </div>
+
+    <a href="client-dashboard.html" class="btn btn-secondary">Retour à l'espace client</a>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      const qp = new URLSearchParams(location.search);
+      const demandeId = qp.get('id');
+      const token = localStorage.getItem('token');
+      if (!token) { window.location.href = '/login.html'; return; }
+      let userId = null;
+      try {
+        const user = JSON.parse(atob(token.split('.')[1]));
+        userId = user && user.id;
+      } catch (e) {
+        console.warn('JWT parse failed, redirecting to login', e);
+        window.location.href = '/login.html';
+        return;
+      }
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+      console.log('DEBUG: DOMContentLoaded started. demandeId:', demandeId, 'userId:', userId);
+
+      if (!demandeId) {
+        document.querySelector('main').innerHTML = '<div class="alert alert-danger">ID de demande manquant.</div>';
+        console.log('DEBUG: demandeId is missing.');
+        return;
+      }
+
+      const conversation_id = `demande-${demandeId}`;
+      let receiver_id = null;
+
+      const messagesDisplay = document.getElementById('messages-display');
+      const messageForm = document.getElementById('message-form');
+      const messageBodyInput = document.getElementById('message-body');
+      const attachmentsInput = document.getElementById('attachments');
+
+      function set(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val || 'N/A';
+      }
+
+
+
+      function fmt(iso) {
+        if (!iso) return 'N/A';
+        const d = new Date(iso);
+        return isNaN(d) ? 'Date invalide' : d.toLocaleString('fr-FR');
+      }
+
+      function hrefForAttachment(att) {
+        if (!att || !att.file_path) return '#';
+        const p = String(att.file_path);
+        // Strip any leading absolute/ public path and keep filename
+        const fileName = p.split('/').filter(Boolean).slice(-1)[0];
+        const rel = p.replace(/^public\//, '');
+        if (p.includes('uploads/attachments/')) {
+          return '/' + rel.replace(/^public\//, '').replace(/^[\\/]+/, '');
+        }
+        return `/uploads/attachments/${fileName}`;
+      }
+
+      async function loadMessages() {
+        console.log('DEBUG: loadMessages started.');
+        try {
+          const messages = await fetch(`/api/conversations/${conversation_id}`, { headers, credentials: 'same-origin' }).then(res => res.json());
+          console.log('DEBUG: Messages fetched:', messages);
+          messagesDisplay.innerHTML = '';
+          messages.forEach(msg => {
+            const msgElement = document.createElement('div');
+            msgElement.className = msg.sender_id === userId ? 'message-sent' : 'message-received';
+            let attachmentsHTML = '';
+            if (msg.attachments && msg.attachments.length > 0) {
+              attachmentsHTML = msg.attachments.map(att => 
+                `<br><a href="${hrefForAttachment(att)}" target="_blank" download="${att.file_name}">${att.file_name}</a>`
+              ).join('');
+            }
+            msgElement.innerHTML = `
+              <p>${msg.body}</p>
+              <small>${new Date(msg.created_at).toLocaleString()}</small>
+              ${attachmentsHTML}
+            `;
+            messagesDisplay.prepend(msgElement);
+          });
+        } catch (error) {
+          console.error('Error loading messages:', error);
+          messagesDisplay.innerHTML = '<p class="text-muted">Aucun message pour le moment.</p>';
+        }
+      }
+      
+      messageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const body = messageBodyInput.value;
+        const files = attachmentsInput.files;
+        
+        if (!body && files.length === 0) return;
+        if (!receiver_id) {
+            alert("Le destinataire n'est pas défini. Impossible d'envoyer le message.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('body', body);
+        formData.append('receiver_id', receiver_id);
+
+        for (let i = 0; i < files.length; i++) {
+          formData.append('attachments', files[i]);
+        }
+
+        try {
+          const res = await fetch(`/api/conversations/${conversation_id}/messages`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            credentials: 'same-origin',
+            body: formData
+          });
+
+          if (!res.ok) {
+              const err = await res.json();
+              throw new Error(err.error || 'Failed to send message');
+          }
+
+          messageBodyInput.value = '';
+          attachmentsInput.value = '';
+          loadMessages();
+        } catch (error) {
+          console.error('Error sending message:', error);
+          alert("Erreur lors de l'envoi du message.");
+        }
+      });
+
+      console.log('DEBUG: Before main fetch for demand details.');
+      try {
+        const res = await fetch(`/api/client/demandes/${demandeId}`, { headers, credentials: 'same-origin' });
+        console.log('DEBUG: Main fetch response status:', res.status);
+        if (res.status === 401 || res.status === 403) {
+          location.href = '/login.html';
+          return;
+        }
+        const data = await res.json();
+        console.log('DEBUG: Main fetch data:', data);
+        if (!res.ok) throw new Error(data.error || `Erreur HTTP ${res.status}`);
+
+        const { demande, ticket, responsable, interventions } = data;
+        console.log('DEBUG: Destructured data. demande:', demande, 'ticket:', ticket);
+
+        // Populate Demand Info
+        set('demande-id', demande.id);
+        console.log('DEBUG: demande-id set.');
+        set('demande-date', fmt(demande.created_at));
+        set('demande-site', demande.nom_site || 'Non spécifié');
+        set('demande-description', demande.description);
+        set('demande-status', demande.status);
+        console.log('DEBUG: Demand info populated.');
+
+
+        if (ticket) {
+          document.getElementById('ticket-section').classList.remove('d-none');
+          set('ticket-titre', ticket.titre);
+          set('ticket-status', ticket.etat);
+          set('ticket-date-debut', fmt(ticket.date_debut));
+          set('ticket-date-fin', ticket.date_fin ? fmt(ticket.date_fin) : 'En cours');
+          console.log('DEBUG: Ticket info populated.');
+        } else {
+          console.log('DEBUG: No ticket found.');
+        }
+
+        if (responsable) {
+            document.getElementById('responsable-section').classList.remove('d-none');
+            set('responsable-nom', `${responsable.prenom || ''} ${responsable.nom || ''}`.trim());
+            set('responsable-email', responsable.email);
+            set('responsable-tel', responsable.tel);
+            receiver_id = responsable.user_id; // Set receiver_id
+            console.log('DEBUG: Responsable info populated.');
+        } else {
+          console.log('DEBUG: No responsable found.');
+        }
+
+        if (interventions && interventions.length > 0) {
+          document.getElementById('interventions-section').classList.remove('d-none');
+          const listEl = document.getElementById('interventions-list');
+          listEl.innerHTML = ''; // Clear placeholder
+          interventions.forEach(inter => {
+            const item = document.createElement('div');
+            item.className = 'card card-body mb-2';
+            item.innerHTML = `
+              <p class="mb-1"><strong>Description:</strong> ${inter.description || 'Pas de description'}</p>
+              <small class="text-muted">Du ${fmt(inter.date_debut)} au ${inter.date_fin ? fmt(inter.date_fin) : 'en cours'}</small>
+              <small class="text-muted">Statut: ${inter.status || 'Non défini'}</small>
+            `;
+            listEl.appendChild(item);
+          });
+          console.log('DEBUG: Interventions populated.');
+        } else {
+          console.log('DEBUG: No interventions found.');
+        }
+
+        // Load messages for the demand
+        loadMessages();
+        console.log('DEBUG: loadMessages called.');
+
+      } catch (err) {
+        document.querySelector('main').innerHTML = `<div class="alert alert-danger">Erreur: ${err.message}</div>`;
+        console.error('DEBUG: Error in main try-catch block:', err);
+      }
+    });
+  </script>
+</body>
+</html>
