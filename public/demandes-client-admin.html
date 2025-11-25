@@ -81,7 +81,10 @@
     <h1 class="mb-4">Demandes Client - Administration</h1>
 
     <div class="card mb-4">
-      <div class="card-header">Filtres</div>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Filtres</span>
+        <button id="show-deleted-btn" class="btn btn-outline-danger btn-sm">Voir demandes supprimées</button>
+      </div>
       <div class="card-body">
         <div class="row g-3">
           <div class="col-md-6">
@@ -207,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (["Rejeté", "Annulé"].includes(status)) {
       currentDemandId = d.id;
       currentDemandStatus = status;
-      commentTextArea.value = d.commentaire || "";
+      if (commentTextArea) commentTextArea.value = d.commentaire || "";
       commentModal.show();
       return;
     }
@@ -232,6 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let commentModal = new bootstrap.Modal(document.getElementById("commentModal"));
   let currentDemandId = null;
   let currentDemandStatus = null;
+  const commentTextArea = document.getElementById("comment-text");
 
 
   document.getElementById("saveCommentBtn").addEventListener("click", async () => {
@@ -266,6 +270,46 @@ document.addEventListener('DOMContentLoaded', () => {
     load();
   });
 
+
+  // Deleted demandes (audit log)
+  const deletedModal = new bootstrap.Modal(document.getElementById("deletedDemandesModal"));
+  const deletedBody = document.getElementById("deleted-demandes-body");
+  document.getElementById("show-deleted-btn").addEventListener("click", async () => {
+    deletedBody.innerHTML = "<p class='text-muted'>Chargement…</p>";
+    try {
+      const rows = await fetchJSON("/api/demandes_client/deleted");
+      if (!rows || !rows.length) {
+        deletedBody.innerHTML = "<p class='text-muted'>Aucune demande supprimée.</p>";
+        deletedModal.show();
+        return;
+      }
+      const table = document.createElement("table");
+      table.className = "table table-striped";
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>ID</th><th>Commentaire</th><th>Supprimé par</th><th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${r.id || ''}</td>
+              <td>${r.justification || ''}</td>
+              <td>${r.actor_email || ''}</td>
+              <td>${r.created_at ? new Date(r.created_at).toLocaleString() : ''}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      `;
+      deletedBody.innerHTML = "";
+      deletedBody.appendChild(table);
+      deletedModal.show();
+    } catch (e) {
+      deletedBody.innerHTML = `<p class="text-danger">Erreur: ${e.message}</p>`;
+      deletedModal.show();
+    }
+  });
 
   async function load() {
     try {
@@ -347,6 +391,20 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
         <button type="button" class="btn btn-danger" id="confirm-delete-demand-btn">Confirmer la suppression</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Deleted demandes Modal -->
+<div class="modal fade" id="deletedDemandesModal" tabindex="-1" aria-labelledby="deletedDemandesModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deletedDemandesModalLabel">Demandes supprimées</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="deleted-demandes-body">
       </div>
     </div>
   </div>

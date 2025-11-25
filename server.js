@@ -3479,6 +3479,32 @@ app.delete('/api/demandes_client/:id', authenticateToken, authorizeAdmin, async 
   }
 });
 
+// Deleted demandes (audit log) - admin
+app.get('/api/demandes_client/deleted', authenticateToken, authorizeAdmin, async (_req, res) => {
+  try {
+    const r = await pool.query(
+      "SELECT entity_id AS id, actor_email, details, created_at FROM audit_log WHERE entity='demande_client' AND action='DELETE' ORDER BY created_at DESC LIMIT 200"
+    );
+    const rows = (r.rows || []).map(row => {
+      let justification = null;
+      try {
+        const d = typeof row.details === 'string' ? JSON.parse(row.details) : row.details;
+        justification = d && d.justification ? d.justification : null;
+      } catch(_) {}
+      return {
+        id: row.id,
+        actor_email: row.actor_email,
+        justification,
+        created_at: row.created_at
+      };
+    });
+    res.json(rows);
+  } catch (e) {
+    console.error('Error fetching deleted demandes:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // Convert demande -> Ticket (admin)
 app.post('/api/demandes_client/:id/convert-to-ticket', authenticateToken, authorizeAdmin, async (req, res) => {
   const cx = await pool.connect();
