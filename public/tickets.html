@@ -65,11 +65,56 @@
       <div class="d-flex gap-2">
         <!--<button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#createDemandeClientModal"><i class="bi bi-plus-circle me-2"></i>Créer une demande client</button>-->
         <!--<a href="ticket-new.html" class="btn btn-primary" id="create-ticket-btn"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau ticket</a>-->
+    <div class="d-flex gap-2">
+        <!--<button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#createDemandeClientModal"><i class="bi bi-plus-circle me-2"></i>Créer une demande client</button>-->
+        <!--<a href="ticket-new.html" class="btn btn-primary" id="create-ticket-btn"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau ticket</a>-->
         <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#demandesClientModal" title="Demandes clients (Admin)"><i class="bi bi-inbox me-2"></i>Demandes clients</button>
       </div>
     </div>
 
-    <div class="modal fade" id="demandesClientModal" tabindex="-1" aria-labelledby="demandesClientModalLabel" aria-hidden="true">
+    <div class="mb-3 d-flex gap-2 flex-wrap">
+      <input type="text" class="form-control" id="ticket-search" placeholder="Rechercher par titre ou ID…">
+      <select class="form-select" id="ticket-status-filter">
+        <option value="">Tous les États</option>
+        <option value="Pas_commence">Pas commencé</option>
+        <option value="En_cours">En cours</option>
+        <option value="Termine">Terminé</option>
+      </select>
+      <select class="form-select" id="ticket-responsible-filter">
+        <option value="">Tous les responsables</option>
+        <option value="AGT001">Dupont Jean (AGT001)</option>
+        <option value="AGT002">Martin Sophie (AGT002)</option>
+      </select>
+      <input type="date" class="form-control" id="ticket-date-start" title="Date début">
+      <input type="date" class="form-control" id="ticket-date-end" title="Date fin">
+    </div>
+
+    <h2>Tickets ouverts</h2>
+    <div id="open-tickets-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+      <!-- Open ticket cards will be loaded here by JavaScript -->
+    </div>
+
+    <h2>Tickets Terminés</h2>
+    <div id="closed-tickets-container" class="table-responsive">
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Titre</th>
+            <th>Description</th>
+            <th>Etat</th>
+            <th>Site</th>
+            <th>Responsable</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="closed-tickets-table-body">
+          <!-- Closed ticket data will be loaded here by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+  <div class="modal fade" id="demandesClientModal" tabindex="-1" aria-labelledby="demandesClientModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-xl">
         <div class="modal-content">
           <div class="modal-header">
@@ -110,7 +155,6 @@
         </div>
       </div>
     </div>
-  </main>
   <script>
     (function(){
       const norm = (s) => (s||'').toString().normalize('NFD').replace(/\p{Diacritic}+/gu,'').toLowerCase();
