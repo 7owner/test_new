@@ -14,9 +14,13 @@
     <a href="/client-dashboard.html" class="btn btn-link">Retour</a>
     <h1 class="h4 mb-3">Pieces jointes de la demande</h1>
     <div id="meta" class="mb-3 text-muted"></div>
-    <div class="card">
+    <div class="card mb-3">
       <div class="card-header">Documents</div>
       <ul id="docs" class="list-group list-group-flush"></ul>
+    </div>
+    <div class="card">
+      <div class="card-header">Pièces jointes des messages</div>
+      <ul id="msg-attachments" class="list-group list-group-flush"></ul>
     </div>
   </main>
   <script>
@@ -44,6 +48,39 @@
           btn.onclick = () => authDownload(`/api/documents/${d.id}/download`, d.nom_fichier, token);
           li.append(span, btn); ul.appendChild(li);
         });
+      }
+
+      // Pièces jointes issues de la messagerie (conversation demande-<id>)
+      try {
+        const msgUl = document.getElementById('msg-attachments');
+        msgUl.innerHTML = '<li class="list-group-item text-muted">Chargement…</li>';
+        const convId = `demande-${id}`;
+        const msgsRes = await fetch(`/api/conversations/${convId}`, { headers: { 'Authorization': `Bearer ${token}` }, credentials:'same-origin' });
+        if (!msgsRes.ok) throw new Error(`HTTP ${msgsRes.status}`);
+        const msgs = await msgsRes.json();
+        const attachments = [];
+        (Array.isArray(msgs)? msgs : []).forEach(m => {
+          if (Array.isArray(m.attachments)) {
+            m.attachments.forEach(att => attachments.push(att));
+          }
+        });
+        if (!attachments.length) {
+          msgUl.innerHTML = '<li class="list-group-item text-muted">Aucune pièce jointe dans les messages.</li>';
+        } else {
+          msgUl.innerHTML = '';
+          attachments.forEach(att => {
+            const href = '/' + String(att.file_path || '').replace(/^public\//,'');
+            const li = document.createElement('li'); li.className='list-group-item d-flex justify-content-between align-items-center';
+            const span = document.createElement('span'); span.textContent = att.file_name || att.file_path || 'Pièce jointe';
+            const a = document.createElement('a'); a.className='btn btn-sm btn-outline-primary'; a.href=href; a.target='_blank'; a.download = att.file_name || '';
+            a.textContent = 'Télécharger';
+            li.append(span,a); msgUl.appendChild(li);
+          });
+        }
+      } catch (e) {
+        const msgUl = document.getElementById('msg-attachments');
+        msgUl.innerHTML = '<li class="list-group-item text-danger">Impossible de charger les pièces jointes des messages.</li>';
+        console.error(e);
       }
     });
   </script>
