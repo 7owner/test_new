@@ -3251,14 +3251,30 @@ app.post('/api/client/sites', authenticateToken, async (req, res) => {
 
 // --- Client demandes (requests) ---
 app.get('/api/demandes_client/mine', authenticateToken, async (req, res) => {
-  try {
-    const email = req.user && req.user.email;
-    if (!email) return res.status(401).json({ error: 'Unauthorized' });
-    const c = (await pool.query('SELECT id FROM client WHERE representant_email=$1 LIMIT 1', [email])).rows[0];
-    if (!c) return res.json([]);
-    const r = await pool.query("SELECT d.*, s.nom_site FROM demande_client d LEFT JOIN site s ON d.site_id=s.id WHERE d.client_id=$1 ORDER BY d.created_at DESC", [c.id]);
-    return res.json(r.rows);
-  } catch (e) { console.error('demandes mine:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
+    // ... existing code ...
+});
+
+app.get('/api/demandes_client/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const demand = (await pool.query('SELECT * FROM demande_client WHERE id = $1', [id])).rows[0];
+        if (!demand) {
+            return res.status(404).json({ error: 'Demande client not found' });
+        }
+
+        // Authorization check: Admin or owner of the demand
+        const isAdmin = req.user.roles.includes('ROLE_ADMIN');
+        if (!isAdmin) {
+            const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1 OR email=$1', [req.user.email])).rows[0];
+            if (!client || client.id !== demand.client_id) {
+                return res.status(403).json({ error: 'Forbidden: You do not own this demand or lack admin privileges' });
+            }
+        }
+        res.status(200).json(demand);
+    } catch (err) {
+        console.error(`Error fetching demande client ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 app.post('/api/demandes_client', authenticateToken, async (req, res) => {
     const { site_id, titre, description, client_id } = req.body;
