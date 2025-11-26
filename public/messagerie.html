@@ -65,6 +65,15 @@
         <h2>Conversations</h2>
         <div class="mb-3">
           <input type="text" id="conversationFilter" class="form-control" placeholder="Filtrer les conversations...">
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" value="" id="onlyDemandeFilter">
+            <label class="form-check-label" for="onlyDemandeFilter">
+              Afficher seulement les demandes client
+            </label>
+          </div>
+          <select id="demandeSelect" class="form-select form-select-sm mt-2">
+            <option value="">Toutes les demandes</option>
+          </select>
         </div>
         <div id="conversations-list" class="list-group conversations-list">
           <!-- Conversations will be loaded here -->
@@ -113,6 +122,7 @@
       const messageBodyInput = document.getElementById('message-body');
       const attachmentsInput = document.getElementById('attachments');
       const conversationFilterInput = document.getElementById('conversationFilter');
+      const onlyDemandeFilter = document.getElementById('onlyDemandeFilter');
 
       let currentConversationId = null;
       let currentReceiverId = null;
@@ -140,13 +150,21 @@
       
       async function loadConversations() {
         const searchTerm = conversationFilterInput.value.trim();
+        const onlyDemande = onlyDemandeFilter && onlyDemandeFilter.checked;
+        const demandeId = demandeSelect && demandeSelect.value ? demandeSelect.value : null;
         let url = '/api/conversations';
         if (searchTerm) {
           url += `?search=${encodeURIComponent(searchTerm)}`;
         }
 
         try {
-          const conversations = await fetchJSON(url);
+          let conversations = await fetchJSON(url);
+          if (onlyDemande) {
+            conversations = conversations.filter(c => String(c.conversation_id||'').startsWith('demande-'));
+          }
+          if (demandeId) {
+            conversations = conversations.filter(c => String(c.conversation_id||'') === `demande-${demandeId}`);
+          }
           conversationsList.innerHTML = '';
           if (conversations.length === 0) {
             conversationsList.innerHTML = '<p class="text-muted p-3">Aucune conversation trouvée.</p>';
@@ -238,9 +256,15 @@
       conversationFilterInput.addEventListener('input', () => {
         loadConversations();
       });
+    if (onlyDemandeFilter) {
+      onlyDemandeFilter.addEventListener('change', loadConversations);
+    }
+    if (demandeSelect) {
+      demandeSelect.addEventListener('change', loadConversations);
+    }
 
-      loadConversations();
-    });
-  </script>
+    loadConversations();
+  });
+</script>
 </body>
 </html>
