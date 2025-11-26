@@ -39,6 +39,10 @@
         </select>
       </div>
       <div class="mb-3">
+        <label for="demandeTitre" class="form-label">Titre</label>
+        <input type="text" id="demandeTitre" class="form-control" required>
+      </div>
+      <div class="mb-3">
         <label for="demandeDescription" class="form-label">Description</label>
         <textarea id="demandeDescription" class="form-control" rows="4" required></textarea>
       </div>
@@ -74,10 +78,12 @@
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const titre = (document.getElementById('demandeTitre').value || '').trim();
         const description = (document.getElementById('demandeDescription').value || '').trim();
         const sid = String(selectSite.value || '').trim();
+        if (!titre) { showMsg('Veuillez renseigner le titre.', 'danger'); return; }
         if (!description) { showMsg('Veuillez renseigner la description.', 'danger'); return; }
-        const payload = { description };
+        const payload = { titre, description };
         if (sid) payload.site_id = Number(sid);
         try {
           const r = await fetch('/api/demandes_client', {

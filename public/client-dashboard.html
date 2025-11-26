@@ -70,6 +70,77 @@
     </div>
   </div>
 
+  <!-- Modals -->
+  <div class="modal fade" id="createSiteModal" tabindex="-1" aria-labelledby="createSiteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createSiteModalLabel">Créer un nouveau site</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="createSiteFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="viewSiteModal" tabindex="-1" aria-labelledby="viewSiteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="viewSiteModalLabel">Voir Site</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="viewSiteFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="editSiteModal" tabindex="-1" aria-labelledby="editSiteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editSiteModalLabel">Modifier Site</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="editSiteFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="createDemandeModal" tabindex="-1" aria-labelledby="createDemandeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createDemandeModalLabel">Nouvelle demande</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="createDemandeFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="viewDemandeModal" tabindex="-1" aria-labelledby="viewDemandeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="viewDemandeModalLabel">Suivi de demande</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="viewDemandeFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const token = localStorage.getItem('token');
@@ -224,14 +295,13 @@
 
       const viewSiteFrame = document.getElementById('viewSiteFrame');
       const editSiteFrame = document.getElementById('editSiteFrame');
+      const createSiteFrame = document.getElementById('createSiteFrame');
       const createDemandeFrame = document.getElementById('createDemandeFrame');
       const viewDemandeFrame = document.getElementById('viewDemandeFrame');
 
       if (createSiteModal) {
         createSiteModal.addEventListener('show.bs.modal', function (event) {
-          if (createDemandeFrame) { // Corrected ID to createSiteFrame
-            createSiteFrame.src = '/client-new-site.html';
-          }
+          if (createSiteFrame) createSiteFrame.src = '/client-new-site.html';
         });
       }
 
