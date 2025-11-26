@@ -141,6 +141,20 @@
     </div>
   </div>
 
+  <div class="modal fade" id="filesDemandeModal" tabindex="-1" aria-labelledby="filesDemandeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="filesDemandeModalLabel">Pièces jointes</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="filesDemandeFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const token = localStorage.getItem('token');
@@ -231,8 +245,8 @@
                 <p class="mb-1">${d.description}</p>
                 <small>Créée le: ${new Date(d.created_at).toLocaleDateString()}</small>
                 <div class="mt-2">
-                  <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#viewDemandeModal" data-id="${d.id}">Suivre</button>
-                  <a class="btn btn-sm btn-outline-secondary" href="/client-demand-files.html?id=${d.id}">Voir les pièces jointes</a>
+                  <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#viewDemandeModal" data-id="${d.id}">Suivre</button>
+                  <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#filesDemandeModal" data-id="${d.id}">Pièces jointes</button>
                 </div>
               `;
               list.appendChild(el);
@@ -298,6 +312,7 @@
       const createSiteFrame = document.getElementById('createSiteFrame');
       const createDemandeFrame = document.getElementById('createDemandeFrame');
       const viewDemandeFrame = document.getElementById('viewDemandeFrame');
+      const filesDemandeFrame = document.getElementById('filesDemandeFrame');
 
       if (createSiteModal) {
         createSiteModal.addEventListener('show.bs.modal', function (event) {
@@ -339,6 +354,17 @@
           const demandId = button.getAttribute('data-id');
           if (viewDemandeFrame) {
             viewDemandeFrame.src = `/client-demand-view.html?id=${demandId}`;
+          }
+        });
+      }
+
+      const filesDemandeModal = document.getElementById('filesDemandeModal');
+      if (filesDemandeModal) {
+        filesDemandeModal.addEventListener('show.bs.modal', function (event) {
+          const button = event.relatedTarget;
+          const demandId = button.getAttribute('data-id');
+          if (filesDemandeFrame) {
+            filesDemandeFrame.src = `/client-demand-files.html?id=${demandId}`;
           }
         });
       }
