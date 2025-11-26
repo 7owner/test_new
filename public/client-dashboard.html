@@ -128,6 +128,8 @@
                 <p class="mb-1">${site.commentaire || 'Pas de commentaire.'}</p>
                 <small>Client ID: ${site.client_id}</small>
                 <div class="mt-2">
+                  <button class="btn btn-sm btn-outline-info me-1" data-bs-toggle="modal" data-bs-target="#viewSiteModal" data-id="${site.id}"><i class="bi bi-eye"></i> Voir</button>
+                  <button class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal" data-bs-target="#editSiteModal" data-id="${site.id}"><i class="bi bi-pencil"></i> Modifier</button>
                   <a class="btn btn-sm btn-outline-secondary" href="/client-site-files.html?site_id=${site.id}">Voir les pièces jointes</a>
                 </div>
               `;
@@ -158,8 +160,8 @@
                 <p class="mb-1">${d.description}</p>
                 <small>Créée le: ${new Date(d.created_at).toLocaleDateString()}</small>
                 <div class="mt-2">
+                  <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#viewDemandeModal" data-id="${d.id}">Suivre</button>
                   <a class="btn btn-sm btn-outline-secondary" href="/client-demand-files.html?id=${d.id}">Voir les pièces jointes</a>
-                  <a class="btn btn-sm btn-primary" href="/client-demand-view.html?id=${d.id}">Suivre</a>
                 </div>
               `;
               list.appendChild(el);
@@ -212,6 +214,64 @@
       fetchClientSites();
       fetchClientDemands();
       fetchInterventionHistory();
+
+      // Modal event listeners
+      const createSiteModal = document.getElementById('createSiteModal');
+      const viewSiteModal = document.getElementById('viewSiteModal');
+      const editSiteModal = document.getElementById('editSiteModal');
+      const createDemandeModal = document.getElementById('createDemandeModal');
+      const viewDemandeModal = document.getElementById('viewDemandeModal');
+
+      const viewSiteFrame = document.getElementById('viewSiteFrame');
+      const editSiteFrame = document.getElementById('editSiteFrame');
+      const createDemandeFrame = document.getElementById('createDemandeFrame');
+      const viewDemandeFrame = document.getElementById('viewDemandeFrame');
+
+      if (createSiteModal) {
+        createSiteModal.addEventListener('show.bs.modal', function (event) {
+          if (createDemandeFrame) { // Corrected ID to createSiteFrame
+            createSiteFrame.src = '/client-new-site.html';
+          }
+        });
+      }
+
+      if (viewSiteModal) {
+        viewSiteModal.addEventListener('show.bs.modal', function (event) {
+          const button = event.relatedTarget;
+          const siteId = button.getAttribute('data-id');
+          if (viewSiteFrame) {
+            viewSiteFrame.src = `/site-view.html?id=${siteId}`;
+          }
+        });
+      }
+
+      if (editSiteModal) {
+        editSiteModal.addEventListener('show.bs.modal', function (event) {
+          const button = event.relatedTarget;
+          const siteId = button.getAttribute('data-id');
+          if (editSiteFrame) {
+            editSiteFrame.src = `/site-edit.html?id=${siteId}`;
+          }
+        });
+      }
+
+      if (createDemandeModal) {
+        createDemandeModal.addEventListener('show.bs.modal', function (event) {
+          if (createDemandeFrame) {
+            createDemandeFrame.src = '/client-new-demand.html';
+          }
+        });
+      }
+
+      if (viewDemandeModal) {
+        viewDemandeModal.addEventListener('show.bs.modal', function (event) {
+          const button = event.relatedTarget;
+          const demandId = button.getAttribute('data-id');
+          if (viewDemandeFrame) {
+            viewDemandeFrame.src = `/client-demand-view.html?id=${demandId}`;
+          }
+        });
+      }
     });
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
