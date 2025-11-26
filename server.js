@@ -3303,6 +3303,58 @@ app.post('/api/demandes_client', authenticateToken, async (req, res) => {
     }
 });
 
+app.put('/api/demandes_client/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { site_id, titre, description } = req.body;
+
+    if (!titre || !description) {
+        return res.status(400).json({ error: 'Titre and Description are required' });
+    }
+
+    const isAdmin = req.user.roles.includes('ROLE_ADMIN');
+    let demandOwnerClientId = null;
+
+    try {
+        // Get existing demand to check ownership and ticket_id
+        const existingDemand = (await pool.query('SELECT client_id, ticket_id FROM demande_client WHERE id = $1', [id])).rows[0];
+        if (!existingDemand) {
+            return res.status(404).json({ error: 'Demande client not found' });
+        }
+        demandOwnerClientId = existingDemand.client_id;
+        
+        // Prevent editing if it's already converted to a ticket
+        if (existingDemand.ticket_id) {
+            return res.status(409).json({ error: 'Cannot edit a client demand that has been converted to a ticket.' });
+        }
+
+        // Authorization check
+        if (!isAdmin) {
+            const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1 OR email=$1', [req.user.email])).rows[0];
+            if (!client || client.id !== demandOwnerClientId) {
+                return res.status(403).json({ error: 'Forbidden: You do not own this demand or lack admin privileges' });
+            }
+        }
+
+        // Verify site_id belongs to the demand owner if provided
+        if (site_id) {
+            const site = (await pool.query('SELECT id FROM site WHERE id=$1 AND client_id=$2', [site_id, demandOwnerClientId])).rows[0];
+            if (!site) {
+                return res.status(403).json({ error: 'Forbidden: Site does not belong to this client' });
+            }
+        }
+
+        const result = await pool.query(
+            'UPDATE demande_client SET site_id=$1, titre=$2, description=$3, updated_at=CURRENT_TIMESTAMP WHERE id=$4 RETURNING *',
+            [site_id || null, titre, description, id]
+        );
+        res.status(200).json(result.rows[0]);
+
+    } catch (err) {
+        console.error(`Error updating client demand ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // --- Client: Get single demand details for tracking ---
 app.get('/api/client/demandes/:id', authenticateToken, async (req, res) => {
   try {

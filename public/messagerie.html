@@ -123,9 +123,12 @@
       const attachmentsInput = document.getElementById('attachments');
       const conversationFilterInput = document.getElementById('conversationFilter');
       const onlyDemandeFilter = document.getElementById('onlyDemandeFilter');
+      const demandeSelect = document.getElementById('demandeSelect');
 
       let currentConversationId = null;
       let currentReceiverId = null;
+      let currentConversationLabel = '';
+      const demandeMap = new Map();
 
       function hrefForAttachment(att) {
         if (!att || !att.file_path) return '#';
@@ -146,6 +149,30 @@
         const body = await res.json();
         if (!res.ok) throw new Error((body && body.error) || res.statusText);
         return body;
+      }
+
+      async function loadDemandesLabels() {
+        let demandes = [];
+        try {
+          demandes = await fetchJSON('/api/demandes_client');
+        } catch (err) {
+          try {
+            demandes = await fetchJSON('/api/demandes_client/mine');
+          } catch (err2) {
+            console.warn('Impossible de charger les demandes client pour les filtres.', err2);
+            return;
+          }
+        }
+        demandeMap.clear();
+        demandeSelect.innerHTML = '<option value=\"\">Toutes les demandes</option>';
+        demandes.forEach(d => {
+          const label = `Demande #${d.id} — ${d.title || d.titre || d.description || d.site_nom || 'Sans titre'}`;
+          demandeMap.set(`demande-${d.id}`, label);
+          const opt = document.createElement('option');
+          opt.value = d.id;
+          opt.textContent = label;
+          demandeSelect.appendChild(opt);
+        });
       }
       
       async function loadConversations() {
@@ -171,14 +198,18 @@
             return;
           }
           conversations.forEach(convo => {
+            const isDemande = String(convo.conversation_id || '').startsWith('demande-');
+            const demandeLabel = demandeMap.get(convo.conversation_id) || (isDemande ? `Demande #${String(convo.conversation_id).replace('demande-', '')}` : null);
+            const displayTitle = demandeLabel || convo.other_user_email;
             const convoElement = document.createElement('a');
             convoElement.href = '#';
             convoElement.className = 'list-group-item list-group-item-action';
             convoElement.dataset.conversationId = convo.conversation_id;
             convoElement.dataset.receiverId = convo.sender_id === userId ? convo.receiver_id : convo.sender_id;
+            convoElement.dataset.label = displayTitle;
             convoElement.innerHTML = `
               <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1">${convo.other_user_email}</h5>
+                <h5 class="mb-1">${displayTitle}</h5>
                 <small>${new Date(convo.created_at).toLocaleDateString()}</small>
               </div>
               <p class="mb-1">${convo.body.substring(0, 50)}...</p>
@@ -187,6 +218,7 @@
               e.preventDefault();
               currentConversationId = convo.conversation_id;
               currentReceiverId = e.currentTarget.dataset.receiverId;
+              currentConversationLabel = e.currentTarget.dataset.label || '';
               loadMessages(currentConversationId);
             });
             conversationsList.appendChild(convoElement);
@@ -214,11 +246,12 @@
               <small>${new Date(msg.created_at).toLocaleString()}</small>
               ${attachmentsHTML}
             `;
-            messagesDisplay.prepend(msgElement);
+          messagesDisplay.prepend(msgElement);
           });
           messagesContainer.classList.remove('d-none');
           noConversationSelected.classList.add('d-none');
-          conversationWith.textContent = `Conversation avec ${messages[0] ? (messages[0].sender_id === userId ? 'vous' : 'l\'autre') : 'quelqu\'un'}`;
+          const label = currentConversationLabel || (String(currentConversationId || '').startsWith('demande-') ? `Demande #${String(currentConversationId).replace('demande-', '')}` : 'Conversation');
+          conversationWith.textContent = label;
         } catch (error) {
           console.error('Error loading messages:', error);
         }
@@ -263,7 +296,7 @@
       demandeSelect.addEventListener('change', loadConversations);
     }
 
-    loadConversations();
+    loadDemandesLabels().then(loadConversations).catch(loadConversations);
   });
 </script>
 </body>
