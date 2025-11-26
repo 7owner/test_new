@@ -13,24 +13,7 @@
   <header class="header d-flex justify-content-between align-items-center mb-4">
     <h1><a href="/dashboard.html"> <img src="/logo_logicielle.png" alt="" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
     <div id="user-info-container" class="d-flex align-items-center">
-      <div class="me-3 d-flex align-items-center">
-        <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-        <select id="demande-filter" class="form-select form-select-sm" style="max-width:220px">
-          <option value="">Toutes les demandes</option>
-        </select>
-      </div>
-      <div class="me-3 position-relative">
-        <button class="btn btn-outline-primary btn-sm" id="notif-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-          <i class="bi bi-bell"></i>
-          <span class="badge rounded-pill bg-danger" id="notif-badge" style="display:none;">0</span>
-        </button>
-        <div class="dropdown-menu dropdown-menu-end p-0 shadow" aria-labelledby="notif-toggle" style="min-width:320px;">
-          <div class="p-3 border-bottom fw-semibold">Messages récents</div>
-          <div id="notif-list" class="list-group list-group-flush" style="max-height:320px; overflow-y:auto;">
-            <div class="list-group-item text-muted">Aucune notification.</div>
-          </div>
-        </div>
-      </div>
+      <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
       <button id="client-logout-btn" class="btn btn-outline-danger btn-sm ms-2">Déconnexion</button>
       <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
         Menu
@@ -246,16 +229,6 @@
           const r = await fetch('/api/demandes_client/mine', { headers: { 'Authorization': `Bearer ${token}` } });
           if (!r.ok) throw new Error(r.status);
           const demands = await r.json();
-          demandesCache = Array.isArray(demands) ? demands : [];
-          if (demandeFilter) {
-            demandeFilter.innerHTML = '<option value=\"\">Toutes les demandes</option>';
-            demandesCache.forEach(d => {
-              const opt = document.createElement('option');
-              opt.value = d.id;
-              opt.textContent = `Demande #${d.id} - ${d.nom_site || 'N/A'}`;
-              demandeFilter.appendChild(opt);
-            });
-          }
           const list = document.getElementById('demandesList');
           list.innerHTML = '';
           if (!demands.length) {
@@ -324,21 +297,15 @@
       // Initial loads
       fetchClientProfile();
       fetchClientSites();
-      fetchClientDemands().then(updateNotifications);
+      fetchClientDemands();
       fetchInterventionHistory();
 
-      // Modal event listeners & notifications
+      // Modal event listeners
       const createSiteModal = document.getElementById('createSiteModal');
       const viewSiteModal = document.getElementById('viewSiteModal');
       const editSiteModal = document.getElementById('editSiteModal');
       const createDemandeModal = document.getElementById('createDemandeModal');
       const viewDemandeModal = document.getElementById('viewDemandeModal');
-      const filesDemandeModal = document.getElementById('filesDemandeModal');
-      const notifBadge = document.getElementById('notif-badge');
-      const notifList = document.getElementById('notif-list');
-      const demandeFilter = document.getElementById('demande-filter');
-      let userId = null;
-      let demandesCache = [];
 
       const viewSiteFrame = document.getElementById('viewSiteFrame');
       const editSiteFrame = document.getElementById('editSiteFrame');
@@ -389,57 +356,6 @@
             viewDemandeFrame.src = `/client-demand-view.html?id=${demandId}`;
           }
         });
-      }
-
-      if (filesDemandeModal) {
-        filesDemandeModal.addEventListener('show.bs.modal', function (event) {
-          const button = event.relatedTarget;
-          const demandId = button.getAttribute('data-id');
-          if (filesDemandeFrame) {
-            filesDemandeFrame.src = `/client-demand-files.html?id=${demandId}`;
-          }
-        });
-      }
-
-      // Notifications (messages reçus)
-      try { const p = JSON.parse(atob(token.split('.')[1])); userId = p && p.id; } catch(_){}
-
-      if (demandeFilter) demandeFilter.addEventListener('change', updateNotifications);
-
-      async function updateNotifications() {
-        if (!notifList || !notifBadge || !userId) return;
-        const selectedId = demandeFilter && demandeFilter.value ? demandeFilter.value : null;
-        const demands = selectedId ? demandesCache.filter(d => String(d.id)===String(selectedId)) : demandesCache;
-        if (!demands.length) { notifBadge.style.display='none'; notifList.innerHTML='<div class="list-group-item text-muted">Aucune demande</div>'; return; }
-        notifList.innerHTML = '<div class="list-group-item text-muted">Chargement…</div>';
-        let totalThreads = 0;
-        const items = [];
-        for (const d of demands) {
-          try {
-            const convId = `demande-${d.id}`;
-            const res = await fetch(`/api/conversations/${convId}`, { headers:{ 'Authorization': `Bearer ${token}` }, credentials:'same-origin' });
-            if (!res.ok) continue;
-            const msgs = await res.json();
-            const incoming = (Array.isArray(msgs)? msgs:[]).filter(m => m.sender_id !== userId);
-            if (incoming.length) {
-              totalThreads += 1;
-              const last = incoming[incoming.length-1];
-              items.push(`
-                <div class="list-group-item">
-                  <div class="d-flex justify-content-between">
-                    <strong>Demande #${d.id}</strong>
-                    <small>${last.created_at ? new Date(last.created_at).toLocaleString() : ''}</small>
-                  </div>
-                  <div class="text-truncate">${last.body || '(Pièce jointe)'}</div>
-                  <a class="btn btn-sm btn-primary mt-2" href="/client-demand-view.html?id=${d.id}" target="_blank">Ouvrir</a>
-                </div>
-              `);
-            }
-          } catch(_){}
-        }
-        notifBadge.textContent = totalThreads;
-        notifBadge.style.display = totalThreads ? 'inline-block' : 'none';
-        notifList.innerHTML = items.length ? items.join('') : '<div class="list-group-item text-muted">Aucun nouveau message.</div>';
       }
 
       const filesDemandeModal = document.getElementById('filesDemandeModal');
