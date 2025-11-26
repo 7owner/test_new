@@ -3317,7 +3317,7 @@ app.post('/api/demandes_client', authenticateToken, async (req, res) => {
         if (!email) {
             return res.status(401).json({ error: 'Unauthorized: User email not found in token' });
         }
-        const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1 OR email=$1', [email])).rows[0];
+        const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1', [email])).rows[0];
         if (!client) {
             return res.status(403).json({ error: 'Forbidden: No client associated with this user' });
         }
