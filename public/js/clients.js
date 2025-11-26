@@ -24,8 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <p class="card-text">${c.adresse_libelle || 'Adresse non spécifiée'}</p>
       </div>
       <div class="card-footer bg-transparent border-top-0 d-flex gap-2 justify-content-end">
-        <a href="/client-view.html?id=${c.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> Voir</a>
-        ${isAdmin ? `<a href="/client-edit.html?id=${c.id}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i> Modifier</a> <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${c.id}"><i class="bi bi-trash"></i> Supprimer</button>` : ``}
+        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#viewClientModal" data-id="${c.id}"><i class="bi bi-eye"></i> Voir</button>
+        ${isAdmin ? `<button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editClientModal" data-id="${c.id}"><i class="bi bi-pencil"></i> Modifier</button> <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${c.id}"><i class="bi bi-trash"></i> Supprimer</button>` : ``}
       </div>
     `;
     col.appendChild(card);
@@ -59,6 +59,37 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (e) { alert((e && e.message) || 'Suppression impossible'); }
     });
     loadClients();
+  }
+
+  const createClientModal = document.getElementById('createClientModal');
+  const viewClientModal = document.getElementById('viewClientModal');
+  const editClientModal = document.getElementById('editClientModal');
+  const viewClientFrame = document.getElementById('viewClientFrame');
+  const editClientFrame = document.getElementById('editClientFrame');
+
+  if (createClientModal) {
+    createClientModal.addEventListener('show.bs.modal', function (event) {
+      const createClientFrame = createClientModal.querySelector('iframe');
+      if (createClientFrame) {
+        createClientFrame.src = '/client-new.html';
+      }
+    });
+  }
+
+  if (viewClientModal) {
+    viewClientModal.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      const clientId = button.getAttribute('data-id');
+      viewClientFrame.src = `/client-view.html?id=${clientId}`;
+    });
+  }
+
+  if (editClientModal) {
+    editClientModal.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      const clientId = button.getAttribute('data-id');
+      editClientFrame.src = `/client-edit.html?id=${clientId}`;
+    });
   }
 });
 
