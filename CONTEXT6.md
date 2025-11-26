@@ -69,3 +69,8 @@
 
 *   **Database Migration on Heroku**:
     *   Manually applied `ALTER TABLE` commands via `heroku pg:psql` to add `numero_affaire` to `affaire` and `titre` to `intervention` due to existing schema on the Heroku database.
+
+*   **Messagerie (`public/messagerie.html`)**:
+    *   Added filters for conversations by demande client (checkbox + dropdown).
+    *   Conversations linked to demandes now display the demande label (ex: `Demande #ID — titre`) instead of the email.
+    *   Demand labels are loaded from `/api/demandes_client` (fallback `/api/demandes_client/mine`) to drive the dropdown and titles.

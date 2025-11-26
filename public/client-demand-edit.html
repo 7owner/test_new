@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modifier Demande Client</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="/custom.css?v=1" rel="stylesheet">
+</head>
+<body>
+  <main class="container mt-4">
+    <h1 class="mb-3">Modifier Demande Client</h1>
+    <div id="msg" class="alert d-none" role="alert"></div>
+
+    <form id="editDemandeForm" class="card shadow-sm p-4">
+      <div class="mb-3">
+        <label for="demandeId" class="form-label">ID Demande</label>
+        <input type="text" id="demandeId" class="form-control" readonly>
+      </div>
+      <div class="mb-3">
+        <label for="editDemandeSiteId" class="form-label">Site (optionnel)</label>
+        <select id="editDemandeSiteId" class="form-select">
+          <option value="">-- Sans site --</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="editDemandeTitre" class="form-label">Titre</label>
+        <input type="text" id="editDemandeTitre" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label for="editDemandeDescription" class="form-label">Description</label>
+        <textarea id="editDemandeDescription" class="form-control" rows="4" required></textarea>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-success">Enregistrer</button>
+        <button type="button" class="btn btn-secondary" onclick="window.parent.location.reload()">Annuler</button>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = localStorage.getItem('token');
+      if (!token) { window.parent.location.href = '/login.html'; return; }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const demandeId = urlParams.get('id');
+      if (!demandeId) {
+        showMsg('ID de demande manquant.', 'danger');
+        return;
+      }
+      document.getElementById('demandeId').value = demandeId;
+
+      const msgDiv = document.getElementById('msg');
+      const selectSite = document.getElementById('editDemandeSiteId');
+      const form = document.getElementById('editDemandeForm');
+      const titreInput = document.getElementById('editDemandeTitre');
+      const descriptionTextarea = document.getElementById('editDemandeDescription');
+
+      function showMsg(text, type) {
+        msgDiv.className = `alert alert-${type}`;
+        msgDiv.textContent = text;
+        msgDiv.classList.remove('d-none');
+      }
+
+      async function fetchJSON(url, opts) {
+        const res = await fetch(url, Object.assign({ headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }, opts||{}));
+        const ct = res.headers.get('content-type')||'';
+        const body = ct.includes('application/json') ? await res.json() : null;
+        if (!res.ok) throw new Error((body && body.error) || res.statusText);
+        return body;
+      }
+
+      // Load client sites for dropdown
+      async function loadClientSites() {
+        try {
+          const r = await fetch('/api/client/sites', { headers: { 'Authorization': `Bearer ${token}` } });
+          if (!r.ok) throw new Error(r.status);
+          const sites = await r.json();
+          selectSite.innerHTML = '<option value="">-- Sans site --</option>' + sites.map(s=>`<option value="${s.id}">${s.nom_site || ('Site '+s.id)}</option>`).join('');
+        } catch (e) { console.error('Erreur chargement sites client:', e); }
+      }
+      await loadClientSites();
+
+      // Load demand details
+      try {
+        const demand = await fetchJSON(`/api/demandes_client/mine/${demandeId}`); // Assuming client can fetch their own demand
+        titreInput.value = demand.titre || '';
+        descriptionTextarea.value = demand.description || '';
+        selectSite.value = demand.site_id || '';
+      } catch (e) {
+        showMsg(`Impossible de charger la demande: ${e.message}`, 'danger');
+        return;
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const titre = titreInput.value.trim();
+        const description = descriptionTextarea.value.trim();
+        const site_id = selectSite.value ? Number(selectSite.value) : null;
+
+        if (!titre || !description) {
+          showMsg('Le titre et la description sont requis.', 'danger');
+          return;
+        }
+
+        try {
+          await fetchJSON(`/api/demandes_client/${demandeId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ titre, description, site_id })
+          });
+          showMsg('Demande mise à jour avec succès!', 'success');
+          // Reload parent window to refresh the list
+          setTimeout(() => window.parent.location.reload(), 500);
+        } catch (err) {
+          showMsg(`Erreur mise à jour: ${err.message}`, 'danger');
+        }
+      });
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
