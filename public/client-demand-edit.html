@@ -85,7 +85,7 @@
 
       // Load demand details
       try {
-        const demand = await fetchJSON(`/api/demandes_client/mine/${demandeId}`); // Assuming client can fetch their own demand
+        const demand = await fetchJSON(`/api/demandes_client/${demandeId}`); // Fetch specific demand using the new endpoint
         titreInput.value = demand.titre || '';
         descriptionTextarea.value = demand.description || '';
         selectSite.value = demand.site_id || '';
