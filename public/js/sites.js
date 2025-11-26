@@ -41,19 +41,35 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
       }
 
+      function computeDisplayStatus(site) {
+        const hasTicket = !!site.ticket || openDemandSites.has(String(site.id));
+        const hasResponsable = !!site.responsable_matricule;
+        if (hasTicket) return 'en cours';
+        if (hasResponsable) return 'prise en charge';
+        return site.statut || '';
+      }
+
       function render(rows) {
         tableBody.innerHTML = '';
         if (!rows.length) { const tr = tableBody.insertRow(); tr.innerHTML = '<td colspan="8" class="text-center text-muted">Aucun site trouvé.</td>'; return; }
         rows.forEach(site => {
           const tr = tableBody.insertRow();
-          const sclass = ({'en attente':'bg-secondary','prise en charge':'bg-info','en cour':'bg-warning','fini':'bg-success','sous devis':'bg-primary'})[site.statut] || 'bg-light text-dark';
+          const displayStatus = computeDisplayStatus(site);
+          const sclass = ({
+            'en attente':'bg-secondary',
+            'prise en charge':'bg-info',
+            'en cours':'bg-warning',
+            'en cour':'bg-warning',
+            'fini':'bg-success',
+            'sous devis':'bg-primary'
+          })[displayStatus] || 'bg-light text-dark';
           const debut = fmt(site.date_debut); const fin = site.date_fin? fmt(site.date_fin) : 'En cours';
           const hasTicket = !!site.ticket || openDemandSites.has(String(site.id));
           tr.innerHTML = `
             <td>${site.id}</td>
             <td>${site.nom_site||''}</td>
             <td>${site.adresse_id||''}</td>
-            <td><span class="badge ${sclass}">${site.statut||''}</span></td>
+            <td><span class="badge ${sclass}">${displayStatus}</span></td>
             <td><span class="badge ${hasTicket? 'bg-danger':'bg-success'}">${hasTicket? 'Oui':'Non'}</span></td>
             <td>${site.responsable_matricule? getAgentName(site.responsable_matricule): 'Non assigné'}</td>
             <td><small>Début: ${debut||''}<br>Fin: ${fin||''}</small></td>
@@ -75,7 +91,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         let rows = (apiSites||[]).filter(s => {
           const m = String(s.nom_site||'').toLowerCase().includes(term) || String(s.id||'').toLowerCase().includes(term);
-          const st = status ? s.statut===status : true;
+          const displayStatus = computeDisplayStatus(s);
+          const st = status ? displayStatus===status : true;
 
           const siteStart = s.date_debut ? new Date(s.date_debut) : null;
           const siteEnd = s.date_fin ? new Date(s.date_fin) : null;
