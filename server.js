@@ -3257,7 +3257,7 @@ app.get('/api/demandes_client/mine', authenticateToken, async (req, res) => {
 
       // Identify the client linked to the logged in user
       const clientRow = (await pool.query(
-        'SELECT id FROM client WHERE representant_email=$1 OR email=$1 LIMIT 1',
+        'SELECT id FROM client WHERE representant_email=$1 LIMIT 1',
         [email]
       )).rows[0];
       if (!clientRow) return res.json([]);
@@ -3290,7 +3290,7 @@ app.get('/api/demandes_client/:id', authenticateToken, async (req, res) => {
         // Authorization check: Admin or owner of the demand
         const isAdmin = req.user.roles.includes('ROLE_ADMIN');
         if (!isAdmin) {
-            const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1 OR email=$1', [req.user.email])).rows[0];
+            const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1', [req.user.email])).rows[0];
             if (!client || client.id !== demand.client_id) {
                 return res.status(403).json({ error: 'Forbidden: You do not own this demand or lack admin privileges' });
             }
@@ -3370,7 +3370,7 @@ app.put('/api/demandes_client/:id', authenticateToken, async (req, res) => {
 
         // Authorization check
         if (!isAdmin) {
-            const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1 OR email=$1', [req.user.email])).rows[0];
+            const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1', [req.user.email])).rows[0];
             if (!client || client.id !== demandOwnerClientId) {
                 return res.status(403).json({ error: 'Forbidden: You do not own this demand or lack admin privileges' });
             }
