@@ -3251,7 +3251,32 @@ app.post('/api/client/sites', authenticateToken, async (req, res) => {
 
 // --- Client demandes (requests) ---
 app.get('/api/demandes_client/mine', authenticateToken, async (req, res) => {
-    // ... existing code ...
+    try {
+      const email = req.user && req.user.email;
+      if (!email) return res.status(401).json({ error: 'Unauthorized' });
+
+      // Identify the client linked to the logged in user
+      const clientRow = (await pool.query(
+        'SELECT id FROM client WHERE representant_email=$1 OR email=$1 LIMIT 1',
+        [email]
+      )).rows[0];
+      if (!clientRow) return res.json([]);
+
+      const demandes = (await pool.query(
+        `SELECT d.*, s.nom_site AS site_nom
+         FROM demande_client d
+         LEFT JOIN site s ON s.id = d.site_id
+         WHERE d.client_id = $1
+           AND (d.status IS NULL OR d.status <> 'Supprimée')
+         ORDER BY d.id DESC`,
+        [clientRow.id]
+      )).rows;
+
+      res.json(demandes);
+    } catch (err) {
+      console.error('Error loading demandes_client/mine:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 app.get('/api/demandes_client/:id', authenticateToken, async (req, res) => {

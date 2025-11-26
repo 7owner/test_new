@@ -74,3 +74,6 @@
     *   Added filters for conversations by demande client (checkbox + dropdown).
     *   Conversations linked to demandes now display the demande label (ex: `Demande #ID — titre`) instead of the email.
     *   Demand labels are loaded from `/api/demandes_client` (fallback `/api/demandes_client/mine`) to drive the dropdown and titles.
+
+*   **Backend Fix**:
+    *   Implemented `/api/demandes_client/mine` to return the current client’s demandes (excluding `Supprimée`), preventing request timeouts.
