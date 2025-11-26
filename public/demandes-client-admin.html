@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentFilter = { client: '', status: '' };
   let currentSort = { column: "id", direction: "desc" };
 
-  const statusSel = ['En cours de traitement', 'Traité', 'Rejeté', 'Annulé'];
+    const statusSel = ['En cours de traitement', 'Traité', 'En attente', 'Annulé'];
 
 
   async function fetchJSON(url, opts = {}) {
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
       switch ((d.status || "").toLowerCase()) {
         case "en cours de traitement": return "bg-info";
         case "traité": return "bg-success";
-        case "rejeté": return "bg-danger";
+        case "en attente": return "bg-secondary";
         case "annulé": return "bg-warning text-dark";
         default: return "bg-light text-dark";
       }

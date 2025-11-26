@@ -3418,7 +3418,7 @@ app.put('/api/demandes_client/:id/status', authenticateToken, authorizeAdmin, as
   try {
     const { id } = req.params;
     const { status, commentaire } = req.body || {};
-    const allowed = ['En cours de traitement', 'Traité', 'Rejeté', 'Annulé'];
+    const allowed = ['En cours de traitement', 'Traité', 'En attente', 'Annulé'];
     if (!allowed.includes(String(status || '').trim())) {
       return res.status(400).json({ error: 'Invalid status' });
     }
