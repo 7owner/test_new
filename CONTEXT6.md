@@ -11,6 +11,8 @@
 - `client-demand-view.html` : fetch avec credentials same-origin, fallback responsable admin, liens PJ corrigés.
 - `messagerie.html` : filtres de conversation (search) pris en charge côté API, liens PJ corrigés.
 - Dashboard : redesign des cartes métriques + fond dégradé; la carte “Demandes client” affiche désormais “en file vs converties” (pending = sans ticket_id, converties = avec ticket_id).
+- Demandes client (admin) : bouton “Voir demandes supprimées” + modal qui liste les suppressions (justification, auteur, date) via `GET /api/demandes_client/deleted` (audit_log action DELETE).
+- Demandes client (admin) : suppression logique (status=Supprimée + justification), restauration possible via `POST /api/demandes_client/:id/restore`; le listing exclut les supprimées sauf si `include_deleted=true`.
 
 ## Branches de travail
 - `feat/dashboard` : mergée avec `origin/main` (local). À pousser si besoin.

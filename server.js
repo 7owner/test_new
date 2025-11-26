@@ -3368,7 +3368,7 @@ app.get('/api/client/demandes/:id', authenticateToken, async (req, res) => {
 // List all demandes with client/site (admin)
 app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    const { client, status, sort, direction } = req.query;
+    const { client, status, sort, direction, include_deleted } = req.query;
     let query = `
       SELECT d.*, c.nom_client, c.representant_email, s.nom_site
       FROM demande_client d
@@ -3385,6 +3385,8 @@ app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (req, r
     if (status) {
       conditions.push(`d.status = $${params.length + 1}`);
       params.push(status);
+    } else if (!String(include_deleted || '').toLowerCase().startsWith('t')) {
+      conditions.push(`d.status <> 'Supprimée'`);
     }
 
     if (conditions.length > 0) {
@@ -3466,10 +3468,10 @@ app.delete('/api/demandes_client/:id', authenticateToken, authorizeAdmin, async 
     }
 
     await logAudit('demande_client', id, 'DELETE', req.user.email, { justification });
-    // If not converted, proceed with deletion
-    await cx.query('DELETE FROM demande_client WHERE id=$1', [id]);
+    // Soft delete: mark as Supprimée and store justification in commentaire
+    await cx.query("UPDATE demande_client SET status='Supprimée', commentaire=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2", [justification, id]);
     await cx.query('COMMIT');
-    res.status(200).json({ message: 'Demand deleted successfully.' });
+    res.status(200).json({ message: 'Demand marked as deleted.' });
   } catch (e) {
     try { await cx.query('ROLLBACK'); } catch (_) {}
     console.error('Error deleting client demand:', e);
@@ -3483,24 +3485,49 @@ app.delete('/api/demandes_client/:id', authenticateToken, authorizeAdmin, async 
 app.get('/api/demandes_client/deleted', authenticateToken, authorizeAdmin, async (_req, res) => {
   try {
     const r = await pool.query(
-      "SELECT entity_id AS id, actor_email, details, created_at FROM audit_log WHERE entity='demande_client' AND action='DELETE' ORDER BY created_at DESC LIMIT 200"
+      `SELECT d.id, d.commentaire, d.status, d.updated_at, c.nom_client, c.representant_email, s.nom_site, a.actor_email, a.details
+       FROM demande_client d
+       LEFT JOIN client c ON c.id=d.client_id
+       LEFT JOIN site s ON s.id=d.site_id
+       LEFT JOIN audit_log a ON a.entity='demande_client' AND a.action='DELETE' AND a.entity_id=CAST(d.id AS TEXT)
+       WHERE d.status='Supprimée'
+       ORDER BY d.updated_at DESC
+       LIMIT 200`
     );
     const rows = (r.rows || []).map(row => {
-      let justification = null;
-      try {
-        const d = typeof row.details === 'string' ? JSON.parse(row.details) : row.details;
-        justification = d && d.justification ? d.justification : null;
-      } catch(_) {}
+      let justification = row.commentaire || null;
+      if (!justification) {
+        try {
+          const d = typeof row.details === 'string' ? JSON.parse(row.details) : row.details;
+          justification = d && d.justification ? d.justification : null;
+        } catch(_) {}
+      }
       return {
         id: row.id,
         actor_email: row.actor_email,
         justification,
-        created_at: row.created_at
+        nom_client: row.nom_client,
+        representant_email: row.representant_email,
+        nom_site: row.nom_site,
+        updated_at: row.updated_at
       };
     });
     res.json(rows);
   } catch (e) {
     console.error('Error fetching deleted demandes:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Restore a soft-deleted demand
+app.post('/api/demandes_client/:id/restore', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const r = await pool.query("UPDATE demande_client SET status='En cours de traitement', updated_at=CURRENT_TIMESTAMP WHERE id=$1 AND status='Supprimée' RETURNING *", [id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Demande not found or not deleted' });
+    res.json(r.rows[0]);
+  } catch (e) {
+    console.error('Error restoring demand:', e);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

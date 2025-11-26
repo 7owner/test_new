@@ -288,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
       table.innerHTML = `
         <thead>
           <tr>
-            <th>ID</th><th>Commentaire</th><th>Supprimé par</th><th>Date</th>
+            <th>ID</th><th>Commentaire</th><th>Supprimé par</th><th>Date</th><th>Client</th><th>Site</th><th></th>
           </tr>
         </thead>
         <tbody>
@@ -297,13 +297,29 @@ document.addEventListener('DOMContentLoaded', () => {
               <td>${r.id || ''}</td>
               <td>${r.justification || ''}</td>
               <td>${r.actor_email || ''}</td>
-              <td>${r.created_at ? new Date(r.created_at).toLocaleString() : ''}</td>
+              <td>${r.updated_at ? new Date(r.updated_at).toLocaleString() : ''}</td>
+              <td>${r.nom_client || ''}</td>
+              <td>${r.nom_site || ''}</td>
+              <td><button class="btn btn-sm btn-success restore-btn" data-id="${r.id}">Restaurer</button></td>
             </tr>
           `).join('')}
         </tbody>
       `;
       deletedBody.innerHTML = "";
       deletedBody.appendChild(table);
+      deletedBody.querySelectorAll(".restore-btn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.currentTarget.dataset.id;
+          try {
+            await fetchJSON(`/api/demandes_client/${id}/restore`, { method:'POST' });
+            alert(`Demande #${id} restaurée`);
+            deletedModal.hide();
+            load();
+          } catch(err) {
+            alert(err.message);
+          }
+        });
+      });
       deletedModal.show();
     } catch (e) {
       deletedBody.innerHTML = `<p class="text-danger">Erreur: ${e.message}</p>`;
