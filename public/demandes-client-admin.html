@@ -336,7 +336,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (currentFilter.status) url += `status=${encodeURIComponent(currentFilter.status)}&`;
       url += `sort=${currentSort.column},${currentSort.direction}`;
 
-      const data = await fetchJSON(url);
+      let data = await fetchJSON(url);
+      // Masquer les demandes déjà converties en ticket
+      data = (data || []).filter(d => !d.ticket_id);
 
       demandsContainer.innerHTML = "";
       data.forEach(d => demandsContainer.appendChild(createDemandCard(d)));

@@ -3571,8 +3571,8 @@ app.post('/api/demandes_client/:id/convert-to-ticket', authenticateToken, author
       );
     }
 
-    // 5. Update the original request to link it to the new ticket
-    await cx.query("UPDATE demande_client SET status='Traité', updated_at=CURRENT_TIMESTAMP, ticket_id=$1 WHERE id=$2", [t.id, id]);
+    // 5. Update the original request to link it to the new ticket (status aligné sur le ticket)
+    await cx.query("UPDATE demande_client SET status=$1, updated_at=CURRENT_TIMESTAMP, ticket_id=$2 WHERE id=$3", [t.etat || 'Traité', t.id, id]);
     
     await cx.query('COMMIT');
     
