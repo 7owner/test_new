@@ -34,6 +34,9 @@
 
 ## Mises à jour effectuées par l'agent (Recent Changes)
 
+*   **Clients Page (`public/clients.html`)**:
+    *   **Modals for Create/View/Edit Clients**: The "Nouveau Client" button, and the "Voir" and "Modifier" buttons for each client, now open modals (`#createClientModal`, `#viewClientModal`, `#editClientModal`) with `iframe`s pointing to the respective `client-new.html`, `client-view.html`, and `client-edit.html` pages.
+
 *   **Tickets Page (`public/tickets.html`)**:
     *   **Modal for Client Requests**: The "Demandes clients" button now opens a modal containing an `iframe` of the `demandes-client-admin.html` page.
     *   **Modals for View/Edit Tickets**: The "Voir" and "Modifier" buttons for each ticket now open modals (`#viewTicketModal`, `#editTicketModal`) with `iframe`s pointing to the respective `ticket-view.html` and `ticket-edit.html` pages.
