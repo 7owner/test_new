@@ -399,6 +399,7 @@ CREATE TABLE IF NOT EXISTS demande_client (
     id SERIAL PRIMARY KEY,
     client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
     site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    titre VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'En cours de traitement',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

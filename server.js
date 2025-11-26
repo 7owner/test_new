@@ -3261,9 +3261,9 @@ app.get('/api/demandes_client/mine', authenticateToken, async (req, res) => {
   } catch (e) { console.error('demandes mine:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
 });
 app.post('/api/demandes_client', authenticateToken, async (req, res) => {
-    const { site_id, description, client_id } = req.body;
-    if (!description) {
-        return res.status(400).json({ error: 'Description is required' });
+    const { site_id, titre, description, client_id } = req.body;
+    if (!titre || !description) {
+        return res.status(400).json({ error: 'Titre and Description are required' });
     }
 
     const isAdmin = req.user.roles.includes('ROLE_ADMIN');
@@ -3293,8 +3293,8 @@ app.post('/api/demandes_client', authenticateToken, async (req, res) => {
     
     try {
         const result = await pool.query(
-            'INSERT INTO demande_client (client_id, site_id, description) VALUES ($1, $2, $3) RETURNING *',
-            [finalClientId, site_id || null, description]
+            'INSERT INTO demande_client (client_id, site_id, titre, description) VALUES ($1, $2, $3, $4) RETURNING *',
+            [finalClientId, site_id || null, titre, description]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
