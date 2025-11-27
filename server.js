@@ -3358,8 +3358,12 @@ app.get('/api/demandes_client/:id', authenticateToken, async (req, res) => {
         // Authorization check: Admin or owner of the demand
         const isAdmin = req.user.roles.includes('ROLE_ADMIN');
         if (!isAdmin) {
-            const client = (await pool.query('SELECT id FROM client WHERE user_id=$1 OR LOWER(representant_email)=LOWER($2) LIMIT 1', [req.user.id || null, req.user.email])).rows[0];
-            if (!client || client.id !== demand.client_id) {
+            const client = (await pool.query('SELECT id, representant_email, user_id FROM client WHERE id=$1', [demand.client_id])).rows[0];
+            const owns = client && (
+              (client.user_id && client.user_id === req.user.id) ||
+              (client.representant_email && req.user.email && client.representant_email.toLowerCase() === req.user.email.toLowerCase())
+            );
+            if (!owns) {
                 return res.status(403).json({ error: 'Forbidden: You do not own this demand or lack admin privileges' });
             }
         }
@@ -3420,7 +3424,7 @@ app.put('/api/demandes_client/:id', authenticateToken, async (req, res) => {
         return res.status(400).json({ error: 'Titre and Description are required' });
     }
 
-        const isAdmin = req.user.roles.includes('ROLE_ADMIN');
+    const isAdmin = req.user.roles.includes('ROLE_ADMIN');
     let demandOwnerClientId = null;
 
     try {
@@ -3438,8 +3442,12 @@ app.put('/api/demandes_client/:id', authenticateToken, async (req, res) => {
 
         // Authorization check
         if (!isAdmin) {
-        const client = (await pool.query('SELECT id FROM client WHERE user_id=$1 OR LOWER(representant_email)=LOWER($2) LIMIT 1', [req.user.id || null, req.user.email])).rows[0];
-            if (!client || client.id !== demandOwnerClientId) {
+            const client = (await pool.query('SELECT id, representant_email, user_id FROM client WHERE id=$1', [demandOwnerClientId])).rows[0];
+            const owns = client && (
+              (client.user_id && client.user_id === req.user.id) ||
+              (client.representant_email && req.user.email && client.representant_email.toLowerCase() === req.user.email.toLowerCase())
+            );
+            if (!owns) {
                 return res.status(403).json({ error: 'Forbidden: You do not own this demand or lack admin privileges' });
             }
         }
