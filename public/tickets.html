@@ -15,6 +15,8 @@
     .section-title { margin-top: 2rem; margin-bottom: 1rem; }
     .table-card { border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); border: none; }
     .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+    .filters-card { background: #fff; border: none; border-radius: 14px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
+    .filters-card h5 { font-weight: 700; color: #1f2937; }
   </style>
 </head>
 <body class="dashboard-bg">
@@ -79,7 +81,10 @@
 
   <main class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-      <h1 class="mb-0">Tickets</h1>
+      <div>
+        <p class="text-uppercase text-muted small mb-1">Centre opérationnel</p>
+        <h1 class="mb-0 fw-bold">Tickets</h1>
+      </div>
       <div class="d-flex gap-2">
         <button class="btn btn-primary btn-sm shadow-sm" id="toggle-filters-btn"><i class="bi bi-funnel-fill me-1"></i> Masquer les filtres</button>
         <!--<button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#createDemandeClientModal"><i class="bi bi-plus-circle me-2"></i>Créer une demande client</button>-->
@@ -88,21 +93,27 @@
       </div>
     </div>
 
-    <div class="mb-3 d-flex gap-2 flex-wrap" id="filters-row">
-      <input type="text" class="form-control" id="ticket-search" placeholder="Rechercher par titre ou ID…">
-      <select class="form-select" id="ticket-status-filter">
-        <option value="">Tous les États</option>
-        <option value="Pas_commence">Pas commencé</option>
-        <option value="En_cours">En cours</option>
-        <option value="Termine">Terminé</option>
-      </select>
-      <select class="form-select" id="ticket-responsible-filter">
-        <option value="">Tous les responsables</option>
-        <option value="AGT001">Dupont Jean (AGT001)</option>
-        <option value="AGT002">Martin Sophie (AGT002)</option>
-      </select>
-      <input type="date" class="form-control" id="ticket-date-start" title="Date début">
-      <input type="date" class="form-control" id="ticket-date-end" title="Date fin">
+    <div class="filters-card p-3 mb-4" id="filters-row">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h5 class="mb-0">Filtres</h5>
+        <small class="text-muted">Affinez par statut, responsable ou période</small>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <input type="text" class="form-control" id="ticket-search" placeholder="Rechercher par titre ou ID…">
+        <select class="form-select" id="ticket-status-filter">
+          <option value="">Tous les États</option>
+          <option value="Pas_commence">Pas commencé</option>
+          <option value="En_cours">En cours</option>
+          <option value="Termine">Terminé</option>
+        </select>
+        <select class="form-select" id="ticket-responsible-filter">
+          <option value="">Tous les responsables</option>
+          <option value="AGT001">Dupont Jean (AGT001)</option>
+          <option value="AGT002">Martin Sophie (AGT002)</option>
+        </select>
+        <input type="date" class="form-control" id="ticket-date-start" title="Date début">
+        <input type="date" class="form-control" id="ticket-date-end" title="Date fin">
+      </div>
     </div>
 
     <h2 class="section-title">Tickets ouverts</h2>
