@@ -10,62 +10,101 @@
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
   <style>
+    /* ------------------------------
+      🎨 BACKGROUND DASHBOARD
+    ------------------------------ */
     body.dashboard-bg {
-      background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.16), transparent 25%),
-                  radial-gradient(circle at 80% 0%, rgba(255,255,255,0.1), transparent 20%),
-                  linear-gradient(135deg, #5a62d6, #7a5dd6 45%, #6d7edb);
       min-height: 100vh;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.16), transparent 25%),
+        radial-gradient(circle at 80% 0%, rgba(255,255,255,0.10), transparent 20%),
+        linear-gradient(135deg, #5a62d6, #836bd3 45%, #6d7edb);
     }
+
+    /* ------------------------------
+      📊 CARTE DE METRIQUE
+    ------------------------------ */
     .metric-card {
       background: linear-gradient(145deg, #f6f7fc, #eef2ff);
       border: none;
       border-radius: 18px;
-      box-shadow: 0 18px 30px rgba(41, 53, 108, 0.14);
       padding: 18px;
-      color: #2c3350;
-      height: 100%;
+
+      box-shadow: 0 18px 30px rgba(41, 53, 108, 0.14);
+
       display: flex;
       flex-direction: column;
       gap: 10px;
+
+      color: #2c3350;
+      height: 100%;
     }
+
+    /* ------------------------------
+      🔷 ICONES DANS LES METRIQUES
+    ------------------------------ */
     .metric-icon {
       width: 52px;
       height: 52px;
       border-radius: 14px;
-      display: inline-flex;
+
+      display: flex;
       align-items: center;
       justify-content: center;
-      color: #fff;
+
       font-size: 22px;
+      color: #fff;
+
       box-shadow: 0 10px 20px rgba(0,0,0,0.12);
     }
-    .icon-blue { background: linear-gradient(135deg, #4da5ff, #3c68ff); }
-    .icon-green { background: linear-gradient(135deg, #32d296, #0fa968); }
-    .icon-orange { background: linear-gradient(135deg, #ffb347, #ff784b); }
-    .icon-purple { background: linear-gradient(135deg, #9d7bff, #7451ff); }
+
+    /* Couleurs déclinées */
+    .icon-blue {
+      background: linear-gradient(135deg, #4da5ff, #3c68ff);
+    }
+    .icon-green {
+      background: linear-gradient(135deg, #32d296, #0fa968);
+    }
+    .icon-orange {
+      background: linear-gradient(135deg, #ffb347, #ff784b);
+    }
+    .icon-purple {
+      background: linear-gradient(135deg, #9d7bff, #7451ff);
+    }
+
+    /* ------------------------------
+      🔢 TEXTES DES METRIQUES
+    ------------------------------ */
     .metric-value {
       font-size: 2.4rem;
       font-weight: 700;
       line-height: 1;
     }
+
     .metric-label {
-      letter-spacing: 0.08em;
-      font-size: 0.85rem;
       text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
       color: #6c7693;
       margin-bottom: 4px;
     }
+
     .metric-sub {
-      color: #1b9b6e;
-      font-weight: 600;
       font-size: 0.95rem;
+      font-weight: 600;
+      color: #1b9b6e;
     }
+
+    /* ------------------------------
+      🧩 CARDS GÉNÉRALES
+    ------------------------------ */
     .card {
       border: none;
       border-radius: 16px;
       box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
     }
-  </style>
+
+      </style>
 </head>
 
 <body class="dashboard-bg">
@@ -102,9 +141,9 @@
           </div>
         </div>
       </div>
-      <button id="logout-btn" class="btn btn-outline-danger btn-sm rounded-pill">
+     <!-- <button id="logout-btn" class="btn btn-outline-danger btn-sm rounded-pill">
         <i class="bi bi-box-arrow-right me-1"></i> Déconnexion
-      </button>
+      </button>-->
       <button type="button" class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
         <i class="bi bi-list"></i>
       </button>
