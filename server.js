@@ -3200,8 +3200,8 @@ app.post('/api/clients/register', authenticateToken, authorizeAdmin, async (req,
     const ures = await cx.query('INSERT INTO users (email, password, roles) VALUES ($1,$2,$3) RETURNING id,email,roles', [email, hashed, JSON.stringify(['ROLE_CLIENT'])]);
     const u = ures.rows[0];
     const cres = await cx.query(
-      'INSERT INTO client (nom_client, representant_nom, representant_email, representant_tel, adresse_id, commentaire) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
-      [nom_client, representant_nom || null, email, representant_tel || null, adresse_id || null, commentaire || null]
+      'INSERT INTO client (nom_client, representant_nom, representant_email, representant_tel, adresse_id, commentaire, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+      [nom_client, representant_nom || null, email, representant_tel || null, adresse_id || null, commentaire || null, u.id]
     );
     const cli = cres.rows[0];
     try { await cx.query('UPDATE client SET user_id=$1 WHERE id=$2', [u.id, cli.id]); } catch(_) {}
@@ -3219,7 +3219,7 @@ app.get('/api/client/profile', authenticateToken, async (req, res) => {
   try {
     const email = req.user && req.user.email;
     if (!email) return res.status(401).json({ error: 'Unauthorized' });
-    const c = (await pool.query('SELECT * FROM client WHERE representant_email=$1 LIMIT 1', [email])).rows[0];
+    const c = (await pool.query('SELECT * FROM client WHERE representant_email=$1 OR user_id=$2 LIMIT 1', [email, req.user.id || null])).rows[0];
     if (!c) return res.status(404).json({ error: 'Client record not found for this user' });
     return res.json(c);
   } catch (e) { console.error('client profile fetch:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
@@ -3227,8 +3227,8 @@ app.get('/api/client/profile', authenticateToken, async (req, res) => {
 
 // --- Client-owned sites ---
 const getClientIdFromUser = async (pool, user) => {
-    if (!user || !user.email) return null;
-    const clientRes = await pool.query('SELECT id FROM client WHERE representant_email = $1 LIMIT 1', [user.email]);
+    if (!user) return null;
+    const clientRes = await pool.query('SELECT id FROM client WHERE representant_email = $1 OR user_id=$2 LIMIT 1', [user.email || null, user.id || null]);
     return clientRes.rows[0] ? clientRes.rows[0].id : null;
 };
 
@@ -3325,8 +3325,8 @@ app.get('/api/demandes_client/mine', authenticateToken, async (req, res) => {
 
       // Identify the client linked to the logged in user
       const clientRow = (await pool.query(
-        'SELECT id FROM client WHERE representant_email=$1 LIMIT 1',
-        [email]
+        'SELECT id FROM client WHERE representant_email=$1 OR user_id=$2 LIMIT 1',
+        [email, req.user.id || null]
       )).rows[0];
       if (!clientRow) return res.json([]);
 
@@ -3358,7 +3358,7 @@ app.get('/api/demandes_client/:id', authenticateToken, async (req, res) => {
         // Authorization check: Admin or owner of the demand
         const isAdmin = req.user.roles.includes('ROLE_ADMIN');
         if (!isAdmin) {
-            const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1', [req.user.email])).rows[0];
+            const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1 OR user_id=$2 LIMIT 1', [req.user.email, req.user.id || null])).rows[0];
             if (!client || client.id !== demand.client_id) {
                 return res.status(403).json({ error: 'Forbidden: You do not own this demand or lack admin privileges' });
             }
@@ -3385,7 +3385,7 @@ app.post('/api/demandes_client', authenticateToken, async (req, res) => {
         if (!email) {
             return res.status(401).json({ error: 'Unauthorized: User email not found in token' });
         }
-        const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1', [email])).rows[0];
+        const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1 OR user_id=$2 LIMIT 1', [email, req.user.id || null])).rows[0];
         if (!client) {
             return res.status(403).json({ error: 'Forbidden: No client associated with this user' });
         }
@@ -3420,7 +3420,7 @@ app.put('/api/demandes_client/:id', authenticateToken, async (req, res) => {
         return res.status(400).json({ error: 'Titre and Description are required' });
     }
 
-    const isAdmin = req.user.roles.includes('ROLE_ADMIN');
+        const isAdmin = req.user.roles.includes('ROLE_ADMIN');
     let demandOwnerClientId = null;
 
     try {
@@ -3438,7 +3438,7 @@ app.put('/api/demandes_client/:id', authenticateToken, async (req, res) => {
 
         // Authorization check
         if (!isAdmin) {
-            const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1', [req.user.email])).rows[0];
+            const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1 OR user_id=$2 LIMIT 1', [req.user.email, req.user.id || null])).rows[0];
             if (!client || client.id !== demandOwnerClientId) {
                 return res.status(403).json({ error: 'Forbidden: You do not own this demand or lack admin privileges' });
             }
@@ -3470,7 +3470,7 @@ app.get('/api/client/demandes/:id', authenticateToken, async (req, res) => {
     const email = req.user && req.user.email;
     if (!email) return res.status(401).json({ error: 'Unauthorized' });
 
-    const clientResult = await pool.query('SELECT id FROM client WHERE representant_email=$1 LIMIT 1', [email]);
+    const clientResult = await pool.query('SELECT id FROM client WHERE representant_email=$1 OR user_id=$2 LIMIT 1', [email, req.user.id || null]);
     const client = clientResult.rows[0];
     if (!client) return res.status(404).json({ error: 'Client record not found for this user' });
 
@@ -3978,7 +3978,3 @@ initializeDatabase().then(() => {
         console.log(`Serving static files from ${__dirname}/public`);
     });
 });
-
-
-
-
