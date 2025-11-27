@@ -350,7 +350,7 @@
             items.push(`
               <div class="list-group-item">
                 <div class="d-flex justify-content-between">
-                  <strong>Demande #${d.id}</strong>
+                  <strong>Demande #${d.id}${d.titre ? ' - ' + d.titre : ''}</strong>
                   <small>${last.created_at ? new Date(last.created_at).toLocaleString() : ''}</small>
                 </div>
                 <div class="text-truncate">${last.body || '(Pièce jointe)'}</div>
