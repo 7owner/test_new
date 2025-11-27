@@ -193,6 +193,7 @@
       
       async function loadConversations() {
         const searchTerm = conversationFilterInput.value.trim();
+        const searchTermLower = searchTerm.toLowerCase();
         const onlyDemande = onlyDemandeFilter && onlyDemandeFilter.checked;
         const demandeId = demandeSelect && demandeSelect.value ? demandeSelect.value : null;
         let url = '/api/conversations';
@@ -207,6 +208,16 @@
           }
           if (demandeId) {
             conversations = conversations.filter(c => String(c.conversation_id||'') === `demande-${demandeId}`);
+          }
+          // Filtre local supplémentaire sur titre/site/aperçu
+          if (searchTerm) {
+            conversations = conversations.filter(c => {
+              const isDemande = String(c.conversation_id || '').startsWith('demande-');
+              const demandeLabel = demandeMap.get(c.conversation_id) || (isDemande ? `Demande #${String(c.conversation_id).replace('demande-', '')}` : '');
+              const displayTitle = demandeLabel || c.other_user_email || '';
+              const body = c.body || '';
+              return displayTitle.toLowerCase().includes(searchTermLower) || body.toLowerCase().includes(searchTermLower);
+            });
           }
           conversationsList.innerHTML = '';
           if (conversations.length === 0) {
