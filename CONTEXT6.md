@@ -81,3 +81,14 @@
 
 *   **Dashboard Notifications (`public/dashboard.html`)**:
     *   Notification “Ouvrir” buttons now close the dropdown and redirect directly to the related conversation in `messagerie.html` via `conversation=demande-<id>`.
+
+*   **Messagerie (`public/messagerie.html`)**:
+    *   Filters rebuilt: text search by demande ID/titre, site, and client (with datalist suggestions). Removed old dropdown/checkbox.
+    *   Handles unauthorized API responses gracefully (redirects to login).
+
+*   **Tickets Page (`public/tickets.html`)**:
+    *   Header/navbar aligned with dashboard styling (gradient background, rounded cards).
+    *   Filters grouped in a styled card; toggle button to show/hide filters with dynamic icons.
+
+*   **Agents/Sites/Demandes-client-admin Pages**:
+    *   Header/navbar updated to dashboard look & gradient background applied.

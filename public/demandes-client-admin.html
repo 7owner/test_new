@@ -84,12 +84,17 @@
   <div id="navbar-placeholder"></div>
 
   <div class="container mt-4">
-    <h1 class="mb-4">Demandes Client - Administration</h1>
-
-    <div class="card mb-4">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Filtres</span>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <h1 class="mb-0">Demandes Client - Administration</h1>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-primary" id="toggle-filters-btn"><i class="bi bi-funnel-fill me-1"></i> Masquer les filtres</button>
         <button id="show-deleted-btn" class="btn btn-outline-danger btn-sm">Voir demandes supprimées</button>
+      </div>
+    </div>
+
+    <div class="card mb-4 filters-card" id="filters-row">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>Filtres</h5>
       </div>
       <div class="card-body">
         <div class="row g-3">
@@ -132,6 +137,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const demandsContainer = document.getElementById('demandsContainer');
   const filterClientInput = document.getElementById('filterClient');
   const filterStatusSelect = document.getElementById('filterStatus');
+  const filtersRow = document.getElementById('filters-row'); // NEW
+  const toggleFiltersBtn = document.getElementById('toggle-filters-btn'); // NEW
 
   let currentFilter = { client: '', status: '' };
   let currentSort = { column: "id", direction: "desc" };
@@ -174,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="card h-100 shadow-sm">
         <div class="card-body">
           <h5 class="card-title">
-            Demande #${d.id} <span class="badge ${badgeClass}">${d.status}</span>
+            Demande #${d.id} ${d.titre ? `- ${d.titre}` : ""} <span class="badge ${badgeClass}">${d.status}</span>
           </h5>
           <h6 class="card-subtitle mb-2 text-muted">${d.nom_client} (${d.representant_email})</h6>
           <p><strong>Site :</strong> ${d.nom_site || "N/A"}</p>
@@ -365,6 +372,17 @@ document.addEventListener('DOMContentLoaded', () => {
     currentFilter.status = filterStatusSelect.value;
     load();
   });
+
+  // NEW Toggle filters button logic
+  if (toggleFiltersBtn && filtersRow) {
+    toggleFiltersBtn.innerHTML = '<i class="bi bi-funnel-fill me-1"></i> Masquer les filtres';
+    toggleFiltersBtn.addEventListener('click', () => {
+      const hidden = filtersRow.classList.toggle('d-none');
+      toggleFiltersBtn.innerHTML = hidden
+        ? '<i class="bi bi-eye me-1"></i> Afficher les filtres'
+        : '<i class="bi bi-funnel-fill me-1"></i> Masquer les filtres';
+    });
+  }
 
 
   load();
