@@ -349,7 +349,25 @@
           const id = e.currentTarget.dataset.id;
           const dd = bootstrap.Dropdown.getInstance(document.getElementById('notif-toggle'));
           if (dd) dd.hide();
-          window.location.href = `/messagerie.html?conversation=demande-${id}`;
+
+          // Ouvre dans le modal intégré
+          const modalEl = document.getElementById('notifConversationModal');
+          const frame = document.getElementById('notifConversationFrame');
+          if (modalEl && frame) {
+            frame.src = `/client-demand-view.html?id=${id}`;
+            const m = new bootstrap.Modal(modalEl);
+            m.show();
+          }
+
+          // Retire la notification de la liste pour marquer comme lue
+          const item = e.currentTarget.closest('.list-group-item');
+          if (item) item.remove();
+          const remaining = notifList.querySelectorAll('.open-conv-btn').length;
+          notifBadge.textContent = remaining;
+          notifBadge.style.display = remaining ? 'inline-block' : 'none';
+          if (!remaining) {
+            notifList.innerHTML = '<div class="list-group-item text-muted">Aucun nouveau message.</div>';
+          }
         });
       });
     }

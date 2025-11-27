@@ -74,6 +74,10 @@
     *   Added filters for conversations by demande client (checkbox + dropdown).
     *   Conversations linked to demandes now display the demande label (ex: `Demande #ID — titre`) instead of the email.
     *   Demand labels are loaded from `/api/demandes_client` (fallback `/api/demandes_client/mine`) to drive the dropdown and titles.
+    *   Supports `?conversation=demande-<id>` to auto-open the targeted conversation (used by dashboard notifications).
 
 *   **Backend Fix**:
     *   Implemented `/api/demandes_client/mine` to return the current client’s demandes (excluding `Supprimée`), preventing request timeouts.
+
+*   **Dashboard Notifications (`public/dashboard.html`)**:
+    *   Notification “Ouvrir” buttons now close the dropdown and redirect directly to the related conversation in `messagerie.html` via `conversation=demande-<id>`.
