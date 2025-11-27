@@ -147,7 +147,18 @@
           headers: { 'Authorization': 'Bearer ' + token },
           ...opts
         });
-        const body = await res.json();
+        let body = null;
+        try {
+          body = await res.json();
+        } catch (_) {
+          // non JSON (likely 403 text)
+        }
+        if (res.status === 401 || res.status === 403) {
+          console.warn('Unauthorized/Forbidden, redirecting to login.');
+          localStorage.removeItem('token');
+          window.location.href = '/login.html';
+          throw new Error('Unauthorized');
+        }
         if (!res.ok) throw new Error((body && body.error) || res.statusText);
         return body;
       }
@@ -158,10 +169,12 @@
           // Préférence: périmètre client
           demandes = await fetchJSON('/api/demandes_client/mine');
         } catch (err) {
+          if (String(err).includes('Unauthorized')) return;
           try {
             // Fallback admin
             demandes = await fetchJSON('/api/demandes_client');
           } catch (err2) {
+            if (String(err2).includes('Unauthorized')) return;
             console.warn('Impossible de charger les demandes client pour les filtres.', err2);
             return;
           }
