@@ -3,6 +3,10 @@ body {
   background: linear-gradient(to bottom right, #f8fafc, #e0e7ff); /* Light gradient background */
   min-height: 100vh;
 }
+/* Dashboard themed pages can override the base bg */
+body.dashboard-bg {
+  background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%) !important;
+}
 
 /* Navbar styling */
 .navbar {
