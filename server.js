@@ -3829,45 +3829,65 @@ app.post('/api/conversations/new', authenticateToken, async (req, res) => {
     }
 });
 
-// Get all conversations for a user
+// Get all conversations for a user, with server-side filtering
 app.get('/api/conversations', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
-        const { search } = req.query;
-        const queryParams = [userId];
-        let conditions = `WHERE sender_id = $1 OR receiver_id = $1`;
+        const { search, site, client: clientName } = req.query;
+        
+        let query = `
+            SELECT DISTINCT ON (m.conversation_id) 
+                m.conversation_id, m.body, m.created_at, m.sender_id, m.receiver_id,
+                u_sender.email as sender_email,
+                u_receiver.email as receiver_email
+            FROM messagerie m
+            LEFT JOIN users u_sender ON m.sender_id = u_sender.id
+            LEFT JOIN users u_receiver ON m.receiver_id = u_receiver.id
+            LEFT JOIN (
+                SELECT id, site_id, client_id, titre, ('demande-' || id) as conversation_id_str 
+                FROM demande_client
+            ) AS dc ON m.conversation_id = dc.conversation_id_str
+            LEFT JOIN site s ON dc.site_id = s.id
+            LEFT JOIN client cl ON dc.client_id = cl.id
+        `;
+        
+        const params = [userId];
+        const conditions = [`(m.sender_id = $1 OR m.receiver_id = $1)`];
 
+        if (site) {
+            params.push(`%${site}%`);
+            conditions.push(`s.nom_site ILIKE $${params.length}`);
+        }
+        if (clientName) {
+            params.push(`%${clientName}%`);
+            conditions.push(`cl.nom_client ILIKE $${params.length}`);
+        }
         if (search) {
-            queryParams.push(`%${search}%`);
-            conditions += ` AND (conversation_id ILIKE $${queryParams.length} OR body ILIKE $${queryParams.length})`;
+            params.push(`%${search}%`);
+            conditions.push(`(
+                m.body ILIKE $${params.length} OR 
+                m.conversation_id ILIKE $${params.length} OR 
+                dc.titre ILIKE $${params.length} OR
+                u_sender.email ILIKE $${params.length} OR
+                u_receiver.email ILIKE $${params.length}
+            )`);
         }
 
-        const result = await pool.query(
-            `SELECT DISTINCT ON (conversation_id) conversation_id, body, created_at, sender_id, receiver_id
-             FROM messagerie
-             ${conditions}
-             ORDER BY conversation_id, created_at DESC`,
-            queryParams
-        );
+        if (conditions.length > 0) {
+            query += ` WHERE ${conditions.join(' AND ')}`;
+        }
+        
+        query += ' ORDER BY m.conversation_id, m.created_at DESC';
 
-        let conversations = await Promise.all(result.rows.map(async (convo) => {
-            const otherUserId = convo.sender_id === userId ? convo.receiver_id : convo.sender_id;
-            const otherUser = await pool.query('SELECT email FROM users WHERE id = $1', [otherUserId]);
+        const result = await pool.query(query, params);
+
+        const conversations = result.rows.map((convo) => {
+            const other_user_email = convo.sender_id === userId ? convo.receiver_email : convo.sender_email;
             return {
                 ...convo,
-                other_user_email: otherUser.rows[0].email
+                other_user_email
             };
-        }));
-
-        // Filter by other_user_email in JavaScript if search term applies to it
-        if (search) {
-            const lowerCaseSearch = search.toLowerCase();
-            conversations = conversations.filter(convo => 
-                convo.other_user_email.toLowerCase().includes(lowerCaseSearch) ||
-                convo.conversation_id.toLowerCase().includes(lowerCaseSearch) ||
-                convo.body.toLowerCase().includes(lowerCaseSearch)
-            );
-        }
+        });
 
         res.json(conversations);
     } catch (err) {
