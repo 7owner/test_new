@@ -52,7 +52,7 @@
     <div class="card mt-4">
       <div class="card-header">Vos Demandes d'Intervention</div>
       <div class="card-body">
-        <a class="btn btn-primary mb-3" id="createDemandeBtn" href="/client-new-demand.html">Faire une nouvelle demande</a>
+        <button class="btn btn-primary mb-3" data-modal="createDemandeModal">Faire une nouvelle demande</button>
         <div id="demandesList" class="list-group">
           <p class="text-muted">Aucune demande d'intervention pour le moment.</p>
         </div>
@@ -358,26 +358,43 @@ document.addEventListener("DOMContentLoaded", () => {
     filesDemandeModal: "filesDemandeFrame"
   };
 
+  const modalUrlMap = {
+    viewSiteModal: (id) => `/client-site-view.html?id=${id}`,
+    editSiteModal: (id) => `/client-site-edit.html?id=${id}`,
+    createSiteModal: () => `/client-new-site.html`,
+    createDemandeModal: () => `/client-new-demand.html`,
+    viewDemandeModal: (id) => `/client-demand-view.html?id=${id}`,
+    editDemandeModal: (id) => `/client-demand-edit.html?id=${id}`,
+    filesDemandeModal: (id) => `/client-demand-files.html?id=${id}`
+  };
+
   document.body.addEventListener("click", e => {
     const btn = e.target.closest("[data-modal]");
     if (!btn) return;
+
+    e.preventDefault();
+
     const modalId = btn.dataset.modal;
     const itemId = btn.dataset.id;
+    const urlBuilder = modalUrlMap[modalId];
+    
+    if (!urlBuilder) {
+      console.error("No URL builder found for modal:", modalId);
+      return;
+    }
 
-    const modal = document.getElementById(modalId);
+    const modalEl = document.getElementById(modalId);
     const frame = document.getElementById(frameMap[modalId]);
 
-    if (modal && frame) {
-      if (itemId)
-        frame.src = `/client-${modalId.replace("Modal", "").replace("edit", "demand-edit")
-          .replace("view", "demand-view")
-          .replace("filesDemande", "demand-files")
-          .replace("createSite", "new-site")
-          .replace("createDemande", "new-demand")
-        }.html?id=${itemId}`;
-      else frame.src = frame.src; // default
-
-      new bootstrap.Modal(modal).show();
+    if (modalEl && frame) {
+      const url = urlBuilder(itemId || '');
+      // Only set src if it's different to avoid reloading the iframe unnecessarily
+      if (frame.getAttribute('src') !== url) {
+        frame.src = url;
+      }
+      new bootstrap.Modal(modalEl).show();
+    } else {
+      console.error("Modal or frame not found for:", modalId);
     }
   });
 

@@ -3226,27 +3226,95 @@ app.get('/api/client/profile', authenticateToken, async (req, res) => {
 });
 
 // --- Client-owned sites ---
+const getClientIdFromUser = async (pool, user) => {
+    if (!user || !user.email) return null;
+    const clientRes = await pool.query('SELECT id FROM client WHERE representant_email = $1 LIMIT 1', [user.email]);
+    return clientRes.rows[0] ? clientRes.rows[0].id : null;
+};
+
 app.get('/api/client/sites', authenticateToken, async (req, res) => {
   try {
-    const email = req.user && req.user.email;
-    if (!email) return res.status(401).json({ error: 'Unauthorized' });
-    const c = (await pool.query('SELECT id FROM client WHERE representant_email=$1 LIMIT 1', [email])).rows[0];
-    if (!c) return res.json([]);
-    const r = await pool.query('SELECT * FROM site WHERE client_id=$1 ORDER BY id DESC', [c.id]);
+    const clientId = await getClientIdFromUser(pool, req.user);
+    if (!clientId) return res.json([]);
+    const r = await pool.query('SELECT * FROM site WHERE client_id=$1 ORDER BY id DESC', [clientId]);
     return res.json(r.rows);
   } catch (e) { console.error('client sites list:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
 });
+
 app.post('/api/client/sites', authenticateToken, async (req, res) => {
   try {
-    const email = req.user && req.user.email;
-    if (!email) return res.status(401).json({ error: 'Unauthorized' });
-    const c = (await pool.query('SELECT id FROM client WHERE representant_email=$1 LIMIT 1', [email])).rows[0];
-    if (!c) return res.status(400).json({ error: 'Client record not found for this user' });
+    const clientId = await getClientIdFromUser(pool, req.user);
+    if (!clientId) return res.status(400).json({ error: 'Client record not found for this user' });
     const { nom_site, adresse_id, commentaire } = req.body || {};
     if (!nom_site) return res.status(400).json({ error: 'nom_site is required' });
-    const r = await pool.query('INSERT INTO site (nom_site, adresse_id, client_id, commentaire) VALUES ($1,$2,$3,$4) RETURNING *', [nom_site, adresse_id || null, c.id, commentaire || null]);
+    const r = await pool.query('INSERT INTO site (nom_site, adresse_id, client_id, commentaire) VALUES ($1,$2,$3,$4) RETURNING *', [nom_site, adresse_id || null, clientId, commentaire || null]);
     return res.status(201).json(r.rows[0]);
   } catch (e) { console.error('client site create:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+app.get('/api/client/sites/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const clientId = await getClientIdFromUser(pool, req.user);
+        if (!clientId) return res.status(403).json({ error: 'Client not found for user.' });
+
+        const siteResult = await pool.query('SELECT * FROM site WHERE id = $1 AND client_id = $2', [id, clientId]);
+        const site = siteResult.rows[0];
+
+        if (!site) return res.status(404).json({ error: 'Site not found or access denied.' });
+        
+        res.json(site);
+    } catch (err) {
+        console.error(`Error fetching client site ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.get('/api/client/sites/:id/relations', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const clientId = await getClientIdFromUser(pool, req.user);
+        if (!clientId) return res.status(403).json({ error: 'Client not found for user.' });
+
+        const siteResult = await pool.query('SELECT * FROM site WHERE id = $1 AND client_id = $2', [id, clientId]);
+        const site = siteResult.rows[0];
+
+        if (!site) return res.status(404).json({ error: 'Site not found or access denied.' });
+        
+        const tickets = (await pool.query('SELECT t.id, t.titre, t.etat, t.created_at FROM ticket t WHERE t.site_id = $1 ORDER BY t.created_at DESC', [id])).rows;
+        
+        res.json({ site, tickets });
+    } catch (err) {
+        console.error(`Error fetching client site relations ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.put('/api/client/sites/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { nom_site, commentaire } = req.body;
+
+    if (!nom_site) return res.status(400).json({ error: 'Le nom du site est obligatoire.' });
+
+    try {
+        const clientId = await getClientIdFromUser(pool, req.user);
+        if (!clientId) return res.status(403).json({ error: 'Client not found for user.' });
+
+        const siteCheck = await pool.query('SELECT id FROM site WHERE id = $1 AND client_id = $2', [id, clientId]);
+        if (siteCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Site not found or access denied.' });
+        }
+
+        const result = await pool.query(
+            'UPDATE site SET nom_site = $1, commentaire = $2 WHERE id = $3 AND client_id = $4 RETURNING *',
+            [nom_site, commentaire, id, clientId]
+        );
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(`Error updating client site ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 // --- Client demandes (requests) ---
