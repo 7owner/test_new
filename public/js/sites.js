@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const dateStartInput = document.getElementById('site-date-start');
     const dateEndInput = document.getElementById('site-date-end');
     const thDates = document.getElementById('th-dates');
+    const filtersRow = document.getElementById('filters-row'); // NEW
+    const toggleFiltersBtn = document.getElementById('toggle-filters-btn'); // NEW
 
       const token = localStorage.getItem('token');
       const isAdmin = (() => { try { const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
@@ -116,6 +118,18 @@ document.addEventListener('DOMContentLoaded', async function() {
       dateStartInput.addEventListener('change', applyFilters);
       dateEndInput.addEventListener('change', applyFilters);
       thDates.addEventListener('click', ()=>{ sortAsc=!sortAsc; applyFilters(); });
+
+      // NEW Toggle filters button logic
+      if (toggleFiltersBtn && filtersRow) {
+        toggleFiltersBtn.innerHTML = '<i class="bi bi-funnel-fill me-1"></i> Masquer les filtres';
+        toggleFiltersBtn.addEventListener('click', () => {
+          const hidden = filtersRow.classList.toggle('d-none');
+          toggleFiltersBtn.innerHTML = hidden
+            ? '<i class="bi bi-eye me-1"></i> Afficher les filtres'
+            : '<i class="bi bi-funnel-fill me-1"></i> Masquer les filtres';
+        });
+      }
+
       load();
 
       const createSiteModal = document.getElementById('createSiteModal');
@@ -131,6 +145,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             createSiteFrame.src = '/site-new.html';
           }
         });
+        createSiteModal.addEventListener('hidden.bs.modal', load);
       }
 
       if (viewSiteModal) {
@@ -147,5 +162,6 @@ document.addEventListener('DOMContentLoaded', async function() {
           const siteId = button.getAttribute('data-id');
           editSiteFrame.src = `/site-edit.html?id=${siteId}`;
         });
+        editSiteModal.addEventListener('hidden.bs.modal', load);
       }
     });
