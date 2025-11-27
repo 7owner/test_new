@@ -10,22 +10,31 @@
   <script src="/nav.js?v=1"></script>
   <!-- Omit heavy global scripts on this page to avoid parse issues -->
   <style>
+    .dashboard-bg { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); min-height: 100vh; }
     .ticket-card { min-height: 100%; }
     .section-title { margin-top: 2rem; margin-bottom: 1rem; }
-    .table-card { border-radius: 12px; box-shadow: 0 8px 18px rgba(0,0,0,0.05); }
+    .table-card { border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); border: none; }
+    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
   </style>
 </head>
-<body>
-  <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1>
-      <a href="/dashboard.html">
-        <img src="/logo_logicielle.png" alt="" style="height: 40px; vertical-align: middle; margin-right: 10px;">
+<body class="dashboard-bg">
+  <header class="header d-flex justify-content-between align-items-center mb-4 p-3 bg-white shadow-sm rounded">
+    <h1 class="m-0">
+      <a href="/dashboard.html" class="text-decoration-none text-dark">
+        <img src="/logo_logicielle.png" alt="" style="height: 30px; vertical-align: middle; margin-right: 10px;">
+        <span class="fw-bold">Dashboard</span>
       </a>
     </h1>
-    <div id="user-info-container" class="d-flex align-items-center">
-      <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-        Menu
+    <div class="d-flex align-items-center gap-3">
+      <div class="d-flex align-items-center bg-light border rounded-pill px-3 py-1 shadow-sm">
+        <i class="bi bi-person-circle text-primary fs-4 me-2"></i>
+        <div class="text-nowrap fw-medium text-secondary">Bienvenue</div>
+      </div>
+      <a class="btn btn-outline-danger btn-sm rounded-pill" href="#" id="logout-link">
+        <i class="bi bi-box-arrow-right me-1"></i> Déconnexion
+      </a>
+      <button type="button" class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+        <i class="bi bi-list"></i>
       </button>
     </div>
   </header>
