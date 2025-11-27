@@ -310,8 +310,22 @@
       } catch (_) {}
     }
 
+    function getReadMap() {
+      try {
+        return JSON.parse(localStorage.getItem('notifReads') || '{}');
+      } catch (_) {
+        return {};
+      }
+    }
+    function setRead(conversationId, ts) {
+      const map = getReadMap();
+      map[conversationId] = ts;
+      localStorage.setItem('notifReads', JSON.stringify(map));
+    }
+
     async function updateNotifications() {
       if (!notifList || !notifBadge || !userId) return;
+      const readMap = getReadMap();
       const selectedId = demandeFilter && demandeFilter.value ? demandeFilter.value : null;
       const demands = selectedId ? demandesCache.filter(d => String(d.id)===String(selectedId)) : demandesCache;
       if (!demands.length) { notifBadge.style.display='none'; notifList.innerHTML='<div class="list-group-item text-muted">Aucune demande</div>'; return; }
@@ -326,8 +340,13 @@
           const msgs = await res.json();
           const incoming = (Array.isArray(msgs)? msgs:[]).filter(m => m.sender_id !== userId);
           if (incoming.length) {
-            totalThreads += 1;
             const last = incoming[incoming.length-1];
+            const lastTs = last && last.created_at ? new Date(last.created_at).getTime() : 0;
+            const lastRead = readMap[convId] ? Number(readMap[convId]) : 0;
+            if (lastTs && lastTs <= lastRead) {
+              continue; // already read
+            }
+            totalThreads += 1;
             items.push(`
               <div class="list-group-item">
                 <div class="d-flex justify-content-between">
@@ -335,7 +354,7 @@
                   <small>${last.created_at ? new Date(last.created_at).toLocaleString() : ''}</small>
                 </div>
                 <div class="text-truncate">${last.body || '(Pièce jointe)'}</div>
-                <button class="btn btn-sm btn-primary mt-2 open-conv-btn" data-id="${d.id}">Ouvrir</button>
+                <button class="btn btn-sm btn-primary mt-2 open-conv-btn" data-id="${d.id}" data-ts="${lastTs}">Ouvrir</button>
               </div>
             `);
           }
@@ -347,6 +366,7 @@
       notifList.querySelectorAll('.open-conv-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const id = e.currentTarget.dataset.id;
+          const ts = Number(e.currentTarget.dataset.ts || 0);
           const dd = bootstrap.Dropdown.getInstance(document.getElementById('notif-toggle'));
           if (dd) dd.hide();
 
@@ -360,6 +380,7 @@
           }
 
           // Retire la notification de la liste pour marquer comme lue
+          setRead(`demande-${id}`, ts || Date.now());
           const item = e.currentTarget.closest('.list-group-item');
           if (item) item.remove();
           const remaining = notifList.querySelectorAll('.open-conv-btn').length;
