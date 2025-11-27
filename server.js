@@ -3228,7 +3228,7 @@ app.get('/api/client/profile', authenticateToken, async (req, res) => {
 // --- Client-owned sites ---
 const getClientIdFromUser = async (pool, user) => {
     if (!user) return null;
-    const clientRes = await pool.query('SELECT id FROM client WHERE representant_email = $1 OR user_id=$2 LIMIT 1', [user.email || null, user.id || null]);
+    const clientRes = await pool.query('SELECT id FROM client WHERE user_id=$1 OR LOWER(representant_email)=LOWER($2) LIMIT 1', [user.id || null, user.email || null]);
     return clientRes.rows[0] ? clientRes.rows[0].id : null;
 };
 
@@ -3323,10 +3323,10 @@ app.get('/api/demandes_client/mine', authenticateToken, async (req, res) => {
       const email = req.user && req.user.email;
       if (!email) return res.status(401).json({ error: 'Unauthorized' });
 
-      // Identify the client linked to the logged in user
+      // Identify the client linked to the logged in user (case-insensitive)
       const clientRow = (await pool.query(
-        'SELECT id FROM client WHERE representant_email=$1 OR user_id=$2 LIMIT 1',
-        [email, req.user.id || null]
+        'SELECT id FROM client WHERE user_id=$1 OR LOWER(representant_email)=LOWER($2) LIMIT 1',
+        [req.user.id || null, email]
       )).rows[0];
       if (!clientRow) return res.json([]);
 
@@ -3358,7 +3358,7 @@ app.get('/api/demandes_client/:id', authenticateToken, async (req, res) => {
         // Authorization check: Admin or owner of the demand
         const isAdmin = req.user.roles.includes('ROLE_ADMIN');
         if (!isAdmin) {
-            const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1 OR user_id=$2 LIMIT 1', [req.user.email, req.user.id || null])).rows[0];
+            const client = (await pool.query('SELECT id FROM client WHERE user_id=$1 OR LOWER(representant_email)=LOWER($2) LIMIT 1', [req.user.id || null, req.user.email])).rows[0];
             if (!client || client.id !== demand.client_id) {
                 return res.status(403).json({ error: 'Forbidden: You do not own this demand or lack admin privileges' });
             }
@@ -3385,7 +3385,7 @@ app.post('/api/demandes_client', authenticateToken, async (req, res) => {
         if (!email) {
             return res.status(401).json({ error: 'Unauthorized: User email not found in token' });
         }
-        const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1 OR user_id=$2 LIMIT 1', [email, req.user.id || null])).rows[0];
+        const client = (await pool.query('SELECT id FROM client WHERE user_id=$1 OR LOWER(representant_email)=LOWER($2) LIMIT 1', [req.user.id || null, email])).rows[0];
         if (!client) {
             return res.status(403).json({ error: 'Forbidden: No client associated with this user' });
         }
@@ -3438,7 +3438,7 @@ app.put('/api/demandes_client/:id', authenticateToken, async (req, res) => {
 
         // Authorization check
         if (!isAdmin) {
-            const client = (await pool.query('SELECT id FROM client WHERE representant_email=$1 OR user_id=$2 LIMIT 1', [req.user.email, req.user.id || null])).rows[0];
+        const client = (await pool.query('SELECT id FROM client WHERE user_id=$1 OR LOWER(representant_email)=LOWER($2) LIMIT 1', [req.user.id || null, req.user.email])).rows[0];
             if (!client || client.id !== demandOwnerClientId) {
                 return res.status(403).json({ error: 'Forbidden: You do not own this demand or lack admin privileges' });
             }
