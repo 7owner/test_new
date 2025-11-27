@@ -78,16 +78,17 @@
   </div>
 
   <main class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1>Tickets</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <h1 class="mb-0">Tickets</h1>
       <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm" id="toggle-filters-btn"><i class="bi bi-funnel me-1"></i> Afficher/Masquer filtres</button>
         <!--<button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#createDemandeClientModal"><i class="bi bi-plus-circle me-2"></i>Créer une demande client</button>-->
         <!--<a href="ticket-new.html" class="btn btn-primary" id="create-ticket-btn"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau ticket</a>-->
         <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#demandesClientModal" title="Demandes clients (Admin)"><i class="bi bi-inbox me-2"></i>Demandes clients</button>
       </div>
     </div>
 
-    <div class="mb-3 d-flex gap-2 flex-wrap">
+    <div class="mb-3 d-flex gap-2 flex-wrap" id="filters-row">
       <input type="text" class="form-control" id="ticket-search" placeholder="Rechercher par titre ou ID…">
       <select class="form-select" id="ticket-status-filter">
         <option value="">Tous les États</option>
@@ -219,6 +220,8 @@
       const responsibleFilter = document.getElementById('ticket-responsible-filter');
       const dateStartInput = document.getElementById('ticket-date-start');
       const dateEndInput = document.getElementById('ticket-date-end');
+      const filtersRow = document.getElementById('filters-row');
+      const toggleFiltersBtn = document.getElementById('toggle-filters-btn');
 
       function buildHeaders(json=false){
         const h = json? { 'Content-Type':'application/json' } : {};
@@ -414,6 +417,14 @@
       if (responsibleFilter) responsibleFilter.addEventListener('change', applyFilters);
       if (dateStartInput) dateStartInput.addEventListener('change', applyFilters);
       if (dateEndInput) dateEndInput.addEventListener('change', applyFilters);
+      if (toggleFiltersBtn && filtersRow) {
+        toggleFiltersBtn.addEventListener('click', () => {
+          const hidden = filtersRow.classList.toggle('d-none');
+          toggleFiltersBtn.innerHTML = hidden
+            ? '<i class="bi bi-funnel me-1"></i> Afficher les filtres'
+            : '<i class="bi bi-funnel me-1"></i> Masquer les filtres';
+        });
+      }
 
       async function fetchTickets() {
         try {
