@@ -350,11 +350,11 @@
           const dd = bootstrap.Dropdown.getInstance(document.getElementById('notif-toggle'));
           if (dd) dd.hide();
 
-          // Ouvre dans le modal intégré
+          // Ouvre le fil de messages dans le modal intégré
           const modalEl = document.getElementById('notifConversationModal');
           const frame = document.getElementById('notifConversationFrame');
           if (modalEl && frame) {
-            frame.src = `/client-demand-view.html?id=${id}`;
+            frame.src = `/messagerie.html?conversation=demande-${id}`;
             const m = new bootstrap.Modal(modalEl);
             m.show();
           }
