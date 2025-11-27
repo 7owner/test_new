@@ -65,9 +65,7 @@
         <h2>Conversations</h2>
         <div class="mb-3">
           <input type="text" id="titleFilter" class="form-control mb-2" placeholder="Filtrer par titre ou ID de demande...">
-          <select id="siteFilter" class="form-select form-select-sm">
-            <option value="">Tous les sites</option>
-          </select>
+          <input type="text" id="siteFilter" class="form-control" placeholder="Filtrer par site...">
         </div>
         <div id="conversations-list" class="list-group conversations-list">
           <!-- Conversations will be loaded here -->
@@ -116,7 +114,7 @@
       const messageBodyInput = document.getElementById('message-body');
       const attachmentsInput = document.getElementById('attachments');
       const titleFilterInput = document.getElementById('titleFilter');
-      const siteFilterSelect = document.getElementById('siteFilter');
+      const siteFilterInput = document.getElementById('siteFilter');
 
       let currentConversationId = null;
       let currentReceiverId = null;
@@ -175,27 +173,18 @@
         }
         demandeMap.clear();
         demandeSiteMap.clear();
-        siteFilterSelect.innerHTML = '<option value=\"\">Tous les sites</option>';
-        const siteSet = new Set();
         demandes.forEach(d => {
           const label = `Demande #${d.id} — ${d.title || d.titre || d.description || d.nom_site || d.site_nom || 'Sans titre'}`;
           demandeMap.set(`demande-${d.id}`, label);
           const siteName = d.nom_site || d.site_nom || '';
           demandeSiteMap.set(`demande-${d.id}`, siteName);
-          if (siteName) siteSet.add(siteName);
-        });
-        siteSet.forEach(s => {
-          const opt = document.createElement('option');
-          opt.value = s;
-          opt.textContent = s;
-          siteFilterSelect.appendChild(opt);
         });
       }
       
       async function loadConversations() {
         const searchTerm = titleFilterInput.value.trim();
         const searchTermLower = searchTerm.toLowerCase();
-        const selectedSite = siteFilterSelect && siteFilterSelect.value ? siteFilterSelect.value : null;
+        const siteTerm = siteFilterInput && siteFilterInput.value ? siteFilterInput.value.trim().toLowerCase() : '';
         let url = '/api/conversations';
         // Pas de paramètre backend ici, on filtre en local sur titre/site.
 
@@ -211,10 +200,10 @@
               return displayTitle.toLowerCase().includes(searchTermLower) || body.toLowerCase().includes(searchTermLower);
             });
           }
-          if (selectedSite) {
+          if (siteTerm) {
             conversations = conversations.filter(c => {
               const site = demandeSiteMap.get(c.conversation_id) || '';
-              return site && site === selectedSite;
+              return site && site.toLowerCase().includes(siteTerm);
             });
           }
           conversationsList.innerHTML = '';
@@ -320,9 +309,9 @@
       titleFilterInput.addEventListener('input', () => {
         loadConversations();
       });
-    if (siteFilterSelect) {
-      siteFilterSelect.addEventListener('change', loadConversations);
-    }
+      if (siteFilterInput) {
+        siteFilterInput.addEventListener('input', loadConversations);
+      }
 
     loadDemandesLabels().then(loadConversations).catch(loadConversations);
   });
