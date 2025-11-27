@@ -123,52 +123,134 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const interventionId = urlParams.get('id');
-  const token = localStorage.getItem('token');
-  let currentUserIsAdmin = false; let actorEmail='';
-  if (token) { try { const p = JSON.parse(atob(token.split('.')[1])); const roles = Array.isArray(p.roles)?p.roles:[]; currentUserIsAdmin = roles.includes('ROLE_ADMIN'); actorEmail = p.email||''; const el = document.getElementById('logged-in-user-email'); if (el && actorEmail) el.textContent = actorEmail; } catch(_){} }
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+
+  /* --------------------------
+     AUTHENTIFICATION
+  -------------------------- */
+  const token = localStorage.getItem("token");
+  if (!token) return location.href = "/login.html";
+
+  let isAdmin = false;
+  let actorEmail = "";
+
+  try {
+    const p = JSON.parse(atob(token.split(".")[1]));
+    isAdmin = Array.isArray(p.roles) && p.roles.includes("ROLE_ADMIN");
+    actorEmail = p.email || "";
+    document.getElementById("logged-in-user-email").textContent = actorEmail;
+  } catch {}
+
+  /* --------------------------
+     API HELPER
+  -------------------------- */
+  const api = (url, opts = {}) =>
+    fetch(url, {
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json",
+        "X-Actor-Email": actorEmail
+      },
+      ...opts
+    }).then(async r => {
+      const body = await r.json().catch(() => null);
+      if (!r.ok) throw new Error(body?.error || "Erreur API");
+      return body;
+    });
+
+  /* --------------------------
+     FORM REFERENCES
+  -------------------------- */
+  const form = document.getElementById("intervention-edit-form");
+
+  const idField = document.getElementById("id");
+  const maintenanceField = document.getElementById("maintenance_id");
+  const descriptionField = document.getElementById("description");
+  const dateDebutField = document.getElementById("date_debut");
+  const dateFinField = document.getElementById("date_fin");
+  const statusField = document.getElementById("status");
+  const prevInterField = document.getElementById("intervention_precedente_id");
+  const saveBtn = document.getElementById("save-intervention-btn");
+
+  /* --------------------------
+     ID DANS URL
+  -------------------------- */
+  const params = new URLSearchParams(location.search);
+  const interventionId = params.get("id");
+
+  if (!interventionId) {
+    alert("Intervention introuvable.");
+    return location.href = "interventions.html";
+  }
+
+  /* --------------------------
+     CHARGEMENT INTERVENTION
+  -------------------------- */
   async function loadIntervention() {
-    if (!interventionId || !token) { alert('Intervention non trouv�e ou non authentifi�.'); try{window.location.replace('interventions.html')}catch(_){window.location.href='interventions.html'}; return; }
     try {
-          const res = await fetch(`/api/interventions/${interventionId}/relations`, { headers: { 'Authorization': `Bearer ${token}`, 'X-Actor-Email': actorEmail }, credentials: 'same-origin' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const i = data.intervention; if (!i) throw new Error('Intervention introuvable');
-      document.getElementById('id').value = i.id;
-      document.getElementById('maintenance_id').value = i.ticket_id || '';
-      document.getElementById('description').value = i.description || '';
-      document.getElementById('date_debut').value = i.date_debut ? i.date_debut.substring(0,10) : '';
-      document.getElementById('date_fin').value = i.date_fin ? i.date_fin.substring(0,10) : '';
-      document.getElementById('status').value = i.status || i.statut || '';
-      document.getElementById('intervention_precedente_id').value = i.intervention_precedente_id || '';
-      if (!currentUserIsAdmin) { const form = document.getElementById('intervention-edit-form'); form.querySelectorAll('input, select, textarea').forEach(e => e.setAttribute('disabled','true')); document.getElementById('save-intervention-btn').classList.add('d-none'); }
-    } catch(e) { console.error('Erreur chargement intervention:', e); alert('Erreur de chargement.'); }
+      const data = await api(`/api/interventions/${interventionId}/relations`);
+      const i = data.intervention;
+      if (!i) throw new Error();
+
+      idField.value = i.id;
+      maintenanceField.value = i.maintenance_id || "";
+      descriptionField.value = i.description || "";
+      dateDebutField.value = i.date_debut?.substring(0, 10) || "";
+      dateFinField.value = i.date_fin?.substring(0, 10) || "";
+      statusField.value = i.status || i.statut || "";
+      prevInterField.value = i.intervention_precedente_id || "";
+
+      if (!isAdmin) {
+        [...form.querySelectorAll("input,select,textarea")].forEach(el => el.disabled = true);
+        saveBtn.classList.add("d-none");
+      }
+
+    } catch (e) {
+      console.error(e);
+      alert("Erreur lors du chargement.");
+      location.href = "interventions.html";
+    }
   }
+
+  /* --------------------------
+     SAUVEGARDE
+  -------------------------- */
   async function saveIntervention(ev) {
-    ev.preventDefault(); if (!currentUserIsAdmin) return alert('Action r�serv�e aux administrateurs.');
-    const id = document.getElementById('id').value;
-    const payload = { description: document.getElementById('description').value, date_debut: document.getElementById('date_debut').value || null, date_fin: document.getElementById('date_fin').value || null, ticket_id: document.getElementById('maintenance_id').value || null, intervention_precedente_id: document.getElementById('intervention_precedente_id').value || null };
+    ev.preventDefault();
+    if (!isAdmin) return alert("Réservé aux administrateurs.");
+
+    const payload = {
+      maintenance_id: maintenanceField.value || null,
+      description: descriptionField.value,
+      date_debut: dateDebutField.value || null,
+      date_fin: dateFinField.value || null,
+      status: statusField.value,
+      intervention_precedente_id: prevInterField.value || null
+    };
+
     try {
-          const res = await fetch(`/api/interventions/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'X-Actor-Email': actorEmail }, credentials: 'same-origin', body: JSON.stringify(payload) });
-      if (!res.ok) { if (res.status===403) return alert('Non autoris� (admin requis).'); throw new Error(`HTTP ${res.status}`); }
-      try { window.location.replace('interventions.html'); } catch(_) { window.location.href='interventions.html'; }
-    } catch(e) { console.error('Erreur mise � jour intervention:', e); alert('�chec de la sauvegarde.'); }
+      await api(`/api/interventions/${interventionId}`, {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+
+      alert("Intervention mise à jour.");
+      location.href = "interventions.html";
+
+    } catch (e) {
+      console.error(e);
+      alert("Échec de la sauvegarde.");
+    }
   }
-  document.getElementById('intervention-edit-form').addEventListener('submit', saveIntervention);
+
+  form.addEventListener("submit", saveIntervention);
+
+  /* Début */
   loadIntervention();
 });
-          document.getElementById('save-intervention-btn').classList.add('d-none');
-        }
+</script>
 
-      } else {
-        alert("Intervention non trouvée!");
-        window.location.href = "interventions.html";
-      }
-    });
-  </script>
 </body>
 </html>
 
