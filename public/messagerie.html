@@ -66,7 +66,8 @@
         <div class="mb-3">
           <input type="text" id="titleFilter" class="form-control mb-2" placeholder="Filtrer par titre ou ID de demande...">
           <input type="text" id="siteFilter" class="form-control mb-2" placeholder="Filtrer par site...">
-          <input type="text" id="clientFilter" class="form-control" placeholder="Filtrer par client...">
+          <input type="text" id="clientFilter" class="form-control" placeholder="Filtrer par client..." list="clientNames">
+          <datalist id="clientNames"></datalist>
         </div>
         <div id="conversations-list" class="list-group conversations-list">
           <!-- Conversations will be loaded here -->
@@ -117,6 +118,7 @@
       const titleFilterInput = document.getElementById('titleFilter');
       const siteFilterInput = document.getElementById('siteFilter');
       const clientFilterInput = document.getElementById('clientFilter');
+      const clientNamesDatalist = document.getElementById('clientNames');
 
       let currentConversationId = null;
       let currentReceiverId = null;
@@ -177,6 +179,8 @@
         demandeMap.clear();
         demandeSiteMap.clear();
         demandeClientMap.clear();
+        if (clientNamesDatalist) clientNamesDatalist.innerHTML = '';
+        const clientSet = new Set();
         demandes.forEach(d => {
           const label = `Demande #${d.id} — ${d.title || d.titre || d.description || d.nom_site || d.site_nom || 'Sans titre'}`;
           demandeMap.set(`demande-${d.id}`, label);
@@ -184,7 +188,15 @@
           demandeSiteMap.set(`demande-${d.id}`, siteName);
           const clientName = d.nom_client || d.client_nom || '';
           demandeClientMap.set(`demande-${d.id}`, clientName);
+          if (clientName) clientSet.add(clientName);
         });
+        if (clientNamesDatalist) {
+          clientSet.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            clientNamesDatalist.appendChild(opt);
+          });
+        }
       }
       
       async function loadConversations() {
