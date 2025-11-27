@@ -283,10 +283,10 @@ document.addEventListener("DOMContentLoaded", () => {
       el.innerHTML = demands.map(d => `
         <div class="list-group-item list-group-item-action">
           <div class="d-flex justify-content-between">
-            <h5>Demande #${d.id} – ${d.nom_site || "N/A"}</h5>
+            <h5>Demande #${d.id} – ${d.titre || d.nom_site || "Sans titre"}</h5>
             <span class="badge ${badge(d.status)}">${d.status}</span>
           </div>
-          <p>${d.description}</p>
+          <p>${d.description || ""}</p>
           <small>Créée le : ${new Date(d.created_at).toLocaleDateString()}</small>
 
           <div class="mt-2">
