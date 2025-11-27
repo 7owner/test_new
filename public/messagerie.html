@@ -200,42 +200,26 @@
       }
       
       async function loadConversations() {
-        const searchTerm = titleFilterInput.value.trim();
-        const searchTermLower = searchTerm.toLowerCase();
-        const siteTerm = siteFilterInput && siteFilterInput.value ? siteFilterInput.value.trim().toLowerCase() : '';
-        const clientTerm = clientFilterInput && clientFilterInput.value ? clientFilterInput.value.trim().toLowerCase() : '';
-        let url = '/api/conversations';
-        // Pas de paramètre backend ici, on filtre en local sur titre/site.
+        const search = titleFilterInput.value.trim();
+        const site = siteFilterInput ? siteFilterInput.value.trim() : '';
+        const client = clientFilterInput ? clientFilterInput.value.trim() : '';
+        
+        const query = new URLSearchParams();
+        if (search) query.set('search', search);
+        if (site) query.set('site', site);
+        if (client) query.set('client', client);
+
+        const url = `/api/conversations?${query.toString()}`;
 
         try {
-          let conversations = await fetchJSON(url);
-          // Filtre local sur titre/site/aperçu
-          if (searchTerm) {
-            conversations = conversations.filter(c => {
-              const isDemande = String(c.conversation_id || '').startsWith('demande-');
-              const demandeLabel = demandeMap.get(c.conversation_id) || (isDemande ? `Demande #${String(c.conversation_id).replace('demande-', '')}` : '');
-              const displayTitle = demandeLabel || c.other_user_email || '';
-              const body = c.body || '';
-              return displayTitle.toLowerCase().includes(searchTermLower) || body.toLowerCase().includes(searchTermLower);
-            });
-          }
-          if (siteTerm) {
-            conversations = conversations.filter(c => {
-              const site = demandeSiteMap.get(c.conversation_id) || '';
-              return site && site.toLowerCase().includes(siteTerm);
-            });
-          }
-          if (clientTerm) {
-            conversations = conversations.filter(c => {
-              const cl = demandeClientMap.get(c.conversation_id) || '';
-              return cl && cl.toLowerCase().includes(clientTerm);
-            });
-          }
+          const conversations = await fetchJSON(url);
+          
           conversationsList.innerHTML = '';
           if (conversations.length === 0) {
             conversationsList.innerHTML = '<p class="text-muted p-3">Aucune conversation trouvée.</p>';
             return;
           }
+
           conversations.forEach(convo => {
             const isDemande = String(convo.conversation_id || '').startsWith('demande-');
             const demandeLabel = demandeMap.get(convo.conversation_id) || (isDemande ? `Demande #${String(convo.conversation_id).replace('demande-', '')}` : null);
@@ -251,7 +235,7 @@
                 <h5 class="mb-1">${displayTitle}</h5>
                 <small>${new Date(convo.created_at).toLocaleDateString()}</small>
               </div>
-              <p class="mb-1">${convo.body.substring(0, 50)}...</p>
+              <p class="mb-1">${(convo.body || '').substring(0, 50)}...</p>
             `;
             convoElement.addEventListener('click', (e) => {
               e.preventDefault();
@@ -262,14 +246,16 @@
             });
             conversationsList.appendChild(convoElement);
           });
+
           if (preselectConversationId) {
-            const target = conversationsList.querySelector(`[data-conversation-id=\"${preselectConversationId}\"]`);
+            const target = conversationsList.querySelector(`[data-conversation-id="${preselectConversationId}"]`);
             if (target) {
               target.click();
             }
           }
         } catch (error) {
           console.error('Error loading conversations:', error);
+          conversationsList.innerHTML = '<p class="text-danger p-3">Erreur de chargement des conversations.</p>';
         }
       }
 
