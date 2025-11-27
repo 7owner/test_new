@@ -58,23 +58,31 @@
 
   <!-- ====================== CONTENU PRINCIPAL ====================== -->
   <main class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
       <h1 class="mb-0">Agents</h1>
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAgentModal"><i class="bi bi-person-plus me-2"></i>Créer un nouvel agent</button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-primary" id="toggle-filters-btn"><i class="bi bi-funnel-fill me-1"></i> Masquer les filtres</button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAgentModal"><i class="bi bi-person-plus me-2"></i>Créer un nouvel agent</button>
+      </div>
     </div>
 
-    <div class="mb-3 d-flex gap-2 flex-wrap">
-      <input type="text" class="form-control" id="agent-search" placeholder="Rechercher par nom, matricule ou email...">
-      <select class="form-select" id="agent-status-filter">
-        <option value="">Tous les statuts</option>
-        <option value="actif">Actif</option>
-        <option value="inactif">Inactif</option>
-      </select>
-      <select class="form-select" id="agent-admin-filter">
-        <option value="">Tous les rôles</option>
-        <option value="admin">Admin</option>
-        <option value="non-admin">Non-Admin</option>
-      </select>
+    <div class="card p-3 mb-4" id="filters-row">
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+          <h5 class="mb-0">Filtres</h5>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <input type="text" class="form-control" id="agent-search" placeholder="Rechercher par nom, matricule ou email...">
+            <select class="form-select" id="agent-status-filter">
+                <option value="">Tous les statuts</option>
+                <option value="actif">Actif</option>
+                <option value="inactif">Inactif</option>
+            </select>
+            <select class="form-select" id="agent-admin-filter">
+                <option value="">Tous les rôles</option>
+                <option value="admin">Admin</option>
+                <option value="non-admin">Non-Admin</option>
+            </select>
+        </div>
     </div>
 
     <div id="agents-cards" class="row g-3"></div>
@@ -131,10 +139,19 @@
     const searchInput = document.getElementById('agent-search');
     const statusFilter = document.getElementById('agent-status-filter');
     const adminFilter = document.getElementById('agent-admin-filter');
+    const filtersRow = document.getElementById('filters-row');
+    const toggleFiltersBtn = document.getElementById('toggle-filters-btn');
 
     let allAgents = [];
-    const currentUserRole = localStorage.getItem('userRole');
-    const currentUserIsAdmin = (currentUserRole === 'admin');
+    let currentUserIsAdmin = false;
+    try {
+        const token = localStorage.getItem('token');
+        const payload = token ? JSON.parse(atob(token.split('.')[1])) : {};
+        currentUserIsAdmin = Array.isArray(payload.roles) && payload.roles.includes('ROLE_ADMIN');
+    } catch(e) {
+        console.error("Failed to parse token:", e);
+    }
+
 
     async function fetchAgents() {
       try {
@@ -211,6 +228,16 @@
       renderAgents(filtered);
     }
 
+    if (toggleFiltersBtn && filtersRow) {
+        toggleFiltersBtn.innerHTML = '<i class="bi bi-funnel-fill me-1"></i> Masquer les filtres';
+        toggleFiltersBtn.addEventListener('click', () => {
+            const hidden = filtersRow.classList.toggle('d-none');
+            toggleFiltersBtn.innerHTML = hidden
+            ? '<i class="bi bi-eye me-1"></i> Afficher les filtres'
+            : '<i class="bi bi-funnel-fill me-1"></i> Masquer les filtres';
+        });
+    }
+
     searchInput.addEventListener('input', applyFilters);
     statusFilter.addEventListener('change', applyFilters);
     adminFilter.addEventListener('change', applyFilters);
@@ -224,11 +251,8 @@
     const editAgentFrame = document.getElementById('editAgentFrame');
 
     if (createAgentModal) {
-      createAgentModal.addEventListener('show.bs.modal', function (event) {
-        const createAgentFrame = createAgentModal.querySelector('iframe');
-        if (createAgentFrame) {
-          createAgentFrame.src = '/agent-new.html';
-        }
+      createAgentModal.addEventListener('hidden.bs.modal', function() {
+        fetchAgents(); // Re-fetch agents when create modal is closed
       });
     }
 
@@ -241,6 +265,9 @@
     }
 
     if (editAgentModal) {
+      editAgentModal.addEventListener('hidden.bs.modal', function() {
+        fetchAgents(); // Re-fetch agents when edit modal is closed
+      });
       editAgentModal.addEventListener('show.bs.modal', function (event) {
         const button = event.relatedTarget;
         const agentMatricule = button.getAttribute('data-id');
