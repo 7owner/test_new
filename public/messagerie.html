@@ -65,7 +65,8 @@
         <h2>Conversations</h2>
         <div class="mb-3">
           <input type="text" id="titleFilter" class="form-control mb-2" placeholder="Filtrer par titre ou ID de demande...">
-          <input type="text" id="siteFilter" class="form-control" placeholder="Filtrer par site...">
+          <input type="text" id="siteFilter" class="form-control mb-2" placeholder="Filtrer par site...">
+          <input type="text" id="clientFilter" class="form-control" placeholder="Filtrer par client...">
         </div>
         <div id="conversations-list" class="list-group conversations-list">
           <!-- Conversations will be loaded here -->
@@ -115,12 +116,14 @@
       const attachmentsInput = document.getElementById('attachments');
       const titleFilterInput = document.getElementById('titleFilter');
       const siteFilterInput = document.getElementById('siteFilter');
+      const clientFilterInput = document.getElementById('clientFilter');
 
       let currentConversationId = null;
       let currentReceiverId = null;
       let currentConversationLabel = '';
       const demandeMap = new Map();
       const demandeSiteMap = new Map();
+      const demandeClientMap = new Map();
       const preselectConversationId = new URLSearchParams(window.location.search).get('conversation');
 
       function hrefForAttachment(att) {
@@ -173,11 +176,14 @@
         }
         demandeMap.clear();
         demandeSiteMap.clear();
+        demandeClientMap.clear();
         demandes.forEach(d => {
           const label = `Demande #${d.id} — ${d.title || d.titre || d.description || d.nom_site || d.site_nom || 'Sans titre'}`;
           demandeMap.set(`demande-${d.id}`, label);
           const siteName = d.nom_site || d.site_nom || '';
           demandeSiteMap.set(`demande-${d.id}`, siteName);
+          const clientName = d.nom_client || d.client_nom || '';
+          demandeClientMap.set(`demande-${d.id}`, clientName);
         });
       }
       
@@ -185,6 +191,7 @@
         const searchTerm = titleFilterInput.value.trim();
         const searchTermLower = searchTerm.toLowerCase();
         const siteTerm = siteFilterInput && siteFilterInput.value ? siteFilterInput.value.trim().toLowerCase() : '';
+        const clientTerm = clientFilterInput && clientFilterInput.value ? clientFilterInput.value.trim().toLowerCase() : '';
         let url = '/api/conversations';
         // Pas de paramètre backend ici, on filtre en local sur titre/site.
 
@@ -204,6 +211,12 @@
             conversations = conversations.filter(c => {
               const site = demandeSiteMap.get(c.conversation_id) || '';
               return site && site.toLowerCase().includes(siteTerm);
+            });
+          }
+          if (clientTerm) {
+            conversations = conversations.filter(c => {
+              const cl = demandeClientMap.get(c.conversation_id) || '';
+              return cl && cl.toLowerCase().includes(clientTerm);
             });
           }
           conversationsList.innerHTML = '';
@@ -311,6 +324,9 @@
       });
       if (siteFilterInput) {
         siteFilterInput.addEventListener('input', loadConversations);
+      }
+      if (clientFilterInput) {
+        clientFilterInput.addEventListener('input', loadConversations);
       }
 
     loadDemandesLabels().then(loadConversations).catch(loadConversations);
