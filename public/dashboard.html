@@ -347,13 +347,9 @@
       notifList.querySelectorAll('.open-conv-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const id = e.currentTarget.dataset.id;
-          const modalEl = document.getElementById('notifConversationModal');
-          const frame = document.getElementById('notifConversationFrame');
-          if (modalEl && frame) {
-            frame.src = `/client-demand-view.html?id=${id}`;
-            const m = new bootstrap.Modal(modalEl);
-            m.show();
-          }
+          const dd = bootstrap.Dropdown.getInstance(document.getElementById('notif-toggle'));
+          if (dd) dd.hide();
+          window.location.href = `/messagerie.html?conversation=demande-${id}`;
         });
       });
     }

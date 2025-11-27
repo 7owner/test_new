@@ -129,6 +129,7 @@
       let currentReceiverId = null;
       let currentConversationLabel = '';
       const demandeMap = new Map();
+      const preselectConversationId = new URLSearchParams(window.location.search).get('conversation');
 
       function hrefForAttachment(att) {
         if (!att || !att.file_path) return '#';
@@ -223,6 +224,12 @@
             });
             conversationsList.appendChild(convoElement);
           });
+          if (preselectConversationId) {
+            const target = conversationsList.querySelector(`[data-conversation-id=\"${preselectConversationId}\"]`);
+            if (target) {
+              target.click();
+            }
+          }
         } catch (error) {
           console.error('Error loading conversations:', error);
         }
