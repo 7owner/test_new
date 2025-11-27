@@ -155,10 +155,12 @@
       async function loadDemandesLabels() {
         let demandes = [];
         try {
-          demandes = await fetchJSON('/api/demandes_client');
+          // Préférence: périmètre client
+          demandes = await fetchJSON('/api/demandes_client/mine');
         } catch (err) {
           try {
-            demandes = await fetchJSON('/api/demandes_client/mine');
+            // Fallback admin
+            demandes = await fetchJSON('/api/demandes_client');
           } catch (err2) {
             console.warn('Impossible de charger les demandes client pour les filtres.', err2);
             return;
@@ -167,7 +169,7 @@
         demandeMap.clear();
         demandeSelect.innerHTML = '<option value=\"\">Toutes les demandes</option>';
         demandes.forEach(d => {
-          const label = `Demande #${d.id} — ${d.title || d.titre || d.description || d.site_nom || 'Sans titre'}`;
+          const label = `Demande #${d.id} — ${d.title || d.titre || d.description || d.nom_site || d.site_nom || 'Sans titre'}`;
           demandeMap.set(`demande-${d.id}`, label);
           const opt = document.createElement('option');
           opt.value = d.id;
