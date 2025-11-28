@@ -319,7 +319,7 @@
             type_mime: file.type || 'image/jpeg',
             base64,
             commentaire_image: imgCommentInput ? imgCommentInput.value.trim() : null,
-            cible_type: 'intervention',
+            cible_type: 'Intervention',
             cible_id: interventionId
           };
           const res = await fetch('/api/images', {
