@@ -390,6 +390,7 @@ CREATE TABLE IF NOT EXISTS images (
     type_mime VARCHAR(100),
     taille_octets BIGINT,
     image_blob BYTEA,
+    commentaire_image TEXT,
     auteur_matricule VARCHAR(20),
     cible_type doc_cible_type,
     cible_id BIGINT

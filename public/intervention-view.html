@@ -10,13 +10,7 @@
   <script src="/nav.js?v=1"></script>
 </head>
 <body>
-  <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><a href="/dashboard.html"><img src="/logo_logicielle.png" alt="Logo" style="height: 40px; vertical-align: middle; margin-right: 10px;"></a></h1>
-    <div id="user-info-container" class="d-flex align-items-center">
-      <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">Menu</button>
-    </div>
-  </header>
+
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
     <div class="offcanvas-header">
@@ -38,13 +32,7 @@
   </div>
 
   <main class="container mt-5">
-    <nav aria-label="breadcrumb">
-      <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="dashboard.html">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="interventions.html">Planning Interventions</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Détails</li>
-      </ol>
-    </nav>
+
     <h1 class="mb-4">Détails de l'intervention: <span id="intervention-id"></span></h1>
 
     <div class="card mb-4">
@@ -55,7 +43,6 @@
         <p><strong>Description:</strong> <span id="view_description"></span></p>
         <p><strong>Date Début:</strong> <span id="view_date_debut"></span></p>
         <p><strong>Date Fin:</strong> <span id="view_date_fin"></span></p>
-        <p><strong>Temps écoulé:</strong> <span id="view_elapsed"></span></p>
         <p><strong>Statut:</strong> <span id="view_status"></span></p>
         <p><strong>Intervention précédente:</strong> <span id="view_intervention_precedente_id"></span></p>
       </div>
@@ -191,28 +178,6 @@
       const agentSelect = document.getElementById('agent-select');
       const responsablesList = document.getElementById('responsables-list');
       const agentsList = document.getElementById('agents-list');
-      const elapsedEl = document.getElementById('view_elapsed');
-      let elapsedTimer = null;
-      function formatElapsed(ms){
-        if(!ms||ms<0) return '';
-        const totalMin = Math.floor(ms/60000);
-        const days = Math.floor(totalMin/(60*24));
-        const hours = Math.floor((totalMin%(60*24))/60);
-        const mins = totalMin%60;
-        return `${days}j ${String(hours).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m`;
-      }
-      function startElapsed(startIso, endIso){
-        if (!elapsedEl || !startIso) return;
-        if (elapsedTimer) clearInterval(elapsedTimer);
-        const startMs = new Date(startIso).getTime(); if(!startMs || isNaN(startMs)) return;
-        const endMs = endIso ? new Date(endIso).getTime() : null;
-        const update=()=>{
-          const now = endMs && !isNaN(endMs) ? endMs : Date.now();
-          elapsedEl.textContent = formatElapsed(now - startMs);
-        };
-        update();
-        if (!endMs || isNaN(endMs)) elapsedTimer = setInterval(update, 1000);
-      }
 
       async function fetchJSON(url, opts = {}) {
         const res = await fetch(url, { ...opts, headers: { ...headers, ...opts.headers } });
@@ -298,7 +263,6 @@
             document.getElementById('view_date_fin').textContent = rel.intervention.date_fin || '';
             document.getElementById('view_status').textContent = rel.intervention.status || '';
             document.getElementById('view_intervention_precedente_id').textContent = rel.intervention.intervention_precedente_id || '';
-            startElapsed(rel.intervention.date_debut, rel.intervention.date_fin);
             ticketId = rel.ticket ? rel.ticket.id : null;
           }
 
