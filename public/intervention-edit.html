@@ -8,232 +8,126 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
-  <script src="/script.js?v=1"></script>
-</head>
-<body>
-
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-    <div class="offcanvas-header">
-      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body">
-      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item">
-          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
-        </li>
-      </ul>
-    </div>
-  </div>
-
-  <main class="container mt-5">
-    
-        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <h1 class="mb-0">Créer un nouveau rendu d'intervention</h1>
-      <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
-    </div>
-    <div class="card">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Informations de l'intervention</h2>
-        <form id="intervention-edit-form">
-          <div class="mb-3">
-            <label for="id" class="form-label">ID Intervention</label>
-            <input type="text" class="form-control" id="id" required readonly>
-          </div>
-          <div class="mb-3">
-            <label for="maintenance_id" class="form-label">Maintenance associée</label>
-            <select class="form-select" id="maintenance_id" required>
-              <option value="">Sélectionner une maintenance</option>
-              <option value="MNT001">Maintenance Annuelle Site A</option>
-              <option value="MNT002">Maintenance Corrective Machine X</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="description" class="form-label">Description</label>
-            <textarea type="text" class="form-control" id="description" rows="3" required></textarea>
-          </div>
-          <div class="mb-3">
-            <label for="date_debut" class="form-label">Date Début</label>
-            <input type="datetime-local" class="form-control" id="date_debut" required>
-          </div>
-          <div class="mb-3">
-            <label for="date_fin" class="form-label">Date Fin</label>
-            <input type="date" class="form-control" id="date_fin">
-          </div>
-          <div class="mb-3">
-            <label for="status" class="form-label">Statut</label>
-            <select class="form-select" id="status" required>
-              <option value="En_attente">En attente</option>
-              <option value="Termine">Terminé</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="intervention_precedente_id" class="form-label">Intervention précédente (si applicable)</label>
-            <select class="form-select" id="intervention_precedente_id">
-              <option value="">Aucune</option>
-              <option value="INT001">INT001 - Vérification systèmes</option>
-              <option value="INT002">INT002 - Réparation climatisation</option>
-            </select>
-          </div>
-
-          <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary" id="save-intervention-btn"><i class="bi bi-save me-2"></i>Enregistrer les modifications</button>
-            <a href="interventions.html" class="btn btn-secondary">Annuler</a>
-          </div>
-        </form>
-      </div>
-    </div>
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-<script>
-document.addEventListener("DOMContentLoaded", async () => {
-
-  /* --------------------------
-     AUTHENTIFICATION
-  -------------------------- */
-  const token = localStorage.getItem("token");
-  if (!token) return location.href = "/login.html";
-
-  let isAdmin = false;
-  let actorEmail = "";
-
-  try {
-    const p = JSON.parse(atob(token.split(".")[1]));
-    isAdmin = Array.isArray(p.roles) && p.roles.includes("ROLE_ADMIN");
-    actorEmail = p.email || "";
-    document.getElementById("logged-in-user-email").textContent = actorEmail;
-  } catch {}
-
-  /* --------------------------
-     API HELPER
-  -------------------------- */
-  const api = (url, opts = {}) =>
-    fetch(url, {
-      headers: {
-        "Authorization": "Bearer " + token,
-        "Content-Type": "application/json",
-        "X-Actor-Email": actorEmail
-      },
-      ...opts
-    }).then(async r => {
-      const body = await r.json().catch(() => null);
-      if (!r.ok) throw new Error(body?.error || "Erreur API");
-      return body;
-    });
-
-  /* --------------------------
-     FORM REFERENCES
-  -------------------------- */
-  const form = document.getElementById("intervention-edit-form");
-
-  const idField = document.getElementById("id");
-  const maintenanceField = document.getElementById("maintenance_id");
-  const descriptionField = document.getElementById("description");
-  const dateDebutField = document.getElementById("date_debut");
-  const dateFinField = document.getElementById("date_fin");
-  const statusField = document.getElementById("status");
-  const prevInterField = document.getElementById("intervention_precedente_id");
-  const saveBtn = document.getElementById("save-intervention-btn");
-
-  /* --------------------------
-     ID DANS URL
-  -------------------------- */
-  const params = new URLSearchParams(location.search);
-  const interventionId = params.get("id");
-
-  if (!interventionId) {
-    alert("Intervention introuvable.");
-    return location.href = "interventions.html";
-  }
-
-  /* --------------------------
-     CHARGEMENT INTERVENTION
-  -------------------------- */
-  async function loadIntervention() {
+  <script>
+  document.addEventListener("DOMContentLoaded", async () => {
+  
+    /* --------------------------
+       AUTHENTIFICATION
+    -------------------------- */
+    const token = localStorage.getItem("token");
+    if (!token) return location.href = "/login.html";
+  
+    let isAdmin = false;
+    let actorEmail = "";
+  
     try {
-      const data = await api(`/api/interventions/${interventionId}/relations`);
-      const i = data.intervention;
-      if (!i) throw new Error();
-
-      idField.value = i.id;
-      maintenanceField.value = i.maintenance_id || "";
-      descriptionField.value = i.description || "";
-      dateDebutField.value = i.date_debut ? i.date_debut.substring(0, 16) : "";
-      dateFinField.value = i.date_fin?.substring(0, 10) || "";
-      statusField.value = i.status || i.statut || "";
-      prevInterField.value = i.intervention_precedente_id || "";
-
-      if (!isAdmin) {
-        [...form.querySelectorAll("input,select,textarea")].forEach(el => el.disabled = true);
-        saveBtn.classList.add("d-none");
-      }
-
-    } catch (e) {
-      console.error(e);
-      alert("Erreur lors du chargement.");
-      location.href = "interventions.html";
-    }
-  }
-
-  /* --------------------------
-     SAUVEGARDE
-  -------------------------- */
-  async function saveIntervention(ev) {
-    ev.preventDefault();
-    if (!isAdmin) return alert("Réservé aux administrateurs.");
-
-    const payload = {
-      maintenance_id: maintenanceField.value || null,
-      description: descriptionField.value,
-      date_debut: dateDebutField.value || null,
-      date_fin: dateFinField.value || null,
-      status: statusField.value,
-      intervention_precedente_id: prevInterField.value || null
-    };
-
-    try {
-      await api(`/api/interventions/${interventionId}`, {
-        method: "PUT",
-        body: JSON.stringify(payload)
+      const p = JSON.parse(atob(token.split(".")[1]));
+      isAdmin = Array.isArray(p.roles) && p.roles.includes("ROLE_ADMIN");
+      actorEmail = p.email || "";
+      document.getElementById("logged-in-user-email").textContent = actorEmail;
+    } catch {}
+  
+    /* --------------------------
+       API HELPER
+    -------------------------- */
+    const api = (url, opts = {}) =>
+      fetch(url, {
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json",
+          "X-Actor-Email": actorEmail
+        },
+        ...opts
+      }).then(async r => {
+        const body = await r.json().catch(() => null);
+        if (!r.ok) throw new Error(body?.error || "Erreur API");
+        return body;
       });
-
-      alert("Intervention mise à jour.");
-      location.href = "interventions.html";
-
-    } catch (e) {
-      console.error(e);
-      alert("Échec de la sauvegarde.");
+  
+    /* --------------------------
+       FORM REFERENCES
+    -------------------------- */
+    const form = document.getElementById("intervention-edit-form");
+  
+    const idField = document.getElementById("id");
+    const descriptionField = document.getElementById("description");
+    const dateDebutField = document.getElementById("date_debut");
+    const dateFinField = document.getElementById("date_fin");
+    const statusField = document.getElementById("status");
+    const saveBtn = document.getElementById("save-intervention-btn");
+  
+    /* --------------------------
+       ID DANS URL
+    -------------------------- */
+    const params = new URLSearchParams(location.search);
+    const interventionId = params.get("id");
+  
+    if (!interventionId) {
+      alert("Intervention introuvable.");
+      return location.href = "interventions.html";
     }
-  }
-
-  form.addEventListener("submit", saveIntervention);
-
-  /* Début */
-  loadIntervention();
-});
-</script>
-
+  
+    /* --------------------------
+       CHARGEMENT INTERVENTION
+    -------------------------- */
+    async function loadIntervention() {
+      try {
+        const data = await api(`/api/interventions/${interventionId}/relations`);
+        const i = data.intervention;
+        if (!i) throw new Error();
+  
+        idField.value = i.id;
+        descriptionField.value = i.description || "";
+        dateDebutField.value = i.date_debut ? i.date_debut.substring(0, 16) : "";
+        dateFinField.value = i.date_fin?.substring(0, 10) || "";
+        statusField.value = i.status || i.statut || "";
+  
+        if (!isAdmin) {
+          [...form.querySelectorAll("input,select,textarea")].forEach(el => el.disabled = true);
+          saveBtn.classList.add("d-none");
+        }
+  
+      } catch (e) {
+        console.error(e);
+        alert("Erreur lors du chargement.");
+        location.href = "interventions.html";
+      }
+    }
+  
+    /* --------------------------
+       SAUVEGARDE
+    -------------------------- */
+    async function saveIntervention(ev) {
+      ev.preventDefault();
+      if (!isAdmin) return alert("Réservé aux administrateurs.");
+  
+      const payload = {
+        description: descriptionField.value,
+        date_debut: dateDebutField.value || null,
+        date_fin: dateFinField.value || null,
+        status: statusField.value,
+      };
+  
+      try {
+        await api(`/api/interventions/${interventionId}`, {
+          method: "PUT",
+          body: JSON.stringify(payload)
+        });
+  
+        alert("Intervention mise à jour.");
+        location.href = "interventions.html";
+  
+      } catch (e) {
+        console.error(e);
+        alert("Échec de la sauvegarde.");
+      }
+    }
+  
+    form.addEventListener("submit", saveIntervention);
+  
+    /* Début */
+    loadIntervention();
+  });
+  </script>
 </body>
 </html>

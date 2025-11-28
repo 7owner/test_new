@@ -92,3 +92,22 @@
 
 *   **Agents/Sites/Demandes-client-admin Pages**:
     *   Header/navbar updated to dashboard look & gradient background applied.
+
+*   **Tickets**:
+    *   Temps écoulé affiché en j/h/m et figé dès que le statut est “Terminé/Fermé”; dans `ticket-view`, si une intervention existe et ticket non terminé, l’état affiché passe à “En_cours”.
+
+*   **Sites**:
+    *   Boutons Retour fonctionnels sur `site-view`, `site-edit`, `site-new`; site-view affiche aussi temps écoulé j/h/m.
+
+*   **Interventions**:
+    *   `intervention-view` : rendus en Markdown (marked), sections Documents/Images actives, boutons “Ajouter un rendu” et “Modifier” propagant l’ID, bouton Retour opérationnel.
+    *   `intervention-edit` : champ Date Début en `datetime-local` (gestion heures/minutes).
+
+*   **Rendu intervention new**:
+    *   Aperçu Markdown externe en temps réel, bouton Retour (history.back).
+
+*   **DOE**:
+    *   Boutons Retour sur `doe-view`, `doe-edit`, `doe-new`; libellé “Documents associés”.
+
+*   **Affaire view**:
+    *   Bouton Retour (history.back avec fallback vers la liste).
