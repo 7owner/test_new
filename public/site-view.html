@@ -99,8 +99,10 @@
             const jd = await rr.json().catch(()=>({})); if (!rr.ok) return alert(jd.error||`HTTP ${rr.status}`); location.reload(); };
         }
       } catch(e) { console.error('site relations load failed:', e); }
+
+      const backBtn = document.getElementById('back-btn');
+      if (backBtn) backBtn.addEventListener('click', () => window.history.back());
     });
   </script>
 </body>
 </html>
-

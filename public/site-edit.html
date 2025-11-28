@@ -211,6 +211,9 @@
 
       await loadRelatedData();
       await loadSiteData();
+
+      const backBtn = document.getElementById('back-btn');
+      if (backBtn) backBtn.addEventListener('click', () => window.history.back());
     });
   </script>
 </body>

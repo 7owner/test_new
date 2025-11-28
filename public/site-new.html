@@ -89,6 +89,7 @@
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary" id="save-site-btn"><i class="bi bi-save me-2"></i>Enregistrer</button>
             <a href="sites.html" class="btn btn-secondary">Annuler</a>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
           </div>
         </form>
       </div>
@@ -97,5 +98,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script src="/js/site-new.js"></script>
+  <script>
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn) backBtn.addEventListener('click', () => window.history.back());
+  </script>
 </body>
 </html>
