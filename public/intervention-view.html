@@ -116,7 +116,7 @@
 
     <div class="d-flex gap-2">
       <a href="interventions.html" class="btn btn-secondary">Retour à la liste</a>
-      <a href="intervention-edit.html" class="btn btn-warning" id="edit-intervention-btn"><i class="bi bi-pencil"></i> Modifier</a>
+      <a href="#" class="btn btn-warning" id="edit-intervention-btn"><i class="bi bi-pencil"></i> Modifier</a>
     </div>
   </main>
 
@@ -491,6 +491,14 @@
             return;
           }
           window.location.href = `rendu-intervention-new.html?id=${interventionId}`;
+        });
+      }
+      const editInterBtn = document.getElementById('edit-intervention-btn');
+      if (editInterBtn) {
+        editInterBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (!interventionId) { alert('Intervention inconnue.'); return; }
+          window.location.href = `intervention-edit.html?id=${interventionId}`;
         });
       }
 
