@@ -20,9 +20,74 @@
 
   <!-- Nav -->
   <script src="/nav.js?v=1"></script>
+
+  <style>
+    .rendu-image-entry {
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .rendu-image-entry:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .image-preview {
+      max-width: 200px;
+      max-height: 200px;
+      margin-top: 10px;
+      border-radius: 4px;
+      display: none;
+    }
+    .image-preview.show {
+      display: block;
+    }
+    .loading-spinner {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+    }
+    .loading-spinner.show {
+      display: block;
+    }
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 9998;
+    }
+    .overlay.show {
+      display: block;
+    }
+    .error-message {
+      display: none;
+      margin-top: 10px;
+    }
+    .error-message.show {
+      display: block;
+    }
+    .char-counter {
+      font-size: 0.875rem;
+      color: #6c757d;
+      text-align: right;
+      margin-top: 5px;
+    }
+  </style>
 </head>
 
 <body>
+
+  <!-- Loading overlay -->
+  <div class="overlay" id="loading-overlay"></div>
+  <div class="loading-spinner">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+  </div>
 
   <!-- Menu -->
   <div class="offcanvas offcanvas-end" id="offcanvasNavbar">
@@ -48,56 +113,69 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <h1 class="mb-0">Créer un nouveau rendu d'intervention</h1>
-      <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn">
+        <i class="bi bi-arrow-left"></i> Retour
+      </button>
     </div>
 
     <div class="card">
       <div class="card-body">
 
-        <form id="rendu-new-form">
+        <form id="rendu-new-form" novalidate>
 
           <!-- Résumé Markdown -->
           <div class="mb-3">
-            <label class="form-label">Résumé (Markdown)</label>
-            <textarea id="resume"></textarea>
+            <label class="form-label fw-bold">Résumé (Markdown) <span class="text-danger">*</span></label>
+            <textarea id="resume" required></textarea>
+            <div class="char-counter" id="resume-counter">0 caractères</div>
+            <div class="invalid-feedback">Le résumé est obligatoire.</div>
           </div>
 
           <!-- Aperçu Markdown externe -->
           <div class="mb-4">
             <label class="form-label fw-bold">Aperçu du rendu :</label>
-            <div id="resume-preview" class="p-3 border bg-light rounded" style="min-height:150px;"></div>
+            <div id="resume-preview" class="p-3 border bg-light rounded" style="min-height:150px;">
+              <em class="text-muted">L'aperçu apparaîtra ici...</em>
+            </div>
           </div>
 
           <!-- Valeur -->
           <div class="mb-3">
-            <label class="form-label">Valeur</label>
-            <input type="text" class="form-control" id="valeur">
+            <label class="form-label fw-bold">Valeur</label>
+            <input type="text" class="form-control" id="valeur" placeholder="Ex: 1500€">
+            <small class="form-text text-muted">Montant ou valeur estimée de l'intervention</small>
           </div>
 
           <!-- Images -->
           <h3 class="mt-4 mb-3">Images associées</h3>
+          <p class="text-muted small">Formats acceptés: JPG, PNG, GIF (max 5MB par image)</p>
+          
           <div id="rendu-images-container">
-
             <div class="rendu-image-entry mb-4 p-3 border rounded bg-light">
-              <div class="d-flex justify-content-end">
-                <button type="button" class="btn-close remove-image"></button>
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-secondary">Image 1</span>
+                <button type="button" class="btn-close remove-image" title="Supprimer cette image"></button>
               </div>
 
-              <label class="form-label">Image</label>
-              <input class="form-control" type="file" name="image_file[]">
+              <label class="form-label">Fichier image</label>
+              <input class="form-control image-input" type="file" name="image_file[]" accept="image/jpeg,image/png,image/gif">
+              <div class="error-message alert alert-danger" role="alert"></div>
+              <img class="image-preview" alt="Aperçu de l'image">
 
-              <label class="form-label mt-2">Commentaire</label>
-              <textarea class="form-control" name="image_commentaire[]" rows="2"></textarea>
+              <label class="form-label mt-3">Commentaire</label>
+              <textarea class="form-control image-comment" name="image_commentaire[]" rows="2" placeholder="Décrivez cette image..." maxlength="500"></textarea>
+              <div class="char-counter">0 / 500 caractères</div>
             </div>
-
           </div>
 
           <button type="button" id="add-new-image-btn" class="btn btn-outline-secondary mb-3">
             <i class="bi bi-plus-circle"></i> Ajouter une image
           </button>
 
-          <div class="d-flex gap-2 mt-3">
-            <button type="submit" class="btn btn-primary" id="save-rendu-btn"><i class="bi bi-save me-2"></i>Enregistrer</button>
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary" id="save-rendu-btn">
+              <i class="bi bi-save me-2"></i>Enregistrer
+            </button>
             <button type="button" class="btn btn-secondary" id="cancel-rendu-btn">Annuler</button>
           </div>
 
@@ -113,9 +191,63 @@
   <script>
 document.addEventListener("DOMContentLoaded", () => {
 
+  /* ========= CONFIGURATION ========= */
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif'];
+
+  /* ========= UTILITAIRES ========= */
+  const showLoading = () => {
+    document.getElementById('loading-overlay').classList.add('show');
+    document.querySelector('.loading-spinner').classList.add('show');
+  };
+
+  const hideLoading = () => {
+    document.getElementById('loading-overlay').classList.remove('show');
+    document.querySelector('.loading-spinner').classList.remove('show');
+  };
+
+  const showAlert = (message, type = 'danger') => {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.querySelector('main').insertBefore(alertDiv, document.querySelector('.card'));
+    setTimeout(() => alertDiv.remove(), 5000);
+  };
+
+  const validateFile = (file) => {
+    if (!file) return { valid: false, error: null };
+    
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return { valid: false, error: 'Format non supporté. Utilisez JPG, PNG ou GIF.' };
+    }
+    
+    if (file.size > MAX_FILE_SIZE) {
+      return { valid: false, error: `Fichier trop volumineux (max ${MAX_FILE_SIZE / 1024 / 1024}MB).` };
+    }
+    
+    return { valid: true, error: null };
+  };
+
+  const updateCharCounter = (textarea, counter) => {
+    const length = textarea.value.length;
+    const max = textarea.getAttribute('maxlength');
+    if (max) {
+      counter.textContent = `${length} / ${max} caractères`;
+    } else {
+      counter.textContent = `${length} caractères`;
+    }
+  };
+
   /* ========= AUTHENTIFICATION ========= */
   const token = localStorage.getItem("token");
-  if (!token) return location.href = "/login.html";
+  if (!token) {
+    showAlert('Session expirée. Veuillez vous reconnecter.', 'warning');
+    setTimeout(() => location.href = "/login.html", 2000);
+    return;
+  }
 
   let isAdmin = false;
   let actorEmail = "";
@@ -124,20 +256,35 @@ document.addEventListener("DOMContentLoaded", () => {
     const payload = JSON.parse(atob(token.split(".")[1]));
     isAdmin = payload.roles?.includes("ROLE_ADMIN");
     actorEmail = payload.email || "";
-    document.getElementById("logged-in-user-email").textContent = actorEmail;
-  } catch {}
+    
+    const userEmailEl = document.getElementById("logged-in-user-email");
+    if (userEmailEl) userEmailEl.textContent = actorEmail;
+  } catch (err) {
+    console.error('Erreur décodage token:', err);
+    showAlert('Erreur d\'authentification.', 'danger');
+    setTimeout(() => location.href = "/login.html", 2000);
+    return;
+  }
+
+  if (!isAdmin) {
+    showAlert('Accès refusé. Cette action est réservée aux administrateurs.', 'danger');
+    setTimeout(() => location.href = "/interventions.html", 2000);
+    return;
+  }
 
   /* ========= PARAMS ========= */
   const params = new URLSearchParams(location.search);
   const interventionId = params.get("id") || params.get("intervention_id");
 
   if (!interventionId) {
-    alert("Intervention inconnue.");
-    return location.href = "interventions.html";
+    showAlert('Intervention non spécifiée.', 'warning');
+    setTimeout(() => location.href = "interventions.html", 2000);
+    return;
   }
 
   /* ========= INIT EDITOR EasyMDE ========= */
   const preview = document.getElementById("resume-preview");
+  const resumeCounter = document.getElementById("resume-counter");
 
   const easyMDE = new EasyMDE({
     element: document.getElementById("resume"),
@@ -158,60 +305,176 @@ document.addEventListener("DOMContentLoaded", () => {
     ],
     previewRender: text => {
       const html = EasyMDE.prototype.markdown(text);
-      preview.innerHTML = html;
       return html;
     }
   });
+
   const updatePreview = () => {
     try {
-      const html = easyMDE.options.previewRender(easyMDE.value());
-      preview.innerHTML = html;
-    } catch (_) {}
+      const text = easyMDE.value();
+      const html = easyMDE.options.previewRender(text);
+      preview.innerHTML = html || '<em class="text-muted">L\'aperçu apparaîtra ici...</em>';
+      updateCharCounter(document.getElementById("resume"), resumeCounter);
+    } catch (err) {
+      console.error('Erreur preview:', err);
+    }
   };
-  try { easyMDE.codemirror.on("change", updatePreview); } catch(_){}
+
+  try { 
+    easyMDE.codemirror.on("change", updatePreview);
+  } catch(err) {
+    console.error('Erreur listener:', err);
+  }
+  
   updatePreview();
 
+  /* ========= NAVIGATION ========= */
   const backBtn = document.getElementById("back-btn");
   if (backBtn) {
-    backBtn.addEventListener("click", () => window.history.back());
+    backBtn.addEventListener("click", () => {
+      if (confirm('Voulez-vous vraiment quitter ? Les modifications non sauvegardées seront perdues.')) {
+        window.history.back();
+      }
+    });
   }
 
   /* ========= GESTION DES IMAGES ========= */
   const imagesContainer = document.getElementById("rendu-images-container");
   const addImageBtn = document.getElementById("add-new-image-btn");
 
+  let imageCounter = 1;
+
+  const updateImageBadges = () => {
+    const entries = imagesContainer.querySelectorAll(".rendu-image-entry");
+    entries.forEach((entry, index) => {
+      entry.querySelector('.badge').textContent = `Image ${index + 1}`;
+    });
+    imageCounter = entries.length;
+  };
+
+  const setupImageEntry = (entry) => {
+    const fileInput = entry.querySelector('.image-input');
+    const preview = entry.querySelector('.image-preview');
+    const errorDiv = entry.querySelector('.error-message');
+    const commentTextarea = entry.querySelector('.image-comment');
+    const charCounter = entry.querySelector('.char-counter');
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      
+      if (!file) {
+        preview.classList.remove('show');
+        errorDiv.classList.remove('show');
+        return;
+      }
+
+      const validation = validateFile(file);
+      
+      if (!validation.valid) {
+        errorDiv.textContent = validation.error;
+        errorDiv.classList.add('show');
+        preview.classList.remove('show');
+        fileInput.value = '';
+        return;
+      }
+
+      errorDiv.classList.remove('show');
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        preview.src = e.target.result;
+        preview.classList.add('show');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    commentTextarea.addEventListener('input', () => {
+      updateCharCounter(commentTextarea, charCounter);
+    });
+
+    updateCharCounter(commentTextarea, charCounter);
+  };
+
+  // Setup initial entry
+  setupImageEntry(imagesContainer.querySelector('.rendu-image-entry'));
+
   addImageBtn.addEventListener("click", () => {
     const tpl = imagesContainer.querySelector(".rendu-image-entry").cloneNode(true);
-    tpl.querySelectorAll("input,textarea").forEach(e => e.value = "");
+    
+    // Reset all inputs
+    tpl.querySelectorAll("input, textarea").forEach(e => e.value = "");
+    tpl.querySelector('.image-preview').classList.remove('show');
+    tpl.querySelector('.error-message').classList.remove('show');
+    
+    imageCounter++;
+    tpl.querySelector('.badge').textContent = `Image ${imageCounter}`;
+    
     imagesContainer.appendChild(tpl);
+    setupImageEntry(tpl);
+    
+    showAlert('Nouvelle image ajoutée', 'success');
   });
 
   imagesContainer.addEventListener("click", e => {
     if (e.target.classList.contains("remove-image")) {
       const entries = imagesContainer.querySelectorAll(".rendu-image-entry");
+      
       if (entries.length > 1) {
-        e.target.closest(".rendu-image-entry").remove();
+        if (confirm('Supprimer cette image ?')) {
+          e.target.closest(".rendu-image-entry").remove();
+          updateImageBadges();
+          showAlert('Image supprimée', 'info');
+        }
+      } else {
+        showAlert('Au moins une entrée image doit être conservée.', 'warning');
       }
     }
   });
 
-  /* ========= SAUVEGARDE ========= */
-  document.getElementById("rendu-new-form").addEventListener("submit", async e => {
+  /* ========= VALIDATION FORMULAIRE ========= */
+  const form = document.getElementById("rendu-new-form");
+  
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (!isAdmin) return alert("Action réservée aux administrateurs.");
+    e.stopPropagation();
+
+    if (!form.checkValidity()) {
+      form.classList.add('was-validated');
+      showAlert('Veuillez remplir tous les champs obligatoires.', 'warning');
+      return;
+    }
+
+    const resumeValue = easyMDE.value().trim();
+    if (!resumeValue) {
+      showAlert('Le résumé ne peut pas être vide.', 'warning');
+      return;
+    }
+
+    await saveRendu();
+  });
+
+  /* ========= SAUVEGARDE ========= */
+  const saveRendu = async () => {
+    showLoading();
 
     try {
-      let fd = new FormData();
-      fd.append("resume", document.getElementById("resume").value);
+      const fd = new FormData();
+      fd.append("resume", easyMDE.value());
       fd.append("valeur", document.getElementById("valeur").value);
+
+      let hasImages = false;
 
       imagesContainer.querySelectorAll(".rendu-image-entry").forEach(entry => {
         const file = entry.querySelector("input[type='file']").files[0];
         const comment = entry.querySelector("textarea").value;
 
         if (file) {
-          fd.append("image_files[]", file);
-          fd.append("image_commentaires[]", comment);
+          const validation = validateFile(file);
+          if (validation.valid) {
+            fd.append("image_files[]", file);
+            fd.append("image_commentaires[]", comment);
+            hasImages = true;
+          }
         }
       });
 
@@ -226,35 +489,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        throw new Error(body?.error || "Erreur API");
+        throw new Error(body?.error || body?.message || `Erreur HTTP ${res.status}`);
       }
 
-      alert("Rendu enregistré !");
-      location.href = `intervention-view.html?id=${interventionId}`;
+      const result = await res.json();
+      
+      hideLoading();
+      showAlert('Rendu enregistré avec succès !', 'success');
+      
+      setTimeout(() => {
+        location.href = `intervention-view.html?id=${interventionId}`;
+      }, 1500);
 
     } catch (err) {
-      console.error(err);
-      alert("Erreur : " + err.message);
+      hideLoading();
+      console.error('Erreur sauvegarde:', err);
+      showAlert(`Erreur lors de l'enregistrement : ${err.message}`, 'danger');
     }
-  });
+  };
 
+  /* ========= ANNULATION ========= */
   const cancelBtn = document.getElementById("cancel-rendu-btn");
   if (cancelBtn) {
     cancelBtn.addEventListener("click", () => {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get("id");
-      if (id) {
-        location.href = `intervention-view.html?id=${id}`;
-      } else {
-        location.href = '/interventions.html';
+      if (confirm('Annuler la création du rendu ? Toutes les modifications seront perdues.')) {
+        location.href = `intervention-view.html?id=${interventionId}`;
       }
     });
   }
+
+  /* ========= PRÉVENTION PERTE DE DONNÉES ========= */
+  window.addEventListener('beforeunload', (e) => {
+    if (easyMDE.value().trim() || document.getElementById('valeur').value.trim()) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
 
 });
   </script>
 
 </body>
 </html>
-
-<!DOCTYPE html>
