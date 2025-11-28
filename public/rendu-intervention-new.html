@@ -102,7 +102,7 @@
 
           <div class="d-flex gap-2 mt-3">
             <button type="submit" class="btn btn-primary" id="save-rendu-btn"><i class="bi bi-save me-2"></i>Enregistrer</button>
-            <a href="tickets.html" class="btn btn-secondary">Annuler</a>
+            <button type="button" class="btn btn-secondary" id="cancel-rendu-btn">Annuler</button>
           </div>
 
         </form>
@@ -228,6 +228,19 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Erreur : " + err.message);
     }
   });
+
+  const cancelBtn = document.getElementById("cancel-rendu-btn");
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("id");
+      if (id) {
+        location.href = `intervention-view.html?id=${id}`;
+      } else {
+        location.href = '/interventions.html';
+      }
+    });
+  }
 
 });
   </script>
