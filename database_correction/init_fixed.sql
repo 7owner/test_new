@@ -455,7 +455,11 @@ CREATE TABLE IF NOT EXISTS documents_repertoire (
     cible_type doc_cible_type,
     cible_id BIGINT,
     nature doc_nature DEFAULT 'Document',
-    nom_fichier VARCHAR(255)
+    nom_fichier VARCHAR(255),
+    type_mime VARCHAR(100),
+    taille_octets BIGINT,
+    chemin_fichier VARCHAR(255),
+    checksum_sha256 VARCHAR(255)
 );
 
 ALTER TABLE documents_repertoire ADD COLUMN IF NOT EXISTS auteur_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL;
