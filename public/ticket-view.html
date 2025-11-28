@@ -31,6 +31,7 @@
         <p><strong>État:</strong> <span id="view_etat"></span></p>
         <p><strong>Date de début:</strong> <span id="view_date_debut"></span></p>
         <p><strong>Date de fin:</strong> <span id="view_date_fin"></span></p>
+        <p><strong>Temps écoulé:</strong> <span id="view_elapsed"></span></p>
         <p><strong>Durée:</strong> <span id="view_duree"></span></p>
         <p><strong>DOE:</strong> <span id="view_doe"></span></p>
         <p><strong>Affaire:</strong> <span id="view_affaire"></span></p>
@@ -251,6 +252,31 @@
       const isAdmin = (()=>{ try{ const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles)&&p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
       function set(id, val){ const el=document.getElementById(id); if(el) el.textContent = val||''; }
       function fmt(iso){ if(!iso) return ''; const d=new Date(iso); return isNaN(d)? '' : d.toLocaleString(); }
+      let elapsedTimer = null;
+      const elapsedEl = document.getElementById('view_elapsed');
+      function formatElapsed(ms){
+        if (!ms || ms<0) return '';
+        const totalSec = Math.floor(ms/1000);
+        const h = Math.floor(totalSec/3600);
+        const m = Math.floor((totalSec%3600)/60);
+        const s = totalSec%60;
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      }
+      function startElapsed(startIso, endIso){
+        if (!elapsedEl || !startIso) return;
+        if (elapsedTimer) clearInterval(elapsedTimer);
+        const startMs = new Date(startIso).getTime();
+        if (!startMs || isNaN(startMs)) return;
+        const endMs = endIso ? new Date(endIso).getTime() : null;
+        const update = () => {
+          const now = endMs && !isNaN(endMs) ? endMs : Date.now();
+          elapsedEl.textContent = formatElapsed(now - startMs);
+        };
+        update();
+        if (!endMs || isNaN(endMs)) {
+          elapsedTimer = setInterval(update, 1000);
+        }
+      }
       try {
         const res = await fetch(`/api/tickets/${ticketId}/relations`, { headers, credentials: 'same-origin' });
         if (res.status===401||res.status===403){ location.href='/login.html'; return; }
@@ -260,6 +286,7 @@
         document.getElementById('ticket-title').textContent = t.titre || '(Sans titre)';
         set('view_id', t.id); set('view_titre', t.titre||''); set('view_description', t.description||''); set('view_etat', t.etat||'');
         set('view_date_debut', fmt(t.date_debut)); set('view_date_fin', t.date_fin? fmt(t.date_fin) : 'En cours');
+        startElapsed(t.date_debut, t.date_fin);
         if (t.date_debut && t.date_fin) { const dd=new Date(t.date_debut), df=new Date(t.date_fin); const dj=Math.floor((df-dd)/(1000*60*60*24)); set('view_duree', `${dj} jours`); }
         const doe = data.doe;
         const doeEl=document.getElementById('view_doe');
@@ -287,10 +314,11 @@
         if (!items.length) list.innerHTML = '<p class="text-muted">Aucune intervention associée.</p>';
         items.forEach(inter => {
           const el = document.createElement('div'); el.className='card card-body mb-2';
+          const interElapsed = inter.date_debut ? formatElapsed((inter.date_fin ? new Date(inter.date_fin).getTime() : Date.now()) - new Date(inter.date_debut).getTime()) : '';
           el.innerHTML = `<div class=\"d-flex justify-content-between align-items-center\">`
             + `<div><h6 class=\"mb-1\">${inter.description||''}</h6>`
             + `<small class=\"text-muted\">Du ${fmt(inter.date_debut)||''} au ${fmt(inter.date_fin)||'N/A'}</small></div>`
-            + `<div><a href=\"intervention-view.html?id=${inter.id}\" class=\"btn btn-sm btn-info me-1\"><i class=\"bi bi-eye\"></i> Voir</a></div>`
+            + `<div class="text-end"><div class="small text-muted mb-1">Temps écoulé: ${interElapsed || '—'}</div><a href=\"intervention-view.html?id=${inter.id}\" class=\"btn btn-sm btn-info me-1\"><i class=\"bi bi-eye\"></i> Voir</a></div>`
             + `</div>`;
           list.appendChild(el);
         });

@@ -2270,7 +2270,7 @@ app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, re
     try {
         const result = await pool.query(
             'INSERT INTO intervention (titre, description, date_debut, date_fin, ticket_id, status, intervention_precedente_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-            [titre || null, description, date_debut, date_fin, ticket_id, status || 'Pas_commence', intervention_precedente_id || null]
+            [titre || null, description, date_debut, date_fin, ticket_id, status || 'En_attente', intervention_precedente_id || null]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -2281,11 +2281,11 @@ app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, re
 
 app.put('/api/interventions/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id } = req.params;
-    const { description, date_debut, date_fin = null, ticket_id, intervention_precedente_id = null } = req.body;
+    const { description, date_debut, date_fin = null, ticket_id, status, intervention_precedente_id = null } = req.body;
     try {
         const result = await pool.query(
-            'UPDATE intervention SET description = $1, date_debut = $2, date_fin = $3, ticket_id = $4, intervention_precedente_id = $5 WHERE id = $6 RETURNING *',
-            [description, date_debut, date_fin, ticket_id, intervention_precedente_id, id]
+            'UPDATE intervention SET description = $1, date_debut = $2, date_fin = $3, ticket_id = $4, status = COALESCE($5::statut_intervention, status), intervention_precedente_id = $6 WHERE id = $7 RETURNING *',
+            [description, date_debut, date_fin, ticket_id, status, intervention_precedente_id, id]
         );
         if (result.rows.length === 0) {
             return res.status(404).json({ error: `Intervention with id ${id} not found` });

@@ -32,6 +32,7 @@
         <p><strong>Ticket Ouvert:</strong> <span id="view_ticket"></span></p>
         <p><strong>Date Début:</strong> <span id="view_date_debut"></span></p>
         <p><strong>Date Fin:</strong> <span id="view_date_fin"></span></p>
+        <p><strong>Temps écoulé:</strong> <span id="view_elapsed"></span></p>
       </div>
     </div>
 
@@ -78,6 +79,21 @@
       const token = localStorage.getItem('token');
       const headers = token? { 'Authorization': `Bearer ${token}` } : {};
       const isAdmin = (()=>{ try{ const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles)&&p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
+      const elapsedEl = document.getElementById('view_elapsed');
+      let elapsedTimer = null;
+      function formatElapsed(ms){ if(!ms||ms<0) return ''; const t=Math.floor(ms/1000); const h=Math.floor(t/3600); const m=Math.floor((t%3600)/60); const s=t%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+      function startElapsed(startIso, endIso){
+        if (!elapsedEl || !startIso) return;
+        if (elapsedTimer) clearInterval(elapsedTimer);
+        const startMs = new Date(startIso).getTime(); if(!startMs || isNaN(startMs)) return;
+        const endMs = endIso ? new Date(endIso).getTime() : null;
+        const update=()=>{
+          const now = endMs && !isNaN(endMs) ? endMs : Date.now();
+          elapsedEl.textContent = formatElapsed(now - startMs);
+        };
+        update();
+        if (!endMs || isNaN(endMs)) elapsedTimer = setInterval(update, 1000);
+      }
       try {
         const r = await fetch(`/api/sites/${siteId}/relations`, { headers, credentials:'same-origin' });
         const data = await r.json(); if (!r.ok) throw new Error(data && data.error || `HTTP ${r.status}`);
@@ -85,6 +101,7 @@
         document.getElementById('site-name').textContent = s.nom_site || '';
         const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v||''; };
         set('view_id', s.id); set('view_nom_site', s.nom_site); set('view_adresse_id', s.adresse_id); set('view_commentaire', s.commentaire); set('view_statut', s.statut); set('view_ticket', (data.tickets && data.tickets.length)? data.tickets.length : 0); set('view_date_debut', s.date_debut); set('view_date_fin', s.date_fin);
+        startElapsed(s.date_debut, s.date_fin);
         const tl = document.getElementById('tickets-list'); tl.innerHTML=''; (data.tickets||[]).forEach(t=>{ const el=document.createElement('div'); el.className='small'; el.innerHTML=`<a href="ticket-view.html?id=${t.id}">#${t.id} — ${t.titre||''}</a>`; tl.appendChild(el); }); if (!tl.innerHTML) tl.innerHTML='<span class="text-muted">Aucun ticket.</span>';
         const respEl = document.getElementById('site-responsables'); respEl.innerHTML=''; (data.responsables||[]).forEach(x=>{ const el=document.createElement('div'); el.className='small'; el.textContent = `${x.agent_matricule || ''} ${x.role? '('+x.role+')':''}`; respEl.appendChild(el); }); if(!respEl.innerHTML) respEl.innerHTML='<span class="text-muted">Aucun responsable.</span>';
         const agentsEl = document.getElementById('site-agents'); agentsEl.innerHTML=''; (data.agents_assignes||[]).forEach(x=>{ const el=document.createElement('div'); el.className='small'; el.textContent = x.agent_matricule; agentsEl.appendChild(el); }); if (!agentsEl.innerHTML) agentsEl.innerHTML='<span class="text-muted">Aucun agent assigné.</span>';
@@ -105,4 +122,3 @@
   </script>
 </body>
 </html>
-

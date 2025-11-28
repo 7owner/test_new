@@ -83,10 +83,7 @@
           <div class="mb-3">
             <label for="status" class="form-label">Statut</label>
             <select class="form-select" id="status" required>
-              <option value="Pas_commence">Pas commencé</option>
-              <option value="Bloque">Bloqué</option>
               <option value="En_attente">En attente</option>
-              <option value="En_cours">En cours</option>
               <option value="Termine">Terminé</option>
             </select>
           </div>
@@ -206,7 +203,7 @@
       date_fin: document.getElementById('date_fin').value || null,
       ticket_id: document.getElementById('ticket_id').value || null, // Correctly using ticket_id
       intervention_precedente_id: document.getElementById('intervention_precedente_id').value || null,
-      status: document.getElementById('status').value || 'Pas_commence' // Ensuring status is included
+      status: document.getElementById('status').value || 'En_attente' // Ensuring status is included
     };
 
     if (!payload.ticket_id) {
