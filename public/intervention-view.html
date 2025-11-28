@@ -59,7 +59,7 @@
       <div class="card-body">
         <h2 class="card-title mb-4">Rendus d'Intervention</h2>
         <div id="rendu-intervention-list"></div>
-        <a href="rendu-intervention-new.html" class="btn btn-primary mt-3" id="add-rendu-btn"><i class="bi bi-plus-circle me-2"></i>Ajouter un rendu</a>
+        <a href="#" class="btn btn-primary mt-3" id="add-rendu-btn"><i class="bi bi-plus-circle me-2"></i>Ajouter un rendu</a>
         <a class="btn btn-outline-secondary mt-3 d-none" id="take-ticket-link"><i class="bi bi-hand-index"></i> Prendre le ticket (page)</a>
         <button type="button" class="btn btn-info mt-3 d-none" id="show-materiels-btn"><i class="bi bi-box-seam"></i> Voir matériels utilisés</button>
       </div>
@@ -477,8 +477,20 @@
             alert('Erreur lors de l\'ajout de l\'agent.');
         }
       });
-      
-    const addDocumentModalEl = document.getElementById('addDocumentModal');
+
+      const addRenduBtn = document.getElementById('add-rendu-btn');
+      if (addRenduBtn) {
+        addRenduBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (!interventionId) {
+            alert('Intervention inconnue.');
+            return;
+          }
+          window.location.href = `rendu-intervention-new.html?id=${interventionId}`;
+        });
+      }
+
+      const addDocumentModalEl = document.getElementById('addDocumentModal');
     const addDocumentModal = new bootstrap.Modal(addDocumentModalEl);
     const addDocumentBtn = document.getElementById('add-document-btn');
     const saveDocumentBtn = document.getElementById('save-document-btn');
