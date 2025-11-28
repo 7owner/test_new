@@ -91,6 +91,17 @@
             <button id="add-agent-btn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAgentModal">Ajouter un agent</button>
         </div>
     </div>
+    
+    <!-- Documents Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="card-title mb-4">Documents Associés</h2>
+            <div id="documents-list">
+                <!-- Documents will be loaded here -->
+            </div>
+            <button id="add-document-btn" class="btn btn-primary mt-3"><i class="bi bi-plus-circle me-2"></i>Ajouter un document</button>
+        </div>
+    </div>
 
     <div class="d-flex gap-2">
       <a href="interventions.html" class="btn btn-secondary">Retour à la liste</a>
@@ -149,6 +160,43 @@
       </div>
     </div>
   </div>
+  
+    <!-- Add Document Modal -->
+    <div class="modal fade" id="addDocumentModal" tabindex="-1" aria-labelledby="addDocumentModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addDocumentModalLabel">Ajouter un document</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="add-document-form">
+              <div class="mb-3">
+                <label for="doc-file-input" class="form-label">Fichier</label>
+                <input class="form-control" type="file" id="doc-file-input" required>
+              </div>
+              <div class="mb-3">
+                <label for="doc-name-input" class="form-label">Nom du fichier (optionnel)</label>
+                <input type="text" class="form-control" id="doc-name-input" placeholder="Ex: rapport_intervention.pdf">
+              </div>
+              <div class="mb-3">
+                <label for="doc-nature-input" class="form-label">Nature du document</label>
+                <select class="form-select" id="doc-nature-input">
+                    <option value="Document">Document</option>
+                    <option value="Video">Vidéo</option>
+                    <option value="Audio">Audio</option>
+                    <option value="Autre">Autre</option>
+                </select>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+            <button type="button" class="btn btn-primary" id="save-document-btn">Enregistrer</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
   <!-- Modal supprimé: prise de ticket via page dédiée -->
 
@@ -169,6 +217,7 @@
       if (!isAdmin) {
           document.getElementById('add-responsable-btn').style.display = 'none';
           document.getElementById('add-agent-btn').style.display = 'none';
+          document.getElementById('add-document-btn').style.display = 'none';
       }
 
       let ticketId = null;
@@ -178,6 +227,8 @@
       const agentSelect = document.getElementById('agent-select');
       const responsablesList = document.getElementById('responsables-list');
       const agentsList = document.getElementById('agents-list');
+      const documentsList = document.getElementById('documents-list');
+
 
       async function fetchJSON(url, opts = {}) {
         const res = await fetch(url, { ...opts, headers: { ...headers, ...opts.headers } });
@@ -203,6 +254,22 @@
             responsablesList.innerHTML = '<li class="list-group-item text-muted">Aucun responsable assigné.</li>';
         }
       }
+      
+      function displayDocuments(documents = []) {
+        documentsList.innerHTML = '';
+        if (documents.length > 0) {
+            documents.forEach(doc => {
+            const docEl = document.createElement('div');
+            docEl.className = 'document-item mb-2 p-2 border rounded';
+            const viewUrl = `/api/documents/${doc.id}/view`;
+            docEl.innerHTML = `<a href="${viewUrl}" target="_blank">${doc.nom_fichier}</a> <span class="text-muted">- (${doc.nature})</span>`;
+            documentsList.appendChild(docEl);
+            });
+        } else {
+            documentsList.innerHTML = '<p class="text-muted">Aucun document associé.</p>';
+        }
+    }
+
 
       function displayAgents(agents = []) {
         agentsList.innerHTML = '';
@@ -264,6 +331,7 @@
             document.getElementById('view_status').textContent = rel.intervention.status || '';
             document.getElementById('view_intervention_precedente_id').textContent = rel.intervention.intervention_precedente_id || '';
             ticketId = rel.ticket ? rel.ticket.id : null;
+            displayDocuments(rel.documents); 
           }
 
           allAgents = await fetchJSON('/api/agents');
@@ -312,6 +380,68 @@
             alert('Erreur lors de l\'ajout de l\'agent.');
         }
       });
+      
+    const addDocumentModalEl = document.getElementById('addDocumentModal');
+    const addDocumentModal = new bootstrap.Modal(addDocumentModalEl);
+    const addDocumentBtn = document.getElementById('add-document-btn');
+    const saveDocumentBtn = document.getElementById('save-document-btn');
+
+    if (addDocumentBtn) {
+      addDocumentBtn.addEventListener('click', () => {
+        document.getElementById('add-document-form').reset();
+        addDocumentModal.show();
+      });
+    }
+
+    function toBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = error => reject(error);
+      });
+    }
+
+    if (saveDocumentBtn) {
+      saveDocumentBtn.addEventListener('click', async () => {
+        const fileInput = document.getElementById('doc-file-input');
+        const file = fileInput.files[0];
+        if (!file) {
+          alert('Veuillez sélectionner un fichier.');
+          return;
+        }
+
+        const base64 = await toBase64(file);
+        const nom_fichier = document.getElementById('doc-name-input').value.trim() || file.name;
+        const nature = document.getElementById('doc-nature-input').value;
+
+        const payload = {
+          base64,
+          nom_fichier,
+          nature,
+          type_mime: file.type,
+          cible_type: 'Intervention',
+          cible_id: interventionId
+        };
+        
+        saveDocumentBtn.disabled = true;
+        saveDocumentBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enregistrement...';
+
+        try {
+          await fetchJSON('/api/documents', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+          addDocumentModal.hide();
+          fetchAndPopulateAll(); // Refresh data
+        } catch (e) {
+          alert(`Échec de l'ajout: ${e.message}`);
+        } finally {
+          saveDocumentBtn.disabled = false;
+          saveDocumentBtn.textContent = 'Enregistrer';
+        }
+      });
+    }
 
       fetchAndPopulateAll();
     });
