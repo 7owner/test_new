@@ -186,6 +186,11 @@
         });
         document.getElementById('save-doe-btn').classList.add('d-none');
       }
+
+      const backBtn = document.getElementById('back-btn');
+      if (backBtn) {
+        backBtn.addEventListener('click', () => window.history.back());
+      }
     });
   </script>
 </body>
