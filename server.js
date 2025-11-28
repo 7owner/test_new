@@ -809,7 +809,7 @@ app.post('/api/documents', authenticateToken, async (req, res) => {
     }
     const result = await pool.query(
       `INSERT INTO documents_repertoire (cible_type, cible_id, nature, nom_fichier, type_mime, taille_octets, chemin_fichier, checksum_sha256, auteur_matricule)
-       VALUES ($1,$2,COALESCE($3,'Document'),$4,COALESCE($5,'application/octet-stream'),$6,$7,$8,$9) RETURNING *`,
+       VALUES ($1,$2,COALESCE($3::doc_nature,'Document'::doc_nature),$4,COALESCE($5,'application/octet-stream'),$6,$7,$8,$9) RETURNING *`,
       [cible_type, cible_id, nature, nom_fichier, type_mime || null, taille_octets, chemin_fichier, checksum_sha256, auteur_matricule || null]
     );
     res.status(201).json(result.rows[0]);
