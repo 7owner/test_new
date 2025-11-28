@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -8,126 +8,173 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
+  <style>
+    body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); }
+    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.08); }
+  </style>
+</head>
+<body>
+  <header class="bg-white shadow-sm py-3 mb-4">
+    <div class="container d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i></button>
+        <h1 class="h5 mb-0 fw-bold">Modifier une intervention</h1>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <span class="text-muted small">ID : <span id="header-intervention-id">—</span></span>
+        <div class="d-flex align-items-center bg-light border rounded-pill px-3 py-1 shadow-sm">
+          <i class="bi bi-person-circle text-primary fs-5 me-2"></i>
+          <span class="fw-medium text-secondary" id="logged-in-user-email"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container pb-5">
+    <div class="card">
+      <div class="card-body">
+        <form id="intervention-edit-form" class="row g-3">
+          <div class="col-12 col-md-4">
+            <label for="id" class="form-label">ID</label>
+            <input type="text" class="form-control" id="id" disabled>
+          </div>
+          <div class="col-12">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" rows="4" placeholder="Décrivez l'intervention"></textarea>
+          </div>
+          <div class="col-12 col-md-6">
+            <label for="date_debut" class="form-label">Date et heure de début</label>
+            <input type="datetime-local" class="form-control" id="date_debut">
+          </div>
+          <div class="col-12 col-md-6">
+            <label for="date_fin" class="form-label">Date et heure de fin</label>
+            <input type="datetime-local" class="form-control" id="date_fin">
+          </div>
+          <div class="col-12 col-md-6">
+            <label for="status" class="form-label">Statut</label>
+            <select class="form-select" id="status">
+              <option value="">-- Choisir un statut --</option>
+              <option value="Pas_commence">Pas commencé</option>
+              <option value="En_cours">En cours</option>
+              <option value="Termine">Terminé</option>
+            </select>
+          </div>
+          <div class="col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-primary" id="save-intervention-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
+            <button type="button" class="btn btn-outline-secondary" id="cancel-btn">Annuler</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
   <script>
-  document.addEventListener("DOMContentLoaded", async () => {
-  
-    /* --------------------------
-       AUTHENTIFICATION
-    -------------------------- */
-    const token = localStorage.getItem("token");
-    if (!token) return location.href = "/login.html";
-  
-    let isAdmin = false;
-    let actorEmail = "";
-  
-    try {
-      const p = JSON.parse(atob(token.split(".")[1]));
-      isAdmin = Array.isArray(p.roles) && p.roles.includes("ROLE_ADMIN");
-      actorEmail = p.email || "";
-      document.getElementById("logged-in-user-email").textContent = actorEmail;
-    } catch {}
-  
-    /* --------------------------
-       API HELPER
-    -------------------------- */
-    const api = (url, opts = {}) =>
-      fetch(url, {
-        headers: {
-          "Authorization": "Bearer " + token,
-          "Content-Type": "application/json",
-          "X-Actor-Email": actorEmail
-        },
-        ...opts
-      }).then(async r => {
-        const body = await r.json().catch(() => null);
-        if (!r.ok) throw new Error(body?.error || "Erreur API");
-        return body;
-      });
-  
-    /* --------------------------
-       FORM REFERENCES
-    -------------------------- */
-    const form = document.getElementById("intervention-edit-form");
-  
-    const idField = document.getElementById("id");
-    const descriptionField = document.getElementById("description");
-    const dateDebutField = document.getElementById("date_debut");
-    const dateFinField = document.getElementById("date_fin");
-    const statusField = document.getElementById("status");
-    const saveBtn = document.getElementById("save-intervention-btn");
-  
-    /* --------------------------
-       ID DANS URL
-    -------------------------- */
-    const params = new URLSearchParams(location.search);
-    const interventionId = params.get("id");
-  
-    if (!interventionId) {
-      alert("Intervention introuvable.");
-      return location.href = "interventions.html";
-    }
-  
-    /* --------------------------
-       CHARGEMENT INTERVENTION
-    -------------------------- */
-    async function loadIntervention() {
+    document.addEventListener("DOMContentLoaded", async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return location.href = "/login.html";
+
+      let isAdmin = false;
+      let actorEmail = "";
       try {
-        const data = await api(`/api/interventions/${interventionId}/relations`);
-        const i = data.intervention;
-        if (!i) throw new Error();
-  
-        idField.value = i.id;
-        descriptionField.value = i.description || "";
-        dateDebutField.value = i.date_debut ? i.date_debut.substring(0, 16) : "";
-        dateFinField.value = i.date_fin?.substring(0, 10) || "";
-        statusField.value = i.status || i.statut || "";
-  
-        if (!isAdmin) {
-          [...form.querySelectorAll("input,select,textarea")].forEach(el => el.disabled = true);
-          saveBtn.classList.add("d-none");
-        }
-  
-      } catch (e) {
-        console.error(e);
-        alert("Erreur lors du chargement.");
-        location.href = "interventions.html";
-      }
-    }
-  
-    /* --------------------------
-       SAUVEGARDE
-    -------------------------- */
-    async function saveIntervention(ev) {
-      ev.preventDefault();
-      if (!isAdmin) return alert("Réservé aux administrateurs.");
-  
-      const payload = {
-        description: descriptionField.value,
-        date_debut: dateDebutField.value || null,
-        date_fin: dateFinField.value || null,
-        status: statusField.value,
-      };
-  
-      try {
-        await api(`/api/interventions/${interventionId}`, {
-          method: "PUT",
-          body: JSON.stringify(payload)
+        const p = JSON.parse(atob(token.split(".")[1]));
+        isAdmin = Array.isArray(p.roles) && p.roles.includes("ROLE_ADMIN");
+        actorEmail = p.email || "";
+        const emailEl = document.getElementById("logged-in-user-email");
+        if (emailEl && actorEmail) emailEl.textContent = actorEmail;
+      } catch {}
+
+      const api = (url, opts = {}) =>
+        fetch(url, {
+          headers: {
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json",
+            "X-Actor-Email": actorEmail
+          },
+          ...opts
+        }).then(async r => {
+          const body = await r.json().catch(() => null);
+          if (!r.ok) throw new Error(body?.error || "Erreur API");
+          return body;
         });
-  
-        alert("Intervention mise à jour.");
-        location.href = "interventions.html";
-  
-      } catch (e) {
-        console.error(e);
-        alert("Échec de la sauvegarde.");
+
+      const form = document.getElementById("intervention-edit-form");
+      const idField = document.getElementById("id");
+      const descriptionField = document.getElementById("description");
+      const dateDebutField = document.getElementById("date_debut");
+      const dateFinField = document.getElementById("date_fin");
+      const statusField = document.getElementById("status");
+      const saveBtn = document.getElementById("save-intervention-btn");
+      const headerId = document.getElementById("header-intervention-id");
+      const backBtn = document.getElementById("back-btn");
+      const cancelBtn = document.getElementById("cancel-btn");
+
+      const params = new URLSearchParams(location.search);
+      const interventionId = params.get("id");
+      if (!interventionId) {
+        alert("Intervention introuvable.");
+        return location.href = "interventions.html";
       }
-    }
-  
-    form.addEventListener("submit", saveIntervention);
-  
-    /* Début */
-    loadIntervention();
-  });
+      if (headerId) headerId.textContent = interventionId;
+
+      function goBack() {
+        if (document.referrer) {
+          history.back();
+        } else {
+          location.href = "interventions.html";
+        }
+      }
+      if (backBtn) backBtn.addEventListener("click", goBack);
+      if (cancelBtn) cancelBtn.addEventListener("click", goBack);
+
+      async function loadIntervention() {
+        try {
+          const data = await api(`/api/interventions/${interventionId}/relations`);
+          const i = data.intervention;
+          if (!i) throw new Error();
+
+          idField.value = i.id ?? "";
+          descriptionField.value = i.description || "";
+          dateDebutField.value = i.date_debut ? i.date_debut.substring(0, 16) : "";
+          dateFinField.value = i.date_fin ? i.date_fin.substring(0, 16) : "";
+          statusField.value = i.status || i.statut || "";
+
+          if (!isAdmin) {
+            form.querySelectorAll("input,select,textarea,button[type='submit']").forEach(el => el.disabled = true);
+          }
+        } catch (e) {
+          console.error(e);
+          alert("Erreur lors du chargement.");
+          location.href = "interventions.html";
+        }
+      }
+
+      async function saveIntervention(ev) {
+        ev.preventDefault();
+        if (!isAdmin) return alert("Réservé aux administrateurs.");
+
+        const payload = {
+          description: descriptionField.value,
+          date_debut: dateDebutField.value || null,
+          date_fin: dateFinField.value || null,
+          status: statusField.value,
+        };
+
+        try {
+          await api(`/api/interventions/${interventionId}`, {
+            method: "PUT",
+            body: JSON.stringify(payload)
+          });
+          alert("Intervention mise à jour.");
+          goBack();
+        } catch (e) {
+          console.error(e);
+          alert("Échec de la sauvegarde.");
+        }
+      }
+
+      form.addEventListener("submit", saveIntervention);
+      loadIntervention();
+    });
   </script>
 </body>
 </html>

@@ -79,8 +79,43 @@
 *   **Backend Fix**:
     *   Implemented `/api/demandes_client/mine` to return the current client’s demandes (excluding `Supprimée`), preventing request timeouts.
 
-*   **Dashboard Notifications (`public/dashboard.html`)**:
+*   **Messagerie (`public/messagerie.html`)**:
     *   Notification “Ouvrir” buttons now close the dropdown and redirect directly to the related conversation in `messagerie.html` via `conversation=demande-<id>`.
+
+*   **Client Dashboard (`client-dashboard.html`)**:
+    *   **Modal Functionality Repaired**: Fixed broken JavaScript logic for all modals (Sites and Demandes). Replaced complex URL generation with a robust URL map.
+    *   **UX Improvement**: The "Modifier" button for a client demand is now disabled if the demand has already been converted to a ticket, with a tooltip explaining why.
+
+*   **Client-Side CRUD Security**:
+    *   **New Secure Pages**: Created `public/client-site-view.html` and `public/client-site-edit.html` to provide a sandboxed experience for clients, showing only relevant information and actions.
+    *   **New Secure Endpoints**: Added `GET /api/client/sites/:id`, `GET /api/client/sites/:id/relations`, and `PUT /api/client/sites/:id` to `server.js` with authorization checks to ensure clients can only access their own sites.
+    *   Updated the client dashboard to point its modals to the new client-specific pages.
+    *   Updated `client-site-view.html` to use the new secure relations endpoint.
+
+*   **Filter UI Enhancement**:
+    *   **Show/Hide Filters**: Added a toggle button and collapsible section for filters on `agents.html`, `sites.html`, and `demandes-client-admin.html` for a cleaner UI, consistent with `tickets.html`.
+
+*   **Messaging Performance (`messagerie.html`)**:
+    *   **Server-Side Filtering**: Re-implemented conversation filtering to be server-side. The frontend now sends `search`, `site`, and `client` parameters to the `GET /api/conversations` endpoint, which performs the filtering in the database. This significantly improves performance over the previous client-side filtering method.
+    *   **Attachment Links**: Fixed a bug in the `hrefForAttachment` function to ensure attachment links are generated correctly and are always accessible.
+
+*   **DOE Details Page (`doe-view.html`)**:
+    *   **Image Upload Implemented**: The "Ajouter Image" button is now functional. It opens a modal with a form to upload an image. The feature handles file-to-base64 conversion and sends the data to the `/api/images` endpoint.
+
+*   **Intervention Form Cleanup**:
+    *   The "intervention précédente" and "maintenance associées" fields were removed from `intervention-new.html`, `intervention-edit.html`, and `ticket-view.html`, as well as the corresponding backend API endpoints (`POST` and `PUT` for `/api/interventions`) as they were deemed redundant.
+
+*   **Intervention Status Change**:
+    *   **Database Schema**: The `statut_intervention` ENUM in `database_correction/init_fixed.sql` was updated to only allow `'En_attente'` and `'Termine'`.
+    *   **Backend API**: The `POST /api/interventions` endpoint now defaults new interventions to `'En_attente'`. The `PUT` endpoint was updated to allow changing the status.
+    *   **Frontend UI**: The status dropdowns in `interventions.html`, `intervention-new.html`, and `intervention-edit.html` were updated to reflect the new allowed statuses.
+
+*   **Database and API Error Fixes (from Heroku logs)**:
+    *   **`images` table**: Added the missing `commentaire_image` column to `database_correction/init_fixed.sql`. Provided the user with the necessary `ALTER TABLE` command for their Heroku database.
+    *   **`documents_repertoire` table**: Added missing columns (`type_mime`, `taille_octets`, `chemin_fichier`, `checksum_sha256`) to `database_correction/init_fixed.sql` and provided the `ALTER TABLE` command.
+    *   **Type Mismatch**: Added an explicit `::doc_nature` cast in `server.js` for the `POST /api/documents` endpoint to fix a database error.
+    *   **Invalid Columns**: Removed non-existent `date_debut` and `date_fin` columns from the `SELECT` query in the `GET /api/images` endpoint in `server.js`.
+    *   **404 Errors**: Removed references to the deprecated `/script.js` from `doe-edit.html` and `interventions.html`.
 
 *   **Messagerie (`public/messagerie.html`)**:
     *   Filters rebuilt: text search by demande ID/titre, site, and client (with datalist suggestions). Removed old dropdown/checkbox.
