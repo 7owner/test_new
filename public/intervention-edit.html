@@ -75,7 +75,7 @@
           </div>
           <div class="mb-3">
             <label for="date_debut" class="form-label">Date Début</label>
-            <input type="date" class="form-control" id="date_debut" required>
+            <input type="datetime-local" class="form-control" id="date_debut" required>
           </div>
           <div class="mb-3">
             <label for="date_fin" class="form-label">Date Fin</label>
@@ -180,7 +180,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       idField.value = i.id;
       maintenanceField.value = i.maintenance_id || "";
       descriptionField.value = i.description || "";
-      dateDebutField.value = i.date_debut?.substring(0, 10) || "";
+      dateDebutField.value = i.date_debut ? i.date_debut.substring(0, 16) : "";
       dateFinField.value = i.date_fin?.substring(0, 10) || "";
       statusField.value = i.status || i.statut || "";
       prevInterField.value = i.intervention_precedente_id || "";
@@ -237,4 +237,3 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 </body>
 </html>
-
