@@ -959,12 +959,31 @@ app.post('/api/images', authenticateToken, authorizeAdmin, async (req, res) => {
     if (!nom_fichier || !base64) return res.status(400).json({ error: 'Missing required fields' });
     const buffer = Buffer.from(base64, 'base64');
     const taille_octets = buffer.length;
-    const result = await pool.query(
-      `INSERT INTO images (nom_fichier, type_mime, taille_octets, image_blob, commentaire_image, auteur_matricule, cible_type, cible_id)
-       VALUES ($1, COALESCE($2,'image/jpeg'), $3, $4, $5, $6, $7, $8) RETURNING id, nom_fichier, type_mime, taille_octets, commentaire_image, auteur_matricule, cible_type, cible_id` ,
-      [nom_fichier, type_mime, taille_octets, buffer, commentaire_image || null, auteur_matricule || null, cible_type || null, cible_id || null]
-    );
-    res.status(201).json(result.rows[0]);
+    const doInsert = async () => {
+      return pool.query(
+        `INSERT INTO images (nom_fichier, type_mime, taille_octets, image_blob, commentaire_image, auteur_matricule, cible_type, cible_id)
+         VALUES ($1, COALESCE($2,'image/jpeg'), $3, $4, $5, $6, $7, $8) RETURNING id, nom_fichier, type_mime, taille_octets, commentaire_image, auteur_matricule, cible_type, cible_id` ,
+        [nom_fichier, type_mime, taille_octets, buffer, commentaire_image || null, auteur_matricule || null, cible_type || null, cible_id || null]
+      );
+    };
+    try {
+      const result = await doInsert();
+      res.status(201).json(result.rows[0]);
+    } catch (err) {
+      // handle missing column (commentaire_image) or enum value
+      if (err.code === '42703') {
+        try {
+          await pool.query('ALTER TABLE images ADD COLUMN IF NOT EXISTS commentaire_image TEXT');
+          const result = await doInsert();
+          return res.status(201).json(result.rows[0]);
+        } catch (e2) {
+          console.error('Error adding commentaire_image column:', e2);
+          return res.status(500).json({ error: 'Internal Server Error' });
+        }
+      }
+      console.error('Error uploading image:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
   } catch (err) {
     console.error('Error uploading image:', err);
     res.status(500).json({ error: 'Internal Server Error' });
