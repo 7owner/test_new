@@ -925,7 +925,7 @@ app.get('/api/stats/tickets/monthly', authenticateToken, async (req, res) => {
 app.get('/api/images', authenticateToken, async (req, res) => {
   try {
     const { cible_type, cible_id } = req.query;
-    let sql = 'SELECT id, nom_fichier, type_mime, taille_octets, commentaire_image, auteur_matricule, cible_type, cible_id, date_debut, date_fin FROM images';
+    let sql = 'SELECT id, nom_fichier, type_mime, taille_octets, commentaire_image, auteur_matricule, cible_type, cible_id FROM images';
     const params = [];
     if (cible_type && cible_id) { sql += ' WHERE cible_type = $1 AND cible_id = $2'; params.push(cible_type, cible_id); }
     sql += ' ORDER BY id DESC';
