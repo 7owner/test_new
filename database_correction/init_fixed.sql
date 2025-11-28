@@ -54,7 +54,7 @@ DROP TYPE IF EXISTS mode_reglement CASCADE;
 DROP TYPE IF EXISTS role_agence CASCADE;
 DROP TYPE IF EXISTS type_formation CASCADE;
 
-CREATE TYPE statut_intervention AS ENUM ('Pas_commence','Bloque','En_attente','En_cours','Termine');
+CREATE TYPE statut_intervention AS ENUM ('En_attente','Termine');
 CREATE TYPE etat_rapport        AS ENUM ('Pas_commence','En_cours','Termine');
 CREATE TYPE sujet_type          AS ENUM ('ticket','intervention');
 CREATE TYPE statut_rdv          AS ENUM ('Planifie','Confirme','Termine','Annule');

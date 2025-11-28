@@ -57,21 +57,26 @@
   </div>
 
   <main class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
       <h1>🛠️ INTERVENTIONS</h1>
-      <a href="intervention-new.html" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Créer une nouvelle intervention</a>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-primary" id="toggle-filters-btn"><i class="bi bi-funnel-fill me-1"></i> Masquer les filtres</button>
+        <a href="intervention-new.html" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Créer une nouvelle intervention</a>
+      </div>
     </div>
 
-    <div class="mb-3 d-flex gap-2">
-      <input type="text" class="form-control" id="intervention-search" placeholder="Rechercher par description ou ID...">
-      <select class="form-select" id="intervention-status-filter">
-        <option value="">Tous les statuts</option>
-        <option value="pas commencé">Pas commencé</option>
-        <option value="bloqué">Bloqué</option>
-        <option value="en attente">En attente</option>
-        <option value="en cours">En cours</option>
-        <option value="terminé">Terminé</option>
-      </select>
+    <div class="filters-card p-3 mb-4" id="filters-row">
+      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        <h5 class="mb-0">Filtres</h5>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <input type="text" class="form-control" id="intervention-search" placeholder="Rechercher par description ou ID...">
+        <select class="form-select" id="intervention-status-filter">
+          <option value="">Tous les statuts</option>
+          <option value="En_attente">En attente</option>
+          <option value="Termine">Terminé</option>
+        </select>
+      </div>
     </div>
 
     <div class="table-responsive">
@@ -117,12 +122,9 @@
           const statusVal = intervention.status || intervention.statut || '';
           let statusBadgeClass = '';
           switch (statusVal) {
-            case 'Pas_commence': statusBadgeClass = 'bg-secondary'; break;
-            case 'Bloque': statusBadgeClass = 'bg-danger'; break;
             case 'En_attente': statusBadgeClass = 'bg-info'; break;
-            case 'En_cours': statusBadgeClass = 'bg-warning'; break;
             case 'Termine': statusBadgeClass = 'bg-success'; break;
-            default: statusBadgeClass = 'bg-light text-dark';
+            default: statusBadgeClass = 'bg-light text-dark'; // Fallback for unexpected or empty status
           }
           row.innerHTML = `
             <td>${intervention.id}</td>
@@ -130,7 +132,7 @@
             <td>${intervention.description || ''}</td>
             <td>${intervention.date_debut || ''}</td>
             <td>${intervention.date_fin || 'N/A'}</td>
-            <td><span class="badge ${statusBadgeClass}">${statusVal}</span></td>
+            <td><span class="badge ${statusBadgeClass}">${statusVal.replace('_', ' ')}</span></td>
             <td>
               <a href="intervention-view.html?id=${intervention.id}" class="btn btn-sm btn-info me-1"><i class="bi bi-eye"></i> Voir</a>
               ${currentUserIsAdmin ? `
