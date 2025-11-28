@@ -70,6 +70,22 @@
       </div>
     </div>
 
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Images</h2>
+        <div id="intervention-images-list" class="row row-cols-1 row-cols-md-3 g-3 mb-3">
+          <div class="text-muted">Aucune image chargée.</div>
+        </div>
+        <div id="intervention-image-form-wrapper" class="d-none">
+          <label class="form-label" for="intervention-image-file">Ajouter une image</label>
+          <input type="file" class="form-control mb-2" id="intervention-image-file" accept="image/*">
+          <label class="form-label" for="intervention-image-comment">Commentaire (optionnel)</label>
+          <textarea class="form-control mb-2" id="intervention-image-comment" rows="2"></textarea>
+          <button class="btn btn-primary btn-sm" id="intervention-image-upload-btn"><i class="bi bi-upload me-1"></i>Envoyer l'image</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Responsables Section -->
     <div class="card mb-4">
         <div class="card-body">
@@ -227,6 +243,11 @@
       const agentSelect = document.getElementById('agent-select');
       const responsablesList = document.getElementById('responsables-list');
       const agentsList = document.getElementById('agents-list');
+      const imagesList = document.getElementById('intervention-images-list');
+      const imgFormWrapper = document.getElementById('intervention-image-form-wrapper');
+      const imgFileInput = document.getElementById('intervention-image-file');
+      const imgCommentInput = document.getElementById('intervention-image-comment');
+      const imgUploadBtn = document.getElementById('intervention-image-upload-btn');
       const documentsList = document.getElementById('documents-list');
 
 
@@ -252,6 +273,69 @@
             });
         } else {
             responsablesList.innerHTML = '<li class="list-group-item text-muted">Aucun responsable assigné.</li>';
+        }
+      }
+
+      async function loadImages() {
+        if (!imagesList) return;
+        imagesList.innerHTML = '<div class="text-muted">Chargement…</div>';
+        try {
+          const imgs = await fetchJSON(`/api/images?cible_type=intervention&cible_id=${interventionId}`);
+          if (!imgs || !imgs.length) {
+            imagesList.innerHTML = '<div class="text-muted">Aucune image associée.</div>';
+            return;
+          }
+          imagesList.innerHTML = '';
+          imgs.forEach(img => {
+            const col = document.createElement('div');
+            col.className = 'col';
+            const viewUrl = `/api/images/${img.id}/view`;
+            col.innerHTML = `
+              <div class="border rounded p-2 h-100">
+                <div class="small mb-1"><strong>${img.nom_fichier || 'Image'}</strong></div>
+                ${img.commentaire_image ? `<div class="text-muted small mb-1">${img.commentaire_image}</div>` : ''}
+                <a class="btn btn-sm btn-outline-primary w-100" href="${viewUrl}" target="_blank"><i class="bi bi-eye me-1"></i>Voir</a>
+              </div>`;
+            imagesList.appendChild(col);
+          });
+        } catch (e) {
+          console.error('Erreur chargement images:', e);
+          imagesList.innerHTML = '<div class="text-danger">Impossible de charger les images.</div>';
+        }
+      }
+
+      async function uploadImage() {
+        const file = imgFileInput && imgFileInput.files && imgFileInput.files[0];
+        if (!file) { alert('Sélectionnez un fichier image.'); return; }
+        try {
+          const base64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          const body = {
+            nom_fichier: file.name,
+            type_mime: file.type || 'image/jpeg',
+            base64,
+            commentaire_image: imgCommentInput ? imgCommentInput.value.trim() : null,
+            cible_type: 'intervention',
+            cible_id: interventionId
+          };
+          const res = await fetch('/api/images', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...headers },
+            body: JSON.stringify(body)
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+          imgFileInput.value = '';
+          if (imgCommentInput) imgCommentInput.value = '';
+          await loadImages();
+          alert('Image ajoutée.');
+        } catch (e) {
+          console.error('Upload image:', e);
+          alert(`Erreur lors de l'upload: ${e.message}`);
         }
       }
       
@@ -332,6 +416,7 @@
             document.getElementById('view_intervention_precedente_id').textContent = rel.intervention.intervention_precedente_id || '';
             ticketId = rel.ticket ? rel.ticket.id : null;
             displayDocuments(rel.documents); 
+            loadImages();
           }
 
           allAgents = await fetchJSON('/api/agents');
@@ -444,6 +529,10 @@
     }
 
       fetchAndPopulateAll();
+      if (imgFormWrapper && isAdmin) {
+        imgFormWrapper.classList.remove('d-none');
+        if (imgUploadBtn) imgUploadBtn.addEventListener('click', uploadImage);
+      }
     });
   </script>
 </body>
