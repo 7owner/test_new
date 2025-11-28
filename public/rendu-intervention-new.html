@@ -23,13 +23,7 @@
 </head>
 
 <body>
-  <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" style="height: 40px;"></h1>
-    <div id="user-info-container" class="d-flex align-items-center">
-      <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar">Menu</button>
-    </div>
-  </header>
+ 
 
   <!-- Menu -->
   <div class="offcanvas offcanvas-end" id="offcanvasNavbar">
@@ -166,6 +160,15 @@ document.addEventListener("DOMContentLoaded", () => {
       return html;
     }
   });
+
+  const updatePreview = () => {
+    try {
+      const html = easyMDE.options.previewRender(easyMDE.value());
+      preview.innerHTML = html;
+    } catch (_) {}
+  };
+  easyMDE.codemirror.on("change", updatePreview);
+  updatePreview();
 
   /* ========= GESTION DES IMAGES ========= */
   const imagesContainer = document.getElementById("rendu-images-container");
