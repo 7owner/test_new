@@ -190,15 +190,9 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
 
         <div class="card-footer d-flex flex-wrap justify-content-end">
-          ${statusSel.map(s => `
-            <button class="btn btn-sm btn-outline-primary me-1 mb-1 status-btn" data-id="${d.id}" data-status="${s}">
-              ${s}
-            </button>`).join("")}
-
           <button class="btn btn-sm btn-success mb-1 convert-btn" data-id="${d.id}" ${d.status === "Traité" ? "disabled" : ""}>
             Convertir en ticket
           </button>
-
           <button class="btn btn-sm btn-danger mb-1 delete-btn" data-id="${d.id}">
             Supprimer
           </button>
@@ -207,10 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     // --- EVENTS ---
-    col.querySelectorAll(".status-btn").forEach(btn => {
-      btn.addEventListener("click", () => updateStatus(d, btn.dataset.status));
-    });
-
     col.querySelector(".convert-btn").addEventListener("click", () => convertToTicket(d.id));
     col.querySelector(".delete-btn").addEventListener("click", () => openDeleteModal(d.id));
 
