@@ -256,11 +256,11 @@
       const elapsedEl = document.getElementById('view_elapsed');
       function formatElapsed(ms){
         if (!ms || ms<0) return '';
-        const totalSec = Math.floor(ms/1000);
-        const h = Math.floor(totalSec/3600);
-        const m = Math.floor((totalSec%3600)/60);
-        const s = totalSec%60;
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        const totalMin = Math.floor(ms/60000);
+        const days = Math.floor(totalMin/(60*24));
+        const hours = Math.floor((totalMin%(60*24))/60);
+        const mins = totalMin%60;
+        return `${days}j ${String(hours).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m`;
       }
       function startElapsed(startIso, endIso){
         if (!elapsedEl || !startIso) return;
