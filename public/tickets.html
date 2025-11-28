@@ -330,7 +330,9 @@
             const responsableName = getAgentName(ticket.responsable);
             const statusBadgeClass = getStatusBadgeClass(ticket.etat);
             const start = ticket.date_debut ? new Date(ticket.date_debut) : null;
-            const end = (ticket.etat === 'Termine' && ticket.date_fin) ? new Date(ticket.date_fin) : null;
+            const end = ticket.etat === 'Termine'
+              ? (ticket.date_fin ? new Date(ticket.date_fin) : new Date())
+              : null;
             const endDisplay = end ? end.toLocaleDateString() : '—';
             const elapsed = start ? formatElapsed((end || Date.now()) - start) : '—';
 
