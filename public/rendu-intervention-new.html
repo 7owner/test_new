@@ -303,29 +303,35 @@ document.addEventListener("DOMContentLoaded", () => {
       "|",
       "guide"
     ],
-    previewRender: text => {
-      const html = EasyMDE.prototype.markdown(text);
-      return html;
-    }
+    previewRender: text => EasyMDE.prototype.markdown(text || "")
   });
 
   const updatePreview = () => {
+    if (!preview) return;
     try {
       const text = easyMDE.value();
-      const html = easyMDE.options.previewRender(text);
+      const html = easyMDE.options.previewRender(text || "");
       preview.innerHTML = html || '<em class="text-muted">L\'aperçu apparaîtra ici...</em>';
-      updateCharCounter(document.getElementById("resume"), resumeCounter);
     } catch (err) {
       console.error('Erreur preview:', err);
     }
+    updateCharCounter(document.getElementById("resume"), resumeCounter);
   };
 
-  try { 
-    easyMDE.codemirror.on("change", updatePreview);
-  } catch(err) {
-    console.error('Erreur listener:', err);
-  }
-  
+  const bindPreviewListeners = () => {
+    if (easyMDE?.codemirror) {
+      easyMDE.codemirror.on("change", () => {
+        // small debounce to let EasyMDE sync the textarea
+        setTimeout(updatePreview, 0);
+      });
+    }
+    const resumeTextarea = document.getElementById("resume");
+    if (resumeTextarea) {
+      resumeTextarea.addEventListener("input", updatePreview);
+    }
+  };
+
+  bindPreviewListeners();
   updatePreview();
 
   /* ========= NAVIGATION ========= */
