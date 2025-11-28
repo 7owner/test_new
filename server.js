@@ -2263,14 +2263,14 @@ app.get('/api/interventions', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, res) => {
-    const { titre, description, date_debut, date_fin, ticket_id, status, intervention_precedente_id } = req.body;
+    const { titre, description, date_debut, date_fin, ticket_id, status } = req.body; // intervention_precedente_id removed
     if (!description || !date_debut || !ticket_id) {
         return res.status(400).json({ error: 'Description, date de début et ticket ID sont requis' });
     }
     try {
         const result = await pool.query(
-            'INSERT INTO intervention (titre, description, date_debut, date_fin, ticket_id, status, intervention_precedente_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-            [titre || null, description, date_debut, date_fin, ticket_id, status || 'En_attente', intervention_precedente_id || null]
+            'INSERT INTO intervention (titre, description, date_debut, date_fin, ticket_id, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', // intervention_precedente_id column removed, $7 becomes $6
+            [titre || null, description, date_debut, date_fin, ticket_id, status || 'En_attente'] // intervention_precedente_id value removed
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -2281,11 +2281,11 @@ app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, re
 
 app.put('/api/interventions/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id } = req.params;
-    const { description, date_debut, date_fin = null, ticket_id, status, intervention_precedente_id = null } = req.body;
+    const { description, date_debut, date_fin = null, ticket_id, status } = req.body; // intervention_precedente_id removed
     try {
         const result = await pool.query(
-            'UPDATE intervention SET description = $1, date_debut = $2, date_fin = $3, ticket_id = $4, status = COALESCE($5::statut_intervention, status), intervention_precedente_id = $6 WHERE id = $7 RETURNING *',
-            [description, date_debut, date_fin, ticket_id, status, intervention_precedente_id, id]
+            'UPDATE intervention SET description = $1, date_debut = $2, date_fin = $3, ticket_id = $4, status = COALESCE($5::statut_intervention, status) WHERE id = $6 RETURNING *', // intervention_precedente_id column removed, $6 becomes $5, $7 becomes $6
+            [description, date_debut, date_fin, ticket_id, status, id] // intervention_precedente_id value removed
         );
         if (result.rows.length === 0) {
             return res.status(404).json({ error: `Intervention with id ${id} not found` });

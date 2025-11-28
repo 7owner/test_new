@@ -87,14 +87,7 @@
               <option value="Termine">Terminé</option>
             </select>
           </div>
-          <div class="mb-3">
-            <label for="intervention_precedente_id" class="form-label">Intervention précédente (si applicable)</label>
-            <select class="form-select" id="intervention_precedente_id">
-              <option value="">Aucune</option>
-              <option value="INT001">INT001 - Vérification systèmes</option>
-              <option value="INT002">INT002 - Réparation climatisation</option>
-            </select>
-          </div>
+
 
           <h3 class="mt-5 mb-3">Fichiers Associés</h3>
           <div id="intervention-documents-container">
@@ -202,7 +195,7 @@
       date_debut: document.getElementById('date_debut').value || null,
       date_fin: document.getElementById('date_fin').value || null,
       ticket_id: document.getElementById('ticket_id').value || null, // Correctly using ticket_id
-      intervention_precedente_id: document.getElementById('intervention_precedente_id').value || null,
+
       status: document.getElementById('status').value || 'En_attente' // Ensuring status is included
     };
 
