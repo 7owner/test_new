@@ -290,7 +290,7 @@
         if (!imagesList) return;
         imagesList.innerHTML = '<div class="text-muted">Chargement…</div>';
         try {
-          const imgs = await fetchJSON(`/api/images?cible_type=intervention&cible_id=${interventionId}`);
+          const imgs = await fetchJSON(`/api/images?cible_type=Intervention&cible_id=${interventionId}`);
           if (!imgs || !imgs.length) {
             imagesList.innerHTML = '<div class="text-muted">Aucune image associée.</div>';
             return;
