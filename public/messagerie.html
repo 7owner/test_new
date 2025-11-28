@@ -136,13 +136,11 @@
 
       function hrefForAttachment(att) {
         if (!att || !att.file_path) return '#';
-        const p = String(att.file_path);
-        const fileName = p.split('/').filter(Boolean).slice(-1)[0];
-        const rel = p.replace(/^public\//, '');
-        if (p.includes('uploads/attachments/')) {
-          return '/' + rel.replace(/^public\//, '').replace(/^[\\/]+/, '');
-        }
-        return `/uploads/attachments/${fileName}`;
+        // The path from the DB is like 'uploads/attachments/filename.ext'
+        // It should be served directly from the root.
+        // We just need to make sure there's a leading '/'
+        let path = String(att.file_path).replace(/^public[\\/]/, ''); // Remove 'public/' prefix
+        return '/' + path.replace(/^[\\/]+/, ''); // Ensure single leading slash
       }
 
       async function fetchJSON(url, opts) {
