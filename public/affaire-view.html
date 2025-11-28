@@ -11,7 +11,10 @@
 </head>
 <body>
   <main class="container mt-5">
-    <h1 class="mb-4">Détails de l'Affaire: <span id="affaire-nom"></span></h1>
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h1 class="mb-0">Détails de l'Affaire: <span id="affaire-nom"></span></h1>
+      <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
+    </div>
 
     <div class="card mb-4">
       <div class="card-body">
@@ -30,7 +33,7 @@
       </div>
     </div>
     
-    <a href="affaires.html" class="btn btn-secondary">Retour à la liste des affaires</a>
+    <a href="affaires.html" class="btn btn-secondary d-none" id="fallback-back-link">Retour à la liste des affaires</a>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
@@ -99,6 +102,16 @@
         console.error(err);
       }
     });
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        if (window.history.length > 1) window.history.back();
+        else {
+          const fb = document.getElementById('fallback-back-link');
+          if (fb) fb.click();
+        }
+      });
+    }
   </script>
 </body>
 </html>

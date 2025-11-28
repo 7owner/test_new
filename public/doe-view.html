@@ -236,6 +236,7 @@
         doeImagesList.innerHTML = '<p class="text-muted">Aucune image associée.</p>';
       }
 
+      
       // Boutons admin
       if (!currentUserIsAdmin) {
         document.getElementById('add-doe-doc-btn').classList.add('d-none');
@@ -323,6 +324,10 @@
       document.getElementById('doe-title').textContent = 'DOE introuvable';
     }
   });
+  const backBtn = document.getElementById('back-btn');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => window.history.back());
+  }
 </script>
 </body>
 </html>

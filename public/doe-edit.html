@@ -290,6 +290,11 @@
         alert("DOE non trouvé!");
         window.location.href = "maintenances.html";
       }
+
+      const backBtn = document.getElementById('back-btn');
+      if (backBtn) {
+        backBtn.addEventListener('click', () => window.history.back());
+      }
     });
   </script>
 </body>
