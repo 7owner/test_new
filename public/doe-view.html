@@ -65,105 +65,44 @@
       </div>
     </div>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Documents Associés</h2>
-        <div id="doe-documents-list">
-          <!-- Placeholder for DOE documents -->
-          <div class="doe-document-item mb-3 p-3 border rounded bg-light">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <strong>Fichier:</strong> <a href="#" target="_blank">plan_site_A.pdf</a>
-              <div>
-                <button type="button" class="btn btn-sm btn-primary me-2 edit-doe-doc-btn"><i class="bi bi-pencil"></i> Modifier</button>
-                <button type="button" class="btn btn-sm btn-danger delete-doe-doc-btn"><i class="bi bi-trash"></i> Supprimer</button>
-              </div>
-            </div>
-            <p class="mb-0"><strong>Commentaire:</strong> Plan détaillé du site A.</p>
+   <!-- Add Document Modal -->
+    <div class="modal fade" id="addDocumentModal" tabindex="-1" aria-labelledby="addDocumentModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addDocumentModalLabel">Ajouter un document</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="doe-document-item mb-3 p-3 border rounded bg-light">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <strong>Fichier:</strong> <a href="#" target="_blank">rapport_audit_B.docx</a>
-              <div>
-                <button type="button" class="btn btn-sm btn-primary me-2 edit-doe-doc-btn"><i class="bi bi-pencil"></i> Modifier</button>
-                <button type="button" class="btn btn-sm btn-danger delete-doe-doc-btn"><i class="bi bi-trash"></i> Supprimer</button>
+          <div class="modal-body">
+            <form id="add-document-form">
+              <div class="mb-3">
+                <label for="doc-file-input" class="form-label">Fichier</label>
+                <input class="form-control" type="file" id="doc-file-input" required>
               </div>
-            </div>
-            <p class="mb-0"><strong>Commentaire:</strong> Rapport d'audit de sécurité du site B.</p>
+              <div class="mb-3">
+                <label for="doc-name-input" class="form-label">Nom du fichier (optionnel)</label>
+                <input type="text" class="form-control" id="doc-name-input" placeholder="Ex: rapport_intervention.pdf">
+              </div>
+              <div class="mb-3">
+                <label for="doc-nature-input" class="form-label">Nature du document</label>
+                <select class="form-select" id="doc-nature-input">
+                    <option value="Document">Document</option>
+                    <option value="Video">Vidéo</option>
+                    <option value="Audio">Audio</option>
+                    <option value="Autre">Autre</option>
+                </select>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+            <button type="button" class="btn btn-primary" id="save-document-btn">Enregistrer</button>
           </div>
         </div>
-        <button type="button" class="btn btn-primary mt-3" id="add-doe-doc-btn"><i class="bi bi-plus-circle me-2"></i>Ajouter Document</button>
       </div>
     </div>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Images Associées</h2>
-        <div id="doe-images-list" class="row row-cols-1 row-cols-md-3 g-3">
-          <!-- Placeholder for DOE images -->
-          <div class="col">
-            <div class="doe-image-item border rounded bg-light p-2">
-              <img src="https://via.placeholder.com/150" class="img-fluid mb-2" alt="Image DOE 1">
-              <p class="mb-1"><strong>Fichier:</strong> image_doe_1.jpg</p>
-              <p class="mb-0"><strong>Commentaire:</strong> Vue générale du site.</p>
-              <div class="d-flex justify-content-end gap-2 mt-2">
-                <button type="button" class="btn btn-sm btn-primary edit-doe-image-btn"><i class="bi bi-pencil"></i> Modifier</button>
-                <button type="button" class="btn btn-sm btn-danger delete-doe-image-btn"><i class="bi bi-trash"></i> Supprimer</button>
-              </div>
-            </div>
-          </div>
-          <div class="col">
-            <div class="doe-image-item border rounded bg-light p-2">
-              <img src="https://via.placeholder.com/150" class="img-fluid mb-2" alt="Image DOE 2">
-              <p class="mb-1"><strong>Fichier:</strong> image_doe_2.jpg</p>
-              <p class="mb-0"><strong>Commentaire:</strong> Détail d'un équipement.</p>
-              <div class="d-flex justify-content-end gap-2 mt-2">
-                <button type="button" class="btn btn-sm btn-primary edit-doe-image-btn"><i class="bi bi-pencil"></i> Modifier</button>
-                <button type="button" class="btn btn-sm btn-danger delete-doe-image-btn"><i class="bi bi-trash"></i> Supprimer</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <button type="button" class="btn btn-primary mt-3" id="add-doe-image-btn"><i class="bi bi-plus-circle me-2"></i>Ajouter Image</button>
-      </div>
-    </div>
-
-    <div class="d-flex gap-2">
-      <!--<a href="maintenances.html" class="btn btn-secondary">Retour à la liste des maintenances</a>-->
-      <a href="doe-edit.html" class="btn btn-primary" id="edit-doe-btn"><i class="bi bi-pencil me-2"></i>Modifier le DOE</a>
-    </div>
-  </main>
-
-  <!-- Add Image Modal -->
-  <div class="modal fade" id="addImageModal" tabindex="-1" aria-labelledby="addImageModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="addImageModalLabel">Ajouter une Image au DOE</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="add-image-form">
-            <div class="mb-3">
-              <label for="image-file-input" class="form-label">Fichier Image</label>
-              <input class="form-control" type="file" id="image-file-input" accept="image/*" required>
-            </div>
-            <div class="mb-3">
-              <label for="image-name-input" class="form-label">Nom du fichier (optionnel)</label>
-              <input type="text" class="form-control" id="image-name-input" placeholder="Ex: plan_masse.jpg">
-            </div>
-            <div class="mb-3">
-              <label for="image-comment-input" class="form-label">Commentaire (optionnel)</label>
-              <textarea class="form-control" id="image-comment-input" rows="2"></textarea>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="save-image-btn">Enregistrer</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Modal supprimé: prise de ticket via page dédiée -->
 
  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 <script>
