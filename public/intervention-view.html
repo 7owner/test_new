@@ -8,6 +8,13 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
+  <style>
+    .markdown-body h1, .markdown-body h2, .markdown-body h3 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+    .markdown-body p { margin-bottom: 0.5rem; }
+    .markdown-body ul { padding-left: 1.25rem; margin-bottom: 0.5rem; }
+    .markdown-body strong { font-weight: 600; }
+    .markdown-body code { background: #f6f8fa; padding: 2px 4px; border-radius: 4px; }
+  </style>
 </head>
 <body>
 
@@ -217,6 +224,7 @@
   <!-- Modal supprimé: prise de ticket via page dédiée -->
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async function () {
       const urlParams = new URLSearchParams(window.location.search);
@@ -249,6 +257,8 @@
       const imgCommentInput = document.getElementById('intervention-image-comment');
       const imgUploadBtn = document.getElementById('intervention-image-upload-btn');
       const documentsList = document.getElementById('documents-list');
+      const rendusList = document.getElementById('rendu-intervention-list');
+      const renderMd = (txt='') => { try { return marked.parse(txt); } catch { return txt; } };
 
 
       async function fetchJSON(url, opts = {}) {
@@ -354,6 +364,23 @@
         }
     }
 
+      function renderRendus(rendus = []) {
+        if (!rendusList) return;
+        if (!rendus.length) {
+          rendusList.innerHTML = '<p class="text-muted">Aucun rendu.</p>';
+          return;
+        }
+        rendusList.innerHTML = '';
+        rendus.forEach(r => {
+          const card = document.createElement('div');
+          card.className = 'card card-body mb-2';
+          const titre = r.titre || `Rendu ${r.id || ''}`;
+          const body = renderMd(r.contenu || r.description || '');
+          card.innerHTML = `<h6 class="mb-2">${titre}</h6><div class="markdown-body">${body}</div>`;
+          rendusList.appendChild(card);
+        });
+      }
+
 
       function displayAgents(agents = []) {
         agentsList.innerHTML = '';
@@ -403,21 +430,22 @@
       }
       
       async function fetchAndPopulateAll() {
-        try {
-          const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
-          if (rel && rel.intervention) {
-            document.getElementById('intervention-id').textContent = rel.intervention.id;
-            document.getElementById('view_id').textContent = rel.intervention.id;
-            document.getElementById('view_maintenance_id').textContent = rel.ticket ? rel.ticket.id : '';
-            document.getElementById('view_description').textContent = rel.intervention.description || '';
-            document.getElementById('view_date_debut').textContent = rel.intervention.date_debut || '';
-            document.getElementById('view_date_fin').textContent = rel.intervention.date_fin || '';
-            document.getElementById('view_status').textContent = rel.intervention.status || '';
-            document.getElementById('view_intervention_precedente_id').textContent = rel.intervention.intervention_precedente_id || '';
-            ticketId = rel.ticket ? rel.ticket.id : null;
+      try {
+        const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
+        if (rel && rel.intervention) {
+          document.getElementById('intervention-id').textContent = rel.intervention.id;
+          document.getElementById('view_id').textContent = rel.intervention.id;
+          document.getElementById('view_maintenance_id').textContent = rel.ticket ? rel.ticket.id : '';
+          document.getElementById('view_description').textContent = rel.intervention.description || '';
+          document.getElementById('view_date_debut').textContent = rel.intervention.date_debut || '';
+          document.getElementById('view_date_fin').textContent = rel.intervention.date_fin || '';
+          document.getElementById('view_status').textContent = rel.intervention.status || '';
+          document.getElementById('view_intervention_precedente_id').textContent = rel.intervention.intervention_precedente_id || '';
+          ticketId = rel.ticket ? rel.ticket.id : null;
             displayDocuments(rel.documents); 
+            renderRendus(rel.rendus || rel.rendu_interventions || []);
             loadImages();
-          }
+        }
 
           allAgents = await fetchJSON('/api/agents');
           const options = allAgents.map(agent => `<option value="${agent.matricule}">${agent.nom} ${agent.prenom || ''} (${agent.matricule})</option>`).join('');
