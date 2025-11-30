@@ -47,7 +47,7 @@
           </div>
           <div class="col-12 d-flex gap-2">
             <button type="submit" class="btn btn-primary" id="save-intervention-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
-            <button type="button" class="btn btn-outline-secondary" id="cancel-btn">Annuler</button>
+            <a href="interventions.html" class="btn btn-outline-secondary" id="cancel-btn">Annuler</a>
           </div>
         </form>
       </div>
@@ -91,7 +91,6 @@
       const statusField = document.getElementById("status");
       const saveBtn = document.getElementById("save-intervention-btn");
       const headerId = document.getElementById("header-intervention-id");
-      const backBtn = document.getElementById("back-btn");
       const cancelBtn = document.getElementById("cancel-btn");
 
       const params = new URLSearchParams(location.search);
@@ -103,14 +102,20 @@
       if (headerId) headerId.textContent = interventionId;
 
       function goBack() {
+        // Prefer history.back() if possible, otherwise use the link's href
         if (document.referrer) {
           history.back();
         } else {
           location.href = "interventions.html";
         }
       }
-      if (backBtn) backBtn.addEventListener("click", goBack);
-      if (cancelBtn) cancelBtn.addEventListener("click", goBack);
+
+      if (cancelBtn) {
+        cancelBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            goBack();
+        });
+      }
 
       async function loadIntervention() {
         try {

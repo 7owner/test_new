@@ -29,6 +29,7 @@
                 <th>Description</th>
                 <th>Début</th>
                 <th>Fin</th>
+                <th>Temps écoulé</th>
                 <th class="text-center">Actions</th>
               </tr>
             </thead>
@@ -53,9 +54,27 @@
           const arr = r.ok ? await r.json() : [];
           if (!arr.length) { if (empty) empty.classList.remove('hidden'); return; }
           if (empty) empty.classList.add('hidden');
+          const fmtElapsed = (startStr, endStr, status) => {
+            if (!startStr) return '—';
+            const start = new Date(startStr).getTime();
+            if (Number.isNaN(start)) return '—';
+            const isClosed = status === 'Termine' || status === 'Terminé' || status === 'Fermé';
+            const end = endStr ? new Date(endStr).getTime() : Date.now();
+            const diff = Math.max(0, end - start);
+            const totalMin = Math.floor(diff / 60000);
+            const days = Math.floor(totalMin / (60 * 24));
+            const hours = Math.floor((totalMin % (60 * 24)) / 60);
+            const mins = totalMin % 60;
+            const parts = [];
+            if (days) parts.push(`${days} j`);
+            parts.push(`${String(hours).padStart(2,'0')} h ${String(mins).padStart(2,'0')} min`);
+            return parts.join(' ');
+          };
+
           arr.forEach(it => {
-            const dDeb = it.date_debut ? new Date(it.date_debut).toLocaleDateString() : '';
-            const dFin = it.date_fin ? new Date(it.date_fin).toLocaleDateString() : '';
+            const dDeb = it.date_debut ? new Date(it.date_debut).toLocaleString() : '';
+            const dFin = it.date_fin ? new Date(it.date_fin).toLocaleString() : '';
+            const elapsed = fmtElapsed(it.date_debut, it.date_fin, it.status || it.statut);
             const tr = document.createElement('tr');
             tr.innerHTML = `
               <td class="fw-bold text-primary">#${it.id||''}</td>
@@ -63,6 +82,7 @@
               <td>${it.description||''}</td>
               <td>${dDeb||'-'}</td>
               <td>${dFin||'-'}</td>
+              <td>${elapsed||'-'}</td>
               <td class="text-center">
                 <a href="/intervention.html#${it.id}" class="btn btn-outline-info btn-sm" title="Voir">
                   <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
