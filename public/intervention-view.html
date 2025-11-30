@@ -42,8 +42,7 @@
 
     
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <h1 class="mb-4">Modifier une intervention <span id="intervention-id"></span></h1>
-      <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
+      <h1 class="mb-4">Détails de l'intervention <span id="intervention-id"></span></h1>
     </div>
 
     <div class="card mb-4">
@@ -55,6 +54,7 @@
         <p><strong>Date Début:</strong> <span id="view_date_debut"></span></p>
         <p><strong>Date Fin:</strong> <span id="view_date_fin"></span></p>
         <p><strong>Statut:</strong> <span id="view_status"></span></p>
+        <p><strong>Temps écoulé:</strong> <span id="view_elapsed"></span></p>
         <p><strong>Intervention précédente:</strong> <span id="view_intervention_precedente_id"></span></p>
       </div>
     </div>
@@ -115,7 +115,7 @@
     </div>
 
     <div class="d-flex gap-2">
-      <a href="interventions.html" class="btn btn-secondary">Retour à la liste</a>
+      <a href="interventions.html" class="btn btn-secondary" id="back-link">Retour à la liste</a>
       <a href="#" class="btn btn-warning" id="edit-intervention-btn"><i class="bi bi-pencil"></i> Modifier</a>
     </div>
   </main>
@@ -219,6 +219,24 @@
       const interventionId = urlParams.get('id');
       const token = localStorage.getItem('token');
       const headers = { 'Authorization': `Bearer ${token}` };
+
+      const formatElapsed = (startStr, endStr, status) => {
+        if (!startStr) return '—';
+        const start = new Date(startStr).getTime();
+        if (Number.isNaN(start)) return '—';
+        const isClosed = status === 'Termine' || status === 'Terminé' || status === 'Fermé';
+        const end = endStr ? new Date(endStr).getTime() : (isClosed ? Date.now() : Date.now());
+        if (Number.isNaN(end)) return '—';
+        const diff = Math.max(0, end - start);
+        const totalMin = Math.floor(diff / 60000);
+        const days = Math.floor(totalMin / (60 * 24));
+        const hours = Math.floor((totalMin % (60 * 24)) / 60);
+        const mins = totalMin % 60;
+        const parts = [];
+        if (days) parts.push(`${days} j`);
+        parts.push(`${String(hours).padStart(2,'0')} h ${String(mins).padStart(2,'0')} min`);
+        return parts.join(' ');
+      };
 
       let isAdmin = false;
       try {
@@ -350,8 +368,8 @@
         } else {
             documentsList.innerHTML = '<p class="text-muted">Aucun document associé.</p>';
         }
-    }
-
+      }
+      
       function renderRendus(rendus = []) {
         if (!rendusList) return;
         if (!rendus.length) {
@@ -421,6 +439,7 @@
       try {
         const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
         if (rel && rel.intervention) {
+          const elapsed = formatElapsed(rel.intervention.date_debut, rel.intervention.date_fin, rel.intervention.status || rel.intervention.statut);
           document.getElementById('intervention-id').textContent = rel.intervention.id;
           document.getElementById('view_id').textContent = rel.intervention.id;
           document.getElementById('view_maintenance_id').textContent = rel.ticket ? rel.ticket.id : '';
@@ -429,6 +448,8 @@
           document.getElementById('view_date_fin').textContent = rel.intervention.date_fin || '';
           document.getElementById('view_status').textContent = rel.intervention.status || '';
           document.getElementById('view_intervention_precedente_id').textContent = rel.intervention.intervention_precedente_id || '';
+          const elapsedEl = document.getElementById('view_elapsed');
+          if (elapsedEl) elapsedEl.textContent = elapsed;
           ticketId = rel.ticket ? rel.ticket.id : null;
             displayDocuments(rel.documents); 
             renderRendus(rel.rendus || rel.rendu_interventions || []);
@@ -499,6 +520,18 @@
           e.preventDefault();
           if (!interventionId) { alert('Intervention inconnue.'); return; }
           window.location.href = `intervention-edit.html?id=${interventionId}`;
+        });
+      }
+
+      const backLink = document.getElementById('back-link');
+      if (backLink) {
+        backLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (document.referrer) {
+            history.back();
+          } else {
+            location.href = 'interventions.html';
+          }
         });
       }
 
