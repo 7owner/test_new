@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           const debut = fmt(site.date_debut); const fin = site.date_fin? fmt(site.date_fin) : 'En cours';
           const hasTicket = !!site.ticket || openDemandSites.has(String(site.id));
           const addressQuery = encodeURIComponent(site.adresse_libelle || '');
-          const addressLink = addressQuery ? `<a href="https://www.google.com/maps/search/?api=1&query=${addressQuery}" target="_blank" rel="noopener noreferrer">${site.adresse_id || 'N/A'}</a>` : (site.adresse_id || 'N/A');
+          const addressLink = addressQuery ? `<a href="https://www.google.com/maps/search/?api=1&query=${addressQuery}" target="_blank" rel="noopener noreferrer">${site.adresse_libelle || site.adresse_id || 'N/A'}</a>` : (site.adresse_libelle || site.adresse_id || 'N/A');
 
           tr.innerHTML = `
             <td>${site.id}</td>
