@@ -3,79 +3,82 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Détails de l'agent</title>
+  <title>Profil Agent</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    body { background: #f4f6fb; }
+    .profile-card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.08); }
+    .avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg,#7bc6ff,#a9e0ff);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-weight: 700; color: #0d2f5a; font-size: 22px;
+    }
+    .link-mini { font-size: 0.95rem; }
+    .section-title { font-size: 1rem; font-weight: 700; margin-bottom: .4rem; }
+    .list-unstyled li { margin-bottom: .35rem; }
+    .badge-soft { background: #eef2ff; color: #1f2937; }
+  </style>
 </head>
 <body>
-
-
-  <main class="container mt-5">
-    
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <h1 class="mb-4">Détails de l'agent: <span id="agent-name"></span></h1>
-      <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
-    </div>
-
-    <div class="card mb-4">
+  <main class="container my-4">
+    <div class="card profile-card">
       <div class="card-body">
-        <h2 class="card-title mb-4">Informations générales</h2>
-        <p><strong>Matricule:</strong> <span id="view_matricule"></span></p>
-        <p><strong>Nom:</strong> <span id="view_nom"></span></p>
-        <p><strong>Prénom:</strong> <span id="view_prenom"></span></p>
-        <p><strong>Email:</strong> <span id="view_email"></span></p>
-        <p><strong>Téléphone:</strong> <span id="view_tel"></span></p>
-        <p><strong>Titre:</strong> <span id="view_titre"></span></p>
-        <p><strong>Agence:</strong> <span id="view_agence"></span></p>
-        <p><strong>Fonction:</strong> <span id="view_fonction"></span></p>
-        <p><strong>Actif:</strong> <span id="view_actif"></span></p>
-        <p><strong>Administrateur:</strong> <span id="view_admin"></span></p>
-      </div>
-    </div>
+        <div class="d-flex align-items-start gap-3 mb-3">
+          <div class="avatar" id="avatar-initials">AG</div>
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-start justify-content-between">
+              <div>
+                <div class="text-muted small">Profil</div>
+                <h2 class="h4 mb-1" id="agent-fullname">—</h2>
+                <div class="small text-muted" id="agent-role">—</div>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="close-btn">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Passeport</h2>
-        <p>Voir les détails du passeport de l'agent.</p>
-        <a href="agent-passport-view.html" class="btn btn-info"><i class="bi bi-journal-text me-2"></i>Voir Passeport</a>
-      </div>
-    </div>
+        <div class="mb-3">
+          <div class="section-title">Informations générales</div>
+          <ul class="list-unstyled mb-0">
+            <li><strong>Matricule :</strong> <span id="view_matricule">—</span></li>
+            <li><strong>Nature :</strong> <span id="view_fonction">—</span></li>
+            <li><strong>Téléphone :</strong> <span id="view_tel">—</span></li>
+            <li><strong>E-mail :</strong> <span id="view_email">—</span></li>
+            <li><strong>Agence :</strong> <span id="view_agence">—</span></li>
+          </ul>
+        </div>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Formations</h2>
-        <p>Voir la liste des formations de l'agent.</p>
-        <a href="agent-formation-view.html" class="btn btn-info"><i class="bi bi-mortarboard me-2"></i>Voir Formations</a>
-      </div>
-    </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="section-title mb-0">Passeport</div>
+          <a href="agent-passport-view.html" class="link-mini text-primary fw-semibold">Voir le passeport</a>
+        </div>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-3">Sites liés</h2>
-        <div id="sites-list" class="row g-2"></div>
-      </div>
-    </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="section-title mb-0">Formations</div>
+          <a href="agent-formation-view.html" class="link-mini text-primary fw-semibold">Voir les formations</a>
+        </div>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-3">Interventions liées</h2>
-        <div id="interventions-list" class="row g-2"></div>
-      </div>
-    </div>
+        <div class="mb-3">
+          <div class="section-title">Dernières interventions</div>
+          <div id="interventions-list" class="list-unstyled small mb-0 text-body"></div>
+        </div>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-3">Heures par jour et intervention</h2>
-        <canvas id="hoursChart" height="120"></canvas>
-      </div>
-    </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="section-title mb-0">Heures</div>
+          <a href="agent-heures.html" class="link-mini text-primary fw-semibold" id="heures-link">Voir les heures</a>
+        </div>
 
-    <div class="d-flex gap-2">
-      <a href="agents.html" class="btn btn-secondary">Retour à la liste</a>
-      <a href="agent-edit.html" class="btn btn-primary" id="edit-agent-btn"><i class="bi bi-pencil me-2"></i>Modifier l'agent</a>
+        <div class="d-flex gap-2 mt-3">
+          <button type="button" class="btn btn-outline-secondary" id="back-btn">Annuler</button>
+          <a href="#" class="btn btn-primary" id="edit-agent-btn">Enregistrer</a>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -84,9 +87,41 @@
     document.addEventListener('DOMContentLoaded', async function() {
       const params = new URLSearchParams(location.search);
       const matricule = params.get('matricule');
-      const nameEl = document.getElementById('agent-name');
-      const sitesEl = document.getElementById('sites-list');
-      const interEl = document.getElementById('interventions-list');
+      if (!matricule) {
+        alert('Matricule manquant');
+        return;
+      }
+
+      const setInitials = (nom, prenom) => {
+        const n1 = (nom || '').trim()[0] || '';
+        const p1 = (prenom || '').trim()[0] || '';
+        const initials = (p1 + n1).toUpperCase() || 'AG';
+        const avatar = document.getElementById('avatar-initials');
+        if (avatar) avatar.textContent = initials;
+      };
+
+      const renderInterventions = (list = []) => {
+        const wrap = document.getElementById('interventions-list');
+        if (!wrap) return;
+        if (!list.length) {
+          wrap.innerHTML = '<div class="text-muted">Aucune intervention trouvée.</div>';
+          return;
+        }
+        const fmtRange = (deb, fin) => {
+          const d1 = deb ? new Date(deb).toLocaleDateString() : '';
+          const d2 = fin ? new Date(fin).toLocaleDateString() : '';
+          return d1 && d2 ? `${d1} — ${d2}` : (d1 || d2 || '');
+        };
+        wrap.innerHTML = list.slice(0,4).map(i => `
+          <div class="d-flex justify-content-between align-items-center border-bottom py-1">
+            <div>
+              <div class="fw-semibold">Intervention #${i.id || ''} – ${i.site_nom || 'Site'}</div>
+              <div class="text-muted">${i.description || ''}</div>
+            </div>
+            <div class="text-end text-muted small">${fmtRange(i.date_debut, i.date_fin)}</div>
+          </div>
+        `).join('');
+      };
 
       try {
         const token = localStorage.getItem('token');
@@ -95,75 +130,36 @@
         const rel = await res.json();
         if (!res.ok) throw new Error((rel && rel.error) || `HTTP ${res.status}`);
         const agent = rel.agent || {};
-        nameEl.textContent = (agent.nom || '') + ' ' + (agent.prenom || '');
-        document.getElementById('view_matricule').textContent = agent.matricule || '';
-        document.getElementById('view_nom').textContent = agent.nom || '';
-        document.getElementById('view_prenom').textContent = agent.prenom || '';
-        document.getElementById('view_email').textContent = agent.email || '';
-        document.getElementById('view_tel').textContent = agent.tel || '';
-        document.getElementById('view_titre').textContent = agent.titre || '';
-        document.getElementById('view_agence').textContent = (rel.sites && rel.sites[0] && (rel.sites[0].nom_site || '')) || '';
-        document.getElementById('view_fonction').textContent = agent.fonction || '';
-        document.getElementById('view_actif').textContent = agent.actif ? 'Oui' : 'Non';
-        document.getElementById('view_admin').textContent = agent.admin ? 'Oui' : 'Non';
 
-        // Sites
-        sitesEl.innerHTML = '';
-        (rel.sites || []).forEach(s => {
-          const col = document.createElement('div');
-          col.className = 'col-12 col-sm-6 col-lg-4';
-          col.innerHTML = `<div class="border rounded p-2 h-100"><a href="site-view.html?id=${s.id}"><strong>#${s.id}</strong> — ${s.nom_site || 'Site'}</a></div>`;
-          sitesEl.appendChild(col);
-        });
-        
+        const fullName = `${agent.nom || ''} ${agent.prenom || ''}`.trim() || agent.email || agent.matricule || 'Agent';
+        document.getElementById('agent-fullname').textContent = fullName;
+        document.getElementById('agent-role').textContent = agent.titre || agent.fonction || '—';
+        document.getElementById('view_matricule').textContent = agent.matricule || '—';
+        document.getElementById('view_fonction').textContent = agent.fonction || agent.titre || '—';
+        document.getElementById('view_tel').textContent = agent.tel || '—';
+        document.getElementById('view_email').textContent = agent.email || '—';
+        document.getElementById('view_agence').textContent = (rel.agence && rel.agence.nom) || (rel.sites && rel.sites[0] && rel.sites[0].nom_site) || '—';
 
-        // Interventions
-        interEl.innerHTML = '';
-        (rel.interventions || []).forEach(i => {
-          const col = document.createElement('div');
-          col.className = 'col-12';
-          const dd = i.date_debut ? new Date(i.date_debut) : null;
-          const df = i.date_fin ? new Date(i.date_fin) : null;
-          const period = dd ? dd.toLocaleString() + (df ? ' → ' + df.toLocaleString() : '') : '';
-          col.innerHTML = `<div class=\"border rounded p-2\"><div class=\"d-flex justify-content-between\"><div><strong>Intervention #${i.id}</strong> — ${i.description || ''}</div><div class=\"text-muted\">${period}</div></div><div class=\"small\">Ticket: <a href=\"ticket-view.html?id=${i.ticket_id}\">${i.ticket_titre || i.ticket_id}</a> • Site: ${i.site_id ? `<a href=\"site-view.html?id=${i.site_id}\">#${i.site_id} ${i.site_nom || ''}</a>` : '-'}</div></div>`;
-          interEl.appendChild(col);
-        });
+        const editBtn = document.getElementById('edit-agent-btn');
+        if (editBtn) editBtn.href = `agent-edit.html?matricule=${encodeURIComponent(matricule)}`;
 
-        // Chart hours per day per intervention
-        const perDay = new Map(); // day -> { interId: hours }
-        (rel.interventions || []).forEach(i => {
-          if (!i.date_debut || !i.date_fin) return;
-          const start = new Date(i.date_debut);
-          const end = new Date(i.date_fin);
-          let cur = new Date(start);
-          while (cur <= end) {
-            const dayKey = cur.toISOString().slice(0,10);
-            const dayStart = new Date(dayKey + 'T00:00:00');
-            const dayEnd = new Date(dayKey + 'T23:59:59');
-            const from = cur < dayStart ? dayStart : cur;
-            const to = end < dayEnd ? end : dayEnd;
-            const ms = Math.max(0, to - from);
-            const hours = ms/3600000;
-            if (hours > 0) {
-              if (!perDay.has(dayKey)) perDay.set(dayKey, {});
-              const obj = perDay.get(dayKey);
-              obj[i.id] = (obj[i.id] || 0) + hours;
-            }
-            cur = new Date(new Date(dayKey).getTime() + 24*3600*1000);
-          }
-        });
-        const labels = Array.from(perDay.keys()).sort();
-        const interIds = Array.from(new Set([].concat(...Array.from(perDay.values()).map(o => Object.keys(o))))).sort((a,b)=>Number(a)-Number(b));
-        const colors = ['#0d6efd','#198754','#6f42c1','#dc3545','#fd7e14','#20c997','#0dcaf0','#6c757d'];
-        const datasets = interIds.map((id, idx)=>({ label: 'Interv #' + id, data: labels.map(d => (perDay.get(d)||{})[id] || 0), backgroundColor: colors[idx % colors.length] }));
-        const ctx = document.getElementById('hoursChart');
-        if (ctx && labels.length) {
-          new Chart(ctx, { type:'bar', data:{ labels, datasets }, options:{ responsive:true, scales:{ y:{ title:{ display:true, text:'Heures' }, beginAtZero:true } }, plugins:{ legend:{ position:'bottom' } } } });
-        }
+        setInitials(agent.nom, agent.prenom);
+        renderInterventions(rel.interventions || []);
+
+        const heuresLink = document.getElementById('heures-link');
+        if (heuresLink) heuresLink.href = `agent-heures.html?matricule=${encodeURIComponent(matricule)}`;
       } catch(e) {
-        console.error('Erreur chargement relations agent:', e);
-        document.getElementById('agent-name').textContent = 'Agent introuvable';
+        console.error('Erreur chargement agent:', e);
+        document.getElementById('agent-fullname').textContent = 'Agent introuvable';
       }
+
+      const goBack = () => {
+        if (document.referrer) history.back(); else location.href = 'agents.html';
+      };
+      const backBtn = document.getElementById('back-btn');
+      const closeBtn = document.getElementById('close-btn');
+      if (backBtn) backBtn.addEventListener('click', goBack);
+      if (closeBtn) closeBtn.addEventListener('click', goBack);
     });
   </script>
 </body>
