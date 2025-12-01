@@ -288,6 +288,7 @@
       const documentsList = document.getElementById('documents-list');
       const rendusList = document.getElementById('rendu-intervention-list');
       const materielsModal = document.getElementById('materielsModal');
+      const materielsModalInstance = materielsModal ? new bootstrap.Modal(materielsModal) : null;
       const materielsGrid = document.getElementById('materiels-grid');
       const materielsEmpty = document.getElementById('materiels-empty');
       const materielFilter = document.getElementById('materiel-filter');
