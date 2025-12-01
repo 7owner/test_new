@@ -47,10 +47,12 @@
           <div class="section-title">Informations générales</div>
           <ul class="list-unstyled mb-0">
             <li><strong>Matricule :</strong> <span id="view_matricule">—</span></li>
-            <li><strong>Nature :</strong> <span id="view_fonction">—</span></li>
+            <li><strong>Fonction :</strong> <span id="view_fonction">—</span></li>
             <li><strong>Téléphone :</strong> <span id="view_tel">—</span></li>
             <li><strong>E-mail :</strong> <span id="view_email">—</span></li>
             <li><strong>Agence :</strong> <span id="view_agence">—</span></li>
+            <li><strong>Actif :</strong> <span id="view_actif">—</span></li>
+            <li><strong>Administrateur :</strong> <span id="view_admin">—</span></li>
           </ul>
         </div>
 
@@ -139,6 +141,8 @@
         document.getElementById('view_tel').textContent = agent.tel || '—';
         document.getElementById('view_email').textContent = agent.email || '—';
         document.getElementById('view_agence').textContent = (rel.agence && rel.agence.nom) || (rel.sites && rel.sites[0] && rel.sites[0].nom_site) || '—';
+        document.getElementById('view_actif').textContent = agent.actif ? 'Oui' : 'Non';
+        document.getElementById('view_admin').textContent = agent.admin ? 'Oui' : 'Non';
 
         const editBtn = document.getElementById('edit-agent-btn');
         if (editBtn) editBtn.href = `agent-edit.html?matricule=${encodeURIComponent(matricule)}`;
