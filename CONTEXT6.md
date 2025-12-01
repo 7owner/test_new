@@ -117,32 +117,6 @@
     *   **Invalid Columns**: Removed non-existent `date_debut` and `date_fin` columns from the `SELECT` query in the `GET /api/images` endpoint in `server.js`.
     *   **404 Errors**: Removed references to the deprecated `/script.js` from `doe-edit.html` and `interventions.html`.
 
-*   **Messagerie (`public/messagerie.html`)**:
-    *   Filters rebuilt: text search by demande ID/titre, site, and client (with datalist suggestions). Removed old dropdown/checkbox.
-    *   Handles unauthorized API responses gracefully (redirects to login).
-
-*   **Tickets Page (`public/tickets.html`)**:
-    *   Header/navbar aligned with dashboard styling (gradient background, rounded cards).
-    *   Filters grouped in a styled card; toggle button to show/hide filters with dynamic icons.
-
-*   **Agents/Sites/Demandes-client-admin Pages**:
-    *   Header/navbar updated to dashboard look & gradient background applied.
-
-*   **Tickets**:
-    *   Temps écoulé affiché en j/h/m et figé dès que le statut est “Terminé/Fermé”; dans `ticket-view`, si une intervention existe et ticket non terminé, l’état affiché passe à “En_cours”.
-
-*   **Sites**:
-    *   Boutons Retour fonctionnels sur `site-view`, `site-edit`, `site-new`; site-view affiche aussi temps écoulé j/h/m.
-
-*   **Interventions**:
-    *   `intervention-view` : rendus en Markdown (marked), sections Documents/Images actives, boutons “Ajouter un rendu” et “Modifier” propagant l’ID, bouton Retour opérationnel.
-    *   `intervention-edit` : champ Date Début en `datetime-local` (gestion heures/minutes).
-
-*   **Rendu intervention new**:
-    *   Aperçu Markdown externe en temps réel, bouton Retour (history.back).
-
-*   **DOE**:
-    *   Boutons Retour sur `doe-view`, `doe-edit`, `doe-new`; libellé “Documents associés”.
-
-*   **Affaire view**:
-    *   Bouton Retour (history.back avec fallback vers la liste).
+*   **Intervention Back Button Fix**:
+    *   **`intervention-edit.html`**: The "Annuler" button was converted to an `<a>` tag with `href="interventions.html"` for a robust non-JavaScript fallback. The associated JavaScript was updated to remove dead code (`back-btn`) and enhance the `cancel-btn`'s listener to prevent default navigation and use `history.back()` for improved user experience.
+    *   **`intervention-view.html`**: A redundant `<button>` element with `id="back-btn"` was removed. The "Retour à la liste" `<a>` tag was given `id="back-link"`, and JavaScript logic was added to its event listener to use `history.back()` when appropriate, falling back to `interventions.html`.
