@@ -61,21 +61,13 @@
         <h2 class="card-title mb-4 h5">Paramètres du Jeton</h2>
         <form id="token-generation-form">
           <div class="mb-3">
+            <label for="intervention-filter" class="form-label">Filtrer les interventions</label>
+            <input type="text" class="form-control mb-2" id="intervention-filter" placeholder="Rechercher par titre ou ID...">
             <label for="intervention-id" class="form-label">Intervention à attribuer</label>
             <select id="intervention-id" class="form-select" required>
               <option value="" selected disabled>— Sélectionner une intervention —</option>
             </select>
-            <div class="form-text">Choisir l'intervention qui sera liée au jeton d’invitation.</div>
-          </div>
-          <div class="row g-3">
-            <div class="col-sm-6">
-              <label for="expiration-date" class="form-label">Date d'expiration</label>
-              <input type="date" class="form-control" id="expiration-date" required>
-            </div>
-            <div class="col-sm-6">
-              <label for="expiration-time" class="form-label">Heure d'expiration</label>
-              <input type="time" class="form-control" id="expiration-time" value="23:59">
-            </div>
+            <div class="form-text">Sélection via ID et titre. Expiration fixée à 24h automatiquement.</div>
           </div>
 
           <div class="mt-4 d-flex align-items-center gap-2">
@@ -111,6 +103,7 @@
       };
 
       let agent = null;
+      let interventionsCache = [];
 
       const updateEmailValidityUI = () => {
         if (!agent || !agent.email) {
@@ -148,9 +141,29 @@
         }
       })();
 
+      const renderInterventionsOptions = (term = '') => {
+        const select = document.getElementById('intervention-id');
+        if (!select) return;
+        const norm = s => (s || '').toString().toLowerCase();
+        const t = norm(term);
+        select.innerHTML = '<option value="" disabled selected>— Sélectionner une intervention —</option>';
+        interventionsCache
+          .filter(it => {
+            const label = `${it.id} ${it.titre} ${it.description}`.toLowerCase();
+            return !t || label.includes(t);
+          })
+          .forEach(it => {
+            const opt = document.createElement('option');
+            opt.value = String(it.id);
+            opt.textContent = `#${it.id} — ${it.titre || it.description || ''}`.trim();
+            select.appendChild(opt);
+          });
+      };
+
       // Charger les interventions pour la sélection
       (async () => {
         const select = document.getElementById('intervention-id');
+        const filterInput = document.getElementById('intervention-filter');
         const presetId = new URLSearchParams(location.search).get('intervention_id');
         try {
           const token = localStorage.getItem('token');
@@ -158,19 +171,19 @@
           const res = await fetch('/api/interventions', { headers, credentials: 'same-origin' });
           const data = res.ok ? await res.json() : [];
           const items = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
-          for (const it of items) {
-            const id = it.id ?? it.intervention_id ?? it.ID;
-            if (!id) continue;
-            const label = it.titre || it.title || it.description || `Intervention #${id}`;
-            const opt = document.createElement('option');
-            opt.value = String(id);
-            opt.textContent = `#${id} — ${label}`;
-            select.appendChild(opt);
+          interventionsCache = items.map(it => ({
+            id: it.id ?? it.intervention_id ?? it.ID,
+            titre: it.titre || it.title || '',
+            description: it.description || ''
+          })).filter(it => it.id);
+          renderInterventionsOptions('');
+          if (filterInput) {
+            filterInput.addEventListener('input', () => renderInterventionsOptions(filterInput.value));
           }
         } catch(e) {
           console.warn('Erreur chargement /api/interventions:', e);
         } finally {
-          if (presetId) {
+          if (presetId && select) {
             const exists = Array.from(select.options).some(o => o.value === String(presetId));
             if (!exists) {
               const opt = document.createElement('option');
@@ -184,9 +197,6 @@
       })();
 
       generateTokenBtn.addEventListener('click', async function() {
-        const expirationDate = document.getElementById('expiration-date').value;
-        const expirationTime = document.getElementById('expiration-time').value;
-        if (!expirationDate) { alert("Veuillez sélectionner une date d'expiration."); return; }
         const interventionSelect = document.getElementById('intervention-id');
         const interventionId = interventionSelect.value;
         if (!agent || !agent.email) { alert("Email d'agent introuvable. Impossible d'envoyer le jeton."); return; }
@@ -195,8 +205,13 @@
         try {
           const token = localStorage.getItem('token');
           const headers = { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) };
-          const expiresAt = expirationTime ? `${expirationDate}T${expirationTime}:00` : `${expirationDate}T23:59:00`;
-          const body = { email: agent.email, intervention_id: interventionId || 1, expires_at: expiresAt };
+          const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+          const body = { 
+            email: agent.email, 
+            intervention_id: interventionId || 1, 
+            expires_at: expiresAt,
+            intervention_label: interventionSelect.options[interventionSelect.selectedIndex]?.text || ''
+          };
           const r = await fetch('/api/invite-agent', { method:'POST', headers, credentials:'same-origin', body: JSON.stringify(body) });
           const data = await r.json().catch(()=>({}));
           if (!r.ok) throw new Error((data && data.error) || `HTTP ${r.status}`);
@@ -223,4 +238,3 @@
   </script>
 </body>
 </html>
-
