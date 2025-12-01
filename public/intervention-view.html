@@ -117,8 +117,30 @@
     <div class="d-flex gap-2">
       <a href="interventions.html" class="btn btn-secondary" id="back-link">Retour à la liste</a>
       <a href="#" class="btn btn-warning" id="edit-intervention-btn"><i class="bi bi-pencil"></i> Modifier</a>
+      <button type="button" class="btn btn-info d-none" id="show-materiels-btn"><i class="bi bi-box-seam"></i> Voir matériels</button>
     </div>
   </main>
+
+  <!-- Modal Matériels -->
+  <div class="modal fade" id="materielsModal" tabindex="-1" aria-labelledby="materielsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="materielsModalLabel">Matériels utilisés</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <input type="text" class="form-control" id="materiel-filter" placeholder="Filtrer par référence, désignation...">
+          </div>
+          <div class="row" id="materiels-grid">
+            <!-- Cartes matériels -->
+          </div>
+          <div id="materiels-empty" class="text-muted d-none">Aucun matériel associé à cette intervention.</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Add Responsable Modal -->
   <div class="modal fade" id="addResponsableModal" tabindex="-1" aria-labelledby="addResponsableModalLabel" aria-hidden="true">
@@ -252,6 +274,7 @@
 
       let ticketId = null;
       let allAgents = [];
+      let materielsCache = [];
 
       const responsableSelect = document.getElementById('responsable-select');
       const agentSelect = document.getElementById('agent-select');
@@ -264,6 +287,10 @@
       const imgUploadBtn = document.getElementById('intervention-image-upload-btn');
       const documentsList = document.getElementById('documents-list');
       const rendusList = document.getElementById('rendu-intervention-list');
+      const materielsModal = document.getElementById('materielsModal');
+      const materielsGrid = document.getElementById('materiels-grid');
+      const materielsEmpty = document.getElementById('materiels-empty');
+      const materielFilter = document.getElementById('materiel-filter');
       const renderMd = (txt='') => { try { return marked.parse(txt); } catch { return txt; } };
 
 
@@ -276,6 +303,87 @@
         }
         if (res.status === 204) return null;
         return res.json();
+      }
+
+      function renderMateriels(filterTerm = '') {
+        if (!materielsGrid || !materielsEmpty) return;
+        const norm = (s) => (s || '').toString().toLowerCase();
+        const term = norm(filterTerm);
+
+        const group = { consommables: [], cables: [], outils: [], autres: [] };
+        const classify = (cat) => {
+          const c = norm(cat);
+          if (c.includes('consomm')) return 'consommables';
+          if (c.includes('cabl')) return 'cables';
+          if (c.includes('outil')) return 'outils';
+          return 'autres';
+        };
+
+        materielsCache
+          .filter(m => {
+            const txt = norm(`${m.reference} ${m.designation} ${m.categorie} ${m.commentaire}`);
+            return !term || txt.includes(term);
+          })
+          .forEach(m => {
+            group[classify(m.categorie)].push(m);
+          });
+
+        const sections = [
+          { key: 'consommables', label: 'Consommables' },
+          { key: 'cables', label: 'Câbles' },
+          { key: 'outils', label: 'Outils' },
+          { key: 'autres', label: 'Autres' },
+        ];
+
+        materielsGrid.innerHTML = '';
+        let count = 0;
+        sections.forEach(sec => {
+          const items = group[sec.key] || [];
+          if (!items.length) return;
+          const header = document.createElement('div');
+          header.className = 'col-12';
+          header.innerHTML = `<h6 class="mt-2 mb-2">${sec.label} (${items.length})</h6>`;
+          materielsGrid.appendChild(header);
+          items.forEach(m => {
+            count++;
+            const col = document.createElement('div');
+            col.className = 'col-12 col-md-6';
+            col.innerHTML = `
+              <div class="border rounded p-2 mb-2">
+                <div class="fw-semibold">${m.designation || 'Matériel'}</div>
+                <div class="text-muted small">Ref: ${m.reference || '—'} • Catégorie: ${m.categorie || '—'}</div>
+                <div class="small">Qté: ${m.quantite || 1} ${m.commentaire ? '• ' + m.commentaire : ''}</div>
+              </div>
+            `;
+            materielsGrid.appendChild(col);
+          });
+        });
+
+        if (count === 0) {
+          materielsEmpty.classList.remove('d-none');
+        } else {
+          materielsEmpty.classList.add('d-none');
+        }
+      }
+
+      async function loadMateriels() {
+        materielsCache = [];
+        try {
+          const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
+          if (rel && Array.isArray(rel.materiels)) {
+            materielsCache = rel.materiels;
+          } else {
+            const res = await fetch(`/api/interventions/${interventionId}/materiels`, { headers });
+            if (res.ok) {
+              const data = await res.json().catch(() => []);
+              if (Array.isArray(data)) materielsCache = data;
+            }
+          }
+        } catch (e) {
+          console.warn('Chargement materiels:', e);
+        } finally {
+          renderMateriels(materielFilter ? materielFilter.value : '');
+        }
       }
 
       function displayResponsables(responsables = []) {
@@ -436,37 +544,42 @@
       }
       
       async function fetchAndPopulateAll() {
-      try {
-        const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
-        if (rel && rel.intervention) {
-          const elapsed = formatElapsed(rel.intervention.date_debut, rel.intervention.date_fin, rel.intervention.status || rel.intervention.statut);
-          document.getElementById('intervention-id').textContent = rel.intervention.id;
-          document.getElementById('view_id').textContent = rel.intervention.id;
-          document.getElementById('view_maintenance_id').textContent = rel.ticket ? rel.ticket.id : '';
-          document.getElementById('view_description').textContent = rel.intervention.description || '';
-          document.getElementById('view_date_debut').textContent = rel.intervention.date_debut || '';
-          document.getElementById('view_date_fin').textContent = rel.intervention.date_fin || '';
-          document.getElementById('view_status').textContent = rel.intervention.status || '';
-          document.getElementById('view_intervention_precedente_id').textContent = rel.intervention.intervention_precedente_id || '';
-          const elapsedEl = document.getElementById('view_elapsed');
-          if (elapsedEl) elapsedEl.textContent = elapsed;
-          ticketId = rel.ticket ? rel.ticket.id : null;
-            displayDocuments(rel.documents); 
-            renderRendus(rel.rendus || rel.rendu_interventions || []);
-            loadImages();
-        }
+        try {
+          const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
+          if (rel && rel.intervention) {
+            const elapsed = formatElapsed(rel.intervention.date_debut, rel.intervention.date_fin, rel.intervention.status || rel.intervention.statut);
+            document.getElementById('intervention-id').textContent = rel.intervention.id;
+            document.getElementById('view_id').textContent = rel.intervention.id;
+            document.getElementById('view_maintenance_id').textContent = rel.ticket ? rel.ticket.id : '';
+            document.getElementById('view_description').textContent = rel.intervention.description || '';
+            document.getElementById('view_date_debut').textContent = rel.intervention.date_debut || '';
+            document.getElementById('view_date_fin').textContent = rel.intervention.date_fin || '';
+            document.getElementById('view_status').textContent = rel.intervention.status || '';
+            document.getElementById('view_intervention_precedente_id').textContent = rel.intervention.intervention_precedente_id || '';
+            const elapsedEl = document.getElementById('view_elapsed');
+            if (elapsedEl) elapsedEl.textContent = elapsed;
+            ticketId = rel.ticket ? rel.ticket.id : null;
+              displayDocuments(rel.documents); 
+              renderRendus(rel.rendus || rel.rendu_interventions || []);
+              loadImages();
+              // materiels issus de relations si disponibles
+              if (Array.isArray(rel.materiels)) {
+                materielsCache = rel.materiels;
+                renderMateriels(materielFilter ? materielFilter.value : '');
+              }
+          }
 
-          allAgents = await fetchJSON('/api/agents');
-          const options = allAgents.map(agent => `<option value="${agent.matricule}">${agent.nom} ${agent.prenom || ''} (${agent.matricule})</option>`).join('');
-          responsableSelect.innerHTML = options;
-          agentSelect.innerHTML = options;
-          
-          fetchAndDisplayTicketRelations();
+            allAgents = await fetchJSON('/api/agents');
+            const options = allAgents.map(agent => `<option value="${agent.matricule}">${agent.nom} ${agent.prenom || ''} (${agent.matricule})</option>`).join('');
+            responsableSelect.innerHTML = options;
+            agentSelect.innerHTML = options;
+            
+            fetchAndDisplayTicketRelations();
 
-        } catch (e) {
-          console.error('Erreur chargement initial', e);
-          document.querySelector('main').innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
-        }
+          } catch (e) {
+            console.error('Erreur chargement initial', e);
+            document.querySelector('main').innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
+          }
       }
       
       document.getElementById('save-responsable-btn').addEventListener('click', async () => {
@@ -521,6 +634,20 @@
           if (!interventionId) { alert('Intervention inconnue.'); return; }
           window.location.href = `intervention-edit.html?id=${interventionId}`;
         });
+      }
+
+      const showMaterielsBtn = document.getElementById('show-materiels-btn');
+      if (showMaterielsBtn) {
+        if (isAdmin) showMaterielsBtn.classList.remove('d-none');
+        showMaterielsBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (materielsModalInstance) materielsModalInstance.show();
+          if (!materielsCache.length) loadMateriels();
+          else renderMateriels(materielFilter ? materielFilter.value : '');
+        });
+      }
+      if (materielFilter) {
+        materielFilter.addEventListener('input', () => renderMateriels(materielFilter.value));
       }
 
       const backLink = document.getElementById('back-link');
