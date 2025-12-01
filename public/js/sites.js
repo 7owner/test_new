@@ -5,8 +5,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const dateStartInput = document.getElementById('site-date-start');
     const dateEndInput = document.getElementById('site-date-end');
     const thDates = document.getElementById('th-dates');
-    const filtersRow = document.getElementById('filters-row'); // NEW
-    const toggleFiltersBtn = document.getElementById('toggle-filters-btn'); // NEW
+    const filtersRow = document.getElementById('filters-row');
+    const toggleFiltersBtn = document.getElementById('toggle-filters-btn');
 
       const token = localStorage.getItem('token');
       const isAdmin = (() => { try { const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       function getAgentName(m) { const a=(apiAgents||[]).find(x=> String(x.matricule)===String(m)); return a? `${a.nom||''} ${a.prenom||''}`.trim() : 'Non assigné'; }
 
       async function load() {
-        tableBody.innerHTML = '<tr><td colspan="8" class="text-muted">Chargement...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="7" class="text-muted">Chargement...</td></tr>';
         const headers = token? { 'Authorization': `Bearer ${token}` } : {};
         try {
           const [sRes, aRes, dRes] = await Promise.all([
@@ -39,39 +39,24 @@ document.addEventListener('DOMContentLoaded', async function() {
           }
           applyFilters();
         } catch (e) {
-          tableBody.innerHTML = '<tr><td colspan="8" class="text-danger">Erreur de chargement.</td></tr>';
+          tableBody.innerHTML = '<tr><td colspan="7" class="text-danger">Erreur de chargement.</td></tr>';
         }
-      }
-
-      function computeDisplayStatus(site) {
-        const hasTicket = !!site.ticket || openDemandSites.has(String(site.id));
-        const hasResponsable = !!site.responsable_matricule;
-        if (hasTicket) return 'en cours';
-        if (hasResponsable) return 'prise en charge';
-        return site.statut || '';
       }
 
       function render(rows) {
         tableBody.innerHTML = '';
-        if (!rows.length) { const tr = tableBody.insertRow(); tr.innerHTML = '<td colspan="8" class="text-center text-muted">Aucun site trouvé.</td>'; return; }
+        if (!rows.length) { const tr = tableBody.insertRow(); tr.innerHTML = '<td colspan="7" class="text-center text-muted">Aucun site trouvé.</td>'; return; }
         rows.forEach(site => {
           const tr = tableBody.insertRow();
-          const displayStatus = computeDisplayStatus(site);
-          const sclass = ({
-            'en attente':'bg-secondary',
-            'prise en charge':'bg-info',
-            'en cours':'bg-warning',
-            'en cour':'bg-warning',
-            'fini':'bg-success',
-            'sous devis':'bg-primary'
-          })[displayStatus] || 'bg-light text-dark';
           const debut = fmt(site.date_debut); const fin = site.date_fin? fmt(site.date_fin) : 'En cours';
           const hasTicket = !!site.ticket || openDemandSites.has(String(site.id));
+          const addressQuery = encodeURIComponent(site.adresse_libelle || '');
+          const addressLink = addressQuery ? `<a href="https://www.google.com/maps/search/?api=1&query=${addressQuery}" target="_blank" rel="noopener noreferrer">${site.adresse_id || 'N/A'}</a>` : (site.adresse_id || 'N/A');
+
           tr.innerHTML = `
             <td>${site.id}</td>
             <td>${site.nom_site||''}</td>
-            <td>${site.adresse_id||''}</td>
-            <td><span class="badge ${sclass}">${displayStatus}</span></td>
+            <td>${addressLink}</td>
             <td><span class="badge ${hasTicket? 'bg-danger':'bg-success'}">${hasTicket? 'Oui':'Non'}</span></td>
             <td>${site.responsable_matricule? getAgentName(site.responsable_matricule): 'Non assigné'}</td>
             <td><small>Début: ${debut||''}<br>Fin: ${fin||''}</small></td>
@@ -93,8 +78,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         let rows = (apiSites||[]).filter(s => {
           const m = String(s.nom_site||'').toLowerCase().includes(term) || String(s.id||'').toLowerCase().includes(term);
-          const displayStatus = computeDisplayStatus(s);
-          const st = status ? displayStatus===status : true;
+          const st = status ? s.statut === status : true;
 
           const siteStart = s.date_debut ? new Date(s.date_debut) : null;
           const siteEnd = s.date_fin ? new Date(s.date_fin) : null;
