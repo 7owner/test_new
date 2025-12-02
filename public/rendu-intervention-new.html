@@ -165,6 +165,9 @@
               <label class="form-label mt-3">Commentaire</label>
               <textarea class="form-control image-comment" name="image_commentaire[]" rows="2" placeholder="Décrivez cette image..." maxlength="500"></textarea>
               <div class="char-counter">0 / 500 caractères</div>
+              <label class="form-label mt-3">Note (Markdown)</label>
+              <textarea class="form-control image-note" name="image_note[]" rows="2" placeholder="Note en markdown (sera rattachée à l'image)"></textarea>
+              <div class="char-counter note-counter">0 caractères</div>
             </div>
           </div>
 
@@ -418,6 +421,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const errorDiv = entry.querySelector('.error-message');
     const commentTextarea = entry.querySelector('.image-comment');
     const charCounter = entry.querySelector('.char-counter');
+    const noteTextarea = entry.querySelector('.image-note');
+    const noteCounter = entry.querySelector('.note-counter');
 
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -453,6 +458,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     updateCharCounter(commentTextarea, charCounter);
+
+    if (noteTextarea && noteCounter) {
+      noteTextarea.addEventListener('input', () => updateCharCounter(noteTextarea, noteCounter));
+      updateCharCounter(noteTextarea, noteCounter);
+    }
   };
 
   // Setup initial entry
@@ -591,19 +601,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
       let hasImages = false;
 
-      imagesContainer.querySelectorAll(".rendu-image-entry").forEach(entry => {
-        const file = entry.querySelector("input[type='file']").files[0];
-        const comment = entry.querySelector("textarea").value;
+    imagesContainer.querySelectorAll(".rendu-image-entry").forEach(entry => {
+      const file = entry.querySelector("input[type='file']").files[0];
+      const comment = entry.querySelector("textarea").value;
+      const noteMd = entry.querySelector(".image-note")?.value || '';
 
-        if (file) {
-          const validation = validateFile(file);
-          if (validation.valid) {
-            fd.append("image_files[]", file);
-            fd.append("image_commentaires[]", comment);
-            hasImages = true;
-          }
+      if (file) {
+        const validation = validateFile(file);
+        if (validation.valid) {
+          fd.append("image_files[]", file);
+          fd.append("image_commentaires[]", comment);
+          fd.append("image_notes[]", noteMd);
+          hasImages = true;
         }
-      });
+      }
+    });
 
       const res = await fetch(`/api/interventions/${interventionId}/rendus`, {
         method: "POST",

@@ -104,7 +104,7 @@
           <div class="image-card p-2 border rounded h-100">
             <img src="/api/images/${img.id}/view" alt="${img.commentaire_image || img.nom_fichier || 'photo'}">
             <div class="mt-2 fw-semibold small">${img.nom_fichier || 'Photo'}</div>
-            <div class="text-muted small">${img.commentaire_image || ''}</div>
+            <div class="text-muted small">${img.commentaire_image ? marked.parse(img.commentaire_image) : ''}</div>
             <div class="text-muted small">Source: ${img.cible_type || '-'} #${img.cible_id || ''}</div>
           </div>
         `;
