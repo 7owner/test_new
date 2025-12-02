@@ -493,6 +493,9 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     await pushImages('Ticket', relatedTicketId);
     await pushImages('Site', relatedSiteId);
+    // Fichiers partagés pour les demandes client liées au ticket/site
+    await pushImages('DemandeClient', relatedTicketId);
+    await pushImages('DemandeClient', relatedSiteId);
     renderExistingImages();
   }
 

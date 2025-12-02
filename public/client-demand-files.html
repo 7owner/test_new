@@ -11,8 +11,11 @@
 </head>
 <body>
   <main class="container mt-4">
-    <a href="/client-dashboard.html" class="btn btn-link">Retour</a>
-    <h1 class="h4 mb-3">Pieces jointes de la demande</h1>
+    <a href="/client-dashboard.html" class="btn btn-link">Retour au tableau de bord</a>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">Pièces jointes de la demande</h1>
+        <button id="add-document-btn" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Ajouter un document</button>
+    </div>
     <div id="meta" class="mb-3 text-muted"></div>
     <div class="card mb-3">
       <div class="card-header">Documents</div>
@@ -23,6 +26,44 @@
       <ul id="msg-attachments" class="list-group list-group-flush"></ul>
     </div>
   </main>
+
+  <!-- Add Document Modal -->
+  <div class="modal fade" id="addDocumentModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Ajouter un document à la demande</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="add-document-form">
+            <div class="mb-3">
+              <label for="doc-file-input" class="form-label">Fichier</label>
+              <input class="form-control" type="file" id="doc-file-input" required>
+            </div>
+            <div class="mb-3">
+              <label for="doc-name-input" class="form-label">Nom du fichier (optionnel)</label>
+              <input type="text" class="form-control" id="doc-name-input">
+            </div>
+            <div class="mb-3">
+              <label for="doc-nature-input" class="form-label">Nature</label>
+              <select class="form-select" id="doc-nature-input">
+                <option value="Document">Document</option>
+                <option value="Video">Vidéo</option>
+                <option value="Audio">Audio</option>
+                <option value="Autre">Autre</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-document-btn">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     async function authDownload(url, filename, token){
       const r = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -30,58 +71,106 @@
       const b = await r.blob();
       const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = filename || 'document'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1500);
     }
+
     document.addEventListener('DOMContentLoaded', async () => {
       const token = localStorage.getItem('token'); if (!token) { location.href='/login.html'; return; }
       const params = new URLSearchParams(location.search); const id = params.get('id'); if (!id) { alert('id manquant'); return; }
-      const r = await fetch(`/api/documents?cible_type=DemandeClient&cible_id=${encodeURIComponent(id)}`, { headers: { 'Authorization': `Bearer ${token}` } });
-      if (!r.ok) { alert('Impossible de charger les pieces jointes'); return; }
-      const docs = await r.json();
-      document.getElementById('meta').textContent = `Demande #${id}`;
-      const ul = document.getElementById('docs');
-      if (!docs.length) { ul.innerHTML = '<li class="list-group-item text-muted">Aucun document</li>'; }
-      else {
-        ul.innerHTML = '';
-        docs.forEach(d => {
-          const li = document.createElement('li'); li.className='list-group-item d-flex justify-content-between align-items-center';
-          const span = document.createElement('span'); span.textContent = d.nom_fichier || ('Document #'+d.id);
-          const btn = document.createElement('button'); btn.className='btn btn-sm btn-outline-primary'; btn.textContent='Telecharger';
-          btn.onclick = () => authDownload(`/api/documents/${d.id}/download`, d.nom_fichier, token);
-          li.append(span, btn); ul.appendChild(li);
-        });
-      }
+      
+      const addDocumentModal = new bootstrap.Modal(document.getElementById('addDocumentModal'));
 
-      // Pièces jointes issues de la messagerie (conversation demande-<id>)
-      try {
-        const msgUl = document.getElementById('msg-attachments');
-        msgUl.innerHTML = '<li class="list-group-item text-muted">Chargement…</li>';
-        const convId = `demande-${id}`;
-        const msgsRes = await fetch(`/api/conversations/${convId}`, { headers: { 'Authorization': `Bearer ${token}` }, credentials:'same-origin' });
-        if (!msgsRes.ok) throw new Error(`HTTP ${msgsRes.status}`);
-        const msgs = await msgsRes.json();
-        const attachments = [];
-        (Array.isArray(msgs)? msgs : []).forEach(m => {
-          if (Array.isArray(m.attachments)) {
-            m.attachments.forEach(att => attachments.push(att));
-          }
-        });
-        if (!attachments.length) {
-          msgUl.innerHTML = '<li class="list-group-item text-muted">Aucune pièce jointe dans les messages.</li>';
-        } else {
-          msgUl.innerHTML = '';
-          attachments.forEach(att => {
-            const href = '/' + String(att.file_path || '').replace(/^public\//,'');
+      async function loadFiles() {
+        // Documents directs
+        const r = await fetch(`/api/documents?cible_type=DemandeClient&cible_id=${encodeURIComponent(id)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!r.ok) { alert('Impossible de charger les pieces jointes'); return; }
+        const docs = await r.json();
+        document.getElementById('meta').textContent = `Demande #${id}`;
+        const ul = document.getElementById('docs');
+        if (!docs.length) { ul.innerHTML = '<li class="list-group-item text-muted">Aucun document</li>'; }
+        else {
+          ul.innerHTML = '';
+          docs.forEach(d => {
             const li = document.createElement('li'); li.className='list-group-item d-flex justify-content-between align-items-center';
-            const span = document.createElement('span'); span.textContent = att.file_name || att.file_path || 'Pièce jointe';
-            const a = document.createElement('a'); a.className='btn btn-sm btn-outline-primary'; a.href=href; a.target='_blank'; a.download = att.file_name || '';
-            a.textContent = 'Télécharger';
-            li.append(span,a); msgUl.appendChild(li);
+            const span = document.createElement('span'); span.textContent = d.nom_fichier || ('Document #'+d.id);
+            const btn = document.createElement('button'); btn.className='btn btn-sm btn-outline-primary'; btn.textContent='Telecharger';
+            btn.onclick = () => authDownload(`/api/documents/${d.id}/download`, d.nom_fichier, token);
+            li.append(span, btn); ul.appendChild(li);
           });
         }
-      } catch (e) {
-        const msgUl = document.getElementById('msg-attachments');
-        msgUl.innerHTML = '<li class="list-group-item text-danger">Impossible de charger les pièces jointes des messages.</li>';
-        console.error(e);
+
+        // Pièces jointes issues de la messagerie
+        try {
+          const msgUl = document.getElementById('msg-attachments');
+          msgUl.innerHTML = '<li class="list-group-item text-muted">Chargement…</li>';
+          const convId = `demande-${id}`;
+          const msgsRes = await fetch(`/api/conversations/${convId}`, { headers: { 'Authorization': `Bearer ${token}` }, credentials:'same-origin' });
+          if (!msgsRes.ok) throw new Error(`HTTP ${msgsRes.status}`);
+          const msgs = await msgsRes.json();
+          const attachments = [];
+          (Array.isArray(msgs)? msgs : []).forEach(m => {
+            if (Array.isArray(m.attachments)) {
+              m.attachments.forEach(att => attachments.push(att));
+            }
+          });
+          if (!attachments.length) {
+            msgUl.innerHTML = '<li class="list-group-item text-muted">Aucune pièce jointe dans les messages.</li>';
+          } else {
+            msgUl.innerHTML = '';
+            attachments.forEach(att => {
+              const href = '/' + String(att.file_path || '').replace(/^public\//,'');
+              const li = document.createElement('li'); li.className='list-group-item d-flex justify-content-between align-items-center';
+              const span = document.createElement('span'); span.textContent = att.file_name || att.file_path || 'Pièce jointe';
+              const a = document.createElement('a'); a.className='btn btn-sm btn-outline-primary'; a.href=href; a.target='_blank'; a.download = att.file_name || '';
+              a.textContent = 'Télécharger';
+              li.append(span,a); msgUl.appendChild(li);
+            });
+          }
+        } catch (e) {
+          const msgUl = document.getElementById('msg-attachments');
+          msgUl.innerHTML = '<li class="list-group-item text-danger">Impossible de charger les pièces jointes des messages.</li>';
+          console.error(e);
+        }
       }
+
+      const toBase64 = file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = error => reject(error);
+      });
+
+      document.getElementById('add-document-btn').addEventListener('click', () => {
+        document.getElementById('add-document-form').reset();
+        addDocumentModal.show();
+      });
+
+      document.getElementById('save-document-btn').addEventListener('click', async () => {
+          const fileInput = document.getElementById('doc-file-input');
+          const file = fileInput.files[0];
+          if (!file) { alert('Veuillez sélectionner un fichier.'); return; }
+          const base64 = await toBase64(file);
+          const nom_fichier = document.getElementById('doc-name-input').value.trim() || file.name;
+          const nature = document.getElementById('doc-nature-input').value;
+
+          const payload = { base64, nom_fichier, nature, type_mime: file.type, cible_type: 'DemandeClient', cible_id: id };
+          
+          try {
+            const res = await fetch('/api/documents', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || `HTTP ${res.status}`);
+            }
+            addDocumentModal.hide();
+            await loadFiles();
+          } catch(e) {
+            alert(`Échec de l'ajout: ${e.message}`);
+          }
+      });
+      
+      await loadFiles();
     });
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
