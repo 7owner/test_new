@@ -172,6 +172,30 @@
             <i class="bi bi-plus-circle"></i> Ajouter une image
           </button>
 
+          <div class="mb-4 p-3 border rounded">
+            <h4 class="h6">Images existantes (Ticket / Site)</h4>
+            <p class="text-muted small mb-2">Sélectionnez une image déjà partagée sur le ticket ou le site, ajoutez un commentaire, puis insérez-la dans le résumé (markdown).</p>
+            <div class="row g-2 align-items-center">
+              <div class="col-md-6">
+                <select class="form-select" id="existing-image-select">
+                  <option value="">— Aucune image chargée —</option>
+                </select>
+              </div>
+              <div class="col-md-6 d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" id="refresh-existing-images"><i class="bi bi-arrow-clockwise me-1"></i>Recharger</button>
+                <button type="button" class="btn btn-sm btn-primary" id="insert-existing-image"><i class="bi bi-markdown me-1"></i>Insérer dans le résumé</button>
+              </div>
+            </div>
+            <div class="d-flex align-items-start gap-3 mt-3">
+              <img id="existing-image-preview" alt="Aperçu" style="max-width:140px; max-height:140px; border-radius:8px; display:none; border:1px solid #e5e7eb;">
+              <div class="flex-grow-1">
+                <label class="form-label">Commentaire (alt)</label>
+                <textarea class="form-control form-control-sm" id="existing-image-comment" rows="2" placeholder="Texte alternatif / commentaire..."></textarea>
+                <div class="text-muted small mt-1">Le commentaire sera utilisé comme texte alternatif dans le markdown.</div>
+              </div>
+            </div>
+          </div>
+
           <div class="d-flex gap-2 mt-4">
             <button type="submit" class="btn btn-primary" id="save-rendu-btn">
               <i class="bi bi-save me-2"></i>Enregistrer
@@ -251,6 +275,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let isAdmin = false;
   let actorEmail = "";
+  let relatedTicketId = null;
+  let relatedSiteId = null;
+  let existingImages = [];
 
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
@@ -280,6 +307,28 @@ document.addEventListener("DOMContentLoaded", () => {
     showAlert('Intervention non spécifiée.', 'warning');
     setTimeout(() => location.href = "interventions.html", 2000);
     return;
+  }
+
+  // Charger relations (ticket/site) pour récupérer les images existantes
+  (async () => {
+    await loadRelations();
+    await fetchExistingImages();
+  })();
+
+  /* ========= RELATIONS (ticket/site) ========= */
+  async function loadRelations() {
+    try {
+      const res = await fetch(`/api/interventions/${interventionId}/relations`, { headers: { "Authorization": "Bearer " + token } });
+      if (!res.ok) return;
+      const data = await res.json().catch(() => ({}));
+      if (data && data.ticket) {
+        relatedTicketId = data.ticket.id || data.ticket.ticket_id || relatedTicketId;
+        if (data.ticket.site_id) relatedSiteId = data.ticket.site_id;
+      }
+      if (data && data.site) relatedSiteId = data.site.id || data.site.site_id || relatedSiteId;
+    } catch (e) {
+      console.warn('Relations intervention non chargées:', e);
+    }
   }
 
   /* ========= INIT EDITOR EasyMDE ========= */
@@ -347,6 +396,11 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ========= GESTION DES IMAGES ========= */
   const imagesContainer = document.getElementById("rendu-images-container");
   const addImageBtn = document.getElementById("add-new-image-btn");
+  const existingSelect = document.getElementById("existing-image-select");
+  const existingPreview = document.getElementById("existing-image-preview");
+  const existingComment = document.getElementById("existing-image-comment");
+  const refreshExistingBtn = document.getElementById("refresh-existing-images");
+  const insertExistingBtn = document.getElementById("insert-existing-image");
 
   let imageCounter = 1;
 
@@ -420,6 +474,70 @@ document.addEventListener("DOMContentLoaded", () => {
     
     showAlert('Nouvelle image ajoutée', 'success');
   });
+
+  async function fetchExistingImages() {
+    existingImages = [];
+    const pushImages = async (type, id) => {
+      if (!id) return;
+      try {
+        const res = await fetch(`/api/images?cible_type=${encodeURIComponent(type)}&cible_id=${id}`, { headers: { "Authorization": "Bearer " + token } });
+        if (res.ok) {
+          const data = await res.json().catch(() => []);
+          if (Array.isArray(data)) {
+            data.forEach(img => existingImages.push({ ...img, source: type, cible_id: id }));
+          }
+        }
+      } catch (e) {
+        console.warn(`Images ${type}`, e);
+      }
+    };
+    await pushImages('Ticket', relatedTicketId);
+    await pushImages('Site', relatedSiteId);
+    renderExistingImages();
+  }
+
+  function renderExistingImages() {
+    if (!existingSelect) return;
+    existingSelect.innerHTML = '<option value="">— Aucune image chargée —</option>';
+    existingImages.forEach(img => {
+      const opt = document.createElement('option');
+      opt.value = String(img.id);
+      const label = img.nom_fichier || `Image #${img.id}`;
+      opt.textContent = `${label} (${img.source} #${img.cible_id})`;
+      existingSelect.appendChild(opt);
+    });
+    updateExistingPreview();
+  }
+
+  function updateExistingPreview() {
+    if (!existingSelect || !existingPreview) return;
+    const id = existingSelect.value;
+    const img = existingImages.find(i => String(i.id) === String(id));
+    if (img) {
+      existingPreview.src = `/api/images/${img.id}/view`;
+      existingPreview.style.display = 'block';
+      if (existingComment && !existingComment.value) existingComment.value = img.commentaire_image || '';
+    } else {
+      existingPreview.style.display = 'none';
+    }
+  }
+
+  if (existingSelect) existingSelect.addEventListener('change', updateExistingPreview);
+  if (refreshExistingBtn) refreshExistingBtn.addEventListener('click', fetchExistingImages);
+  if (insertExistingBtn) {
+    insertExistingBtn.addEventListener('click', () => {
+      const id = existingSelect?.value;
+      if (!id) return showAlert('Sélectionnez d\'abord une image.', 'warning');
+      const img = existingImages.find(i => String(i.id) === String(id));
+      if (!img) return;
+      const alt = existingComment?.value?.trim() || img.nom_fichier || 'image';
+      const url = `/api/images/${img.id}/view`;
+      const snippet = `![${alt}](${url})\n\n`;
+      easyMDE.value((easyMDE.value() || '') + '\n\n' + snippet);
+      updatePreview();
+      showAlert('Image insérée dans le résumé.', 'success');
+    });
+  }
 
   imagesContainer.addEventListener("click", e => {
     if (e.target.classList.contains("remove-image")) {
