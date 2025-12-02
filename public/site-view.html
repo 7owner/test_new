@@ -9,10 +9,36 @@
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
   <style>
-    body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); }
-    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.08); }
-    .pill { background:#f1f5f9; border-radius:12px; padding:6px 10px; font-weight:600; color:#0f172a; }
+    body { background: linear-gradient(135deg, #e9eeff 0%, #f8fbff 100%); }
+    .card { border: none; border-radius: 18px; box-shadow: 0 12px 28px rgba(58,87,232,0.08); }
+    .pill { background:#e0e7ff; border-radius:12px; padding:6px 12px; font-weight:700; color:#1e293b; letter-spacing: .2px; }
     .tickets-badge { font-size: 0.95rem; }
+    .hero {
+      background: linear-gradient(120deg, #5c7cfa, #7c3aed);
+      color: #fff;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 12px 30px rgba(92,124,250,0.2);
+    }
+    .hero .title { font-size: 1.25rem; font-weight: 700; margin: 0; }
+    .hero .subtitle { opacity: 0.9; }
+    .ticket-item {
+      border: 1px solid #e9eefb;
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .ticket-item .status-pill {
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .status-attente { background:#e5fbe5; color:#15803d; }
+    .status-cours   { background:#fff7d6; color:#b45309; }
+    .status-termine { background:#ffe0e0; color:#b91c1c; }
   </style>
 </head>
 <body>
@@ -28,21 +54,23 @@
     </div>
 
     <div class="card mb-4">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start mb-2">
+      <div class="hero mb-3">
+        <div class="d-flex justify-content-between align-items-start">
           <div>
-            <h2 class="h5 mb-1" id="view_nom_site">—</h2>
-            <div class="text-muted small">ID : <span id="view_id">—</span></div>
+            <div class="title" id="view_nom_site">—</div>
+            <div class="subtitle small">ID : <span id="view_id">—</span></div>
           </div>
           <span class="pill" id="view_statut">—</span>
         </div>
+        <div class="mt-3">
+          <div class="fw-semibold">Contact</div>
+          <div id="view_contact" class="small">—</div>
+        </div>
+      </div>
+      <div class="card-body">
         <div class="mb-2">
           <div class="fw-semibold text-secondary">Adresse</div>
           <div id="view_adresse_id" class="text-body">—</div>
-        </div>
-        <div class="mb-2">
-          <div class="fw-semibold text-secondary">Contact sur site</div>
-          <div id="view_contact" class="text-body">—</div>
         </div>
         <div class="mb-2">
           <div class="fw-semibold text-secondary">Commentaire</div>
@@ -101,9 +129,20 @@
         tl.innerHTML='';
         tickets.forEach(t=>{
           const el=document.createElement('div');
-          el.className='d-flex justify-content-between align-items-center border-bottom py-1';
           const dateStr = t.date_debut ? new Date(t.date_debut).toLocaleDateString() : (t.date_fin ? new Date(t.date_fin).toLocaleDateString() : '');
-          el.innerHTML=`<div><a href="ticket-view.html?id=${t.id}">#${t.id} — ${t.titre||''}</a><div class="small text-muted">${t.description||''}</div></div><div class="text-end small"><div class="${statusClass(t.etat||t.statut)}">${(t.etat||t.statut||'').replace('_',' ')||'—'}</div><div class="text-muted">${dateStr||''}</div></div>`;
+          const etat = (t.etat||t.statut||'').toLowerCase();
+          const badgeClass = etat.includes('attente') ? 'status-attente' : etat.includes('cours') ? 'status-cours' : etat.includes('term') ? 'status-termine' : '';
+          el.className='ticket-item';
+          el.innerHTML=`<div class="d-flex justify-content-between align-items-start">
+            <div>
+              <a class="fw-semibold" href="ticket-view.html?id=${t.id}">#${t.id} — ${t.titre||''}</a>
+              <div class="small text-muted">${t.description||''}</div>
+            </div>
+            <div class="text-end">
+              <div class="status-pill ${badgeClass}">${(t.etat||t.statut||'').replace('_',' ')||'—'}</div>
+              <div class="small text-muted mt-1">${dateStr||''}</div>
+            </div>
+          </div>`;
           tl.appendChild(el);
         });
         if (!tl.innerHTML) tl.innerHTML='<span class="text-muted">Aucun ticket.</span>';
