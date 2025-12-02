@@ -197,6 +197,17 @@
                 <div class="text-muted small mt-1">Le commentaire sera utilisé comme texte alternatif dans le markdown.</div>
               </div>
             </div>
+            <hr class="my-3">
+            <h5 class="h6">Composer le résumé à partir d'images</h5>
+            <p class="text-muted small">Cochez les images à inclure, ajoutez une note markdown globale, puis générez un brouillon dans le résumé.</p>
+            <div id="existing-images-builder" class="row g-3"></div>
+            <div class="mt-2">
+              <label class="form-label">Note globale (Markdown)</label>
+              <textarea class="form-control form-control-sm" id="builder-note" rows="2" placeholder="Ex: Synthèse ou contexte..."></textarea>
+            </div>
+            <div class="d-flex justify-content-end mt-2">
+              <button type="button" class="btn btn-outline-primary btn-sm" id="build-from-images"><i class="bi bi-magic me-1"></i>Générer le résumé</button>
+            </div>
           </div>
 
           <div class="d-flex gap-2 mt-4">
@@ -404,6 +415,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const existingComment = document.getElementById("existing-image-comment");
   const refreshExistingBtn = document.getElementById("refresh-existing-images");
   const insertExistingBtn = document.getElementById("insert-existing-image");
+  const builderList = document.getElementById("existing-images-builder");
+  const builderNote = document.getElementById("builder-note");
+  const buildFromImagesBtn = document.getElementById("build-from-images");
 
   let imageCounter = 1;
 
@@ -512,12 +526,31 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderExistingImages() {
     if (!existingSelect) return;
     existingSelect.innerHTML = '<option value="">— Aucune image chargée —</option>';
+    builderList && (builderList.innerHTML = '');
     existingImages.forEach(img => {
       const opt = document.createElement('option');
       opt.value = String(img.id);
       const label = img.nom_fichier || `Image #${img.id}`;
       opt.textContent = `${label} (${img.source} #${img.cible_id})`;
       existingSelect.appendChild(opt);
+
+      if (builderList) {
+        const col = document.createElement('div');
+        col.className = 'col-12 col-md-6';
+        col.innerHTML = `
+          <div class="border rounded p-2 h-100 d-flex gap-2">
+            <div class="form-check mt-1">
+              <input class="form-check-input builder-select" type="checkbox" value="${img.id}" id="builder-${img.id}">
+            </div>
+            <div class="flex-grow-1">
+              <label class="fw-semibold small" for="builder-${img.id}">${label}</label>
+              <div class="text-muted small mb-1">Source: ${img.source} #${img.cible_id}</div>
+              <textarea class="form-control form-control-sm builder-comment" data-id="${img.id}" rows="2" placeholder="Note/alt pour cette image...">${img.commentaire_image || ''}</textarea>
+            </div>
+          </div>
+        `;
+        builderList.appendChild(col);
+      }
     });
     updateExistingPreview();
   }
@@ -549,6 +582,33 @@ document.addEventListener("DOMContentLoaded", () => {
       easyMDE.value((easyMDE.value() || '') + '\n\n' + snippet);
       updatePreview();
       showAlert('Image insérée dans le résumé.', 'success');
+    });
+  }
+
+  if (buildFromImagesBtn) {
+    buildFromImagesBtn.addEventListener('click', () => {
+      const selected = Array.from(document.querySelectorAll('.builder-select:checked')).map(cb => cb.value);
+      if (!selected.length) return showAlert('Sélectionnez au moins une image.', 'warning');
+      const lines = [];
+      lines.push('## Photos liées');
+      selected.forEach(id => {
+        const img = existingImages.find(i => String(i.id) === String(id));
+        if (!img) return;
+        const commentEl = document.querySelector(`.builder-comment[data-id="${id}"]`);
+        const alt = (commentEl?.value?.trim()) || img.nom_fichier || 'image';
+        const url = `/api/images/${img.id}/view`;
+        lines.push(`![${alt}](${url})`);
+        if (commentEl?.value) lines.push(commentEl.value);
+        lines.push('');
+      });
+      const note = builderNote?.value?.trim();
+      if (note) {
+        lines.push('## Note');
+        lines.push(note);
+      }
+      easyMDE.value((easyMDE.value() || '') + '\n\n' + lines.join('\n'));
+      updatePreview();
+      showAlert('Brouillon généré à partir des images sélectionnées.', 'success');
     });
   }
 
