@@ -68,6 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (idField) idField.value = '';
     if (modalTitle) modalTitle.textContent = 'Ajouter une adresse';
     if (saveBtn) saveBtn.innerHTML = '<i class="bi bi-save me-1"></i>Enregistrer';
+    geocodeCache = [];
+    if (suggestions) suggestions.innerHTML = '';
   };
 
   const saveAdresse = async () => {
@@ -148,6 +150,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (ligne1Field) {
     ligne1Field.addEventListener('input', (e) => updateSuggestions(e.target.value));
     ligne1Field.addEventListener('change', (e) => applySelectedSuggestion(e.target.value));
+  }
+
+  if (modalEl) {
+    modalEl.addEventListener('show.bs.modal', () => {
+      if (!idField?.value) resetForm();
+    });
   }
 
   if (saveBtn) saveBtn.addEventListener('click', saveAdresse);
