@@ -70,10 +70,33 @@
       <div class="col-md-4">
         <h2>Conversations</h2>
         <div class="mb-3">
-          <input type="text" id="titleFilter" class="form-control mb-2" placeholder="Filtrer par titre ou ID de demande...">
-          <input type="text" id="siteFilter" class="form-control mb-2" placeholder="Filtrer par site...">
-          <input type="text" id="clientFilter" class="form-control" placeholder="Filtrer par client..." list="clientNames">
-          <datalist id="clientNames"></datalist>
+          <div class="row g-2">
+            <div class="col-md-12">
+                <input type="text" id="titleFilter" class="form-control" placeholder="Filtrer par titre ou ID de demande...">
+            </div>
+            <div class="col-md-6">
+                <input type="text" id="siteFilter" class="form-control" placeholder="Filtrer par site...">
+            </div>
+            <div class="col-md-6">
+                <input type="text" id="clientFilter" class="form-control" placeholder="Filtrer par client..." list="clientNames">
+                <datalist id="clientNames"></datalist>
+            </div>
+            <div class="col-md-4">
+                <select id="demand-status-filter" class="form-select">
+                    <option value="">Tous les statuts</option>
+                    <option value="En cours de traitement">En cours de traitement</option>
+                    <option value="Traité">Traité</option>
+                    <option value="Rejeté">Rejeté</option>
+                    <option value="Annulé">Annulé</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <input type="date" id="date-start" class="form-control" title="Date de début">
+            </div>
+            <div class="col-md-4">
+                <input type="date" id="date-end" class="form-control" title="Date de fin">
+            </div>
+          </div>
         </div>
         <div id="conversations-list" class="list-group conversations-list">
           <!-- Conversations will be loaded here -->
@@ -102,237 +125,235 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/nav.js?v=2"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        location.href = '/login.html';
-        return;
-      }
-      
-      const user = JSON.parse(atob(token.split('.')[1]));
-      const userId = user.id;
-
-      const conversationsList = document.getElementById('conversations-list');
-      const messagesContainer = document.getElementById('messages-container');
-      const noConversationSelected = document.getElementById('no-conversation-selected');
-      const conversationWith = document.getElementById('conversation-with');
-      const messagesDisplay = document.getElementById('messages-display');
-      const messageForm = document.getElementById('message-form');
-      const messageBodyInput = document.getElementById('message-body');
-      const attachmentsInput = document.getElementById('attachments');
-      const titleFilterInput = document.getElementById('titleFilter');
-      const siteFilterInput = document.getElementById('siteFilter');
-      const clientFilterInput = document.getElementById('clientFilter');
-      const clientNamesDatalist = document.getElementById('clientNames');
-
-      let currentConversationId = null;
-      let currentReceiverId = null;
-      let currentConversationLabel = '';
-      const demandeMap = new Map();
-      const demandeSiteMap = new Map();
-      const demandeClientMap = new Map();
-      const preselectConversationId = new URLSearchParams(window.location.search).get('conversation');
-
-      function hrefForAttachment(att) {
-        if (!att || !att.file_path) return '#';
-        // The path from the DB is like 'uploads/attachments/filename.ext'
-        // It should be served directly from the root.
-        // We just need to make sure there's a leading '/'
-        let path = String(att.file_path).replace(/^public[\\/]/, ''); // Remove 'public/' prefix
-        return '/' + path.replace(/^[\\/]+/, ''); // Ensure single leading slash
-      }
-
-      async function fetchJSON(url, opts) {
-        const res = await fetch(url, {
-          headers: { 'Authorization': 'Bearer ' + token },
-          ...opts
-        });
-        let body = null;
-        try {
-          body = await res.json();
-        } catch (_) {
-          // non JSON (likely 403 text)
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          location.href = '/login.html';
+          return;
         }
-        if (res.status === 401 || res.status === 403) {
-          console.warn('Unauthorized/Forbidden, redirecting to login.');
-          localStorage.removeItem('token');
-          window.location.href = '/login.html';
-          throw new Error('Unauthorized');
-        }
-        if (!res.ok) throw new Error((body && body.error) || res.statusText);
-        return body;
-      }
-
-      async function loadDemandesLabels() {
-        let demandes = [];
-        try {
-          // Préférence: périmètre client
-          demandes = await fetchJSON('/api/demandes_client/mine');
-        } catch (err) {
-          if (String(err).includes('Unauthorized')) return;
-          try {
-            // Fallback admin
-            demandes = await fetchJSON('/api/demandes_client');
-          } catch (err2) {
-            if (String(err2).includes('Unauthorized')) return;
-            console.warn('Impossible de charger les demandes client pour les filtres.', err2);
-            return;
-          }
-        }
-        demandeMap.clear();
-        demandeSiteMap.clear();
-        demandeClientMap.clear();
-        if (clientNamesDatalist) clientNamesDatalist.innerHTML = '';
-        const clientSet = new Set();
-        demandes.forEach(d => {
-          const label = `Demande #${d.id} — ${d.title || d.titre || d.description || d.nom_site || d.site_nom || 'Sans titre'}`;
-          demandeMap.set(`demande-${d.id}`, label);
-          const siteName = d.nom_site || d.site_nom || '';
-          demandeSiteMap.set(`demande-${d.id}`, siteName);
-          const clientName = d.nom_client || d.client_nom || '';
-          demandeClientMap.set(`demande-${d.id}`, clientName);
-          if (clientName) clientSet.add(clientName);
-        });
-        if (clientNamesDatalist) {
-          clientSet.forEach(name => {
-            const opt = document.createElement('option');
-            opt.value = name;
-            clientNamesDatalist.appendChild(opt);
-          });
-        }
-      }
-      
-      async function loadConversations() {
-        const search = titleFilterInput.value.trim();
-        const site = siteFilterInput ? siteFilterInput.value.trim() : '';
-        const client = clientFilterInput ? clientFilterInput.value.trim() : '';
         
-        const query = new URLSearchParams();
-        if (search) query.set('search', search);
-        if (site) query.set('site', site);
-        if (client) query.set('client', client);
-
-        const url = `/api/conversations?${query.toString()}`;
-
-        try {
-          const conversations = await fetchJSON(url);
-          
-          conversationsList.innerHTML = '';
-          if (conversations.length === 0) {
-            conversationsList.innerHTML = '<p class="text-muted p-3">Aucune conversation trouvée.</p>';
-            return;
-          }
-
-          conversations.forEach(convo => {
-            const isDemande = String(convo.conversation_id || '').startsWith('demande-');
-            const demandeLabel = demandeMap.get(convo.conversation_id) || (isDemande ? `Demande #${String(convo.conversation_id).replace('demande-', '')}` : null);
-            const displayTitle = demandeLabel || convo.other_user_email;
-            const convoElement = document.createElement('a');
-            convoElement.href = '#';
-            convoElement.className = 'list-group-item list-group-item-action';
-            convoElement.dataset.conversationId = convo.conversation_id;
-            convoElement.dataset.receiverId = convo.sender_id === userId ? convo.receiver_id : convo.sender_id;
-            convoElement.dataset.label = displayTitle;
-            convoElement.innerHTML = `
-              <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1">${displayTitle}</h5>
-                <small>${new Date(convo.created_at).toLocaleDateString()}</small>
-              </div>
-              <p class="mb-1">${(convo.body || '').substring(0, 50)}...</p>
-            `;
-            convoElement.addEventListener('click', (e) => {
-              e.preventDefault();
-              currentConversationId = convo.conversation_id;
-              currentReceiverId = e.currentTarget.dataset.receiverId;
-              currentConversationLabel = e.currentTarget.dataset.label || '';
-              loadMessages(currentConversationId);
-            });
-            conversationsList.appendChild(convoElement);
-          });
-
-          if (preselectConversationId) {
-            const target = conversationsList.querySelector(`[data-conversation-id="${preselectConversationId}"]`);
-            if (target) {
-              target.click();
-            }
-          }
-        } catch (error) {
-          console.error('Error loading conversations:', error);
-          conversationsList.innerHTML = '<p class="text-danger p-3">Erreur de chargement des conversations.</p>';
+        const user = JSON.parse(atob(token.split('.')[1]));
+        const userId = user.id;
+  
+        const conversationsList = document.getElementById('conversations-list');
+        const messagesContainer = document.getElementById('messages-container');
+        const noConversationSelected = document.getElementById('no-conversation-selected');
+        const conversationWith = document.getElementById('conversation-with');
+        const messagesDisplay = document.getElementById('messages-display');
+        const messageForm = document.getElementById('message-form');
+        const messageBodyInput = document.getElementById('message-body');
+        const attachmentsInput = document.getElementById('attachments');
+        const titleFilterInput = document.getElementById('titleFilter');
+        const siteFilterInput = document.getElementById('siteFilter');
+        const clientFilterInput = document.getElementById('clientFilter');
+        const clientNamesDatalist = document.getElementById('clientNames');
+        const demandStatusFilter = document.getElementById('demand-status-filter');
+        const dateStartInput = document.getElementById('date-start');
+        const dateEndInput = document.getElementById('date-end');
+  
+        let currentConversationId = null;
+        let currentReceiverId = null;
+        let currentConversationLabel = '';
+        const demandeMap = new Map();
+        const demandeSiteMap = new Map();
+        const demandeClientMap = new Map();
+        const preselectConversationId = new URLSearchParams(window.location.search).get('conversation');
+  
+        function hrefForAttachment(att) {
+          if (!att || !att.file_path) return '#';
+          let path = String(att.file_path).replace(/^public[\\/]/, '');
+          return '/' + path.replace(/^[\\/]+/, '');
         }
-      }
-
-      async function loadMessages(conversationId) {
-        try {
-          const messages = await fetchJSON(`/api/conversations/${conversationId}`);
-          messagesDisplay.innerHTML = '';
-          messages.forEach(msg => {
-            const msgElement = document.createElement('div');
-            msgElement.className = msg.sender_id === userId ? 'message-sent' : 'message-received';
-            let attachmentsHTML = '';
-            if (msg.attachments && msg.attachments.length > 0) {
-              attachmentsHTML = msg.attachments.map(att => 
-                `<br><a href="${hrefForAttachment(att)}" target="_blank" download="${att.file_name}">${att.file_name}</a>`
-              ).join('');
-            }
-            msgElement.innerHTML = `
-              <p>${msg.body}</p>
-              <small>${new Date(msg.created_at).toLocaleString()}</small>
-              ${attachmentsHTML}
-            `;
-          messagesDisplay.prepend(msgElement);
-          });
-          messagesContainer.classList.remove('d-none');
-          noConversationSelected.classList.add('d-none');
-          const label = currentConversationLabel || (String(currentConversationId || '').startsWith('demande-') ? `Demande #${String(currentConversationId).replace('demande-', '')}` : 'Conversation');
-          conversationWith.textContent = label;
-        } catch (error) {
-          console.error('Error loading messages:', error);
-        }
-      }
-
-      messageForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const body = messageBodyInput.value;
-        const files = attachmentsInput.files;
-        
-        if (!body && files.length === 0) return;
-
-        const formData = new FormData();
-        formData.append('body', body);
-        formData.append('receiver_id', currentReceiverId);
-
-        for (let i = 0; i < files.length; i++) {
-          formData.append('attachments', files[i]);
-        }
-
-        try {
-          await fetch(`/api/conversations/${currentConversationId}/messages`, {
-            method: 'POST',
+  
+        async function fetchJSON(url, opts) {
+          const res = await fetch(url, {
             headers: { 'Authorization': 'Bearer ' + token },
-            body: formData
+            ...opts
           });
-          messageBodyInput.value = '';
-          attachmentsInput.value = '';
-          loadMessages(currentConversationId);
-        } catch (error) {
-          console.error('Error sending message:', error);
+          let body = null;
+          try {
+            body = await res.json();
+          } catch (_) {}
+          if (res.status === 401 || res.status === 403) {
+            console.warn('Unauthorized/Forbidden, redirecting to login.');
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+            throw new Error('Unauthorized');
+          }
+          if (!res.ok) throw new Error((body && body.error) || res.statusText);
+          return body;
         }
-      });
-
-      titleFilterInput.addEventListener('input', () => {
-        loadConversations();
-      });
-      if (siteFilterInput) {
-        siteFilterInput.addEventListener('input', loadConversations);
-      }
-      if (clientFilterInput) {
-        clientFilterInput.addEventListener('input', loadConversations);
-      }
-
-    loadDemandesLabels().then(loadConversations).catch(loadConversations);
-  });
-</script>
-</body>
+  
+        async function loadDemandesLabels() {
+          let demandes = [];
+          try {
+            demandes = await fetchJSON('/api/demandes_client/mine');
+          } catch (err) {
+            if (String(err).includes('Unauthorized')) return;
+            try {
+              demandes = await fetchJSON('/api/demandes_client');
+            } catch (err2) {
+              if (String(err2).includes('Unauthorized')) return;
+              console.warn('Impossible de charger les demandes client pour les filtres.', err2);
+              return;
+            }
+          }
+          demandeMap.clear();
+          demandeSiteMap.clear();
+          demandeClientMap.clear();
+          if (clientNamesDatalist) clientNamesDatalist.innerHTML = '';
+          const clientSet = new Set();
+          demandes.forEach(d => {
+            const label = `Demande #${d.id} — ${d.title || d.titre || d.description || d.nom_site || d.site_nom || 'Sans titre'}`;
+            demandeMap.set(`demande-${d.id}`, label);
+            const siteName = d.nom_site || d.site_nom || '';
+            demandeSiteMap.set(`demande-${d.id}`, siteName);
+            const clientName = d.nom_client || d.client_nom || '';
+            demandeClientMap.set(`demande-${d.id}`, clientName);
+            if (clientName) clientSet.add(clientName);
+          });
+          if (clientNamesDatalist) {
+            clientSet.forEach(name => {
+              const opt = document.createElement('option');
+              opt.value = name;
+              clientNamesDatalist.appendChild(opt);
+            });
+          }
+        }
+        
+        async function loadConversations() {
+          const search = titleFilterInput.value.trim();
+          const site = siteFilterInput ? siteFilterInput.value.trim() : '';
+          const client = clientFilterInput ? clientFilterInput.value.trim() : '';
+          const status = demandStatusFilter ? demandStatusFilter.value : '';
+          const startDate = dateStartInput ? dateStartInput.value : '';
+          const endDate = dateEndInput ? dateEndInput.value : '';
+          
+          const query = new URLSearchParams();
+          if (search) query.set('search', search);
+          if (site) query.set('site', site);
+          if (client) query.set('client', client);
+          if (status) query.set('status', status);
+          if (startDate) query.set('startDate', startDate);
+          if (endDate) query.set('endDate', endDate);
+  
+          const url = `/api/conversations?${query.toString()}`;
+  
+          try {
+            const conversations = await fetchJSON(url);
+            
+            conversationsList.innerHTML = '';
+            if (conversations.length === 0) {
+              conversationsList.innerHTML = '<p class="text-muted p-3">Aucune conversation trouvée.</p>';
+              return;
+            }
+  
+            conversations.forEach(convo => {
+              const isDemande = String(convo.conversation_id || '').startsWith('demande-');
+              const demandeLabel = demandeMap.get(convo.conversation_id) || (isDemande ? `Demande #${String(convo.conversation_id).replace('demande-', '')}` : null);
+              const displayTitle = demandeLabel || convo.other_user_email;
+              const convoElement = document.createElement('a');
+              convoElement.href = '#';
+              convoElement.className = 'list-group-item list-group-item-action';
+              convoElement.dataset.conversationId = convo.conversation_id;
+              convoElement.dataset.receiverId = convo.sender_id === userId ? convo.receiver_id : convo.sender_id;
+              convoElement.dataset.label = displayTitle;
+              convoElement.innerHTML = `
+                <div class="d-flex w-100 justify-content-between">
+                  <h5 class="mb-1">${displayTitle}</h5>
+                  <small>${new Date(convo.created_at).toLocaleDateString()}</small>
+                </div>
+                <p class="mb-1">${(convo.body || '').substring(0, 50)}...</p>
+              `;
+              convoElement.addEventListener('click', (e) => {
+                e.preventDefault();
+                currentConversationId = convo.conversation_id;
+                currentReceiverId = e.currentTarget.dataset.receiverId;
+                currentConversationLabel = e.currentTarget.dataset.label || '';
+                loadMessages(currentConversationId);
+              });
+              conversationsList.appendChild(convoElement);
+            });
+  
+            if (preselectConversationId) {
+              const target = conversationsList.querySelector(`[data-conversation-id="${preselectConversationId}"]`);
+              if (target) {
+                target.click();
+              }
+            }
+          } catch (error) {
+            console.error('Error loading conversations:', error);
+            conversationsList.innerHTML = '<p class="text-danger p-3">Erreur de chargement des conversations.</p>';
+          }
+        }
+  
+        async function loadMessages(conversationId) {
+          try {
+            const messages = await fetchJSON(`/api/conversations/${conversationId}`);
+            messagesDisplay.innerHTML = '';
+            messages.forEach(msg => {
+              const msgElement = document.createElement('div');
+              msgElement.className = msg.sender_id === userId ? 'message-sent' : 'message-received';
+              let attachmentsHTML = '';
+              if (msg.attachments && msg.attachments.length > 0) {
+                attachmentsHTML = msg.attachments.map(att => 
+                  `<br><a href="${hrefForAttachment(att)}" target="_blank" download="${att.file_name}">${att.file_name}</a>`
+                ).join('');
+              }
+              msgElement.innerHTML = `
+                <p>${msg.body}</p>
+                <small>${new Date(msg.created_at).toLocaleString()}</small>
+                ${attachmentsHTML}
+              `;
+            messagesDisplay.prepend(msgElement);
+            });
+            messagesContainer.classList.remove('d-none');
+            noConversationSelected.classList.add('d-none');
+            const label = currentConversationLabel || (String(currentConversationId || '').startsWith('demande-') ? `Demande #${String(currentConversationId).replace('demande-', '')}` : 'Conversation');
+            conversationWith.textContent = label;
+          } catch (error) {
+            console.error('Error loading messages:', error);
+          }
+        }
+  
+        messageForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const body = messageBodyInput.value;
+          const files = attachmentsInput.files;
+          
+          if (!body && files.length === 0) return;
+  
+          const formData = new FormData();
+          formData.append('body', body);
+          formData.append('receiver_id', currentReceiverId);
+  
+          for (let i = 0; i < files.length; i++) {
+            formData.append('attachments', files[i]);
+          }
+  
+          try {
+            await fetch(`/api/conversations/${currentConversationId}/messages`, {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token },
+              body: formData
+            });
+            messageBodyInput.value = '';
+            attachmentsInput.value = '';
+            loadMessages(currentConversationId);
+          } catch (error) {
+            console.error('Error sending message:', error);
+          }
+        });
+  
+        titleFilterInput.addEventListener('input', loadConversations);
+        if (siteFilterInput) siteFilterInput.addEventListener('input', loadConversations);
+        if (clientFilterInput) clientFilterInput.addEventListener('input', loadConversations);
+        if (demandStatusFilter) demandStatusFilter.addEventListener('change', loadConversations);
+        if (dateStartInput) dateStartInput.addEventListener('change', loadConversations);
+        if (dateEndInput) dateEndInput.addEventListener('change', loadConversations);
+  
+        loadDemandesLabels().then(loadConversations).catch(loadConversations);
+    });
+    </script></body>
 </html>
