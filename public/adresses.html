@@ -79,11 +79,12 @@
             <div class="row g-3">
               <div class="col-md-6">
                 <label for="libelle" class="form-label">Libellé</label>
-                <input type="text" id="libelle" class="form-control" required>
+                <input type="text" id="libelle" class="form-control" list="adresse-suggestions" required>
               </div>
               <div class="col-md-6">
                 <label for="ligne1" class="form-label">Ligne 1</label>
-                <input type="text" id="ligne1" class="form-control">
+                <input type="text" id="ligne1" class="form-control" list="adresse-suggestions">
+                <small class="text-muted">Suggestions automatiques (OpenStreetMap)</small>
               </div>
               <div class="col-md-4">
                 <label for="code_postal" class="form-label">Code Postal</label>
@@ -113,3 +114,4 @@
   <script src="/js/adresses.js"></script>
 </body>
 </html>
+            <datalist id="adresse-suggestions"></datalist>
