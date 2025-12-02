@@ -1010,7 +1010,7 @@ app.get('/api/sites/:id/relations', authenticateToken, async (req, res) => {
     if (!site) return res.status(404).json({ error: 'Site not found' });
     const affaires = (await pool.query('SELECT af.* FROM site_affaire sa JOIN affaire af ON sa.affaire_id=af.id WHERE sa.site_id=$1 ORDER BY af.id DESC', [id])).rows;
     const does = (await pool.query('SELECT d.* FROM doe d WHERE d.site_id=$1 ORDER BY d.id DESC', [id])).rows;
-    const tickets = (await pool.query('SELECT m.* FROM ticket m JOIN doe d ON m.doe_id=d.id WHERE d.site_id=$1 ORDER BY m.id DESC', [id])).rows;
+    const tickets = (await pool.query('SELECT m.*, dc.id as demande_id FROM ticket m LEFT JOIN demande_client dc ON dc.ticket_id = m.id JOIN doe d ON m.doe_id=d.id WHERE d.site_id=$1 ORDER BY m.id DESC', [id])).rows;
     const adresse = site.adresse_id ? (await pool.query('SELECT * FROM adresse WHERE id=$1', [site.adresse_id])).rows[0] : null;
     const rendezvous = (await pool.query('SELECT * FROM rendezvous WHERE site_id=$1 ORDER BY date_rdv DESC, id DESC', [id])).rows;
     const documents = (await pool.query("SELECT * FROM documents_repertoire WHERE cible_type='Site' AND cible_id=$1 ORDER BY id DESC", [id])).rows;

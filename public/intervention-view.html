@@ -418,7 +418,7 @@
             col.innerHTML = `
               <div class="border rounded p-2 h-100">
                 <div class="small mb-1"><strong>${img.nom_fichier || 'Image'}</strong></div>
-                ${img.commentaire_image ? `<div class="text-muted small mb-1">${img.commentaire_image}</div>` : ''}
+                ${img.commentaire_image ? `<div class="text-muted small mb-1">${renderMd(img.commentaire_image)}</div>` : ''}
                 <a class="btn btn-sm btn-outline-primary w-100" href="${viewUrl}" target="_blank"><i class="bi bi-eye me-1"></i>Voir</a>
               </div>`;
             imagesList.appendChild(col);

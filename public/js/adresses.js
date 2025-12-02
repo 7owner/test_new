@@ -19,9 +19,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let allAdresses = [];
   let geocodeCache = [];
+  let currentPage = 1;
+  const pageSize = 9;
   const token = localStorage.getItem('token');
 
   const buildHeaders = () => token ? { 'Authorization': `Bearer ${token}` } : {};
+
+  const renderPagination = (totalItems) => {
+    const pag = document.getElementById('adresse-pagination');
+    if (!pag) return;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+    pag.innerHTML = '';
+    const addItem = (label, page, disabled = false, active = false) => {
+      const li = document.createElement('li');
+      li.className = `page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}`;
+      const a = document.createElement('a');
+      a.className = 'page-link';
+      a.href = '#';
+      a.textContent = label;
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (disabled || active) return;
+        currentPage = page;
+        applyFilters(); // rerender
+      });
+      li.appendChild(a);
+      pag.appendChild(li);
+    };
+    addItem('«', Math.max(1, currentPage - 1), currentPage === 1);
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1) {
+        addItem(String(p), p, false, p === currentPage);
+      } else if (p === currentPage - 2 || p === currentPage + 2) {
+        const li = document.createElement('li');
+        li.className = 'page-item disabled';
+        li.innerHTML = '<span class="page-link">…</span>';
+        pag.appendChild(li);
+      }
+    }
+    addItem('»', Math.min(totalPages, currentPage + 1), currentPage === totalPages);
+  };
 
   const renderList = (list) => {
     if (!adresseListDiv) return;
@@ -31,7 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     adresseEmpty?.classList.add('d-none');
-    list.forEach(a => {
+    const start = (currentPage - 1) * pageSize;
+    const pageItems = list.slice(start, start + pageSize);
+    pageItems.forEach(a => {
       const col = document.createElement('div');
       col.className = 'col-12 col-md-6 col-lg-4';
       col.innerHTML = `
@@ -46,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       adresseListDiv.appendChild(col);
     });
+    renderPagination(list.length);
   };
 
   const fetchAdresses = async () => {
@@ -198,6 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.addEventListener('input', () => {
       const term = searchInput.value.toLowerCase();
       const filtered = allAdresses.filter(a => (`${a.libelle} ${a.ligne1} ${a.code_postal} ${a.ville} ${a.pays}`).toLowerCase().includes(term));
+      currentPage = 1;
       renderList(filtered);
     });
   }
