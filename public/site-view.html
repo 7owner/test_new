@@ -8,64 +8,64 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
+  <style>
+    body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); }
+    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.08); }
+    .pill { background:#f1f5f9; border-radius:12px; padding:6px 10px; font-weight:600; color:#0f172a; }
+    .tickets-badge { font-size: 0.95rem; }
+  </style>
 </head>
 <body>
 
 
-  <main class="container mt-5">
-    
+  <main class="container my-4">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <h1 class="mb-4">Détails du site: <span id="site-name"></span></h1>
-      <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
-    </div>
-
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Informations générales</h2>
-        <p><strong>ID:</strong> <span id="view_id"></span></p>
-        <p><strong>Nom du Site:</strong> <span id="view_nom_site"></span></p>
-        <p><strong>Adresse ID:</strong> <span id="view_adresse_id"></span></p>
-        <p><strong>Commentaire:</strong> <span id="view_commentaire"></span></p>
-        <p><strong>Statut:</strong> <span id="view_statut"></span></p>
-        <p><strong>Ticket Ouvert:</strong> <span id="view_ticket"></span></p>
-        <p><strong>Date Début:</strong> <span id="view_date_debut"></span></p>
-        <p><strong>Date Fin:</strong> <span id="view_date_fin"></span></p>
+      <h1 class="h4 mb-0">Site <span id="site-name"></span></h1>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
+        <a href="site-edit.html" class="btn btn-primary btn-sm" id="edit-site-btn"><i class="bi bi-pencil me-2"></i>Modifier</a>
       </div>
     </div>
 
     <div class="card mb-4">
       <div class="card-body">
-        <h2 class="card-title mb-4">Tickets associés</h2>
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+            <h2 class="h5 mb-1" id="view_nom_site">—</h2>
+            <div class="text-muted small">ID : <span id="view_id">—</span></div>
+          </div>
+          <span class="pill" id="view_statut">—</span>
+        </div>
+        <div class="mb-2">
+          <div class="fw-semibold text-secondary">Adresse</div>
+          <div id="view_adresse_id" class="text-body">—</div>
+        </div>
+        <div class="mb-2">
+          <div class="fw-semibold text-secondary">Contact sur site</div>
+          <div id="view_contact" class="text-body">—</div>
+        </div>
+        <div class="mb-2">
+          <div class="fw-semibold text-secondary">Commentaire</div>
+          <div id="view_commentaire" class="text-body">—</div>
+        </div>
+        <div class="d-flex flex-wrap gap-3 text-muted small">
+          <div>Date début : <span id="view_date_debut">—</span></div>
+          <div>Date fin : <span id="view_date_fin">—</span></div>
+          <div class="fw-semibold text-dark">Ticket Ouvert : <span id="view_ticket" class="tickets-badge">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 mb-0">Tickets associés</h2>
+          <span class="text-muted small" id="tickets-count"></span>
+        </div>
         <div id="tickets-list"></div>
       </div>
     </div>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-3">Responsables</h2>
-        <div id="site-responsables" class="mb-2"></div>
-        <div class="d-flex gap-2 d-none" id="site-resp-actions">
-          <input class="form-control form-control-sm" id="site-resp-matricule" placeholder="Matricule (Chef/Admin)">
-          <button class="btn btn-sm btn-outline-primary" id="site-add-resp-btn"><i class="bi bi-person-plus me-1"></i>Ajouter</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-3">Agents assignés</h2>
-        <div id="site-agents" class="mb-2"></div>
-        <div class="d-flex gap-2 d-none" id="site-agent-actions">
-          <input class="form-control form-control-sm" id="site-agent-matricule" placeholder="Matricule agent">
-          <button class="btn btn-sm btn-outline-primary" id="site-add-agent-btn"><i class="bi bi-person-plus me-1"></i>Assigner</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="d-flex gap-2">
-      <a href="sites.html" class="btn btn-secondary">Retour à la liste</a>
-      <a href="site-edit.html" class="btn btn-primary" id="edit-site-btn"><i class="bi bi-pencil me-2"></i>Modifier le site</a>
-    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
@@ -82,22 +82,32 @@
         const s = data.site || {};
         document.getElementById('site-name').textContent = s.nom_site || '';
         const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v||''; };
-        set('view_id', s.id); set('view_nom_site', s.nom_site); set('view_adresse_id', s.adresse_id); set('view_commentaire', s.commentaire); set('view_statut', s.statut); set('view_ticket', (data.tickets && data.tickets.length)? data.tickets.length : 0); set('view_date_debut', s.date_debut); set('view_date_fin', s.date_fin);
-        const tl = document.getElementById('tickets-list'); tl.innerHTML=''; (data.tickets||[]).forEach(t=>{ const el=document.createElement('div'); el.className='small'; el.innerHTML=`<a href="ticket-view.html?id=${t.id}">#${t.id} — ${t.titre||''}</a>`; tl.appendChild(el); }); if (!tl.innerHTML) tl.innerHTML='<span class="text-muted">Aucun ticket.</span>';
-        const respEl = document.getElementById('site-responsables'); respEl.innerHTML=''; (data.responsables||[]).forEach(x=>{ const el=document.createElement('div'); el.className='small'; el.textContent = `${x.agent_matricule || ''} ${x.role? '('+x.role+')':''}`; respEl.appendChild(el); }); if(!respEl.innerHTML) respEl.innerHTML='<span class="text-muted">Aucun responsable.</span>';
-        const agentsEl = document.getElementById('site-agents'); agentsEl.innerHTML=''; (data.agents_assignes||[]).forEach(x=>{ const el=document.createElement('div'); el.className='small'; el.textContent = x.agent_matricule; agentsEl.appendChild(el); }); if (!agentsEl.innerHTML) agentsEl.innerHTML='<span class="text-muted">Aucun agent assigné.</span>';
-        if (isAdmin) {
-          document.getElementById('site-resp-actions').classList.remove('d-none');
-          document.getElementById('site-agent-actions').classList.remove('d-none');
-          document.getElementById('site-add-resp-btn').onclick = async ()=>{
-            const m = document.getElementById('site-resp-matricule').value.trim(); if (!m) return alert('Matricule requis');
-            const rr = await fetch(`/api/sites/${siteId}/responsables`, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json', ...(token?{ 'Authorization':`Bearer ${token}` }:{}) }, body: JSON.stringify({ agent_matricule:m }) });
-            const jd = await rr.json().catch(()=>({})); if (!rr.ok) return alert(jd.error||`HTTP ${rr.status}`); location.reload(); };
-          document.getElementById('site-add-agent-btn').onclick = async ()=>{
-            const m = document.getElementById('site-agent-matricule').value.trim(); if (!m) return alert('Matricule requis');
-            const rr = await fetch(`/api/sites/${siteId}/agents`, { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json', ...(token?{ 'Authorization':`Bearer ${token}` }:{}) }, body: JSON.stringify({ agent_matricule:m }) });
-            const jd = await rr.json().catch(()=>({})); if (!rr.ok) return alert(jd.error||`HTTP ${rr.status}`); location.reload(); };
-        }
+        set('view_id', s.id); set('view_nom_site', s.nom_site); set('view_adresse_id', s.adresse_id); set('view_commentaire', s.commentaire); set('view_statut', s.statut); set('view_date_debut', s.date_debut); set('view_date_fin', s.date_fin);
+        // Contact : site.contact_* ou premier responsable
+        const contact = s.contact_nom ? `${s.contact_nom} ${s.contact_tel||''}` : (data.responsables && data.responsables[0] ? `${data.responsables[0].agent_matricule || ''}` : '—');
+        set('view_contact', contact);
+
+        const tickets = Array.isArray(data.tickets) ? data.tickets : [];
+        const openCount = tickets.filter(t => (t.etat || t.statut || '').toLowerCase() !== 'termine').length;
+        set('view_ticket', openCount);
+        const tl = document.getElementById('tickets-list');
+        const statusClass = (etat) => {
+          const e = (etat||'').toLowerCase();
+          if (e.includes('attente')) return 'text-success';
+          if (e.includes('cours')) return 'text-warning';
+          if (e.includes('term')) return 'text-danger';
+          return 'text-muted';
+        };
+        tl.innerHTML='';
+        tickets.forEach(t=>{
+          const el=document.createElement('div');
+          el.className='d-flex justify-content-between align-items-center border-bottom py-1';
+          const dateStr = t.date_debut ? new Date(t.date_debut).toLocaleDateString() : (t.date_fin ? new Date(t.date_fin).toLocaleDateString() : '');
+          el.innerHTML=`<div><a href="ticket-view.html?id=${t.id}">#${t.id} — ${t.titre||''}</a><div class="small text-muted">${t.description||''}</div></div><div class="text-end small"><div class="${statusClass(t.etat||t.statut)}">${(t.etat||t.statut||'').replace('_',' ')||'—'}</div><div class="text-muted">${dateStr||''}</div></div>`;
+          tl.appendChild(el);
+        });
+        if (!tl.innerHTML) tl.innerHTML='<span class="text-muted">Aucun ticket.</span>';
+
       } catch(e) { console.error('site relations load failed:', e); }
 
       const backBtn = document.getElementById('back-btn');
