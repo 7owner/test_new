@@ -37,17 +37,29 @@
     <div class="card">
       <div class="card-body">
         <form id="site-edit-form">
-          <div class="mb-3">
-            <label for="id" class="form-label">ID Site</label>
-            <input type="text" class="form-control" id="id" readonly>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="id" class="form-label">ID Site</label>
+              <input type="text" class="form-control" id="id" readonly>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="nom_site" class="form-label">Nom du site</label>
+              <input type="text" class="form-control" id="nom_site" required>
+            </div>
           </div>
-          <div class="mb-3">
-            <label for="nom_site" class="form-label">Nom du site</label>
-            <input type="text" class="form-control" id="nom_site" required>
-          </div>
-          <div class="mb-3">
-            <label for="adresse_id" class="form-label">Adresse</label>
-            <select class="form-select" id="adresse_id"></select>
+          <div class="row">
+            <div class="col-md-8 mb-3">
+              <label for="adresse_id" class="form-label">Adresse (sélection)</label>
+              <select class="form-select" id="adresse_id"></select>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label for="adresse_edit_btn" class="form-label">Modifier l’adresse</label>
+              <div class="d-grid">
+                <a href="adresses.html" class="btn btn-outline-primary btn-sm" id="adresse_edit_btn">
+                  <i class="bi bi-geo-alt me-1"></i> Ouvrir gestion des adresses
+                </a>
+              </div>
+            </div>
           </div>
           <div class="mb-3">
             <label for="responsable_matricule" class="form-label">Responsable</label>
