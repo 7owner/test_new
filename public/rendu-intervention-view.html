@@ -34,6 +34,7 @@
         <div class="text-muted small">Intervention <span id="intervention-id">-</span></div>
       </div>
       <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm" id="edit-meta-btn"><i class="bi bi-pencil"></i> Modifier</button>
         <button class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
         <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer</button>
       </div>
@@ -76,6 +77,40 @@
     </div>
   </main>
 
+  <!-- Modal édition valeur / résumé -->
+  <div class="modal fade" id="editMetaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Modifier la valeur et le résumé</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="edit-valeur-input">Valeur</label>
+            <input type="text" class="form-control" id="edit-valeur-input" placeholder="Ex: 1500€">
+          </div>
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <label class="form-label fw-semibold" for="edit-resume-input">Résumé (Markdown)</label>
+              <textarea class="form-control" id="edit-resume-input" rows="8" placeholder="Saisissez le résumé en Markdown..."></textarea>
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label fw-semibold">Aperçu</label>
+              <div id="edit-resume-preview" class="border rounded p-3 bg-light" style="min-height: 200px;">
+                <em class="text-muted">Le résumé apparaîtra ici...</em>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-meta-btn"><i class="bi bi-check-lg"></i> Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
@@ -103,6 +138,14 @@
       const backInterBtn = document.getElementById('back-to-intervention-btn');
       const newRenduBtn = document.getElementById('open-rendu-new-btn');
       const backBtn = document.getElementById('back-btn');
+      const editBtn = document.getElementById('edit-meta-btn');
+      const editModalEl = document.getElementById('editMetaModal');
+      const editModal = new bootstrap.Modal(editModalEl);
+      const editValeurInput = document.getElementById('edit-valeur-input');
+      const editResumeInput = document.getElementById('edit-resume-input');
+      const editResumePreview = document.getElementById('edit-resume-preview');
+      let currentRendu = null;
+      let saving = false;
 
       const fetchJSON = async (url) => {
         const response = await fetch(url, { headers });
@@ -115,6 +158,7 @@
 
       try {
         const { rendu, images, documents, message_attachments } = await fetchJSON(`/api/rendus/${renduId}`);
+        currentRendu = rendu;
 
         // Populate header and nav buttons
         interEl.textContent = rendu.intervention_id;
@@ -124,8 +168,54 @@
 
 
         // Populate summary cards
-        valeurEl.textContent = rendu.valeur || 'Non spécifiée';
-        resumeEl.innerHTML = rendu.resume ? marked.parse(rendu.resume) : '<span class="text-muted">Aucun résumé.</span>';
+        const updateDisplay = (valeur, resume) => {
+          valeurEl.textContent = valeur || 'Non spécifiée';
+          resumeEl.innerHTML = resume ? marked.parse(resume) : '<span class="text-muted">Aucun résumé.</span>';
+        };
+        updateDisplay(rendu.valeur, rendu.resume);
+
+        const updatePreview = () => {
+          const text = editResumeInput.value || '';
+          editResumePreview.innerHTML = text ? marked.parse(text) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+        };
+
+        editBtn.addEventListener('click', () => {
+          if (!currentRendu) return;
+          editValeurInput.value = currentRendu.valeur || '';
+          editResumeInput.value = currentRendu.resume || '';
+          updatePreview();
+          editModal.show();
+        });
+
+        editResumeInput.addEventListener('input', updatePreview);
+
+        document.getElementById('save-meta-btn').addEventListener('click', async () => {
+          if (saving) return;
+          saving = true;
+          const payload = {
+            valeur: editValeurInput.value.trim(),
+            resume: editResumeInput.value || ''
+          };
+          try {
+            const resp = await fetch(`/api/rendus/${renduId}`, {
+              method: 'PATCH',
+              headers,
+              body: JSON.stringify(payload)
+            });
+            if (!resp.ok) {
+              const body = await resp.json().catch(() => null);
+              throw new Error(body?.error || body?.message || `HTTP ${resp.status}`);
+            }
+            const data = await resp.json().catch(() => payload);
+            currentRendu = data.rendu || { ...currentRendu, ...payload };
+            updateDisplay(currentRendu.valeur, currentRendu.resume);
+            editModal.hide();
+          } catch (err) {
+            alert(`Erreur lors de la mise à jour : ${err.message}`);
+          } finally {
+            saving = false;
+          }
+        });
 
         // Process and render attachments
         const attachments = [];
