@@ -732,6 +732,37 @@
         }
       };
 
+      // Pièces jointes provenant des messages de la demande (conversation)
+      const loadConversationAttachments = async (demandeId) => {
+        if (!demandeId) return;
+        const msgs = await fetchJSON(`/api/conversations/demande-${demandeId}`);
+        if (!Array.isArray(msgs)) return;
+        msgs.forEach(m => {
+          if (!Array.isArray(m.attachments)) return;
+          m.attachments.forEach(att => {
+            const path = String(att.file_path || '');
+            const url = path ? '/' + path.replace(/^public\//, '') : '';
+            const name = att.file_name || path.split('/').pop() || 'Pièce jointe';
+            const mime = att.type_mime || '';
+            const lower = name.toLowerCase();
+            const kind = (mime && mime.startsWith('image/')) || /\.(png|jpe?g|gif|webp)$/i.test(lower) ? 'image' : 'doc';
+            attachments.push({
+              id: att.id || `conv-${demandeId}-${name}`,
+              type: 'DemandeClient',
+              cible_id: demandeId,
+              nom_fichier: name,
+              commentaire_image: att.commentaire || m.message || '',
+              note: '',
+              url,
+              kind,
+              isNew: false,
+              file: null
+            });
+          });
+        });
+      };
+
+      // Pièces liées
       await loadItems('Ticket', ticketId, 'images');
       await loadItems('Site', siteId, 'images');
       await loadItems('DemandeClient', demandeId, 'images');
@@ -739,6 +770,8 @@
       await loadItems('DemandeClient', demandeId, 'documents');
       await loadItems('Site', siteId, 'documents');
       await loadItems('Intervention', interventionId, 'documents');
+      // Pièces des messages de la demande
+      await loadConversationAttachments(demandeId);
 
       // Exemples si rien trouvé
       if (!attachments.length) {
