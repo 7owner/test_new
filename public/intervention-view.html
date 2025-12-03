@@ -482,17 +482,27 @@
       function renderRendus(rendus = []) {
         if (!rendusList) return;
         if (!rendus.length) {
-          rendusList.innerHTML = '<p class="text-muted">Aucun rendu.</p>';
-          return;
+            rendusList.innerHTML = '<p class="text-muted">Aucun rendu enregistré pour cette intervention.</p>';
+            return;
         }
         rendusList.innerHTML = '';
         rendus.forEach(r => {
-          const card = document.createElement('div');
-          card.className = 'card card-body mb-2';
-          const titre = r.titre || `Rendu ${r.id || ''}`;
-          const body = renderMd(r.contenu || r.description || '');
-          card.innerHTML = `<h6 class="mb-2">${titre}</h6><div class="markdown-body">${body}</div>`;
-          rendusList.appendChild(card);
+            const card = document.createElement('div');
+            card.className = 'card card-body mb-2';
+            const resumeSnippet = (r.resume || '').substring(0, 150) + ((r.resume || '').length > 150 ? '...' : '');
+            card.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1">Rendu #${r.id}</h6>
+                        <p class="small text-muted mb-2">Valeur: ${r.valeur || 'Non spécifiée'}</p>
+                        <div class="markdown-body small">${renderMd(resumeSnippet)}</div>
+                    </div>
+                    <a href="rendu-intervention-view.html?id=${r.id}" class="btn btn-sm btn-outline-primary ms-3">
+                        <i class="bi bi-eye me-1"></i>Voir
+                    </a>
+                </div>
+            `;
+            rendusList.appendChild(card);
         });
       }
 
@@ -561,7 +571,6 @@
             if (elapsedEl) elapsedEl.textContent = elapsed;
             ticketId = rel.ticket ? rel.ticket.id : null;
               displayDocuments(rel.documents); 
-              renderRendus(rel.rendus || rel.rendu_interventions || []);
               loadImages();
               // materiels issus de relations si disponibles
               if (Array.isArray(rel.materiels)) {
@@ -569,6 +578,15 @@
                 renderMateriels(materielFilter ? materielFilter.value : '');
               }
           }
+
+            // NEW: Fetch and render Rendus separately
+            try {
+                const rendus = await fetchJSON(`/api/interventions/${interventionId}/rendus`);
+                renderRendus(rendus);
+            } catch(e) {
+                console.error("Failed to load rendus", e);
+                if (rendusList) rendusList.innerHTML = '<p class="text-danger">Erreur de chargement des rendus.</p>';
+            }
 
             allAgents = await fetchJSON('/api/agents');
             const options = allAgents.map(agent => `<option value="${agent.matricule}">${agent.nom} ${agent.prenom || ''} (${agent.matricule})</option>`).join('');

@@ -679,6 +679,10 @@ const attachmentStorage = multer.diskStorage({
 
 const upload = multer({ storage: attachmentStorage });
 
+// Multer config for Rendu d'intervention files
+const renduStorage = multer.memoryStorage(); // Use memory storage to handle files as buffers
+const renduUpload = multer({ storage: renduStorage });
+
 // Health endpoint
 app.get('/api/health', async (req, res) => {
     try {
@@ -2323,6 +2327,107 @@ app.delete('/api/interventions/:id', authenticateToken, authorizeAdmin, async (r
         res.status(204).send();
     } catch (err) {
         console.error(`Error deleting intervention with id ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Create a Rendu for an Intervention
+app.post('/api/interventions/:id/rendus', authenticateToken, authorizeAdmin, renduUpload.array('image_files[]'), async (req, res) => {
+    const { id: interventionId } = req.params;
+    const { valeur, resume, image_commentaires, image_notes } = req.body;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Create the rendu_intervention record
+        const renduResult = await client.query(
+            'INSERT INTO rendu_intervention (intervention_id, valeur, resume) VALUES ($1, $2, $3) RETURNING id',
+            [interventionId, valeur, resume]
+        );
+        const renduId = renduResult.rows[0].id;
+
+        // 2. Handle file uploads
+        if (req.files && req.files.length > 0) {
+            for (let i = 0; i < req.files.length; i++) {
+                const file = req.files[i];
+                const commentaire = (image_commentaires && image_commentaires[i]) ? image_commentaires[i] : null;
+                const note = (image_notes && image_notes[i]) ? image_notes[i] : null;
+                const fullComment = [commentaire, note].filter(Boolean).join('\\n\\n');
+
+                // Insert into images table
+                const imageResult = await client.query(
+                    `INSERT INTO images (nom_fichier, type_mime, taille_octets, image_blob, commentaire_image, auteur_matricule, cible_type, cible_id)
+                     VALUES ($1, $2, $3, $4, $5, $6, 'RenduIntervention', $7) RETURNING id`,
+                    [file.originalname, file.mimetype, file.size, file.buffer, fullComment, req.user.matricule || null, renduId]
+                );
+                const imageId = imageResult.rows[0].id;
+
+                // Link in rendu_intervention_image table
+                await client.query(
+                    'INSERT INTO rendu_intervention_image (rendu_intervention_id, image_id) VALUES ($1, $2)',
+                    [renduId, imageId]
+                );
+            }
+        }
+
+        await client.query('COMMIT');
+        res.status(201).json({ message: 'Rendu created successfully', renduId });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(`Error creating rendu for intervention ${interventionId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    } finally {
+        client.release();
+    }
+});
+
+// Get all Rendus for an Intervention
+app.get('/api/interventions/:id/rendus', authenticateToken, async (req, res) => {
+    const { id: interventionId } = req.params;
+    try {
+        const result = await pool.query(
+            'SELECT * FROM rendu_intervention WHERE intervention_id = $1 ORDER BY id DESC',
+            [interventionId]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error(`Error fetching rendus for intervention ${interventionId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Get a single Rendu by its own ID, with its attachments
+app.get('/api/rendus/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const renduResult = await pool.query('SELECT * FROM rendu_intervention WHERE id = $1', [id]);
+        const rendu = renduResult.rows[0];
+
+        if (!rendu) {
+            return res.status(404).json({ error: 'Rendu not found' });
+        }
+
+        // Fetch associated images via the join table
+        const imagesResult = await pool.query(`
+            SELECT i.* FROM images i
+            JOIN rendu_intervention_image rii ON i.id = rii.image_id
+            WHERE rii.rendu_intervention_id = $1
+            ORDER BY i.id DESC
+        `, [id]);
+        const images = imagesResult.rows;
+        
+        // Fetch associated documents (if any are linked via cible_type/cible_id)
+        const documentsResult = await pool.query(
+            "SELECT * FROM documents_repertoire WHERE cible_type = 'RenduIntervention' AND cible_id = $1 ORDER BY id DESC",
+            [id]
+        );
+        const documents = documentsResult.rows;
+
+        res.json({ rendu, images, documents });
+
+    } catch (err) {
+        console.error(`Error fetching rendu ${id}:`, err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });app.get('/api/rendezvous', authenticateToken, async (req, res) => {
