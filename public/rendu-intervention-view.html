@@ -7,156 +7,242 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
-  <script src="/nav.js?v=1"></script>
-  <script src="/script.js?v=1"></script>
+  <script src="/nav.js?v=2"></script>
+  <style>
+    body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); }
+    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+    .attachment-card {
+      border: 2px solid #e5e7eb; border-radius: 12px; background: #fff;
+      transition: all 0.2s ease; height: 100%;
+    }
+    .attachment-card:hover { border-color:#3b82f6; box-shadow:0 8px 24px rgba(59,130,246,0.12); }
+    .attachment-preview {
+      width:100%; height:180px; background:#f3f4f6; display:flex; align-items:center; justify-content:center;
+      border-radius: 10px 10px 0 0; overflow:hidden;
+    }
+    .attachment-preview img { width:100%; height:100%; object-fit:cover; }
+    .attachment-info { padding:12px 14px; }
+    .attachment-comment { font-size:0.9rem; color:#374151; min-height:48px; }
+    .badge-source { font-size:0.7rem; }
+  </style>
 </head>
 <body>
-  <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"></h1>
-    <div id="user-info-container" class="d-flex align-items-center">
-      <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-        Menu
-      </button>
-    </div>
-  </header>
-
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-    <div class="offcanvas-header">
-      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body">
-      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item">
-          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
-        </li>
-      </ul>
-    </div>
-  </div>
-
-  <main class="container mt-5">
- 
-    
+  <main class="container my-4">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <h1 class="mb-4">Détails du rendu d'intervention: <span id="rendu-id"></span></h1>
-      <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
-    </div>
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Informations Générales</h2>
-        <p><strong>ID:</strong> <span id="view_id"></span></p>
-        <p><strong>Résumé:</strong> <span id="view_resume"></span></p>
-        <p><strong>Valeur:</strong> <span id="view_valeur"></span></p>
+      <div>
+        <h1 class="h4 mb-1"><i class="bi bi-file-text me-2"></i>Rendu d'intervention</h1>
+        <div class="text-muted small">Intervention <span id="intervention-id">-</span></div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
+        <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer</button>
       </div>
     </div>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Images Associées</h2>
-        <div id="rendu-images-list" class="row row-cols-1 row-cols-md-3 g-3">
-          <!-- Placeholder for Rendu images -->
+    <div class="row g-3 mb-3">
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-body">
+            <h6 class="text-uppercase text-muted small mb-2">Valeur</h6>
+            <div id="view_valeur" class="fs-5 fw-semibold">—</div>
+            <div class="text-muted small">Montant estimé</div>
+          </div>
         </div>
-        <button type="button" class="btn btn-primary mt-3" id="add-image-btn"><i class="bi bi-plus-circle me-2"></i>Ajouter Image</button>
+      </div>
+      <div class="col-lg-8">
+        <div class="card h-100">
+          <div class="card-body">
+            <h6 class="text-uppercase text-muted small mb-2">Résumé</h6>
+            <div id="view_resume" class="small">—</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="d-flex gap-2">
-      <a href="intervention-view.html" class="btn btn-secondary" id="back-to-intervention-btn">Retour à l'intervention</a>
-      <a href="rendu-intervention-edit.html" class="btn btn-primary" id="edit-rendu-btn"><i class="bi bi-pencil me-2"></i>Modifier le rendu</a>
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Pièces jointes liées</h5>
+          <span class="badge bg-primary" id="attachments-count">0 pièce(s)</span>
+        </div>
+        <p class="text-muted small mb-3">Images / documents provenant du ticket, du site, de la demande client ou des messages associés.</p>
+        <div class="row g-3" id="attachments-grid"></div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 no-print">
+      <button class="btn btn-secondary" id="back-to-intervention-btn">Retour à l'intervention</button>
+      <a class="btn btn-outline-primary" id="open-rendu-new-btn"><i class="bi bi-plus-circle me-1"></i>Nouveau rendu</a>
     </div>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const renduId = urlParams.get('id');
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = localStorage.getItem('token');
+      if (!token) { alert('Session expirée'); return location.href='/login.html'; }
 
-      const sampleRendus = [
-        { id: "RND001", intervention_id: "INT001", resume: "Rapport de vérification OK.", valeur: "Conforme" },
-        { id: "RND002", intervention_id: "INT002", resume: "Diagnostic panne compresseur.", valeur: "Non conforme" }
-      ];
+      const params = new URLSearchParams(location.search);
+      const interventionId = params.get('intervention_id') || params.get('id');
+      if (!interventionId) { alert('Intervention manquante'); return; }
 
-      const sampleImages = [
-        { id: "IMG001", rendu_id: "RND001", nom_fichier: "rapport_int001_1.jpg", commentaire: "Photo avant intervention.", src: "https://via.placeholder.com/150" },
-        { id: "IMG002", rendu_id: "RND001", nom_fichier: "rapport_int001_2.jpg", commentaire: "Photo après réparation.", src: "https://via.placeholder.com/150" },
-        { id: "IMG003", rendu_id: "RND002", nom_fichier: "panne_compresseur.jpg", commentaire: "Image du compresseur en panne.", src: "https://via.placeholder.com/150" }
-      ];
+      const grid = document.getElementById('attachments-grid');
+      const countBadge = document.getElementById('attachments-count');
+      const resumeEl = document.getElementById('view_resume');
+      const valeurEl = document.getElementById('view_valeur');
+      const interEl = document.getElementById('intervention-id');
+      const backInterBtn = document.getElementById('back-to-intervention-btn');
+      const newRenduBtn = document.getElementById('open-rendu-new-btn');
 
-      const rendu = sampleRendus.find(r => r.id === renduId);
+      interEl.textContent = interventionId;
+      backInterBtn.onclick = () => location.href = `intervention-view.html?id=${interventionId}`;
+      newRenduBtn.href = `rendu-intervention-new.html?id=${interventionId}`;
 
-      // Retrieve logged-in user role from localStorage
-      const currentUserRole = localStorage.getItem('userRole');
-      const currentUserIsAdmin = (currentUserRole === 'admin');
+      const fetchJSON = async (url) => {
+        const r = await fetch(url, { headers:{ 'Authorization': 'Bearer '+token }, credentials:'same-origin' });
+        if (!r.ok) return null;
+        return r.json();
+      };
+      const fetchBlobURL = async (url) => {
+        try {
+          const r = await fetch(url, { headers:{ 'Authorization':'Bearer '+token }, credentials:'same-origin' });
+          if (!r.ok) return null;
+          const b = await r.blob();
+          return URL.createObjectURL(b);
+        } catch { return null; }
+      };
 
-      if (rendu) {
-        document.getElementById('rendu-id').textContent = rendu.id;
-        document.getElementById('view_id').textContent = rendu.id;
-        document.getElementById('view_resume').textContent = rendu.resume;
-        document.getElementById('view_valeur').textContent = rendu.valeur;
+      let attachments = [];
 
-        // Update back button link
-        document.getElementById('back-to-intervention-btn').href = `intervention-view.html?id=${rendu.intervention_id}`;
-
-        // Render associated images
-        const renduImagesList = document.getElementById('rendu-images-list');
-        renduImagesList.innerHTML = '';
-        const filteredImages = sampleImages.filter(img => img.rendu_id === renduId);
-        if (filteredImages.length > 0) {
-          filteredImages.forEach(img => {
-            const imgCol = document.createElement('div');
-            imgCol.className = 'col';
-            imgCol.innerHTML = `
-              <div class="rendu-image-item border rounded bg-light p-2">
-                <img src="${img.src}" class="img-fluid mb-2" alt="${img.nom_fichier}">
-                <p class="mb-1"><strong>Fichier:</strong> ${img.nom_fichier}</p>
-                <p class="mb-0"><strong>Commentaire:</strong> ${img.commentaire}</p>
-                <div class="d-flex justify-content-end gap-2 mt-2">
-                  ${currentUserIsAdmin ? `
-                    <button type="button" class="btn btn-sm btn-primary edit-rendu-image-btn"><i class="bi bi-pencil"></i> Modifier</button>
-                    <button type="button" class="btn btn-sm btn-danger delete-rendu-image-btn"><i class="bi bi-trash"></i> Supprimer</button>
-                  ` : ''}
-                </div>
-              </div>
-            `;
-            renduImagesList.appendChild(imgCol);
-          });
+      const renderGrid = () => {
+        grid.innerHTML = '';
+        if (!attachments.length) {
+          grid.innerHTML = '<div class="col-12 text-muted small">Aucune pièce jointe trouvée.</div>';
         } else {
-          renduImagesList.innerHTML = '<p class="text-muted">Aucune image associée.</p>';
+          attachments.forEach(att => {
+            const col = document.createElement('div');
+            col.className = 'col-12 col-sm-6 col-lg-4';
+            const card = document.createElement('div');
+            card.className = 'attachment-card';
+
+            const prev = document.createElement('div');
+            prev.className = 'attachment-preview';
+            if (att.kind === 'image') {
+              prev.innerHTML = `<img src="${att.url||att.previewUrl||''}" alt="${att.nom_fichier}">`;
+            } else {
+              prev.innerHTML = '<i class="bi bi-file-earmark-text fs-1 text-primary"></i>';
+              prev.style.background = 'linear-gradient(135deg,#667eea,#764ba2)';
+              prev.style.color = '#fff';
+            }
+
+            const info = document.createElement('div');
+            info.className = 'attachment-info';
+            info.innerHTML = `
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="badge bg-secondary badge-source">${att.type||'—'}</div>
+                ${att.cible_id ? `<span class="badge bg-light text-dark">#${att.cible_id}</span>`:''}
+              </div>
+              <div class="fw-semibold">${att.nom_fichier||'Fichier'}</div>
+              <div class="attachment-comment">${att.commentaire_image||'Aucun commentaire'}</div>
+            `;
+            card.append(prev, info); col.append(card); grid.append(col);
+          });
+        }
+        countBadge.textContent = `${attachments.length} pièce(s)`;
+      };
+
+      const loadItems = async (type, id, endpoint) => {
+        if (!id) return;
+        const data = await fetchJSON(`/api/${endpoint}?cible_type=${encodeURIComponent(type)}&cible_id=${id}`);
+        if (Array.isArray(data)) {
+          for (const item of data) {
+            let url = `/api/${endpoint}/${item.id}/view`;
+            if (endpoint === 'images') {
+              url = await fetchBlobURL(url) || url;
+            }
+            attachments.push({
+              id: item.id,
+              type,
+              cible_id: id,
+              nom_fichier: item.nom_fichier,
+              commentaire_image: item.commentaire_image || item.commentaire || '',
+              note: item.note || '',
+              url,
+              kind: endpoint === 'images' ? 'image' : 'doc'
+            });
+          }
+        }
+      };
+
+      const loadConversationAttachments = async (demandeId) => {
+        if (!demandeId) return;
+        const msgs = await fetchJSON(`/api/conversations/demande-${demandeId}`);
+        if (!Array.isArray(msgs)) return;
+        msgs.forEach(m => {
+          if (!Array.isArray(m.attachments)) return;
+          m.attachments.forEach(att => {
+            const path = String(att.file_path||'');
+            const url = path ? '/' + path.replace(/^public\//,'') : '';
+            const name = att.file_name || path.split('/').pop() || 'Pièce jointe';
+            const mime = att.type_mime || '';
+            const lower = name.toLowerCase();
+            const kind = (mime && mime.startsWith('image/')) || /\.(png|jpe?g|gif|webp)$/i.test(lower) ? 'image' : 'doc';
+            attachments.push({
+              id: att.id || `conv-${demandeId}-${name}`,
+              type: 'Message',
+              cible_id: demandeId,
+              nom_fichier: name,
+              commentaire_image: att.commentaire || m.message || '',
+              note: '',
+              url,
+              kind,
+            });
+          });
+        });
+      };
+
+      try {
+        // Essayer de récupérer les infos de l'intervention (valeur/resume si dispo)
+        const inter = await fetchJSON(`/api/interventions/${interventionId}`).catch(()=>null);
+        if (inter) {
+          valeurEl.textContent = inter.valeur || inter.budget || '—';
+          resumeEl.innerHTML = inter.resume ? marked.parse(inter.resume) : '<span class="text-muted">Aucun résumé</span>';
         }
 
-        // Conditionally hide admin-specific buttons
-        if (!currentUserIsAdmin) {
-          document.getElementById('add-image-btn').classList.add('d-none');
-          document.getElementById('edit-rendu-btn').classList.add('d-none');
+        // Relations
+        const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
+        let ticketId = rel?.ticket?.id || rel?.ticket?.ticket_id || null;
+        let siteId = rel?.ticket?.site_id || rel?.site?.id || rel?.site?.site_id || null;
+        let demandeId = rel?.ticket?.demande_id || rel?.demande?.id || rel?.demande?.demande_id || params.get('demande_id');
+
+        if ((!demandeId || !siteId) && ticketId) {
+          const ticketData = await fetchJSON(`/api/tickets/${ticketId}`).catch(()=>null);
+          if (ticketData?.demande_id && !demandeId) demandeId = ticketData.demande_id;
+          if (ticketData?.site_id && !siteId) siteId = ticketData.site_id;
         }
 
-      } else {
-        document.getElementById('rendu-id').textContent = 'Rendu introuvable';
-        // Hide other details or show an error message
+        await loadItems('Ticket', ticketId, 'images');
+        await loadItems('Ticket', ticketId, 'documents');
+        await loadItems('Site', siteId, 'images');
+        await loadItems('Site', siteId, 'documents');
+        await loadItems('DemandeClient', demandeId, 'images');
+        await loadItems('DemandeClient', demandeId, 'documents');
+        await loadItems('Intervention', interventionId, 'images');
+        await loadItems('Intervention', interventionId, 'documents');
+        await loadConversationAttachments(demandeId);
+      } catch (e) {
+        console.error(e);
+        resumeEl.innerHTML = '<span class="text-danger">Erreur de chargement</span>';
       }
+
+      if (!attachments.length) {
+        attachments.push({
+          id: 'ex1', type:'Exemple', nom_fichier:'Aucune pièce jointe',
+          commentaire_image:'Ajoutez des pièces pour les voir ici.', kind:'doc', url:''
+        });
+      }
+      renderGrid();
     });
   </script>
 </body>
