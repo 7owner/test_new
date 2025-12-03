@@ -2520,6 +2520,31 @@ app.get('/api/rendus/:id', authenticateToken, async (req, res) => {
         console.error(`Error fetching rendu ${id}:`, err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
+});
+
+app.patch('/api/rendus/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { resume, valeur } = req.body;
+
+    if (resume === undefined && valeur === undefined) {
+        return res.status(400).json({ error: 'At least one field (resume or valeur) is required for update.' });
+    }
+
+    try {
+        const result = await pool.query(
+            'UPDATE rendu_intervention SET resume = COALESCE($1, resume), valeur = COALESCE($2, valeur) WHERE id = $3 RETURNING *',
+            [resume, valeur, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Rendu not found' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(`Error updating rendu ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });app.get('/api/rendezvous', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT rendezvous.*, intervention.description as intervention_description, site.nom_site as site_nom FROM rendezvous JOIN intervention ON rendezvous.intervention_id = intervention.id JOIN site ON rendezvous.site_id = site.id ORDER BY rendezvous.date_rdv ASC');
