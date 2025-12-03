@@ -273,6 +273,7 @@
       }
 
       let ticketId = null;
+      let demandeId = null;
       let allAgents = [];
       let materielsCache = [];
 
@@ -570,6 +571,7 @@
             const elapsedEl = document.getElementById('view_elapsed');
             if (elapsedEl) elapsedEl.textContent = elapsed;
             ticketId = rel.ticket ? rel.ticket.id : null;
+            demandeId = rel.ticket ? rel.ticket.demande_id : null;
               displayDocuments(rel.documents); 
               loadImages();
               // materiels issus de relations si disponibles
@@ -643,7 +645,11 @@
             alert('Intervention inconnue.');
             return;
           }
-          window.location.href = `rendu-intervention-new.html?id=${interventionId}`;
+          let url = `rendu-intervention-new.html?id=${interventionId}`;
+          if (demandeId) {
+              url += `&demande_id=${demandeId}`;
+          }
+          window.location.href = url;
         });
       }
       const editInterBtn = document.getElementById('edit-intervention-btn');

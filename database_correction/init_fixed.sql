@@ -196,6 +196,7 @@ CREATE TABLE IF NOT EXISTS ticket (
     doe_id BIGINT REFERENCES doe(id) ON DELETE SET NULL,
     affaire_id BIGINT REFERENCES affaire(id) ON DELETE SET NULL,
     site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    demande_id BIGINT REFERENCES demande_client(id) ON DELETE SET NULL,
     responsable VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
     titre VARCHAR(255) NOT NULL,
     description TEXT,
@@ -219,6 +220,8 @@ CREATE TABLE IF NOT EXISTS ticket_historique_responsable (
 CREATE TABLE IF NOT EXISTS intervention (
     id SERIAL PRIMARY KEY,
     ticket_id BIGINT NOT NULL,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    demande_id BIGINT REFERENCES demande_client(id) ON DELETE SET NULL,
     titre VARCHAR(255),
     description TEXT,
     date_debut DATE NOT NULL,

@@ -1061,6 +1061,11 @@ app.get('/api/tickets/:id/relations', authenticateToken, async (req, res) => {
         site = (await pool.query('SELECT * FROM site WHERE id=$1', [doe.site_id])).rows[0] || null;
     }
 
+    let demande = null; // NEW: Declare demande here
+    if (ticket.demande_id) { // NEW: Fetch demande if ticket.demande_id is present
+      demande = (await pool.query('SELECT * FROM demande_client WHERE id=$1', [ticket.demande_id])).rows[0] || null;
+    }
+
     const interventions = (await pool.query('SELECT * FROM intervention WHERE ticket_id=$1 ORDER BY id DESC', [id])).rows;
     const documents = (await pool.query("SELECT * FROM documents_repertoire WHERE cible_type='Ticket' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     const images = (await pool.query("SELECT id, nom_fichier, type_mime FROM images WHERE cible_type='Ticket' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
@@ -1089,7 +1094,7 @@ app.get('/api/tickets/:id/relations', authenticateToken, async (req, res) => {
       ORDER BY COALESCE(ta.date_debut, CURRENT_TIMESTAMP) DESC, ta.id DESC
     `, [id])).rows;
 
-    res.json({ ticket, doe, affaire, site, interventions, documents, images, responsables, agents_assignes });
+    res.json({ ticket, doe, affaire, site, demande, interventions, documents, images, responsables, agents_assignes });
   } catch (err) {
     console.error('Error fetching ticket relations:', err);
     res.status(500).json({ error: 'Internal Server Error', details: err.message });
@@ -1105,25 +1110,41 @@ app.get('/api/interventions/:id/relations', authenticateToken, async (req, res) 
     if (!intervention) return res.status(404).json({ error: 'Intervention not found' });
 
     const ticket = intervention.ticket_id
-      ? (await pool.query('SELECT * FROM ticket WHERE id=$1', [intervention.ticket_id])).rows[0]
+      ? (await pool.query('SELECT t.*, d.id as demande_id FROM ticket t LEFT JOIN demande_client d ON t.id = d.ticket_id WHERE t.id = $1', [intervention.ticket_id])).rows[0]
       : null;
-    let doe = null; let site = null; let affaire = null;
-    if (ticket && ticket.doe_id) {
+    let doe = null;
+    let site = null;
+    let demande = null; // NEW: Declare demande here
+    let affaire = null;
+
+    // Prioritize site_id from intervention itself
+    if (intervention.site_id) {
+      site = (await pool.query('SELECT * FROM site WHERE id=$1', [intervention.site_id])).rows[0] || null;
+    } else if (ticket && ticket.doe_id) { // Fallback to ticket's doe's site
       doe = (await pool.query('SELECT * FROM doe WHERE id=$1', [ticket.doe_id])).rows[0] || null;
       if (doe && doe.site_id) {
         site = (await pool.query('SELECT * FROM site WHERE id=$1', [doe.site_id])).rows[0] || null;
       }
     }
+
+    // NEW: Prioritize demande_id from intervention itself
+    if (intervention.demande_id) {
+      demande = (await pool.query('SELECT * FROM demande_client WHERE id=$1', [intervention.demande_id])).rows[0] || null;
+    } else if (ticket && ticket.demande_id) { // Fallback to ticket's demande
+      demande = (await pool.query('SELECT * FROM demande_client WHERE id=$1', [ticket.demande_id])).rows[0] || null;
+    }
+
     if (ticket && ticket.affaire_id) {
       affaire = (await pool.query('SELECT * FROM affaire WHERE id=$1', [ticket.affaire_id])).rows[0] || null;
     }
+
 
     const rendezvous = (await pool.query('SELECT * FROM rendezvous WHERE intervention_id=$1 ORDER BY date_rdv DESC, id DESC', [id])).rows;
     const documents = (await pool.query("SELECT * FROM documents_repertoire WHERE cible_type='Intervention' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     const images = (await pool.query("SELECT id, nom_fichier, type_mime FROM images WHERE cible_type='Intervention' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     const materiels = (await pool.query("SELECT im.id, m.id as materiel_id, m.reference, m.designation, m.categorie, m.fabricant, m.prix_achat, im.quantite, im.commentaire FROM intervention_materiel im JOIN materiel m ON m.id = im.materiel_id WHERE im.intervention_id=$1 ORDER BY im.id DESC", [id])).rows;
 
-    res.json({ intervention, ticket, doe, site, affaire, rendezvous, documents, images, materiels });
+    res.json({ intervention, ticket, doe, site, demande, affaire, rendezvous, documents, images, materiels });
   } catch (err) {
     console.error('Error fetching intervention relations:', err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -2130,7 +2151,7 @@ app.delete('/api/sites/:id', authenticateToken, async (req, res) => {
 // API Routes for Tickets (CRUD)
 app.get('/api/tickets', authenticateToken, async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM ticket ORDER BY id ASC');
+        const result = await pool.query('SELECT t.*, dc.titre as demande_titre, s.nom_site as site_nom FROM ticket t LEFT JOIN demande_client dc ON t.demande_id = dc.id LEFT JOIN site s ON t.site_id = s.id ORDER BY t.id ASC');
         res.json(result.rows);
     } catch (err) {
         console.error('Error fetching tickets:', err);
@@ -2154,7 +2175,7 @@ app.get('/api/tickets/:id', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/tickets', authenticateToken, authorizeAdmin, async (req, res) => {
-    const { titre, description, doe_id, affaire_id, site_id, etat, responsable, date_debut, date_fin } = req.body || {};
+    const { titre, description, doe_id, affaire_id, site_id, demande_id, etat, responsable, date_debut, date_fin } = req.body || {};
     try {
         if (!doe_id || !affaire_id) {
             return res.status(400).json({ error: 'Champs requis manquants: doe_id et affaire_id' });
@@ -2166,12 +2187,12 @@ app.post('/api/tickets', authenticateToken, authorizeAdmin, async (req, res) => 
         }
         const result = await pool.query(
             // Cast explicit to enum type and timestamps; default date_debut to NOW if missing
-            "INSERT INTO ticket (doe_id, affaire_id, site_id, titre, description, etat, responsable, date_debut, date_fin) " +
-            "VALUES ($1,$2,$3,$4,$5,COALESCE($6::etat_rapport,'Pas_commence'::etat_rapport),$7,COALESCE($8::timestamp, CURRENT_TIMESTAMP),$9::timestamp) RETURNING *",
-            [doe_id, affaire_id, siteIdVal, titre || null, description || null, etat || null, responsable || null, date_debut || null, date_fin || null]
+            "INSERT INTO ticket (doe_id, affaire_id, site_id, demande_id, titre, description, etat, responsable, date_debut, date_fin) " +
+            "VALUES ($1,$2,$3,$4,$5,$6,COALESCE($7::etat_rapport,'Pas_commence'::etat_rapport),$8,COALESCE($9::timestamp, CURRENT_TIMESTAMP),$10::timestamp) RETURNING *",
+            [doe_id, affaire_id, siteIdVal, demande_id || null, titre || null, description || null, etat || null, responsable || null, date_debut || null, date_fin || null]
         );
         const created = result.rows[0];
-        try { await logAudit('ticket', created?.id, 'CREATE', (req.user&&req.user.email)||req.headers['x-actor-email']||null, { doe_id, affaire_id, titre, description, etat, responsable }); } catch(_){}
+        try { await logAudit('ticket', created?.id, 'CREATE', (req.user&&req.user.email)||req.headers['x-actor-email']||null, { doe_id, affaire_id, site_id: siteIdVal, demande_id, titre, description, etat, responsable }); } catch(_){}
         res.status(201).json(created);
     } catch (err) {
         console.error('Error creating ticket:', err);
@@ -2184,7 +2205,7 @@ app.post('/api/tickets', authenticateToken, authorizeAdmin, async (req, res) => 
 
 app.put('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id } = req.params;
-    const { titre, description, responsable, doe_id, affaire_id, etat } = req.body;
+    const { titre, description, responsable, doe_id, affaire_id, site_id, demande_id, etat } = req.body; // demande_id added
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -2192,8 +2213,8 @@ app.put('/api/tickets/:id', authenticateToken, authorizeAdmin, async (req, res) 
         const oldResponsable = oldTicketResult.rows[0]?.responsable;
 
         const result = await client.query(
-            'UPDATE ticket SET titre = COALESCE($1, titre), description = COALESCE($2, description), responsable = COALESCE($3, responsable), doe_id = COALESCE($4, doe_id), affaire_id = COALESCE($5, affaire_id), etat = COALESCE($6::etat_rapport, etat) WHERE id = $7 RETURNING *',
-            [titre, description, responsable, doe_id, affaire_id, etat, id]
+            'UPDATE ticket SET titre = COALESCE($1, titre), description = COALESCE($2, description), responsable = COALESCE($3, responsable), doe_id = COALESCE($4, doe_id), affaire_id = COALESCE($5, affaire_id), site_id = COALESCE($6, site_id), demande_id = COALESCE($7, demande_id), etat = COALESCE($8::etat_rapport, etat) WHERE id = $9 RETURNING *', // demande_id added, parameter indices shifted
+            [titre, description, responsable, doe_id, affaire_id, site_id || null, demande_id || null, etat, id] // demande_id added
         );
 
         if (result.rows.length > 0) {
@@ -2291,7 +2312,7 @@ app.post('/api/tickets/:id/take', authenticateToken, authorizeAdmin, async (req,
 app.get('/api/interventions', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT intervention.*, ticket.titre as ticket_titre FROM intervention JOIN ticket ON intervention.ticket_id = ticket.id ORDER BY intervention.id ASC'
+            'SELECT i.*, t.titre as ticket_titre, s.nom_site as site_nom, dc.titre as demande_titre FROM intervention i JOIN ticket t ON i.ticket_id = t.id LEFT JOIN site s ON i.site_id = s.id LEFT JOIN demande_client dc ON i.demande_id = dc.id ORDER BY i.id ASC'
         );
         res.json(result.rows);
     } catch (err) {
@@ -2316,14 +2337,14 @@ app.get('/api/interventions/:id', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, res) => {
-    const { titre, description, date_debut, date_fin, ticket_id, status } = req.body; // intervention_precedente_id removed
+    const { titre, description, date_debut, date_fin, ticket_id, site_id, demande_id, status } = req.body; // demande_id added
     if (!description || !date_debut || !ticket_id) {
         return res.status(400).json({ error: 'Description, date de début et ticket ID sont requis' });
     }
     try {
         const result = await pool.query(
-            'INSERT INTO intervention (titre, description, date_debut, date_fin, ticket_id, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', // intervention_precedente_id column removed, $7 becomes $6
-            [titre || null, description, date_debut, date_fin, ticket_id, status || 'En_attente'] // intervention_precedente_id value removed
+            'INSERT INTO intervention (titre, description, date_debut, date_fin, ticket_id, site_id, demande_id, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *', // demande_id added, $7 becomes $8
+            [titre || null, description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status || 'En_attente'] // demande_id added
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -2334,11 +2355,11 @@ app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, re
 
 app.put('/api/interventions/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id } = req.params;
-    const { description, date_debut, date_fin = null, ticket_id, status } = req.body; // intervention_precedente_id removed
+    const { description, date_debut, date_fin = null, ticket_id, site_id, demande_id, status } = req.body; // demande_id added
     try {
         const result = await pool.query(
-            'UPDATE intervention SET description = $1, date_debut = $2, date_fin = $3, ticket_id = $4, status = COALESCE($5::statut_intervention, status) WHERE id = $6 RETURNING *', // intervention_precedente_id column removed, $6 becomes $5, $7 becomes $6
-            [description, date_debut, date_fin, ticket_id, status, id] // intervention_precedente_id value removed
+            'UPDATE intervention SET description = $1, date_debut = $2, date_fin = $3, ticket_id = $4, site_id = $5, demande_id = $6, status = COALESCE($7::statut_intervention, status) WHERE id = $8 RETURNING *', // demande_id added, parameter indices shifted
+            [description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status, id] // demande_id added
         );
         if (result.rows.length === 0) {
             return res.status(404).json({ error: `Intervention with id ${id} not found` });
