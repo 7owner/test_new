@@ -114,7 +114,7 @@
       };
 
       try {
-        const { rendu, images, documents } = await fetchJSON(`/api/rendus/${renduId}`);
+        const { rendu, images, documents, message_attachments } = await fetchJSON(`/api/rendus/${renduId}`);
 
         // Populate header and nav buttons
         interEl.textContent = rendu.intervention_id;
@@ -148,6 +148,17 @@
                 type: 'Document'
             });
         });
+
+        (message_attachments || []).forEach(msgAtt => {
+            const kind = (msgAtt.file_type && msgAtt.file_type.startsWith('image/')) ? 'image' : 'doc';
+            attachments.push({
+                kind: kind,
+                url: '/' + (msgAtt.file_path || '').replace(/^public\//, ''),
+                nom_fichier: msgAtt.file_name,
+                commentaire_image: `Pièce jointe du message: "${(msgAtt.message || '').substring(0, 50)}..."`,
+                type: 'Message'
+            });
+        });
         
         countBadge.textContent = `${attachments.length} pièce(s)`;
         grid.innerHTML = '';
@@ -155,7 +166,7 @@
           grid.innerHTML = '<div class="col-12 text-muted small">Aucune pièce jointe pour ce rendu.</div>';
           document.querySelector('.small.mb-3').textContent = 'Ce rendu ne contient aucune pièce jointe.';
         } else {
-            document.querySelector('.small.mb-3').textContent = 'Pièces jointes enregistrées avec ce rendu.';
+            document.querySelector('.small.mb-3').textContent = 'Pièces jointes enregistrées avec ce rendu et son contexte.';
             attachments.forEach(att => {
                 const col = document.createElement('div');
                 col.className = 'col-12 col-sm-6 col-lg-4';
