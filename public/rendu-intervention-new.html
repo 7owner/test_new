@@ -872,6 +872,12 @@
 
     // Sources modal
     document.getElementById('open-source-modal')?.addEventListener('click', () => {
+      // Pré-filtrer selon la pièce jointe en cours d'édition
+      const att = attachments[currentEditIndex] || {};
+      if (sourceFilter) sourceFilter.value = att.type || '';
+      if (sourceKind) sourceKind.value = att.kind || '';
+      if (sourceSearch && att.cible_id) sourceSearch.value = String(att.cible_id);
+
       if (!sourcesModal) {
         const el = document.getElementById('sourcesModal');
         if (el) {
