@@ -730,6 +730,16 @@
       if (rel?.demande && !demandeId) demandeId = rel.demande.id || rel.demande.demande_id;
       if (rel?.site) siteId = siteId || rel.site.id || rel.site.site_id;
 
+      // Fallback direct via l'intervention si dispo
+      try {
+        const interData = await fetchJSON(`/api/interventions/${interventionId}`);
+        if (interData) {
+          if (!ticketId && interData.ticket_id) ticketId = interData.ticket_id;
+          if (!siteId && interData.site_id) siteId = interData.site_id;
+          if (!demandeId && interData.demande_id) demandeId = interData.demande_id;
+        }
+      } catch(_) {}
+
       // Si on n'a toujours pas la demande/site, tenter de la récupérer via le ticket
       if ((!demandeId || !siteId) && ticketId) {
         const ticketData = await fetchJSON(`/api/tickets/${ticketId}`);
