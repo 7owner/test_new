@@ -2138,6 +2138,21 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
     }
 });
 
+// Get a single ticket by ID
+app.get('/api/tickets/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('SELECT * FROM ticket WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(`Error fetching ticket with id ${id}:`, err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.post('/api/tickets', authenticateToken, authorizeAdmin, async (req, res) => {
     const { titre, description, doe_id, affaire_id, site_id, etat, responsable, date_debut, date_fin } = req.body || {};
     try {
@@ -2283,6 +2298,21 @@ app.get('/api/interventions', authenticateToken, async (req, res) => {
         console.error('Error fetching interventions:', err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
+});
+
+// Get a single intervention by ID
+app.get('/api/interventions/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('SELECT * FROM intervention WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Intervention not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(`Error fetching intervention with id ${id}:`, err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, res) => {
