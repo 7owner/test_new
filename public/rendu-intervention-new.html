@@ -3,730 +3,154 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nouveau Rendu Intervention</title>
-
-  <!-- Bootstrap -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- Icons -->
+  <title>Créer un nouveau rendu d'intervention</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-  <!-- Custom -->
   <link href="/custom.css?v=1" rel="stylesheet">
-
-  <!-- EasyMDE -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
-
-  <!-- Nav -->
   <script src="/nav.js?v=1"></script>
-
-  <style>
-    .rendu-image-entry {
-      transition: all 0.3s ease;
-      position: relative;
-    }
-    .rendu-image-entry:hover {
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .image-preview {
-      max-width: 200px;
-      max-height: 200px;
-      margin-top: 10px;
-      border-radius: 4px;
-      display: none;
-    }
-    .image-preview.show {
-      display: block;
-    }
-    .loading-spinner {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 9999;
-    }
-    .loading-spinner.show {
-      display: block;
-    }
-    .overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.5);
-      z-index: 9998;
-    }
-    .overlay.show {
-      display: block;
-    }
-    .error-message {
-      display: none;
-      margin-top: 10px;
-    }
-    .error-message.show {
-      display: block;
-    }
-    .char-counter {
-      font-size: 0.875rem;
-      color: #6c757d;
-      text-align: right;
-      margin-top: 5px;
-    }
-  </style>
+  <script src="/script.js?v=1"></script>
 </head>
-
 <body>
-
-  <!-- Loading overlay -->
-  <div class="overlay" id="loading-overlay"></div>
-  <div class="loading-spinner">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Chargement...</span>
+  <header class="header d-flex justify-content-between align-items-center mb-4">
+    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"></h1>
+    <div id="user-info-container" class="d-flex align-items-center">
+      <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+        Menu
+      </button>
     </div>
-  </div>
+  </header>
 
-  <!-- Menu -->
-  <div class="offcanvas offcanvas-end" id="offcanvasNavbar">
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
     <div class="offcanvas-header">
-      <h5 class="offcanvas-title">Menu</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
-      <ul class="navbar-nav">
-        <li><a class="nav-link" href="/dashboard.html">Dashboard</a></li>
-        <li><a class="nav-link" href="/agents.html">Agents</a></li>
-        <li><a class="nav-link" href="/sites.html">Sites</a></li>
-        <li><a class="nav-link active" href="/interventions.html">Interventions</a></li>
-        <li><a class="nav-link" href="/rendezvous.html">Rendez-vous</a></li>
-        <li><a class="nav-link" href="/achats.html">Achats</a></li>
-        <li><a class="nav-link" href="/factures.html">Factures</a></li>
-        <li><a class="nav-link" href="#" id="logout-link">Déconnexion</a></li>
+      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+        <li class="nav-item">
+          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
+        </li>
       </ul>
     </div>
   </div>
 
-  <main class="container mt-4">
-
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <h1 class="mb-0">Créer un nouveau rendu d'intervention</h1>
-      <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn">
-        <i class="bi bi-arrow-left"></i> Retour
-      </button>
-    </div>
+  <main class="container mt-5">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="dashboard.html">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="interventions.html">Planning Interventions</a></li>
+        <li class="breadcrumb-item"><a href="intervention-view.html">Détails Intervention</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Créer Rendu</li>
+      </ol>
+    </nav>
+    <h1 class="mb-4">Créer un nouveau rendu d'intervention</h1>
 
     <div class="card">
       <div class="card-body">
-
-        <form id="rendu-new-form" novalidate>
-
-          <!-- Résumé Markdown -->
+        <h2 class="card-title mb-4">Informations du rendu</h2>
+        <form id="rendu-new-form">
           <div class="mb-3">
-            <label class="form-label fw-bold">Résumé (Markdown) <span class="text-danger">*</span></label>
-            <textarea id="resume" required></textarea>
-            <div class="char-counter" id="resume-counter">0 caractères</div>
-            <div class="invalid-feedback">Le résumé est obligatoire.</div>
+            <label for="resume" class="form-label">Résumé</label>
+            <textarea class="form-control" id="resume" rows="3"></textarea>
           </div>
-
-          <!-- Aperçu Markdown externe -->
-          <div class="mb-4">
-            <label class="form-label fw-bold">Aperçu du rendu :</label>
-            <div id="resume-preview" class="p-3 border bg-light rounded" style="min-height:150px;">
-              <em class="text-muted">L'aperçu apparaîtra ici...</em>
-            </div>
-          </div>
-
-          <!-- Valeur -->
           <div class="mb-3">
-            <label class="form-label fw-bold">Valeur</label>
-            <input type="text" class="form-control" id="valeur" placeholder="Ex: 1500€">
-            <small class="form-text text-muted">Montant ou valeur estimée de l'intervention</small>
+            <label for="valeur" class="form-label">Valeur</label>
+            <input type="text" class="form-control" id="valeur">
           </div>
 
-          <!-- Images -->
-          <h3 class="mt-4 mb-3">Images associées</h3>
-          <p class="text-muted small">Formats acceptés: JPG, PNG, GIF (max 5MB par image)</p>
-          
+          <h3 class="mt-5 mb-3">Images Associées</h3>
           <div id="rendu-images-container">
+            <!-- Image entry template -->
             <div class="rendu-image-entry mb-4 p-3 border rounded bg-light">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="badge bg-secondary">Image 1</span>
-                <button type="button" class="btn-close remove-image" title="Supprimer cette image"></button>
+              <div class="d-flex justify-content-end">
+                <button type="button" class="btn-close remove-image"></button>
               </div>
-
-              <label class="form-label">Fichier image</label>
-              <input class="form-control image-input" type="file" name="image_file[]" accept="image/jpeg,image/png,image/gif">
-              <div class="error-message alert alert-danger" role="alert"></div>
-              <img class="image-preview" alt="Aperçu de l'image">
-
-              <label class="form-label mt-3">Commentaire</label>
-              <textarea class="form-control image-comment" name="image_commentaire[]" rows="2" placeholder="Décrivez cette image..." maxlength="500"></textarea>
-              <div class="char-counter">0 / 500 caractères</div>
-              <label class="form-label mt-3">Note (Markdown)</label>
-              <textarea class="form-control image-note" name="image_note[]" rows="2" placeholder="Note en markdown (sera rattachée à l'image)"></textarea>
-              <div class="char-counter note-counter">0 caractères</div>
+              <div class="mb-3">
+                <label for="image_file" class="form-label">Fichier Image</label>
+                <input class="form-control" type="file" name="image_file[]" required>
+              </div>
+              <div class="mb-3">
+                <label for="image_commentaire" class="form-label">Commentaire Image</label>
+                <textarea class="form-control" name="image_commentaire[]" rows="2"></textarea>
+              </div>
             </div>
           </div>
+          <button type="button" id="add-new-image-btn" class="btn btn-outline-secondary mb-4"><i class="bi bi-plus-circle me-2"></i>Ajouter une nouvelle image</button>
 
-          <button type="button" id="add-new-image-btn" class="btn btn-outline-secondary mb-3">
-            <i class="bi bi-plus-circle"></i> Ajouter une image
-          </button>
-
-          <div class="mb-4 p-3 border rounded">
-            <h4 class="h6">Images existantes (Ticket / Site)</h4>
-            <p class="text-muted small mb-2">Sélectionnez une image déjà partagée sur le ticket ou le site, ajoutez un commentaire, puis insérez-la dans le résumé (markdown).</p>
-            <div class="row g-2 align-items-center">
-              <div class="col-md-6">
-                <select class="form-select" id="existing-image-select">
-                  <option value="">— Aucune image chargée —</option>
-                </select>
-              </div>
-              <div class="col-md-6 d-flex gap-2">
-                <button type="button" class="btn btn-sm btn-outline-primary" id="refresh-existing-images"><i class="bi bi-arrow-clockwise me-1"></i>Recharger</button>
-                <button type="button" class="btn btn-sm btn-primary" id="insert-existing-image"><i class="bi bi-markdown me-1"></i>Insérer dans le résumé</button>
-              </div>
-            </div>
-            <div class="d-flex align-items-start gap-3 mt-3">
-              <img id="existing-image-preview" alt="Aperçu" style="max-width:140px; max-height:140px; border-radius:8px; display:none; border:1px solid #e5e7eb;">
-              <div class="flex-grow-1">
-                <label class="form-label">Commentaire (alt)</label>
-                <textarea class="form-control form-control-sm" id="existing-image-comment" rows="2" placeholder="Texte alternatif / commentaire..."></textarea>
-                <div class="text-muted small mt-1">Le commentaire sera utilisé comme texte alternatif dans le markdown.</div>
-              </div>
-            </div>
-            <hr class="my-3">
-            <h5 class="h6">Composer le résumé à partir d'images</h5>
-            <p class="text-muted small">Cochez les images à inclure, ajoutez une note markdown globale, puis générez un brouillon dans le résumé.</p>
-            <div id="existing-images-builder" class="row g-3"></div>
-            <div class="mt-2">
-              <label class="form-label">Note globale (Markdown)</label>
-              <textarea class="form-control form-control-sm" id="builder-note" rows="2" placeholder="Ex: Synthèse ou contexte..."></textarea>
-            </div>
-            <div class="d-flex justify-content-end mt-2">
-              <button type="button" class="btn btn-outline-primary btn-sm" id="build-from-images"><i class="bi bi-magic me-1"></i>Générer le résumé</button>
-            </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" id="save-rendu-btn"><i class="bi bi-save me-2"></i>Enregistrer le rendu et les images</button>
+            <a href="intervention-view.html" class="btn btn-secondary" id="cancel-button">Annuler</a>
           </div>
-
-          <div class="d-flex gap-2 mt-4">
-            <button type="submit" class="btn btn-primary" id="save-rendu-btn">
-              <i class="bi bi-save me-2"></i>Enregistrer
-            </button>
-            <button type="button" class="btn btn-secondary" id="cancel-rendu-btn">Annuler</button>
-          </div>
-
         </form>
-
       </div>
     </div>
-
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script>
-document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener('DOMContentLoaded', function() {
+      // Dynamic image upload logic
+      const imagesContainer = document.getElementById('rendu-images-container');
+      const addImageBtn = document.getElementById('add-new-image-btn');
 
-  /* ========= CONFIGURATION ========= */
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif'];
-
-  /* ========= UTILITAIRES ========= */
-  const showLoading = () => {
-    document.getElementById('loading-overlay').classList.add('show');
-    document.querySelector('.loading-spinner').classList.add('show');
-  };
-
-  const hideLoading = () => {
-    document.getElementById('loading-overlay').classList.remove('show');
-    document.querySelector('.loading-spinner').classList.remove('show');
-  };
-
-  const showAlert = (message, type = 'danger') => {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-    alertDiv.innerHTML = `
-      ${message}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.querySelector('main').insertBefore(alertDiv, document.querySelector('.card'));
-    setTimeout(() => alertDiv.remove(), 5000);
-  };
-
-  const validateFile = (file) => {
-    if (!file) return { valid: false, error: null };
-    
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return { valid: false, error: 'Format non supporté. Utilisez JPG, PNG ou GIF.' };
-    }
-    
-    if (file.size > MAX_FILE_SIZE) {
-      return { valid: false, error: `Fichier trop volumineux (max ${MAX_FILE_SIZE / 1024 / 1024}MB).` };
-    }
-    
-    return { valid: true, error: null };
-  };
-
-  const updateCharCounter = (textarea, counter) => {
-    const length = textarea.value.length;
-    const max = textarea.getAttribute('maxlength');
-    if (max) {
-      counter.textContent = `${length} / ${max} caractères`;
-    } else {
-      counter.textContent = `${length} caractères`;
-    }
-  };
-
-  /* ========= AUTHENTIFICATION ========= */
-  const token = localStorage.getItem("token");
-  if (!token) {
-    showAlert('Session expirée. Veuillez vous reconnecter.', 'warning');
-    setTimeout(() => location.href = "/login.html", 2000);
-    return;
-  }
-
-  let isAdmin = false;
-  let actorEmail = "";
-  let relatedTicketId = null;
-  let relatedSiteId = null;
-  let existingImages = [];
-
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    isAdmin = payload.roles?.includes("ROLE_ADMIN");
-    actorEmail = payload.email || "";
-    
-    const userEmailEl = document.getElementById("logged-in-user-email");
-    if (userEmailEl) userEmailEl.textContent = actorEmail;
-  } catch (err) {
-    console.error('Erreur décodage token:', err);
-    showAlert('Erreur d\'authentification.', 'danger');
-    setTimeout(() => location.href = "/login.html", 2000);
-    return;
-  }
-
-  if (!isAdmin) {
-    showAlert('Accès refusé. Cette action est réservée aux administrateurs.', 'danger');
-    setTimeout(() => location.href = "/interventions.html", 2000);
-    return;
-  }
-
-  /* ========= PARAMS ========= */
-  const params = new URLSearchParams(location.search);
-  const interventionId = params.get("id") || params.get("intervention_id");
-
-  if (!interventionId) {
-    showAlert('Intervention non spécifiée.', 'warning');
-    setTimeout(() => location.href = "interventions.html", 2000);
-    return;
-  }
-
-  // Charger relations (ticket/site) pour récupérer les images existantes
-  (async () => {
-    await loadRelations();
-    await fetchExistingImages();
-  })();
-
-  /* ========= RELATIONS (ticket/site) ========= */
-  async function loadRelations() {
-    try {
-      const res = await fetch(`/api/interventions/${interventionId}/relations`, { headers: { "Authorization": "Bearer " + token } });
-      if (!res.ok) return;
-      const data = await res.json().catch(() => ({}));
-      if (data && data.ticket) {
-        relatedTicketId = data.ticket.id || data.ticket.ticket_id || relatedTicketId;
-        if (data.ticket.site_id) relatedSiteId = data.ticket.site_id;
-      }
-      if (data && data.site) relatedSiteId = data.site.id || data.site.site_id || relatedSiteId;
-    } catch (e) {
-      console.warn('Relations intervention non chargées:', e);
-    }
-  }
-
-  /* ========= INIT EDITOR EasyMDE ========= */
-  const preview = document.getElementById("resume-preview");
-  const resumeCounter = document.getElementById("resume-counter");
-
-  const easyMDE = new EasyMDE({
-    element: document.getElementById("resume"),
-    spellChecker: false,
-    forceSync: true,
-    placeholder: "Rédigez ici le résumé de l'intervention...",
-    toolbar: [
-      "bold", "italic", "heading",
-      "|",
-      "quote", "code", "table",
-      "unordered-list", "ordered-list",
-      "|",
-      "link", "image",
-      "|",
-      "preview", "side-by-side", "fullscreen",
-      "|",
-      "guide"
-    ],
-    previewRender: text => EasyMDE.prototype.markdown(text || "")
-  });
-
-  const updatePreview = () => {
-    if (!preview) return;
-    try {
-      const text = easyMDE.value();
-      const html = easyMDE.options.previewRender(text || "");
-      preview.innerHTML = html || '<em class="text-muted">L\'aperçu apparaîtra ici...</em>';
-    } catch (err) {
-      console.error('Erreur preview:', err);
-    }
-    updateCharCounter(document.getElementById("resume"), resumeCounter);
-  };
-
-  const bindPreviewListeners = () => {
-    if (easyMDE?.codemirror) {
-      easyMDE.codemirror.on("change", () => {
-        // small debounce to let EasyMDE sync the textarea
-        setTimeout(updatePreview, 0);
+      addImageBtn.addEventListener('click', function() {
+        const template = imagesContainer.querySelector('.rendu-image-entry').cloneNode(true);
+        template.querySelectorAll('input, select, textarea').forEach(input => input.value = ''); // Clear values
+        container.appendChild(template);
       });
-    }
-    const resumeTextarea = document.getElementById("resume");
-    if (resumeTextarea) {
-      resumeTextarea.addEventListener("input", updatePreview);
-    }
-  };
 
-  bindPreviewListeners();
-  updatePreview();
-
-  /* ========= NAVIGATION ========= */
-  const backBtn = document.getElementById("back-btn");
-  if (backBtn) {
-    backBtn.addEventListener("click", () => {
-      if (confirm('Voulez-vous vraiment quitter ? Les modifications non sauvegardées seront perdues.')) {
-        window.history.back();
-      }
-    });
-  }
-
-  /* ========= GESTION DES IMAGES ========= */
-  const imagesContainer = document.getElementById("rendu-images-container");
-  const addImageBtn = document.getElementById("add-new-image-btn");
-  const existingSelect = document.getElementById("existing-image-select");
-  const existingPreview = document.getElementById("existing-image-preview");
-  const existingComment = document.getElementById("existing-image-comment");
-  const refreshExistingBtn = document.getElementById("refresh-existing-images");
-  const insertExistingBtn = document.getElementById("insert-existing-image");
-  const builderList = document.getElementById("existing-images-builder");
-  const builderNote = document.getElementById("builder-note");
-  const buildFromImagesBtn = document.getElementById("build-from-images");
-
-  let imageCounter = 1;
-
-  const updateImageBadges = () => {
-    const entries = imagesContainer.querySelectorAll(".rendu-image-entry");
-    entries.forEach((entry, index) => {
-      entry.querySelector('.badge').textContent = `Image ${index + 1}`;
-    });
-    imageCounter = entries.length;
-  };
-
-  const setupImageEntry = (entry) => {
-    const fileInput = entry.querySelector('.image-input');
-    const preview = entry.querySelector('.image-preview');
-    const errorDiv = entry.querySelector('.error-message');
-    const commentTextarea = entry.querySelector('.image-comment');
-    const charCounter = entry.querySelector('.char-counter');
-    const noteTextarea = entry.querySelector('.image-note');
-    const noteCounter = entry.querySelector('.note-counter');
-
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      
-      if (!file) {
-        preview.classList.remove('show');
-        errorDiv.classList.remove('show');
-        return;
-      }
-
-      const validation = validateFile(file);
-      
-      if (!validation.valid) {
-        errorDiv.textContent = validation.error;
-        errorDiv.classList.add('show');
-        preview.classList.remove('show');
-        fileInput.value = '';
-        return;
-      }
-
-      errorDiv.classList.remove('show');
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        preview.src = e.target.result;
-        preview.classList.add('show');
-      };
-      reader.readAsDataURL(file);
-    });
-
-    commentTextarea.addEventListener('input', () => {
-      updateCharCounter(commentTextarea, charCounter);
-    });
-
-    updateCharCounter(commentTextarea, charCounter);
-
-    if (noteTextarea && noteCounter) {
-      noteTextarea.addEventListener('input', () => updateCharCounter(noteTextarea, noteCounter));
-      updateCharCounter(noteTextarea, noteCounter);
-    }
-  };
-
-  // Setup initial entry
-  setupImageEntry(imagesContainer.querySelector('.rendu-image-entry'));
-
-  addImageBtn.addEventListener("click", () => {
-    const tpl = imagesContainer.querySelector(".rendu-image-entry").cloneNode(true);
-    
-    // Reset all inputs
-    tpl.querySelectorAll("input, textarea").forEach(e => e.value = "");
-    tpl.querySelector('.image-preview').classList.remove('show');
-    tpl.querySelector('.error-message').classList.remove('show');
-    
-    imageCounter++;
-    tpl.querySelector('.badge').textContent = `Image ${imageCounter}`;
-    
-    imagesContainer.appendChild(tpl);
-    setupImageEntry(tpl);
-    
-    showAlert('Nouvelle image ajoutée', 'success');
-  });
-
-  async function fetchExistingImages() {
-    existingImages = [];
-    const pushImages = async (type, id) => {
-      if (!id) return;
-      try {
-        const res = await fetch(`/api/images?cible_type=${encodeURIComponent(type)}&cible_id=${id}`, { headers: { "Authorization": "Bearer " + token } });
-        if (res.ok) {
-          const data = await res.json().catch(() => []);
-          if (Array.isArray(data)) {
-            data.forEach(img => existingImages.push({ ...img, source: type, cible_id: id }));
+      imagesContainer.addEventListener('click', function(event) {
+        if (event.target.classList.contains('remove-image')) {
+          if (imagesContainer.querySelectorAll('.rendu-image-entry').length > 1) {
+            event.target.closest('.rendu-image-entry').remove();
+          } else {
+            alert('Au moins une image est requise.');
           }
         }
-      } catch (e) {
-        console.warn(`Images ${type}`, e);
-      }
-    };
-    await pushImages('Ticket', relatedTicketId);
-    await pushImages('Site', relatedSiteId);
-    // Fichiers partagés pour les demandes client liées au ticket/site
-    await pushImages('DemandeClient', relatedTicketId);
-    await pushImages('DemandeClient', relatedSiteId);
-    renderExistingImages();
-  }
-
-  function renderExistingImages() {
-    if (!existingSelect) return;
-    existingSelect.innerHTML = '<option value="">— Aucune image chargée —</option>';
-    builderList && (builderList.innerHTML = '');
-    existingImages.forEach(img => {
-      const opt = document.createElement('option');
-      opt.value = String(img.id);
-      const label = img.nom_fichier || `Image #${img.id}`;
-      opt.textContent = `${label} (${img.source} #${img.cible_id})`;
-      existingSelect.appendChild(opt);
-
-      if (builderList) {
-        const col = document.createElement('div');
-        col.className = 'col-12 col-md-6';
-        col.innerHTML = `
-          <div class="border rounded p-2 h-100 d-flex gap-2">
-            <div class="form-check mt-1">
-              <input class="form-check-input builder-select" type="checkbox" value="${img.id}" id="builder-${img.id}">
-            </div>
-            <div class="flex-grow-1">
-              <label class="fw-semibold small" for="builder-${img.id}">${label}</label>
-              <div class="text-muted small mb-1">Source: ${img.source} #${img.cible_id}</div>
-              <textarea class="form-control form-control-sm builder-comment" data-id="${img.id}" rows="2" placeholder="Note/alt pour cette image...">${img.commentaire_image || ''}</textarea>
-            </div>
-          </div>
-        `;
-        builderList.appendChild(col);
-      }
-    });
-    updateExistingPreview();
-  }
-
-  function updateExistingPreview() {
-    if (!existingSelect || !existingPreview) return;
-    const id = existingSelect.value;
-    const img = existingImages.find(i => String(i.id) === String(id));
-    if (img) {
-      existingPreview.src = `/api/images/${img.id}/view`;
-      existingPreview.style.display = 'block';
-      if (existingComment && !existingComment.value) existingComment.value = img.commentaire_image || '';
-    } else {
-      existingPreview.style.display = 'none';
-    }
-  }
-
-  if (existingSelect) existingSelect.addEventListener('change', updateExistingPreview);
-  if (refreshExistingBtn) refreshExistingBtn.addEventListener('click', fetchExistingImages);
-  if (insertExistingBtn) {
-    insertExistingBtn.addEventListener('click', () => {
-      const id = existingSelect?.value;
-      if (!id) return showAlert('Sélectionnez d\'abord une image.', 'warning');
-      const img = existingImages.find(i => String(i.id) === String(id));
-      if (!img) return;
-      const alt = existingComment?.value?.trim() || img.nom_fichier || 'image';
-      const url = `/api/images/${img.id}/view`;
-      const snippet = `![${alt}](${url})\n\n`;
-      easyMDE.value((easyMDE.value() || '') + '\n\n' + snippet);
-      updatePreview();
-      showAlert('Image insérée dans le résumé.', 'success');
-    });
-  }
-
-  if (buildFromImagesBtn) {
-    buildFromImagesBtn.addEventListener('click', () => {
-      const selected = Array.from(document.querySelectorAll('.builder-select:checked')).map(cb => cb.value);
-      if (!selected.length) return showAlert('Sélectionnez au moins une image.', 'warning');
-      const lines = [];
-      lines.push('## Photos liées');
-      selected.forEach(id => {
-        const img = existingImages.find(i => String(i.id) === String(id));
-        if (!img) return;
-        const commentEl = document.querySelector(`.builder-comment[data-id="${id}"]`);
-        const alt = (commentEl?.value?.trim()) || img.nom_fichier || 'image';
-        const url = `/api/images/${img.id}/view`;
-        lines.push(`![${alt}](${url})`);
-        if (commentEl?.value) lines.push(commentEl.value);
-        lines.push('');
-      });
-      const note = builderNote?.value?.trim();
-      if (note) {
-        lines.push('## Note');
-        lines.push(note);
-      }
-      easyMDE.value((easyMDE.value() || '') + '\n\n' + lines.join('\n'));
-      updatePreview();
-      showAlert('Brouillon généré à partir des images sélectionnées.', 'success');
-    });
-  }
-
-  imagesContainer.addEventListener("click", e => {
-    if (e.target.classList.contains("remove-image")) {
-      const entries = imagesContainer.querySelectorAll(".rendu-image-entry");
-      
-      if (entries.length > 1) {
-        if (confirm('Supprimer cette image ?')) {
-          e.target.closest(".rendu-image-entry").remove();
-          updateImageBadges();
-          showAlert('Image supprimée', 'info');
-        }
-      } else {
-        showAlert('Au moins une entrée image doit être conservée.', 'warning');
-      }
-    }
-  });
-
-  /* ========= VALIDATION FORMULAIRE ========= */
-  const form = document.getElementById("rendu-new-form");
-  
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!form.checkValidity()) {
-      form.classList.add('was-validated');
-      showAlert('Veuillez remplir tous les champs obligatoires.', 'warning');
-      return;
-    }
-
-    const resumeValue = easyMDE.value().trim();
-    if (!resumeValue) {
-      showAlert('Le résumé ne peut pas être vide.', 'warning');
-      return;
-    }
-
-    await saveRendu();
-  });
-
-  /* ========= SAUVEGARDE ========= */
-  const saveRendu = async () => {
-    showLoading();
-
-    try {
-      const fd = new FormData();
-      fd.append("resume", easyMDE.value());
-      fd.append("valeur", document.getElementById("valeur").value);
-
-      let hasImages = false;
-
-    imagesContainer.querySelectorAll(".rendu-image-entry").forEach(entry => {
-      const file = entry.querySelector("input[type='file']").files[0];
-      const comment = entry.querySelector("textarea").value;
-      const noteMd = entry.querySelector(".image-note")?.value || '';
-
-      if (file) {
-        const validation = validateFile(file);
-        if (validation.valid) {
-          fd.append("image_files[]", file);
-          fd.append("image_commentaires[]", comment);
-          fd.append("image_notes[]", noteMd);
-          hasImages = true;
-        }
-      }
-    });
-
-      const res = await fetch(`/api/interventions/${interventionId}/rendus`, {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + token,
-          "X-Actor-Email": actorEmail
-        },
-        body: fd
       });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error || body?.message || `Erreur HTTP ${res.status}`);
+      // Set cancel button link to go back to the specific intervention view
+      const urlParams = new URLSearchParams(window.location.search);
+      const interventionId = urlParams.get('intervention_id');
+      if (interventionId) {
+        document.getElementById('cancel-button').href = `intervention-view.html?id=${interventionId}`;
       }
 
-      const result = await res.json();
-      
-      hideLoading();
-      showAlert('Rendu enregistré avec succès !', 'success');
-      
-      setTimeout(() => {
-        location.href = `intervention-view.html?id=${interventionId}`;
-      }, 1500);
+      // Retrieve logged-in user role from localStorage
+      const currentUserRole = localStorage.getItem('userRole');
+      const currentUserIsAdmin = (currentUserRole === 'admin');
 
-    } catch (err) {
-      hideLoading();
-      console.error('Erreur sauvegarde:', err);
-      showAlert(`Erreur lors de l'enregistrement : ${err.message}`, 'danger');
-    }
-  };
-
-  /* ========= ANNULATION ========= */
-  const cancelBtn = document.getElementById("cancel-rendu-btn");
-  if (cancelBtn) {
-    cancelBtn.addEventListener("click", () => {
-      if (confirm('Annuler la création du rendu ? Toutes les modifications seront perdues.')) {
-        location.href = `intervention-view.html?id=${interventionId}`;
+      // Conditionally disable form fields and hide save button for non-admins
+      if (!currentUserIsAdmin) {
+        const form = document.getElementById('rendu-new-form');
+        form.querySelectorAll('input, select, textarea, button[type="submit"], #add-new-image-btn').forEach(element => {
+          element.setAttribute('disabled', 'true');
+        });
+        document.getElementById('save-rendu-btn').classList.add('d-none');
       }
     });
-  }
-
-  /* ========= PRÉVENTION PERTE DE DONNÉES ========= */
-  window.addEventListener('beforeunload', (e) => {
-    if (easyMDE.value().trim() || document.getElementById('valeur').value.trim()) {
-      e.preventDefault();
-      e.returnValue = '';
-    }
-  });
-
-});
   </script>
-
 </body>
 </html>
