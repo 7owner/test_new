@@ -32,6 +32,10 @@
         </div>
       </div>
     </div>
+    <div class="card mt-3">
+      <div class="card-header">Pièces jointes des messages (via Tickets)</div>
+      <ul id="msg-attachments" class="list-group list-group-flush"></ul>
+    </div>
   </main>
 
   <!-- Add Document Modal -->
@@ -95,17 +99,23 @@
 
       const addDocumentModal = new bootstrap.Modal(document.getElementById('addDocumentModal'));
 
-      async function loadFiles() {
-        const r = await fetch(`/api/sites/${siteId}/relations`, { headers: { 'Authorization': `Bearer ${token}` } });
-        if (!r.ok) { alert('Impossible de charger les pieces jointes'); return; }
-        const data = await r.json();
-        document.getElementById('meta').textContent = data && data.site ? `Site #${data.site.id} - ${data.site.nom_site||''}` : '';
-        const docs = Array.isArray(data.documents) ? data.documents : [];
-        const images = Array.isArray(data.images) ? data.images : [];
-        const ul = document.getElementById('docs');
-        if (!docs.length) { ul.innerHTML = '<li class="list-group-item text-muted">Aucun document</li>'; }
-        else {
-          ul.innerHTML = '';
+      const fetchJSON = async (url) => {
+          const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+          if (!res.ok) {
+              if (res.status === 404) return null; // Gracefully handle 404s for conversations
+              const err = await res.json().catch(()=>({}));
+              throw new Error(err.error || `HTTP ${res.status}`);
+          }
+          return res.json();
+      }
+
+      function renderDocuments(docs, containerId) {
+          const ul = document.getElementById(containerId);
+          if (!docs.length) { 
+              if(ul.children.length === 0) ul.innerHTML = '<li class="list-group-item text-muted">Aucun document</li>';
+              return;
+          }
+          if (ul.querySelector('.list-group-item.text-muted')) ul.innerHTML = '';
           docs.forEach(d => {
             const li = document.createElement('li'); li.className='list-group-item d-flex justify-content-between align-items-center';
             const span = document.createElement('span'); span.textContent = d.nom_fichier || ('Document #'+d.id);
@@ -113,18 +123,81 @@
             btn.onclick = () => authDownload(`/api/documents/${d.id}/download`, d.nom_fichier, token);
             li.append(span, btn); ul.appendChild(li);
           });
-        }
-        const wrap = document.getElementById('imgs');
-        if (!images.length) { wrap.innerHTML = '<div class="text-muted">Aucune image</div>'; }
-        else {
-          wrap.innerHTML = '';
+      }
+
+      async function renderImages(images, containerId) {
+          const wrap = document.getElementById(containerId);
+          if (!images.length) { 
+            if(wrap.children.length === 0) wrap.innerHTML = '<div class="text-muted p-3">Aucune image</div>';
+            return;
+          }
+          if (wrap.querySelector('.text-muted')) wrap.innerHTML = '';
           for (const i of images) {
             const url = await authImage(`/api/images/${i.id}/view`, token);
             if (!url) continue;
             const a = document.createElement('a'); a.href=url; a.target='_blank';
-            const img = document.createElement('img'); img.src=url; img.alt='img'; img.className='thumb';
+            const img = document.createElement('img'); img.src=url; img.alt=i.nom_fichier; img.className='thumb rounded';
             a.appendChild(img); wrap.appendChild(a);
           }
+      }
+
+      async function loadFiles() {
+        try {
+            document.getElementById('docs').innerHTML = '<li class="list-group-item text-muted">Chargement...</li>';
+            document.getElementById('imgs').innerHTML = '<div class="text-muted p-3">Chargement...</div>';
+            document.getElementById('msg-attachments').innerHTML = '<li class="list-group-item text-muted">Chargement...</li>';
+
+            const siteRelations = await fetchJSON(`/api/sites/${siteId}/relations`);
+            if (!siteRelations || !siteRelations.site) throw new Error('Site not found');
+
+            document.getElementById('meta').textContent = `Site #${siteRelations.site.id} - ${siteRelations.site.nom_site||''}`;
+            
+            let allDocs = [...(siteRelations.documents || [])];
+            let allImages = [...(siteRelations.images || [])];
+            let allMessageAttachments = [];
+
+            if (siteRelations.tickets && siteRelations.tickets.length > 0) {
+                const ticketPromises = siteRelations.tickets.map(ticket => {
+                    const relationsPromise = fetchJSON(`/api/tickets/${ticket.id}/relations`);
+                    const messagesPromise = ticket.demande_id ? fetchJSON(`/api/conversations/demande-${ticket.demande_id}`) : Promise.resolve(null);
+                    return Promise.all([relationsPromise, messagesPromise]);
+                });
+
+                const results = await Promise.all(ticketPromises);
+
+                for (const [ticketRel, messages] of results) {
+                    if (ticketRel) {
+                        if (ticketRel.documents) allDocs.push(...ticketRel.documents);
+                        if (ticketRel.images) allImages.push(...ticketRel.images);
+                    }
+                    if (messages) {
+                        (messages || []).forEach(m => {
+                            if (m.attachments) allMessageAttachments.push(...m.attachments);
+                        });
+                    }
+                }
+            }
+
+            renderDocuments(allDocs, 'docs');
+            await renderImages(allImages, 'imgs');
+            
+            const msgUl = document.getElementById('msg-attachments');
+            if (!allMessageAttachments.length) {
+              msgUl.innerHTML = '<li class="list-group-item text-muted">Aucune pièce jointe dans les messages.</li>';
+            } else {
+              msgUl.innerHTML = '';
+              allMessageAttachments.forEach(att => {
+                const href = '/' + String(att.file_path || '').replace(/^public\//,'');
+                const li = document.createElement('li'); li.className='list-group-item d-flex justify-content-between align-items-center';
+                const span = document.createElement('span'); span.textContent = att.file_name || att.file_path || 'Pièce jointe';
+                const a = document.createElement('a'); a.className='btn btn-sm btn-outline-primary'; a.href=href; a.target='_blank'; a.download = att.file_name || '';
+                a.textContent = 'Télécharger';
+                li.append(span, a); msgUl.appendChild(li);
+              });
+            }
+
+        } catch (e) {
+            alert('Impossible de charger les pièces jointes: ' + e.message);
         }
       }
 
@@ -150,6 +223,10 @@
 
           const payload = { base64, nom_fichier, nature, type_mime: file.type, cible_type: 'Site', cible_id: siteId };
           
+          const saveBtn = document.getElementById('save-document-btn');
+          saveBtn.disabled = true;
+          saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enregistrement...';
+
           try {
             const res = await fetch('/api/documents', {
                 method: 'POST',
@@ -164,6 +241,9 @@
             await loadFiles();
           } catch(e) {
             alert(`Échec de l'ajout: ${e.message}`);
+          } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Enregistrer';
           }
       });
       
