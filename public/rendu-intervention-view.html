@@ -212,8 +212,8 @@
 
         // Relations
         const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
-        let ticketId = rel?.ticket?.id || rel?.ticket?.ticket_id || null;
-        let siteId = rel?.ticket?.site_id || rel?.site?.id || rel?.site?.site_id || null;
+        let ticketId = rel?.ticket?.id || rel?.ticket?.ticket_id || inter?.ticket_id || null;
+        let siteId = rel?.ticket?.site_id || rel?.site?.id || rel?.site?.site_id || inter?.site_id || null;
         let demandeId = rel?.ticket?.demande_id || rel?.demande?.id || rel?.demande?.demande_id || params.get('demande_id');
 
         if ((!demandeId || !siteId) && ticketId) {
