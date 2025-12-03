@@ -2423,8 +2423,40 @@ app.get('/api/rendus/:id', authenticateToken, async (req, res) => {
             [id]
         );
         const documents = documentsResult.rows;
+        
+        // Fetch related message attachments for context
+        let message_attachments = [];
+        try {
+            const interventionResult = await pool.query('SELECT ticket_id FROM intervention WHERE id = $1', [rendu.intervention_id]);
+            const ticketId = interventionResult.rows[0]?.ticket_id;
 
-        res.json({ rendu, images, documents });
+            if (ticketId) {
+                const demandeResult = await pool.query('SELECT id FROM demande_client WHERE ticket_id = $1', [ticketId]);
+                const demandeId = demandeResult.rows[0]?.id;
+
+                if (demandeId) {
+                    const conversationId = `demande-${demandeId}`;
+                    const messagesResult = await pool.query('SELECT id, body as message FROM messagerie WHERE conversation_id = $1', [conversationId]);
+                    
+                    for (const message of messagesResult.rows) {
+                        const attachmentsResult = await pool.query(
+                            'SELECT id, file_path, file_name, file_type FROM messagerie_attachment WHERE message_id = $1',
+                            [message.id]
+                        );
+                        attachmentsResult.rows.forEach(att => {
+                            message_attachments.push({
+                                ...att,
+                                message: message.message
+                            });
+                        });
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn(`Could not fetch message attachments for rendu ${id}:`, e.message);
+        }
+
+        res.json({ rendu, images, documents, message_attachments });
 
     } catch (err) {
         console.error(`Error fetching rendu ${id}:`, err);
