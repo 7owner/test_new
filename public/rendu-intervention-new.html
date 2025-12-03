@@ -718,13 +718,15 @@
       };
 
       // Récupérer les relations
-        const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
-        let ticketId = null, siteId = null, demandeId = params.get('demande_id');
+      const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
+      let ticketId = null, siteId = null, demandeId = params.get('demande_id');
       
       if (rel?.ticket) {
         ticketId = rel.ticket.id || rel.ticket.ticket_id;
         siteId = rel.ticket.site_id;
+        if (!demandeId && rel.ticket.demande_id) demandeId = rel.ticket.demande_id;
       }
+      if (rel?.demande && !demandeId) demandeId = rel.demande.id || rel.demande.demande_id;
       if (rel?.site) siteId = siteId || rel.site.id || rel.site.site_id;
 
       // Charger images et documents
