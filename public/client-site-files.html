@@ -206,9 +206,9 @@
             } else {
               msgUl.innerHTML = '';
               allMessageAttachments.forEach(att => {
-                const href = '/' + String(att.file_path || '').replace(/^public\//,'');
+                const href = `/api/attachments/${att.id}/view`;
                 const li = document.createElement('li'); li.className='list-group-item d-flex justify-content-between align-items-center';
-                const span = document.createElement('span'); span.textContent = att.file_name || att.file_path || 'Pièce jointe';
+                const span = document.createElement('span'); span.textContent = att.file_name || 'Pièce jointe';
                 const a = document.createElement('a'); a.className='btn btn-sm btn-outline-primary'; a.href=href; a.target='_blank'; a.download = att.file_name || '';
                 a.textContent = 'Télécharger';
                 li.append(span, a); msgUl.appendChild(li);

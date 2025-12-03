@@ -431,7 +431,7 @@ CREATE INDEX IF NOT EXISTS idx_messagerie_receiver_id ON messagerie(receiver_id)
 CREATE TABLE IF NOT EXISTS messagerie_attachment (
     id SERIAL PRIMARY KEY,
     message_id INTEGER NOT NULL REFERENCES messagerie(id) ON DELETE CASCADE,
-    file_path VARCHAR(255) NOT NULL,
+    file_blob BYTEA,
     file_name VARCHAR(255) NOT NULL,
     file_type VARCHAR(100),
     file_size INTEGER,

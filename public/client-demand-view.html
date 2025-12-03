@@ -126,15 +126,8 @@
       }
 
       function hrefForAttachment(att) {
-        if (!att || !att.file_path) return '#';
-        const p = String(att.file_path);
-        // Strip any leading absolute/ public path and keep filename
-        const fileName = p.split('/').filter(Boolean).slice(-1)[0];
-        const rel = p.replace(/^public\//, '');
-        if (p.includes('uploads/attachments/')) {
-          return '/' + rel.replace(/^public\//, '').replace(/^[\\/]+/, '');
-        }
-        return `/uploads/attachments/${fileName}`;
+        if (!att || !att.id) return '#';
+        return `/api/attachments/${att.id}/view`;
       }
 
       async function loadMessages() {
