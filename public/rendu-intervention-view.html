@@ -81,11 +81,19 @@
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       const token = localStorage.getItem('token');
-      if (!token) { alert('Session expirée'); return location.href='/login.html'; }
+      if (!token) {
+        alert('Session expirée. Veuillez vous reconnecter.');
+        return location.href = '/login.html';
+      }
+      const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
 
       const params = new URLSearchParams(location.search);
-      const interventionId = params.get('intervention_id') || params.get('id');
-      if (!interventionId) { alert('Intervention manquante'); return; }
+      const renduId = params.get('id');
+
+      if (!renduId) {
+        alert('ID du rendu manquant.');
+        return location.href = '/interventions.html';
+      }
 
       const grid = document.getElementById('attachments-grid');
       const countBadge = document.getElementById('attachments-count');
@@ -94,155 +102,94 @@
       const interEl = document.getElementById('intervention-id');
       const backInterBtn = document.getElementById('back-to-intervention-btn');
       const newRenduBtn = document.getElementById('open-rendu-new-btn');
-
-      interEl.textContent = interventionId;
-      backInterBtn.onclick = () => location.href = `intervention-view.html?id=${interventionId}`;
-      newRenduBtn.href = `rendu-intervention-new.html?id=${interventionId}`;
+      const backBtn = document.getElementById('back-btn');
 
       const fetchJSON = async (url) => {
-        const r = await fetch(url, { headers:{ 'Authorization': 'Bearer '+token }, credentials:'same-origin' });
-        if (!r.ok) return null;
-        return r.json();
-      };
-      const fetchBlobURL = async (url) => {
-        try {
-          const r = await fetch(url, { headers:{ 'Authorization':'Bearer '+token }, credentials:'same-origin' });
-          if (!r.ok) return null;
-          const b = await r.blob();
-          return URL.createObjectURL(b);
-        } catch { return null; }
-      };
-
-      let attachments = [];
-
-      const renderGrid = () => {
-        grid.innerHTML = '';
-        if (!attachments.length) {
-          grid.innerHTML = '<div class="col-12 text-muted small">Aucune pièce jointe trouvée.</div>';
-        } else {
-          attachments.forEach(att => {
-            const col = document.createElement('div');
-            col.className = 'col-12 col-sm-6 col-lg-4';
-            const card = document.createElement('div');
-            card.className = 'attachment-card';
-
-            const prev = document.createElement('div');
-            prev.className = 'attachment-preview';
-            if (att.kind === 'image') {
-              prev.innerHTML = `<img src="${att.url||att.previewUrl||''}" alt="${att.nom_fichier}">`;
-            } else {
-              prev.innerHTML = '<i class="bi bi-file-earmark-text fs-1 text-primary"></i>';
-              prev.style.background = 'linear-gradient(135deg,#667eea,#764ba2)';
-              prev.style.color = '#fff';
-            }
-
-            const info = document.createElement('div');
-            info.className = 'attachment-info';
-            info.innerHTML = `
-              <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="badge bg-secondary badge-source">${att.type||'—'}</div>
-                ${att.cible_id ? `<span class="badge bg-light text-dark">#${att.cible_id}</span>`:''}
-              </div>
-              <div class="fw-semibold">${att.nom_fichier||'Fichier'}</div>
-              <div class="attachment-comment">${att.commentaire_image||'Aucun commentaire'}</div>
-            `;
-            card.append(prev, info); col.append(card); grid.append(col);
-          });
+        const response = await fetch(url, { headers });
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({ message: `HTTP Error ${response.status}` }));
+          throw new Error(error.message || 'Erreur de chargement');
         }
-        countBadge.textContent = `${attachments.length} pièce(s)`;
-      };
-
-      const loadItems = async (type, id, endpoint) => {
-        if (!id) return;
-        const data = await fetchJSON(`/api/${endpoint}?cible_type=${encodeURIComponent(type)}&cible_id=${id}`);
-        if (Array.isArray(data)) {
-          for (const item of data) {
-            let url = `/api/${endpoint}/${item.id}/view`;
-            if (endpoint === 'images') {
-              url = await fetchBlobURL(url) || url;
-            }
-            attachments.push({
-              id: item.id,
-              type,
-              cible_id: id,
-              nom_fichier: item.nom_fichier,
-              commentaire_image: item.commentaire_image || item.commentaire || '',
-              note: item.note || '',
-              url,
-              kind: endpoint === 'images' ? 'image' : 'doc'
-            });
-          }
-        }
-      };
-
-      const loadConversationAttachments = async (demandeId) => {
-        if (!demandeId) return;
-        const msgs = await fetchJSON(`/api/conversations/demande-${demandeId}`);
-        if (!Array.isArray(msgs)) return;
-        msgs.forEach(m => {
-          if (!Array.isArray(m.attachments)) return;
-          m.attachments.forEach(att => {
-            const path = String(att.file_path||'');
-            const url = path ? '/' + path.replace(/^public\//,'') : '';
-            const name = att.file_name || path.split('/').pop() || 'Pièce jointe';
-            const mime = att.type_mime || '';
-            const lower = name.toLowerCase();
-            const kind = (mime && mime.startsWith('image/')) || /\.(png|jpe?g|gif|webp)$/i.test(lower) ? 'image' : 'doc';
-            attachments.push({
-              id: att.id || `conv-${demandeId}-${name}`,
-              type: 'Message',
-              cible_id: demandeId,
-              nom_fichier: name,
-              commentaire_image: att.commentaire || m.message || '',
-              note: '',
-              url,
-              kind,
-            });
-          });
-        });
+        return response.json();
       };
 
       try {
-        // Essayer de récupérer les infos de l'intervention (valeur/resume si dispo)
-        const inter = await fetchJSON(`/api/interventions/${interventionId}`).catch(()=>null);
-        if (inter) {
-          valeurEl.textContent = inter.valeur || inter.budget || '—';
-          resumeEl.innerHTML = inter.resume ? marked.parse(inter.resume) : '<span class="text-muted">Aucun résumé</span>';
-        }
+        const { rendu, images, documents } = await fetchJSON(`/api/rendus/${renduId}`);
 
-        // Relations
-        const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
-        let ticketId = rel?.ticket?.id || rel?.ticket?.ticket_id || inter?.ticket_id || null;
-        let siteId = rel?.ticket?.site_id || rel?.site?.id || rel?.site?.site_id || inter?.site_id || null;
-        let demandeId = rel?.ticket?.demande_id || rel?.demande?.id || rel?.demande?.demande_id || params.get('demande_id');
+        // Populate header and nav buttons
+        interEl.textContent = rendu.intervention_id;
+        backInterBtn.onclick = () => location.href = `intervention-view.html?id=${rendu.intervention_id}`;
+        newRenduBtn.href = `rendu-intervention-new.html?id=${rendu.intervention_id}`;
+        backBtn.onclick = () => location.href = `intervention-view.html?id=${rendu.intervention_id}`;
 
-        if ((!demandeId || !siteId) && ticketId) {
-          const ticketData = await fetchJSON(`/api/tickets/${ticketId}`).catch(()=>null);
-          if (ticketData?.demande_id && !demandeId) demandeId = ticketData.demande_id;
-          if (ticketData?.site_id && !siteId) siteId = ticketData.site_id;
-        }
 
-        await loadItems('Ticket', ticketId, 'images');
-        await loadItems('Ticket', ticketId, 'documents');
-        await loadItems('Site', siteId, 'images');
-        await loadItems('Site', siteId, 'documents');
-        await loadItems('DemandeClient', demandeId, 'images');
-        await loadItems('DemandeClient', demandeId, 'documents');
-        await loadItems('Intervention', interventionId, 'images');
-        await loadItems('Intervention', interventionId, 'documents');
-        await loadConversationAttachments(demandeId);
-      } catch (e) {
-        console.error(e);
-        resumeEl.innerHTML = '<span class="text-danger">Erreur de chargement</span>';
-      }
+        // Populate summary cards
+        valeurEl.textContent = rendu.valeur || 'Non spécifiée';
+        resumeEl.innerHTML = rendu.resume ? marked.parse(rendu.resume) : '<span class="text-muted">Aucun résumé.</span>';
 
-      if (!attachments.length) {
-        attachments.push({
-          id: 'ex1', type:'Exemple', nom_fichier:'Aucune pièce jointe',
-          commentaire_image:'Ajoutez des pièces pour les voir ici.', kind:'doc', url:''
+        // Process and render attachments
+        const attachments = [];
+        (images || []).forEach(img => {
+            attachments.push({
+                kind: 'image',
+                url: `/api/images/${img.id}/view`,
+                nom_fichier: img.nom_fichier,
+                commentaire_image: img.commentaire_image,
+                type: 'Image'
+            });
         });
+
+        (documents || []).forEach(doc => {
+            attachments.push({
+                kind: 'doc',
+                url: `/api/documents/${doc.id}/view`,
+                nom_fichier: doc.nom_fichier,
+                commentaire_image: doc.nature || 'Document',
+                type: 'Document'
+            });
+        });
+        
+        countBadge.textContent = `${attachments.length} pièce(s)`;
+        grid.innerHTML = '';
+        if (!attachments.length) {
+          grid.innerHTML = '<div class="col-12 text-muted small">Aucune pièce jointe pour ce rendu.</div>';
+          document.querySelector('.small.mb-3').textContent = 'Ce rendu ne contient aucune pièce jointe.';
+        } else {
+            document.querySelector('.small.mb-3').textContent = 'Pièces jointes enregistrées avec ce rendu.';
+            attachments.forEach(att => {
+                const col = document.createElement('div');
+                col.className = 'col-12 col-sm-6 col-lg-4';
+                const card = document.createElement('div');
+                card.className = 'attachment-card';
+
+                const prev = document.createElement('div');
+                prev.className = 'attachment-preview';
+                if (att.kind === 'image') {
+                prev.innerHTML = `<a href="${att.url}" target="_blank"><img src="${att.url}" alt="${att.nom_fichier}"></a>`;
+                } else {
+                prev.innerHTML = `<a href="${att.url}" target="_blank" class="text-white d-flex align-items-center justify-content-center h-100"><i class="bi bi-file-earmark-text fs-1"></i></a>`;
+                prev.style.background = 'linear-gradient(135deg,#667eea,#764ba2)';
+                }
+
+                const info = document.createElement('div');
+                info.className = 'attachment-info';
+                info.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="badge bg-primary badge-source">${att.type}</div>
+                    </div>
+                    <div class="fw-semibold">${att.nom_fichier || 'Fichier'}</div>
+                    <div class="attachment-comment">${marked.parse(att.commentaire_image || 'Aucun commentaire')}</div>
+                `;
+                card.append(prev, info);
+                col.append(card);
+                grid.append(col);
+            });
+        }
+
+      } catch (error) {
+        console.error('Failed to load rendu details:', error);
+        document.querySelector('main').innerHTML = `<div class="alert alert-danger">Impossible de charger le rendu. ${error.message}</div>`;
       }
-      renderGrid();
     });
   </script>
 </body>

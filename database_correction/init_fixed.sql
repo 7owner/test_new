@@ -440,7 +440,8 @@ CREATE INDEX IF NOT EXISTS idx_messagerie_attachment_message_id ON messagerie_at
 CREATE TABLE IF NOT EXISTS rendu_intervention (
     id SERIAL PRIMARY KEY,
     intervention_id BIGINT NOT NULL,
-    resume TEXT
+    resume TEXT,
+    valeur TEXT
 );
 
 CREATE TABLE IF NOT EXISTS rendu_intervention_image (
