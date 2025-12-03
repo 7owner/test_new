@@ -7,71 +7,277 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
-  <link href="/custom.css?v=1" rel="stylesheet">
   <style>
-    body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); }
-    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
-    .attachment-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; background: #fff; box-shadow: 0 6px 12px rgba(0,0,0,0.03); position: relative; }
-    .attachment-thumb { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb; }
-    .attachment-actions { position:absolute; top:8px; right:8px; }
-    .textarea-small { min-height: 80px; }
-    @media print { .no-print { display:none!important; } body { background:#fff; } }
+    body { 
+      background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .card { 
+      border: none; 
+      border-radius: 16px; 
+      box-shadow: 0 10px 24px rgba(0,0,0,0.06); 
+    }
+    
+    .attachment-card {
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      overflow: hidden;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .attachment-card:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+      transform: translateY(-2px);
+    }
+    
+    .attachment-card.selected {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .attachment-preview {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      background: #f3f4f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .attachment-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .attachment-preview.doc-preview {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-size: 3rem;
+    }
+    
+    .attachment-info {
+      padding: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .attachment-comment {
+      font-size: 0.875rem;
+      color: #374151;
+      margin-bottom: 8px;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+    
+    .attachment-meta {
+      font-size: 0.75rem;
+      color: #6b7280;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .add-card {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .add-card:hover {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    
+    .add-card-content {
+      text-align: center;
+      color: #64748b;
+    }
+    
+    .add-card-content i {
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+    
+    /* Modal pour édition */
+    .modal-dialog-large {
+      max-width: 900px;
+    }
+    
+    .edit-preview {
+      max-width: 100%;
+      max-height: 400px;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+    
+    .resume-editor {
+      min-height: 300px;
+    }
+    
+    .badge-source {
+      font-size: 0.7rem;
+      padding: 4px 8px;
+    }
+    
+    @media print { 
+      .no-print { display: none !important; } 
+      body { background: #fff; }
+      .attachment-card { page-break-inside: avoid; }
+    }
   </style>
 </head>
 <body>
   <main class="container my-4">
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <h1 class="h4 mb-0">Nouveau rendu d'intervention</h1>
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <h1 class="h4 mb-0"><i class="bi bi-file-text me-2"></i>Nouveau rendu d'intervention</h1>
       <div class="d-flex gap-2 no-print">
-        <button class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
-        <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer</button>
+        <button class="btn btn-outline-secondary btn-sm" id="back-btn">
+          <i class="bi bi-arrow-left"></i> Retour
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="window.print()">
+          <i class="bi bi-printer"></i> Imprimer
+        </button>
       </div>
     </div>
 
+    <!-- Formulaire principal -->
     <div class="card mb-4">
       <div class="card-body">
-        <form id="rendu-new-form" novalidate>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Valeur</label>
-            <input type="text" class="form-control" id="valeur" placeholder="Ex: 1500€">
+        <form id="rendu-form" novalidate>
+          <!-- Valeur -->
+          <div class="mb-4">
+            <label class="form-label fw-bold">Valeur de l'intervention</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-currency-euro"></i></span>
+              <input type="text" class="form-control" id="valeur" placeholder="Ex: 1500">
+            </div>
           </div>
 
-          <h3 class="h5 mt-4 mb-2">Pièces jointes liées (Ticket / Site / Demande)</h3>
-          <p class="text-muted small">Chaque carte affiche l'image/doc, le commentaire et un résumé (markdown) modifiables. Le bouton + ajoute un nouveau fichier.</p>
-          <div class="row g-3" id="linked-attachments"></div>
-          <div id="linked-empty" class="text-muted small mb-3">Aucune pièce jointe trouvée.</div>
-          <div class="d-flex justify-content-end gap-2 mb-4 no-print">
-            <button type="button" class="btn btn-outline-primary btn-sm" id="build-from-linked"><i class="bi bi-markdown me-1"></i> Générer un brouillon</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="add-new-upload"><i class="bi bi-plus-circle me-1"></i> Ajouter un fichier</button>
+          <!-- Section Pièces jointes -->
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Pièces jointes</h5>
+              <span class="badge bg-primary" id="attachments-count">0 pièce(s)</span>
+            </div>
+            <p class="text-muted small mb-3">
+              Cliquez sur une carte pour modifier l'image/document et son commentaire. 
+              Utilisez le bouton + pour ajouter un nouveau fichier.
+            </p>
+
+            <!-- Grille des pièces jointes -->
+            <div class="row g-3" id="attachments-grid">
+              <!-- Les cards seront ajoutées ici dynamiquement -->
+            </div>
           </div>
 
-          <div class="mb-3">
-            <button class="btn btn-outline-dark btn-sm no-print" type="button" data-bs-toggle="collapse" data-bs-target="#resume-block">
-              <i class="bi bi-journal-text me-1"></i>Afficher / éditer le résumé
+          <!-- Boutons d'action -->
+          <div class="d-flex gap-2 no-print">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-save me-1"></i>Enregistrer le rendu
             </button>
-          </div>
-          <div class="collapse" id="resume-block">
-            <div class="mb-3">
-              <label class="form-label fw-bold">Résumé (Markdown) <span class="text-danger">*</span></label>
-              <textarea id="resume" required></textarea>
-              <div class="text-muted small" id="resume-counter">0 caractères</div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold">Aperçu du rendu</label>
-              <div id="resume-preview" class="p-3 border rounded bg-light" style="min-height:150px;">
-                <em class="text-muted">L'aperçu apparaîtra ici...</em>
-              </div>
-            </div>
-          </div>
-
-          <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary" id="save-rendu-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
-            <button type="button" class="btn btn-secondary" id="cancel-rendu-btn">Annuler</button>
+            <button type="button" class="btn btn-secondary" id="cancel-btn">
+              Annuler
+            </button>
           </div>
         </form>
       </div>
     </div>
   </main>
+
+  <!-- Modal d'édition -->
+  <div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-large modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-pencil-square me-2"></i>Modifier la pièce jointe
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <!-- Colonne gauche : Aperçu et upload -->
+            <div class="col-md-5">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Aperçu</label>
+                <div id="edit-preview-container" class="border rounded p-3 bg-light text-center">
+                  <div id="edit-preview"></div>
+                </div>
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label fw-bold">Remplacer le fichier</label>
+                <input type="file" class="form-control" id="edit-file-input" accept="image/*,.pdf,.doc,.docx">
+                <div class="form-text">Laissez vide pour conserver le fichier actuel</div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Source</label>
+                <div id="edit-source-info"></div>
+              </div>
+            </div>
+
+            <!-- Colonne droite : Commentaire et résumé -->
+            <div class="col-md-7">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Commentaire</label>
+                <textarea class="form-control" id="edit-comment" rows="4" 
+                  placeholder="Ajoutez un commentaire sur cette pièce jointe..."></textarea>
+                <div class="form-text">Commentaire court visible sur la carte</div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-bold">
+                  Résumé détaillé (Markdown)
+                  <i class="bi bi-info-circle text-muted" title="Pour les commentaires longs"></i>
+                </label>
+                <textarea id="edit-resume" class="form-control resume-editor"></textarea>
+                <div class="form-text">Utilisez Markdown pour un résumé détaillé (optionnel)</div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-bold">Aperçu du résumé</label>
+                <div id="edit-resume-preview" class="border rounded p-3 bg-light" style="min-height: 100px;">
+                  <em class="text-muted">Le résumé apparaîtra ici...</em>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" id="delete-attachment-btn">
+            <i class="bi bi-trash"></i> Supprimer
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Annuler
+          </button>
+          <button type="button" class="btn btn-primary" id="save-edit-btn">
+            <i class="bi bi-check-lg"></i> Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
@@ -79,206 +285,372 @@
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
-    if (!token) { alert('Session expirée'); return location.href='/login.html'; }
+    if (!token) { 
+      alert('Session expirée'); 
+      return location.href = '/login.html'; 
+    }
+
     const params = new URLSearchParams(location.search);
     const interventionId = params.get('id') || params.get('intervention_id');
-    if (!interventionId) { alert('Intervention inconnue'); return location.href='interventions.html'; }
+    if (!interventionId) { 
+      alert('Intervention inconnue'); 
+      return location.href = 'interventions.html'; 
+    }
 
-    let relatedTicketId = null;
-    let relatedSiteId = null;
-    let demandeId = params.get('demande_id');
-    let linkedAttachments = []; // {id, type, cible_id, nom_fichier, commentaire_image, note, url, kind}
+    let attachments = [];
+    let currentEditIndex = -1;
+    let editModal = null;
+    let resumeEditor = null;
 
-    const linkedContainer = document.getElementById('linked-attachments');
-    const linkedEmpty = document.getElementById('linked-empty');
-    const addUploadBtn = document.getElementById('add-new-upload');
-    const buildFromLinkedBtn = document.getElementById('build-from-linked');
+    const grid = document.getElementById('attachments-grid');
+    const countBadge = document.getElementById('attachments-count');
 
-    const easyMDE = new EasyMDE({
-      element: document.getElementById('resume'),
-      spellChecker: false,
-      forceSync: true,
-      placeholder: "Rédigez ici le résumé de l'intervention...",
-      toolbar: ["bold","italic","heading","|","quote","code","unordered-list","ordered-list","|","link","image","|","preview","side-by-side","fullscreen","|","guide"],
-      previewRender: (text) => EasyMDE.prototype.markdown(text || '')
-    });
-    const previewEl = document.getElementById('resume-preview');
-    const counterEl = document.getElementById('resume-counter');
-    const updatePreview = () => {
-      if (previewEl) previewEl.innerHTML = easyMDE.options.previewRender(easyMDE.value() || '') || '<em class="text-muted">L\'aperçu apparaîtra ici...</em>';
-      if (counterEl) counterEl.textContent = `${easyMDE.value().length} caractères`;
+    // Initialisation de l'éditeur Markdown dans le modal
+    const initResumeEditor = () => {
+      if (!resumeEditor) {
+        resumeEditor = new EasyMDE({
+          element: document.getElementById('edit-resume'),
+          spellChecker: false,
+          forceSync: true,
+          placeholder: "Rédigez un résumé détaillé en Markdown...",
+          toolbar: ["bold", "italic", "heading", "|", "quote", "unordered-list", "ordered-list", "|", "link", "preview"],
+          status: false,
+          minHeight: "200px"
+        });
+
+        resumeEditor.codemirror.on('change', () => {
+          const preview = document.getElementById('edit-resume-preview');
+          const text = resumeEditor.value();
+          if (text) {
+            preview.innerHTML = marked.parse(text);
+          } else {
+            preview.innerHTML = '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+          }
+        });
+      }
     };
-    easyMDE.codemirror.on('change', updatePreview);
-    updatePreview();
 
-    const renderAttachmentCard = (att, isNewUpload=false) => {
+    // Fonction pour créer une card de pièce jointe
+    const createAttachmentCard = (att, index) => {
       const col = document.createElement('div');
-      col.className = 'col-12 col-md-6 col-lg-4';
-      col.innerHTML = `
-        <div class="attachment-card h-100">
-          <div class="attachment-actions no-print">
-            <button class="btn btn-sm btn-outline-danger remove-card"><i class="bi bi-x"></i></button>
-          </div>
-          <div class="mb-2">
-            ${att.kind === 'image' ? `<img class="attachment-thumb" src="${att.url || ''}" alt="${att.commentaire_image || att.nom_fichier || ''}">` :
-             `<div class="d-flex align-items-center gap-2 text-muted"><i class="bi bi-file-earmark-richtext fs-4"></i><span>${att.nom_fichier||'Document'}</span></div>`}
-          </div>
-          ${att.kind === 'upload' ? `
-            <div class="mb-2">
-              <label class="form-label small">Fichier</label>
-              <input type="file" class="form-control form-control-sm upload-file">
-            </div>` : ''}
-          <div class="mb-2">
-            <label class="form-label small">Commentaire</label>
-            <textarea class="form-control form-control-sm att-comment textarea-small" placeholder="Commentaire...">${att.commentaire_image||''}</textarea>
-          </div>
-          <div>
-            <label class="form-label small">Résumé (Markdown)</label>
-            <textarea class="form-control form-control-sm att-note textarea-small" placeholder="Résumé markdown...">${att.note||''}</textarea>
-          </div>
-          <div class="text-muted small mt-2">Source: ${att.type||'-'} #${att.cible_id||''}</div>
+      col.className = 'col-12 col-sm-6 col-lg-4';
+      
+      const card = document.createElement('div');
+      card.className = 'attachment-card';
+      card.onclick = () => openEditModal(index);
+
+      // Aperçu
+      const preview = document.createElement('div');
+      preview.className = 'attachment-preview';
+      
+      if (att.kind === 'image') {
+        preview.innerHTML = `<img src="${att.url || att.previewUrl || ''}" alt="${att.nom_fichier}">`;
+      } else {
+        preview.className += ' doc-preview';
+        preview.innerHTML = '<i class="bi bi-file-earmark-text"></i>';
+      }
+
+      // Info
+      const info = document.createElement('div');
+      info.className = 'attachment-info';
+      
+      const comment = document.createElement('div');
+      comment.className = 'attachment-comment';
+      comment.textContent = att.commentaire_image || 'Aucun commentaire';
+      
+      const meta = document.createElement('div');
+      meta.className = 'attachment-meta';
+      
+      const sourceSpan = document.createElement('span');
+      sourceSpan.className = 'badge badge-source bg-secondary';
+      sourceSpan.textContent = att.type || 'Upload';
+      
+      const nameSpan = document.createElement('span');
+      nameSpan.innerHTML = `<i class="bi bi-file-earmark"></i> ${att.nom_fichier || 'Fichier'}`;
+      
+      meta.appendChild(sourceSpan);
+      meta.appendChild(nameSpan);
+      
+      info.appendChild(comment);
+      info.appendChild(meta);
+      
+      card.appendChild(preview);
+      card.appendChild(info);
+      col.appendChild(card);
+      
+      return col;
+    };
+
+    // Créer la card "Ajouter"
+    const createAddCard = () => {
+      const col = document.createElement('div');
+      col.className = 'col-12 col-sm-6 col-lg-4';
+      
+      const card = document.createElement('div');
+      card.className = 'add-card';
+      card.onclick = () => addNewAttachment();
+      
+      card.innerHTML = `
+        <div class="add-card-content">
+          <i class="bi bi-plus-circle"></i>
+          <div class="fw-bold">Ajouter un fichier</div>
+          <div class="small">Cliquez pour ajouter</div>
         </div>
       `;
-      linkedContainer.appendChild(col);
-      col.querySelector('.remove-card').addEventListener('click', () => {
-        col.remove();
-        linkedAttachments = linkedAttachments.filter(x => x.__dom !== col);
-        toggleEmpty();
+      
+      col.appendChild(card);
+      return col;
+    };
+
+    // Rafraîchir la grille
+    const refreshGrid = () => {
+      grid.innerHTML = '';
+      
+      attachments.forEach((att, index) => {
+        grid.appendChild(createAttachmentCard(att, index));
       });
-      att.__dom = col;
+      
+      grid.appendChild(createAddCard());
+      
+      countBadge.textContent = `${attachments.length} pièce(s)`;
     };
 
-    const toggleEmpty = () => {
-      const hasCards = linkedContainer && linkedContainer.children.length > 0;
-      if (linkedEmpty) linkedEmpty.classList.toggle('d-none', hasCards);
+    // Ajouter un nouveau fichier
+    const addNewAttachment = () => {
+      const newAtt = {
+        kind: 'upload',
+        type: 'Nouveau',
+        cible_id: '',
+        nom_fichier: 'Nouveau fichier',
+        commentaire_image: '',
+        note: '',
+        url: '',
+        previewUrl: '',
+        isNew: true
+      };
+      
+      attachments.push(newAtt);
+      refreshGrid();
+      openEditModal(attachments.length - 1);
     };
 
-    const fetchJSON = async (url) => {
-      const r = await fetch(url, { headers:{'Authorization':`Bearer ${token}`}, credentials:'same-origin' });
-      if (!r.ok) return null;
-      return r.json().catch(()=>null);
-    };
-
-    const loadRelations = async () => {
-      const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
-      if (rel && rel.ticket) {
-        relatedTicketId = rel.ticket.id || rel.ticket.ticket_id || null;
-        if (rel.ticket.site_id) relatedSiteId = rel.ticket.site_id;
+    // Ouvrir le modal d'édition
+    const openEditModal = (index) => {
+      currentEditIndex = index;
+      const att = attachments[index];
+      
+      if (!editModal) {
+        editModal = new bootstrap.Modal(document.getElementById('editModal'));
       }
-      if (rel && rel.site) relatedSiteId = relatedSiteId || rel.site.id || rel.site.site_id;
+      
+      initResumeEditor();
+      
+      // Remplir le modal
+      document.getElementById('edit-comment').value = att.commentaire_image || '';
+      resumeEditor.value(att.note || '');
+      
+      // Aperçu
+      const previewContainer = document.getElementById('edit-preview');
+      if (att.kind === 'image') {
+        previewContainer.innerHTML = `<img src="${att.url || att.previewUrl || ''}" class="edit-preview" alt="${att.nom_fichier}">`;
+      } else {
+        previewContainer.innerHTML = `
+          <div class="text-center p-4">
+            <i class="bi bi-file-earmark-text" style="font-size: 4rem; color: #667eea;"></i>
+            <div class="mt-2">${att.nom_fichier}</div>
+          </div>
+        `;
+      }
+      
+      // Source
+      const sourceInfo = document.getElementById('edit-source-info');
+      sourceInfo.innerHTML = `<span class="badge bg-secondary">${att.type || 'Upload'}</span>`;
+      
+      // Réinitialiser le file input
+      document.getElementById('edit-file-input').value = '';
+      
+      editModal.show();
     };
 
+    // Sauvegarder les modifications
+    document.getElementById('save-edit-btn').addEventListener('click', () => {
+      const att = attachments[currentEditIndex];
+      
+      att.commentaire_image = document.getElementById('edit-comment').value;
+      att.note = resumeEditor.value();
+      
+      const fileInput = document.getElementById('edit-file-input');
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        att.nom_fichier = file.name;
+        att.file = file;
+        att.kind = file.type.startsWith('image/') ? 'image' : 'doc';
+        
+        // Créer une preview
+        if (att.kind === 'image') {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            att.previewUrl = e.target.result;
+            refreshGrid();
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+      
+      editModal.hide();
+      refreshGrid();
+    });
+
+    // Supprimer une pièce jointe
+    document.getElementById('delete-attachment-btn').addEventListener('click', () => {
+      if (confirm('Voulez-vous vraiment supprimer cette pièce jointe ?')) {
+        attachments.splice(currentEditIndex, 1);
+        editModal.hide();
+        refreshGrid();
+      }
+    });
+
+    // Charger les pièces jointes existantes
     const loadAttachments = async () => {
-      linkedAttachments = [];
-      const pushImgs = async (type,id) => {
-        if (!id) return;
-        const data = await fetchJSON(`/api/images?cible_type=${encodeURIComponent(type)}&cible_id=${id}`);
-        if (Array.isArray(data)) {
-          data.forEach(img => linkedAttachments.push({
-            id: img.id, type, cible_id:id, nom_fichier: img.nom_fichier, commentaire_image: img.commentaire_image||'', note: img.note || '',
-            url: `/api/images/${img.id}/view`, kind:'image'
-          }));
+      const fetchJSON = async (url) => {
+        try {
+          const r = await fetch(url, { 
+            headers: { 'Authorization': `Bearer ${token}` }, 
+            credentials: 'same-origin' 
+          });
+          if (!r.ok) return null;
+          return await r.json();
+        } catch (e) {
+          return null;
         }
       };
-      const pushDocs = async (type,id) => {
-        if (!id) return;
-        const data = await fetchJSON(`/api/documents?cible_type=${encodeURIComponent(type)}&cible_id=${id}`);
-        if (Array.isArray(data)) {
-          data.forEach(doc => linkedAttachments.push({
-            id: doc.id, type, cible_id:id, nom_fichier: doc.nom_fichier, commentaire_image: doc.commentaire || '', note: doc.note || '',
-            url: `/api/documents/${doc.id}/view`, kind:'doc'
-          }));
-        }
-      };
-      await loadRelations();
-      await pushImgs('Ticket', relatedTicketId);
-      await pushImgs('Site', relatedSiteId);
-      await pushImgs('DemandeClient', demandeId);
-      await pushDocs('DemandeClient', demandeId);
-      await pushDocs('Site', relatedSiteId);
 
-      linkedContainer.innerHTML = '';
-      linkedAttachments.forEach(att => renderAttachmentCard(att));
-      toggleEmpty();
+      // Récupérer les relations
+        const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
+        let ticketId = null, siteId = null, demandeId = params.get('demande_id');
+      
+      if (rel?.ticket) {
+        ticketId = rel.ticket.id || rel.ticket.ticket_id;
+        siteId = rel.ticket.site_id;
+      }
+      if (rel?.site) siteId = siteId || rel.site.id || rel.site.site_id;
+
+      // Charger images et documents
+      const loadItems = async (type, id, endpoint) => {
+        if (!id) return;
+        const data = await fetchJSON(`/api/${endpoint}?cible_type=${encodeURIComponent(type)}&cible_id=${id}`);
+        if (Array.isArray(data)) {
+          data.forEach(item => {
+            attachments.push({
+              id: item.id,
+              type,
+              cible_id: id,
+              nom_fichier: item.nom_fichier,
+              commentaire_image: item.commentaire_image || item.commentaire || '',
+              note: item.note || '',
+              url: `/api/${endpoint}/${item.id}/view`,
+              kind: endpoint === 'images' ? 'image' : 'doc'
+            });
+          });
+        }
+      };
+
+      await loadItems('Ticket', ticketId, 'images');
+      await loadItems('Site', siteId, 'images');
+      await loadItems('DemandeClient', demandeId, 'images');
+      await loadItems('Intervention', interventionId, 'images');
+      await loadItems('DemandeClient', demandeId, 'documents');
+      await loadItems('Site', siteId, 'documents');
+      await loadItems('Intervention', interventionId, 'documents');
+
+      // Exemples si rien trouvé
+      if (!attachments.length) {
+        attachments.push({
+          id: 'ex1',
+          type: 'Exemple',
+          cible_id: 'N/A',
+          nom_fichier: 'Exemple photo',
+          commentaire_image: 'Commentaire exemple',
+          note: 'Résumé markdown exemple',
+          url: 'https://via.placeholder.com/400x250.png?text=Photo+exemple',
+          kind: 'image'
+        });
+        attachments.push({
+          id: 'ex2',
+          type: 'Exemple',
+          cible_id: 'N/A',
+          nom_fichier: 'Doc exemple',
+          commentaire_image: 'Description du document',
+          note: 'Note en markdown',
+          url: 'https://example.com/doc.pdf',
+          kind: 'doc'
+        });
+      }
+
+      refreshGrid();
     };
 
-    if (addUploadBtn) {
-      addUploadBtn.addEventListener('click', () => {
-        const att = { kind:'upload', type:'Upload', cible_id:'', nom_fichier:'', commentaire_image:'', note:'' };
-        renderAttachmentCard(att, true);
-        linkedAttachments.push(att);
-        toggleEmpty();
-      });
-    }
-
-    if (buildFromLinkedBtn) {
-      buildFromLinkedBtn.addEventListener('click', () => {
-        const lines = [];
-        lines.push('## Pièces jointes');
-        linkedAttachments.forEach(att => {
-          const commentEl = att.__dom?.querySelector('.att-comment');
-          const noteEl = att.__dom?.querySelector('.att-note');
-          const comment = commentEl?.value || att.commentaire_image || '';
-          const note = noteEl?.value || att.note || '';
-          const label = att.nom_fichier || 'Pièce jointe';
-          if (att.kind === 'image') {
-            lines.push(`![${comment || label}](${att.url})`);
-          } else {
-            lines.push(`- [${label}](${att.url}) ${comment ? ' — ' + comment : ''}`);
-          }
-          if (note) lines.push(note);
-          lines.push('');
-        });
-        easyMDE.value((easyMDE.value() || '') + '\n\n' + lines.join('\n'));
-        updatePreview();
-        alert('Brouillon généré à partir des cartes.');
-      });
-    }
-
-    // Sauvegarde
-    const formEl = document.getElementById('rendu-new-form');
-    formEl.addEventListener('submit', async (e) => {
+    // Soumettre le formulaire
+    document.getElementById('rendu-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
       const fd = new FormData();
-      fd.append('resume', easyMDE.value());
       fd.append('valeur', document.getElementById('valeur').value || '');
-
-      // Nouvelles uploads
-      linkedAttachments.forEach(att => {
-        if (att.kind === 'upload') {
-          const file = att.__dom?.querySelector('.upload-file')?.files[0];
-          const comment = att.__dom?.querySelector('.att-comment')?.value || '';
-          const note = att.__dom?.querySelector('.att-note')?.value || '';
-          if (file) {
-            fd.append('image_files[]', file);
-            fd.append('image_commentaires[]', comment);
-            fd.append('image_notes[]', note);
-          }
+      
+      // Construire le résumé complet avec toutes les pièces jointes
+      let fullResume = '## Pièces jointes\n\n';
+      
+      attachments.forEach((att, idx) => {
+        if (att.commentaire_image) {
+          fullResume += `### ${att.nom_fichier}\n${att.commentaire_image}\n\n`;
+        }
+        if (att.note) {
+          fullResume += `${att.note}\n\n`;
+        }
+        
+        // Ajouter les nouveaux fichiers
+        if (att.isNew && att.file) {
+          fd.append('image_files[]', att.file);
+          fd.append('image_commentaires[]', att.commentaire_image || '');
+          fd.append('image_notes[]', att.note || '');
         }
       });
+      
+      fd.append('resume', fullResume);
 
       try {
         const res = await fetch(`/api/interventions/${interventionId}/rendus`, {
-          method:'POST',
-          headers:{ 'Authorization':`Bearer ${token}` },
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
           body: fd
         });
+        
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        alert('Rendu enregistré');
+        
+        alert('Rendu enregistré avec succès !');
         location.href = `intervention-view.html?id=${interventionId}`;
       } catch (err) {
         console.error(err);
-        alert('Erreur de sauvegarde');
+        alert('Erreur lors de l\'enregistrement du rendu');
       }
     });
 
-    document.getElementById('cancel-rendu-btn')?.addEventListener('click', () => {
-      if (confirm('Annuler ?')) location.href = `intervention-view.html?id=${interventionId}`;
-    });
-    document.getElementById('back-btn')?.addEventListener('click', () => {
-      if (document.referrer) history.back(); else location.href = `intervention-view.html?id=${interventionId}`;
+    // Boutons d'action
+    document.getElementById('cancel-btn').addEventListener('click', () => {
+      if (confirm('Voulez-vous vraiment annuler ? Les modifications seront perdues.')) {
+        location.href = `intervention-view.html?id=${interventionId}`;
+      }
     });
 
+    document.getElementById('back-btn').addEventListener('click', () => {
+      if (document.referrer) {
+        history.back();
+      } else {
+        location.href = `intervention-view.html?id=${interventionId}`;
+      }
+    });
+
+    // Initialisation
     loadAttachments();
   });
   </script>
