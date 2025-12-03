@@ -218,24 +218,24 @@
           <div class="row">
             <!-- Colonne gauche : Aperçu et upload -->
             <div class="col-md-5">
-              <div class="mb-3">
-                <label class="form-label fw-bold">Aperçu</label>
-                <div id="edit-preview-container" class="border rounded p-3 bg-light text-center">
-                  <div id="edit-preview"></div>
-                </div>
-              </div>
-              
-              <div class="mb-3">
-                <label class="form-label fw-bold">Remplacer le fichier</label>
-                <input type="file" class="form-control" id="edit-file-input" accept="image/*,.pdf,.doc,.docx">
-                <div class="form-text">Laissez vide pour conserver le fichier actuel</div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">Source</label>
-                <div id="edit-source-info"></div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Aperçu</label>
+              <div id="edit-preview-container" class="border rounded p-3 bg-light text-center">
+                <div id="edit-preview"></div>
               </div>
             </div>
+            
+            <div class="mb-3">
+              <label class="form-label fw-bold">Remplacer le fichier</label>
+              <input type="file" class="form-control" id="edit-file-input" accept="image/*,.pdf,.doc,.docx">
+              <div class="form-text">Laissez vide pour conserver le fichier actuel</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Source</label>
+              <div id="edit-source-info" class="d-flex flex-wrap gap-2"></div>
+            </div>
+          </div>
 
             <!-- Colonne droite : Commentaire et résumé -->
             <div class="col-md-7">
@@ -464,7 +464,15 @@
       
       // Source
       const sourceInfo = document.getElementById('edit-source-info');
-      sourceInfo.innerHTML = `<span class="badge bg-secondary">${att.type || 'Upload'}</span>`;
+      const typeLabel = att.type || 'Upload';
+      const kindLabel = att.kind === 'image' ? 'PJ' : 'Doc';
+      const map = { Ticket:'primary', Site:'success', DemandeClient:'warning', Intervention:'info', Exemple:'secondary', Upload:'secondary', Nouveau:'primary' };
+      const color = map[typeLabel] || 'secondary';
+      sourceInfo.innerHTML = `
+        <span class="badge bg-${color}">${typeLabel}</span>
+        <span class="badge bg-dark">${kindLabel}</span>
+        ${att.cible_id ? `<span class="badge bg-light text-dark">#${att.cible_id}</span>` : ''}
+      `;
       
       // Réinitialiser le file input
       document.getElementById('edit-file-input').value = '';
