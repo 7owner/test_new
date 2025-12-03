@@ -255,8 +255,11 @@
             </div>
 
             <div class="mb-3">
-              <label class="form-label">Source</label>
-              <div id="edit-source-info" class="d-flex flex-wrap gap-2"></div>
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label mb-0">Source</label>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="open-source-modal"><i class="bi bi-folder2-open me-1"></i>Voir les sources</button>
+              </div>
+              <div id="edit-source-info" class="d-flex flex-wrap gap-2 mt-2"></div>
             </div>
           </div>
 
@@ -297,6 +300,48 @@
           <button type="button" class="btn btn-primary" id="save-edit-btn">
             <i class="bi bi-check-lg"></i> Enregistrer
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Sources -->
+  <div class="modal fade" id="sourcesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-collection me-2"></i>Sources disponibles</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2 mb-3">
+            <div class="col-md-4">
+              <input type="text" class="form-control form-control-sm" id="source-search" placeholder="Rechercher...">
+            </div>
+            <div class="col-md-4">
+              <select class="form-select form-select-sm" id="source-filter">
+                <option value="">Toutes les sources</option>
+                <option value="Ticket">Ticket</option>
+                <option value="Site">Site</option>
+                <option value="DemandeClient">Demande client</option>
+                <option value="Intervention">Intervention</option>
+                <option value="Upload">Upload/Nouveau</option>
+                <option value="Exemple">Exemple</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <select class="form-select form-select-sm" id="source-kind">
+                <option value="">Images et documents</option>
+                <option value="image">Images</option>
+                <option value="doc">Documents</option>
+              </select>
+            </div>
+          </div>
+          <div class="row g-3" id="sources-list"></div>
+          <div id="sources-empty" class="text-muted small">Aucune source trouvée.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
         </div>
       </div>
     </div>
