@@ -183,6 +183,29 @@
               Cliquez sur une carte pour modifier l'image/document et son commentaire. 
               Utilisez le bouton + pour ajouter un nouveau fichier.
             </p>
+            <div class="row g-2 align-items-center mb-3">
+              <div class="col-md-4">
+                <input type="text" class="form-control form-control-sm" id="filter-search" placeholder="Rechercher (nom, commentaire, note)...">
+              </div>
+              <div class="col-md-4">
+                <select class="form-select form-select-sm" id="filter-source">
+                  <option value="">Toutes les sources</option>
+                  <option value="Ticket">Ticket</option>
+                  <option value="Site">Site</option>
+                  <option value="DemandeClient">Demande client</option>
+                  <option value="Intervention">Intervention</option>
+                  <option value="Upload">Upload/Nouveau</option>
+                  <option value="Exemple">Exemple</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <select class="form-select form-select-sm" id="filter-kind">
+                  <option value="">Images et documents</option>
+                  <option value="image">Images</option>
+                  <option value="doc">Documents</option>
+                </select>
+              </div>
+            </div>
 
             <!-- Grille des pièces jointes -->
             <div class="row g-3" id="attachments-grid">
@@ -304,6 +327,9 @@
 
     const grid = document.getElementById('attachments-grid');
     const countBadge = document.getElementById('attachments-count');
+    const filterSearch = document.getElementById('filter-search');
+    const filterSource = document.getElementById('filter-source');
+    const filterKind = document.getElementById('filter-kind');
 
     // Initialisation de l'éditeur Markdown dans le modal
     const initResumeEditor = () => {
@@ -405,14 +431,32 @@
     // Rafraîchir la grille
     const refreshGrid = () => {
       grid.innerHTML = '';
-      
-      attachments.forEach((att, index) => {
+      const term = (filterSearch?.value || '').toLowerCase();
+      const src = filterSource?.value || '';
+      const kind = filterKind?.value || '';
+
+      const filtered = attachments.filter((att) => {
+        const txt = `${att.nom_fichier||''} ${att.commentaire_image||''} ${att.note||''}`.toLowerCase();
+        const matchTerm = !term || txt.includes(term);
+        const matchSrc = !src || att.type === src;
+        const matchKind = !kind || att.kind === kind;
+        return matchTerm && matchSrc && matchKind;
+      });
+
+      filtered.forEach((att, index) => {
         grid.appendChild(createAttachmentCard(att, index));
       });
       
+      if (!filtered.length) {
+        const empty = document.createElement('div');
+        empty.className = 'col-12 text-muted small';
+        empty.textContent = 'Aucune pièce jointe pour ces filtres.';
+        grid.appendChild(empty);
+      }
+
       grid.appendChild(createAddCard());
       
-      countBadge.textContent = `${attachments.length} pièce(s)`;
+      countBadge.textContent = `${filtered.length} / ${attachments.length} pièce(s)`;
     };
 
     // Ajouter un nouveau fichier
@@ -660,6 +704,12 @@
 
     // Initialisation
     loadAttachments();
+
+    // Filtres
+    [filterSearch, filterSource, filterKind].forEach(el => {
+      el?.addEventListener('input', refreshGrid);
+      el?.addEventListener('change', refreshGrid);
+    });
   });
   </script>
 </body>
