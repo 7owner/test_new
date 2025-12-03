@@ -729,6 +729,12 @@
       if (rel?.demande && !demandeId) demandeId = rel.demande.id || rel.demande.demande_id;
       if (rel?.site) siteId = siteId || rel.site.id || rel.site.site_id;
 
+      // Si on n'a toujours pas la demande, tenter de la récupérer via le ticket
+      if (!demandeId && ticketId) {
+        const ticketData = await fetchJSON(`/api/tickets/${ticketId}`);
+        if (ticketData?.demande_id) demandeId = ticketData.demande_id;
+      }
+
       // Charger images et documents
       const loadItems = async (type, id, endpoint) => {
         if (!id) return;
