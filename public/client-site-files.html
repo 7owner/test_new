@@ -156,6 +156,7 @@
             let allImages = [...(siteRelations.images || [])];
             let allMessageAttachments = [];
 
+            // Tickets liés au site
             if (siteRelations.tickets && siteRelations.tickets.length > 0) {
                 const ticketPromises = siteRelations.tickets.map(ticket => {
                     const relationsPromise = fetchJSON(`/api/tickets/${ticket.id}/relations`);
@@ -176,6 +177,24 @@
                         });
                     }
                 }
+            }
+
+            // Demandes client directement rattachées au site (hors tickets)
+            try {
+              const demandesSite = await fetchJSON(`/api/demandes_client?site_id=${siteId}`);
+              if (Array.isArray(demandesSite) && demandesSite.length) {
+                const convPromises = demandesSite.map(d => fetchJSON(`/api/conversations/demande-${d.id}`));
+                const convResults = await Promise.all(convPromises);
+                convResults.forEach(conv => {
+                  if (Array.isArray(conv)) {
+                    conv.forEach(m => {
+                      if (Array.isArray(m.attachments)) allMessageAttachments.push(...m.attachments);
+                    });
+                  }
+                });
+              }
+            } catch (e) {
+              console.warn('Conv demandes site', e.message || e);
             }
 
             renderDocuments(allDocs, 'docs');
