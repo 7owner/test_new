@@ -60,6 +60,24 @@
       </div>
     </div>
 
+    <div class="card mt-3">
+      <div class="card-header"><strong>Répertoire documents</strong></div>
+      <div class="card-body">
+        <p class="text-muted small">Rassemble toutes les pièces jointes (documents, images, PJ messages) liées aux sites/tickets/demandes de ce client.</p>
+        <div class="row g-3">
+          <div class="col-lg-6">
+            <h6>Documents</h6>
+            <ul id="repo-docs" class="list-group list-group-flush small"></ul>
+          </div>
+          <div class="col-lg-6">
+            <h6>Images</h6>
+            <div id="repo-imgs" class="d-flex flex-wrap gap-2"></div>
+            <div class="text-muted small" id="repo-msgs-info"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="adminActions" class="card mt-3" style="display:none;">
       <div class="card-header"><strong>Actions administrateur</strong></div>
       <div class="card-body">
@@ -106,6 +124,20 @@
         const r = await fetch(url, Object.assign(base, opts||{}));
         const ct = r.headers.get('content-type')||''; const b = ct.includes('application/json') ? await r.json() : null; if(!r.ok) throw new Error((b&&b.error)||r.statusText); return b;
       }
+      async function fetchBinaryURL(url){
+        const r = await fetch(url, { headers: token ? { 'Authorization': 'Bearer '+token } : {}, credentials:'same-origin' });
+        if(!r.ok) return null;
+        const blob = await r.blob();
+        return URL.createObjectURL(blob);
+      }
+      const docList = document.getElementById('repo-docs');
+      const imgList = document.getElementById('repo-imgs');
+      const msgsInfo = document.getElementById('repo-msgs-info');
+      const setRepoLoading = () => {
+        if (docList) docList.innerHTML = '<li class="list-group-item text-muted">Chargement...</li>';
+        if (imgList) imgList.innerHTML = '<div class="text-muted">Chargement...</div>';
+        if (msgsInfo) msgsInfo.textContent = '';
+      };
 
       let isAdmin = false;
       try {
@@ -148,6 +180,107 @@
           try { await fetchJSON('/api/clients/'+id+'/demandes', { method:'POST', body: JSON.stringify({ site_id, description }) }); alert('Demande créée'); location.reload(); }
           catch(e){ alert(e.message); }
         });
+
+        // Charger le répertoire documents
+        setRepoLoading();
+        try {
+          const allDocs = [];
+          const allImages = [];
+          const allMsgAttachments = [];
+
+          const loadDocs = async (type, cibleId) => {
+            if (!cibleId) return;
+            const docs = await fetchJSON(`/api/documents?cible_type=${encodeURIComponent(type)}&cible_id=${cibleId}`);
+            if (Array.isArray(docs)) allDocs.push(...docs);
+            const imgs = await fetchJSON(`/api/images?cible_type=${encodeURIComponent(type)}&cible_id=${cibleId}`);
+            if (Array.isArray(imgs)) allImages.push(...imgs);
+          };
+
+          const loadMessages = async (demandeId) => {
+            if (!demandeId) return;
+            const msgs = await fetchJSON(`/api/conversations/demande-${demandeId}`).catch(()=>null);
+            if (Array.isArray(msgs)) {
+              msgs.forEach(m => { if (Array.isArray(m.attachments)) allMsgAttachments.push(...m.attachments); });
+            }
+          };
+
+          // Par site
+          for (const s of data.sites||[]) {
+            await loadDocs('Site', s.id);
+            // tickets du site
+            const siteRel = await fetchJSON(`/api/sites/${s.id}/relations`).catch(()=>null);
+            if (siteRel?.tickets) {
+              for (const t of siteRel.tickets) {
+                await loadDocs('Ticket', t.id);
+                if (t.demande_id) await loadMessages(t.demande_id);
+              }
+            }
+          }
+          // Par demande directe
+          for (const d of data.demandes||[]) {
+            await loadDocs('DemandeClient', d.id);
+            await loadMessages(d.id);
+          }
+
+          // Rendu documents
+          if (docList) {
+            docList.innerHTML = '';
+            if (!allDocs.length && !allMsgAttachments.length) {
+              docList.innerHTML = '<li class="list-group-item text-muted">Aucun document</li>';
+            } else {
+              allDocs.forEach(doc => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.innerHTML = `<span>${doc.nom_fichier || 'Document #'+doc.id}</span>`;
+                const btn = document.createElement('a');
+                btn.className = 'btn btn-sm btn-outline-primary';
+                btn.textContent = 'Télécharger';
+                btn.href = `/api/documents/${doc.id}/download`;
+                btn.target = '_blank';
+                li.appendChild(btn);
+                docList.appendChild(li);
+              });
+              allMsgAttachments.forEach(att => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                const name = att.file_name || att.file_path || 'Pièce jointe';
+                li.innerHTML = `<span>${name} <span class="badge bg-secondary ms-2">Message</span></span>`;
+                const href = '/' + String(att.file_path||'').replace(/^public\//,'');
+                const btn = document.createElement('a');
+                btn.className = 'btn btn-sm btn-outline-primary';
+                btn.textContent = 'Télécharger';
+                btn.href = href;
+                btn.target = '_blank';
+                li.appendChild(btn);
+                docList.appendChild(li);
+              });
+            }
+          }
+
+          // Rendu images
+          if (imgList) {
+            imgList.innerHTML = '';
+            if (!allImages.length) {
+              imgList.innerHTML = '<div class="text-muted">Aucune image</div>';
+            } else {
+              for (const img of allImages) {
+                const url = await fetchBinaryURL(`/api/images/${img.id}/view`);
+                if (!url) continue;
+                const link = document.createElement('a');
+                link.href = url; link.target = '_blank';
+                const tag = document.createElement('img');
+                tag.src = url; tag.alt = img.nom_fichier; tag.style = 'width:110px;height:110px;object-fit:cover;border-radius:8px;';
+                link.appendChild(tag);
+                imgList.appendChild(link);
+              }
+            }
+          }
+
+          if (msgsInfo) msgsInfo.textContent = allMsgAttachments.length ? `${allMsgAttachments.length} PJ issues des messages` : '';
+        } catch(e) {
+          if (docList) docList.innerHTML = '<li class="list-group-item text-danger">Erreur de chargement du répertoire</li>';
+          if (imgList) imgList.innerHTML = '<div class="text-danger">Erreur</div>';
+        }
       } catch(e) {
         const cc = document.getElementById('clientCard'); if (cc) cc.innerHTML = '<div class="card-body">Erreur: '+(e.message||e)+'</div>';
       }
