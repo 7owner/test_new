@@ -243,9 +243,9 @@
               allMsgAttachments.forEach(att => {
                 const li = document.createElement('li');
                 li.className = 'list-group-item d-flex justify-content-between align-items-center';
-                const name = att.file_name || att.file_path || 'Pièce jointe';
+                const name = att.file_name || 'Pièce jointe';
                 li.innerHTML = `<span>${name} <span class="badge bg-secondary ms-2">Message</span></span>`;
-                const href = '/' + String(att.file_path||'').replace(/^public\//,'');
+                const href = `/api/attachments/${att.id}/view`;
                 const btn = document.createElement('a');
                 btn.className = 'btn btn-sm btn-outline-primary';
                 btn.textContent = 'Télécharger';

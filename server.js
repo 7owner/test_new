@@ -665,19 +665,9 @@ app.post('/api/reset-password', async (req, res) => {
     }
 });
 
-// Multer configuration for attachments
-const attachmentStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const dest = path.join(__dirname, 'public', 'uploads', 'attachments');
-    cb(null, dest);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ storage: attachmentStorage });
+// Use memory storage for all uploads to handle them as buffers
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // Multer config for Rendu d'intervention files
 const renduStorage = multer.memoryStorage(); // Use memory storage to handle files as buffers
@@ -1002,6 +992,23 @@ app.delete('/api/images/:id', authenticateToken, authorizeAdmin, async (req, res
     res.status(204).send();
   } catch (err) {
     console.error('Error deleting image:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Get message attachment bytes
+app.get('/api/attachments/:id/view', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('SELECT file_blob, file_type FROM messagerie_attachment WHERE id = $1', [id]);
+    const row = result.rows[0];
+    if (!row || !row.file_blob) {
+      return res.status(404).json({ error: 'Attachment not found or is empty' });
+    }
+    res.setHeader('Content-Type', row.file_type || 'application/octet-stream');
+    res.end(row.file_blob, 'binary');
+  } catch (err) {
+    console.error(`Error serving attachment ${id}:`, err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -2491,7 +2498,7 @@ app.get('/api/rendus/:id', authenticateToken, async (req, res) => {
                     
                     for (const message of messagesResult.rows) {
                         const attachmentsResult = await pool.query(
-                            'SELECT id, file_path, file_name, file_type FROM messagerie_attachment WHERE message_id = $1',
+                            'SELECT id, file_name, file_type, file_size FROM messagerie_attachment WHERE message_id = $1',
                             [message.id]
                         );
                         attachmentsResult.rows.forEach(att => {
@@ -4127,7 +4134,7 @@ app.get('/api/conversations/:conversation_id', authenticateToken, async (req, re
         );
 
         const messagesWithAttachments = await Promise.all(messages.rows.map(async (message) => {
-            const attachments = await pool.query('SELECT * FROM messagerie_attachment WHERE message_id = $1', [message.id]);
+            const attachments = await pool.query('SELECT id, file_name, file_type, file_size FROM messagerie_attachment WHERE message_id = $1', [message.id]);
             return { ...message, attachments: attachments.rows };
         }));
 
@@ -4185,10 +4192,9 @@ app.post('/api/conversations/:conversation_id/messages', authenticateToken, uplo
 
         if (req.files) {
             for (const file of req.files) {
-                const webPath = path.join('uploads', 'attachments', file.filename).replace(/\\/g, '/');
                 await client.query(
-                    'INSERT INTO messagerie_attachment (message_id, file_path, file_name, file_type, file_size) VALUES ($1, $2, $3, $4, $5)',
-                    [newMessage.id, webPath, file.originalname, file.mimetype, file.size]
+                    'INSERT INTO messagerie_attachment (message_id, file_name, file_type, file_size, file_blob) VALUES ($1, $2, $3, $4, $5)',
+                    [newMessage.id, file.originalname, file.mimetype, file.size, file.buffer]
                 );
             }
         }

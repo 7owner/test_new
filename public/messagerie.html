@@ -160,12 +160,10 @@
         const demandeClientMap = new Map();
         const preselectConversationId = new URLSearchParams(window.location.search).get('conversation');
   
-        function hrefForAttachment(att) {
-          if (!att || !att.file_path) return '#';
-          let path = String(att.file_path).replace(/^public[\\/]/, '');
-          return '/' + path.replace(/^[\\/]+/, '');
-        }
-  
+              function hrefForAttachment(att) {
+                if (!att || !att.id) return '#';
+                return `/api/attachments/${att.id}/view`;
+              }  
         async function fetchJSON(url, opts) {
           const res = await fetch(url, {
             headers: { 'Authorization': 'Bearer ' + token },
