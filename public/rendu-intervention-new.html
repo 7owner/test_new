@@ -32,17 +32,6 @@
       <div class="card-body">
         <form id="rendu-new-form" novalidate>
           <div class="mb-3">
-            <label class="form-label fw-bold">Résumé (Markdown) <span class="text-danger">*</span></label>
-            <textarea id="resume" required></textarea>
-            <div class="text-muted small" id="resume-counter">0 caractères</div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Aperçu du rendu</label>
-            <div id="resume-preview" class="p-3 border rounded bg-light" style="min-height:150px;">
-              <em class="text-muted">L'aperçu apparaîtra ici...</em>
-            </div>
-          </div>
-          <div class="mb-3">
             <label class="form-label fw-bold">Valeur</label>
             <input type="text" class="form-control" id="valeur" placeholder="Ex: 1500€">
           </div>
@@ -54,6 +43,25 @@
           <div class="d-flex justify-content-end gap-2 mb-4 no-print">
             <button type="button" class="btn btn-outline-primary btn-sm" id="build-from-linked"><i class="bi bi-markdown me-1"></i> Générer un brouillon</button>
             <button type="button" class="btn btn-outline-secondary btn-sm" id="add-new-upload"><i class="bi bi-plus-circle me-1"></i> Ajouter un fichier</button>
+          </div>
+
+          <div class="mb-3">
+            <button class="btn btn-outline-dark btn-sm no-print" type="button" data-bs-toggle="collapse" data-bs-target="#resume-block">
+              <i class="bi bi-journal-text me-1"></i>Afficher / éditer le résumé
+            </button>
+          </div>
+          <div class="collapse" id="resume-block">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Résumé (Markdown) <span class="text-danger">*</span></label>
+              <textarea id="resume" required></textarea>
+              <div class="text-muted small" id="resume-counter">0 caractères</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Aperçu du rendu</label>
+              <div id="resume-preview" class="p-3 border rounded bg-light" style="min-height:150px;">
+                <em class="text-muted">L'aperçu apparaîtra ici...</em>
+              </div>
+            </div>
           </div>
 
           <div class="d-flex gap-2">
