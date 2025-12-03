@@ -257,7 +257,7 @@
             <div class="mb-3">
               <div class="d-flex justify-content-between align-items-center">
                 <label class="form-label mb-0">Source</label>
-                <button type="button" class="btn btn-sm btn-outline-primary" id="open-source-modal"><i class="bi bi-folder2-open me-1"></i>Voir les sources</button>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="open-source-modal" data-bs-toggle="modal" data-bs-target="#sourcesModal"><i class="bi bi-folder2-open me-1"></i>Voir les sources</button>
               </div>
               <div id="edit-source-info" class="d-flex flex-wrap gap-2 mt-2"></div>
             </div>
@@ -369,12 +369,18 @@
     let currentEditIndex = -1;
     let editModal = null;
     let resumeEditor = null;
+    let sourcesModal = null; // modal instance lazily created
 
     const grid = document.getElementById('attachments-grid');
     const countBadge = document.getElementById('attachments-count');
     const filterSearch = document.getElementById('filter-search');
     const filterSource = document.getElementById('filter-source');
     const filterKind = document.getElementById('filter-kind');
+    const sourceSearch = document.getElementById('source-search');
+    const sourceFilter = document.getElementById('source-filter');
+    const sourceKind = document.getElementById('source-kind');
+    const sourcesList = document.getElementById('sources-list');
+    const sourcesEmpty = document.getElementById('sources-empty');
 
     // Initialisation de l'éditeur Markdown dans le modal
     const initResumeEditor = () => {
@@ -521,6 +527,80 @@
       attachments.push(newAtt);
       refreshGrid();
       openEditModal(attachments.length - 1);
+    };
+
+    // Rendu des sources (modal)
+    const renderSources = () => {
+      if (!sourcesList) return;
+      sourcesList.innerHTML = '';
+      const term = (sourceSearch?.value || '').toLowerCase();
+      const src = sourceFilter?.value || '';
+      const kind = sourceKind?.value || '';
+
+      const filtered = attachments.filter(att => {
+        const txt = `${att.nom_fichier||''} ${att.commentaire_image||''} ${att.note||''}`.toLowerCase();
+        const matchTerm = !term || txt.includes(term);
+        const matchSrc = !src || att.type === src;
+        const matchKind = !kind || att.kind === kind;
+        return matchTerm && matchSrc && matchKind;
+      });
+
+      if (!filtered.length) {
+        sourcesEmpty?.classList.remove('d-none');
+        return;
+      }
+      sourcesEmpty?.classList.add('d-none');
+
+      filtered.forEach((att, idx) => {
+        const col = document.createElement('div');
+        col.className = 'col-12 col-md-6';
+        const color = (att.type==='Ticket' && 'primary') || (att.type==='Site' && 'success') || (att.type==='DemandeClient' && 'warning') || (att.type==='Intervention' && 'info') || 'secondary';
+        const kindLabel = att.kind === 'image' ? 'PJ' : 'Doc';
+        col.innerHTML = `
+          <div class="border rounded p-2 h-100 d-flex gap-2 align-items-start">
+            <div class="flex-shrink-0">
+              ${att.kind === 'image' 
+                ? `<img src="${att.url||att.previewUrl||''}" style="width:70px;height:70px;object-fit:cover;border-radius:8px;">`
+                : `<div class="d-flex align-items-center justify-content-center" style="width:70px;height:70px;border-radius:8px;border:1px solid #e5e7eb;"><i class="bi bi-file-earmark-text"></i></div>`}
+            </div>
+            <div class="flex-grow-1">
+              <div class="fw-semibold">${att.nom_fichier||'Fichier'}</div>
+              <div class="text-muted small">${att.commentaire_image||''}</div>
+              <div class="d-flex flex-wrap gap-1 mt-1">
+                <span class="badge bg-${color}">${att.type||'Upload'}</span>
+                <span class="badge bg-dark">${kindLabel}</span>
+                ${att.cible_id ? `<span class="badge bg-light text-dark">#${att.cible_id}</span>` : ''}
+              </div>
+            </div>
+            <div>
+              <button class="btn btn-sm btn-outline-primary source-select" data-idx="${idx}"><i class="bi bi-check-lg"></i></button>
+            </div>
+          </div>
+        `;
+        sourcesList.appendChild(col);
+      });
+
+      sourcesList.querySelectorAll('.source-select').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.getAttribute('data-idx'), 10);
+          const att = filtered[idx];
+          if (currentEditIndex >= 0 && attachments[currentEditIndex]) {
+            const target = attachments[currentEditIndex];
+            target.nom_fichier = att.nom_fichier;
+            target.commentaire_image = att.commentaire_image;
+            target.note = att.note;
+            target.type = att.type;
+            target.kind = att.kind;
+            target.url = att.url;
+            target.cible_id = att.cible_id;
+            target.isNew = false;
+            target.file = null;
+            refreshGrid();
+            openEditModal(currentEditIndex);
+          }
+          sourcesModal?.hide();
+        });
+      });
     };
 
     // Ouvrir le modal d'édition
@@ -685,6 +765,7 @@
       }
 
       refreshGrid();
+      renderSources();
     };
 
     // Soumettre le formulaire
@@ -754,6 +835,24 @@
     [filterSearch, filterSource, filterKind].forEach(el => {
       el?.addEventListener('input', refreshGrid);
       el?.addEventListener('change', refreshGrid);
+    });
+
+    // Sources modal
+    document.getElementById('open-source-modal')?.addEventListener('click', () => {
+      if (!sourcesModal) {
+        const el = document.getElementById('sourcesModal');
+        if (el) {
+          sourcesModal = bootstrap.Modal.getOrCreateInstance(el);
+          el.addEventListener('show.bs.modal', renderSources);
+        }
+      }
+      renderSources();
+      sourcesModal?.show();
+    });
+    ['input','change'].forEach(evt => {
+      sourceSearch?.addEventListener(evt, renderSources);
+      sourceFilter?.addEventListener(evt, renderSources);
+      sourceKind?.addEventListener(evt, renderSources);
     });
   });
   </script>
