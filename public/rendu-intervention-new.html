@@ -730,10 +730,11 @@
       if (rel?.demande && !demandeId) demandeId = rel.demande.id || rel.demande.demande_id;
       if (rel?.site) siteId = siteId || rel.site.id || rel.site.site_id;
 
-      // Si on n'a toujours pas la demande, tenter de la récupérer via le ticket
-      if (!demandeId && ticketId) {
+      // Si on n'a toujours pas la demande/site, tenter de la récupérer via le ticket
+      if ((!demandeId || !siteId) && ticketId) {
         const ticketData = await fetchJSON(`/api/tickets/${ticketId}`);
-        if (ticketData?.demande_id) demandeId = ticketData.demande_id;
+        if (ticketData?.demande_id && !demandeId) demandeId = ticketData.demande_id;
+        if (ticketData?.site_id && !siteId) siteId = ticketData.site_id;
       }
 
       // Charger images et documents
