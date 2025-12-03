@@ -316,24 +316,29 @@
         <div class="modal-body">
           <div class="row g-2 mb-3">
             <div class="col-md-4">
+              <label class="form-label small mb-1" for="source-search">Filtrer</label>
               <input type="text" class="form-control form-control-sm" id="source-search" placeholder="Rechercher...">
             </div>
             <div class="col-md-4">
+              <label class="form-label small mb-1" for="source-filter">Source</label>
               <select class="form-select form-select-sm" id="source-filter">
                 <option value="">Toutes les sources</option>
                 <option value="Ticket">Ticket</option>
                 <option value="Site">Site</option>
                 <option value="DemandeClient">Demande client</option>
+                <option value="Message">Pièces jointes des messages</option>
                 <option value="Intervention">Intervention</option>
                 <option value="Upload">Upload/Nouveau</option>
                 <option value="Exemple">Exemple</option>
               </select>
             </div>
             <div class="col-md-4">
+              <label class="form-label small mb-1" for="source-kind">Type de fichier</label>
               <select class="form-select form-select-sm" id="source-kind">
-                <option value="">Images et documents</option>
+                <option value="">Images, documents, PJ messages</option>
                 <option value="image">Images</option>
                 <option value="doc">Documents</option>
+                <option value="message">Pièces jointes par message</option>
               </select>
             </div>
           </div>
@@ -545,7 +550,8 @@
         const txt = `${att.nom_fichier||''} ${att.commentaire_image||''} ${att.note||''}`.toLowerCase();
         const matchTerm = !term || txt.includes(term);
         const matchSrc = !src || att.type === src;
-        const matchKind = !kind || att.kind === kind;
+        const matchKind = !kind 
+          || (kind === 'message' ? att.type === 'Message' : att.kind === kind);
         return matchTerm && matchSrc && matchKind;
       });
 
@@ -558,7 +564,12 @@
       filtered.forEach((att, idx) => {
         const col = document.createElement('div');
         col.className = 'col-12 col-md-6';
-        const color = (att.type==='Ticket' && 'primary') || (att.type==='Site' && 'success') || (att.type==='DemandeClient' && 'warning') || (att.type==='Intervention' && 'info') || 'secondary';
+        const color = (att.type==='Ticket' && 'primary')
+          || (att.type==='Site' && 'success')
+          || (att.type==='DemandeClient' && 'warning')
+          || (att.type==='Message' && 'secondary')
+          || (att.type==='Intervention' && 'info')
+          || 'secondary';
         const kindLabel = att.kind === 'image' ? 'PJ' : 'Doc';
         col.innerHTML = `
           <div class="border rounded p-2 h-100 d-flex gap-2 align-items-start">
@@ -639,7 +650,7 @@
       const sourceInfo = document.getElementById('edit-source-info');
       const typeLabel = att.type || 'Upload';
       const kindLabel = att.kind === 'image' ? 'PJ' : 'Doc';
-      const map = { Ticket:'primary', Site:'success', DemandeClient:'warning', Intervention:'info', Exemple:'secondary', Upload:'secondary', Nouveau:'primary' };
+      const map = { Ticket:'primary', Site:'success', DemandeClient:'warning', Message:'secondary', Intervention:'info', Exemple:'secondary', Upload:'secondary', Nouveau:'primary' };
       const color = map[typeLabel] || 'secondary';
       sourceInfo.innerHTML = `
         <span class="badge bg-${color}">${typeLabel}</span>
@@ -752,7 +763,7 @@
             const kind = (mime && mime.startsWith('image/')) || /\.(png|jpe?g|gif|webp)$/i.test(lower) ? 'image' : 'doc';
             attachments.push({
               id: att.id || `conv-${demandeId}-${name}`,
-              type: 'DemandeClient',
+              type: 'Message',
               cible_id: demandeId,
               nom_fichier: name,
               commentaire_image: att.commentaire || m.message || '',
