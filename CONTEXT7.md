@@ -21,6 +21,19 @@ Cette session a été axée sur la refactorisation, la correction de bugs remont
 
 ## Nouvelles fonctionnalités et corrections
 
+*   **Gestion des pièces jointes / rendus d’intervention (front)** :
+    *   `rendu-intervention-view.html` : ajout d’une modale d’édition (EasyMDE) pour mettre à jour valeur et résumé d’un rendu, envoi PATCH `/api/rendus/{id}` ; affichage du résumé Markdown et des notes sous chaque carte si présentes ; section Messages affichée pour les PJ des messages.
+    *   `rendu-intervention-new.html` (déjà stylé) : agrégation des pièces des messages de la demande via `/api/conversations/demande-{id}` en plus des images/documents Ticket/Site/Intervention/Demande.
+*   **Satisfaction client (dashboard client)** :
+    *   Ajout d’une cloche de notifications des tickets terminés ; badge décrémente après envoi de satisfaction.
+    *   Formulaire de satisfaction (étoiles + commentaire) dans l’historique ; POST `/api/tickets/{id}/satisfaction`, puis la fiche affiche la réponse.
+*   **Sites (vue/édition)** :
+    *   `site-view.html` : bandeau simplifié (nom du site + client/contact), badge statut caché si absent ; suppression des infos Date début/fin et compteur ; adresse affichée en texte.
+    *   `site-edit.html` : sélection d’adresse revue. Boutons « Choisir / gérer les adresses » (iframe `adresses.html`) + « Sélectionner une adresse existante » (liste rapide). Réception `postMessage` depuis l’iframe pour définir l’adresse sélectionnée ; footer du modal d’adresses épuré.
+    *   Correction de l’erreur « cannot set checked » (suppression de l’ancien switch ticket).
+*   **Gestion des adresses (standalone)** :
+    *   `adresses.html` + `js/adresses.js` : chaque carte dispose d’un bouton “sélectionner” qui envoie `{type:'adresse-select', adresse}` au parent (postMessage). Éditer/supprimer conservés. Pagination et recherche inchangées.
+
 *   **Gestion des fichiers** :
     *   **Upload pour DOE**: La fonctionnalité "Ajouter une image" sur la page `doe-view.html` est maintenant implémentée via une modale, permettant l'envoi d'images en base64.
     *   **Upload pour Interventions**: La fonctionnalité "Ajouter un document" a été ajoutée à `intervention-view.html`, également via une modale.
