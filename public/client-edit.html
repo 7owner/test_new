@@ -116,7 +116,7 @@
       const clientId = params.get('id');
       const isNew = !clientId;
 
-      const h1Title = document.getElementById('title');
+     // const h1Title = document.getElementById('title');
       const clientNomInput = document.getElementById('nom_client');
       const commentaireTextarea = document.getElementById('commentaire');
       const mainForm = document.getElementById('form');
@@ -130,13 +130,6 @@
       const editRepFeedback = document.getElementById('edit-rep-feedback');
       const saveRepBtn = document.getElementById('save-rep-btn');
       let allRepresentants = [];
-
-      h1Title.textContent = isNew ? 'Créer un client' : `Modifier Client #${clientId}`;
-      if(isNew) {
-          representantsSection.style.display = 'none';
-      } else {
-          representantsSection.style.display = '';
-      }
 
       async function api(url, opts = {}) {
         const r = await fetch(url, { headers, ...opts });
