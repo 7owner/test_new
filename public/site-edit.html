@@ -73,10 +73,7 @@
               <option value="Inactif">Inactif</option>
             </select>
           </div>
-          <!--<div class="mb-3 form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="ticket">
-            <label class="form-check-label" for="ticket">Ticket Ouvert</label>
-          </div>-->
+          
           <div class="mb-3">
             <label for="commentaire" class="form-label">Commentaire</label>
             <textarea class="form-control" id="commentaire" rows="4"></textarea>
@@ -229,7 +226,6 @@
           client_id: document.getElementById('client_id').value || null,
           commentaire: document.getElementById('commentaire').value,
           statut: document.getElementById('statut').value,
-        //  ticket: document.getElementById('ticket').checked,
           responsable_matricule: document.getElementById('responsable_matricule').value || null,
         };
 
