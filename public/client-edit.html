@@ -38,6 +38,31 @@
             <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#representantModal"><i class="bi bi-person-plus me-1"></i> Gérer les représentants</button>
         </div>
         <ul id="representants-list" class="list-group list-group-flush"></ul>
+        <div class="card-body border-top">
+          <h6 class="mb-3">Ajouter un nouveau représentant</h6>
+          <form id="quickRepForm" class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label">Email *</label>
+              <input type="email" class="form-control" id="quick-rep-email" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Mot de passe *</label>
+              <input type="password" class="form-control" id="quick-rep-password" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Nom</label>
+              <input type="text" class="form-control" id="quick-rep-nom">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Téléphone</label>
+              <input type="tel" class="form-control" id="quick-rep-tel">
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-outline-primary"><i class="bi bi-person-plus me-1"></i>Créer et lier</button>
+              <div id="quick-rep-message" class="mt-2 small"></div>
+            </div>
+          </form>
+        </div>
     </div>
   </main>
 
@@ -102,6 +127,8 @@
         const mainForm = document.getElementById('form');
         const representantsSection = document.getElementById('representants-section');
         const representantsList = document.getElementById('representants-list');
+        const quickRepForm = document.getElementById('quickRepForm');
+        const quickRepMessage = document.getElementById('quick-rep-message');
         const userSearchInput = document.getElementById('user-search');
         const userSearchResults = document.getElementById('user-search-results');
         const createUserForm = document.getElementById('createUserForm');
@@ -243,6 +270,32 @@
             } catch (e) {
                 alert(`Erreur: ${e.message}`);
             }
+        });
+
+        quickRepForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          if (isNew) {
+            quickRepMessage.className = 'text-warning';
+            quickRepMessage.textContent = 'Créez d’abord le client.';
+            return;
+          }
+          quickRepMessage.textContent = '';
+          const body = {
+            email: document.getElementById('quick-rep-email').value,
+            password: document.getElementById('quick-rep-password').value,
+            nom: document.getElementById('quick-rep-nom').value,
+            tel: document.getElementById('quick-rep-tel').value
+          };
+          try {
+            await api(`/api/clients/${clientId}/representant`, { method: 'POST', body: JSON.stringify(body) });
+            quickRepMessage.className = 'text-success';
+            quickRepMessage.textContent = 'Représentant créé et lié.';
+            quickRepForm.reset();
+            await loadRepresentatives();
+          } catch (err) {
+            quickRepMessage.className = 'text-danger';
+            quickRepMessage.textContent = err.message || 'Erreur lors de l’ajout du représentant.';
+          }
         });
 
         if (!isNew) {
