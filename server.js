@@ -2315,6 +2315,46 @@ app.post('/api/tickets/:id/take', authenticateToken, authorizeAdmin, async (req,
   }
 });
 
+app.post('/api/tickets/:id/satisfaction', authenticateToken, async (req, res) => {
+    const { id: ticketId } = req.params;
+    const { note, commentaire } = req.body;
+    const userId = req.user.id;
+
+    // Basic validation
+    const rating = Number(note);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: 'Rating must be an integer between 1 and 5.' });
+    }
+
+    try {
+        // Authorization check: ensure the user is the client for this ticket
+        const authQuery = `
+            SELECT 1 FROM client c
+            JOIN ticket t ON c.user_id = $2
+            WHERE t.id = $1 AND (
+                t.site_id IN (SELECT id FROM site WHERE client_id = c.id)
+                OR
+                t.demande_id IN (SELECT id FROM demande_client WHERE client_id = c.id)
+            )
+        `;
+        const authCheck = await pool.query(authQuery, [ticketId, userId]);
+
+        if (authCheck.rows.length === 0) {
+            return res.status(403).json({ error: 'Forbidden: You are not the client for this ticket.' });
+        }
+        
+        const result = await pool.query(
+            'INSERT INTO ticket_satisfaction (ticket_id, user_id, rating, comment) VALUES ($1, $2, $3, $4) ON CONFLICT (ticket_id) DO UPDATE SET rating = EXCLUDED.rating, comment = EXCLUDED.comment, created_at = CURRENT_TIMESTAMP RETURNING *',
+            [ticketId, userId, rating, commentaire]
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error(`Error submitting satisfaction for ticket ${ticketId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // API Routes for Interventions (CRUD)
 app.get('/api/interventions', authenticateToken, async (req, res) => {
     try {
