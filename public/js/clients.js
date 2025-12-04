@@ -1,15 +1,39 @@
 document.addEventListener('DOMContentLoaded', () => {
   const token = localStorage.getItem('token');
   const list = document.getElementById('clientList');
+  const searchInput = document.getElementById('client-search');
   let isAdmin = false;
-  try { if (token) { const p = JSON.parse(atob(token.split('.')[1])); const roles = Array.isArray(p && p.roles) ? p.roles : []; isAdmin = roles.includes('ROLE_ADMIN'); } } catch(_) {}
+  let allClients = [];
+
+  try { 
+    if (token) { 
+      const p = JSON.parse(atob(token.split('.')[1])); 
+      const roles = Array.isArray(p && p.roles) ? p.roles : []; 
+      isAdmin = roles.includes('ROLE_ADMIN'); 
+    } 
+  } catch(_) {}
 
   async function fetchJSON(url, opts) {
-    const res = await fetch(url, Object.assign({ headers: { 'Content-Type': 'application/json', 'Authorization': token ? ('Bearer ' + token) : undefined } }, opts || {}));
+    const res = await fetch(url, { 
+      headers: { 'Content-Type': 'application/json', 'Authorization': token ? ('Bearer ' + token) : undefined }, 
+      ...opts 
+    });
     const ct = res.headers.get('content-type') || '';
     const body = ct.includes('application/json') ? await res.json() : null;
     if (!res.ok) throw new Error((body && body.error) || res.statusText);
     return body;
+  }
+
+  function renderList(clients) {
+    list.innerHTML = '';
+    const row = document.createElement('div');
+    row.className = 'row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4';
+    if (clients.length === 0) {
+      list.innerHTML = '<div class="alert alert-info">Aucun client ne correspond à votre recherche.</div>';
+      return;
+    }
+    clients.forEach(c => row.appendChild(clientCard(c)));
+    list.appendChild(row);
   }
 
   function clientCard(c) {
@@ -28,18 +52,26 @@ document.addEventListener('DOMContentLoaded', () => {
         ${isAdmin ? `<button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editClientModal" data-id="${c.id}"><i class="bi bi-pencil"></i> Modifier</button> <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${c.id}"><i class="bi bi-trash"></i> Supprimer</button>` : ``}
       </div>
     `;
-    col.appendChild(card);
     return col;
+  }
+  
+  function applyFilters() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const filteredClients = allClients.filter(client => {
+        const name = client.nom_client || '';
+        const repName = client.representant_nom || '';
+        const repEmail = client.representant_email || '';
+        return name.toLowerCase().includes(searchTerm) || 
+               repName.toLowerCase().includes(searchTerm) || 
+               repEmail.toLowerCase().includes(searchTerm);
+    });
+    renderList(filteredClients);
   }
 
   async function loadClients() {
     try {
-      const data = await fetchJSON('/api/clients');
-      list.innerHTML = '';
-      const row = document.createElement('div');
-      row.className = 'row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4';
-      data.forEach(c => row.appendChild(clientCard(c)));
-      list.appendChild(row);
+      allClients = await fetchJSON('/api/clients');
+      applyFilters();
     } catch (e) {
       console.error('clients load:', e);
       list.innerHTML = '<div class="alert alert-danger">Impossible de charger les clients.</div>';
@@ -55,9 +87,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!confirm('Supprimer ce client ?')) return;
       try {
         await fetchJSON('/api/clients/' + id, { method: 'DELETE' });
-        await loadClients();
+        await loadClients(); // Reload all clients after deletion
       } catch (e) { alert((e && e.message) || 'Suppression impossible'); }
     });
+    
+    searchInput.addEventListener('input', applyFilters);
+
     loadClients();
   }
 
@@ -68,12 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const editClientFrame = document.getElementById('editClientFrame');
 
   if (createClientModal) {
-    createClientModal.addEventListener('show.bs.modal', function (event) {
-      const createClientFrame = createClientModal.querySelector('iframe');
-      if (createClientFrame) {
-        createClientFrame.src = '/client-new.html';
-      }
-    });
+    createClientModal.addEventListener('hidden.bs.modal', loadClients);
   }
 
   if (viewClientModal) {
@@ -90,6 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const clientId = button.getAttribute('data-id');
       editClientFrame.src = `/client-edit.html?id=${clientId}`;
     });
+    editClientModal.addEventListener('hidden.bs.modal', loadClients);
   }
 });
-
