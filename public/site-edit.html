@@ -47,17 +47,15 @@
             </div>
           </div>
           <div class="row">
-            <div class="col-md-8 mb-3">
-              <label for="adresse_id" class="form-label">Adresse (sélection)</label>
-              <select class="form-select" id="adresse_id"></select>
-            </div>
-            <div class="col-md-4 mb-3">
-              <label for="adresse_edit_btn" class="form-label">Modifier l’adresse</label>
-              <div class="d-grid">
-                <a href="adresses.html" class="btn btn-outline-primary btn-sm" id="adresse_edit_btn">
-                  <i class="bi bi-geo-alt me-1"></i> Ouvrir gestion des adresses
-                </a>
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Adresse</label>
+              <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span id="adresse_label" class="fw-semibold text-primary">Aucune adresse sélectionnée</span>
+                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#adresseModal">
+                  <i class="bi bi-geo-alt me-1"></i> Choisir / gérer les adresses
+                </button>
               </div>
+              <input type="hidden" id="adresse_id">
             </div>
           </div>
           <div class="mb-3">
@@ -91,6 +89,25 @@
     </div>
   </main>
 
+  <!-- Modal sélection adresse -->
+  <div class="modal fade" id="adresseModal" tabindex="-1" aria-labelledby="adresseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="adresseModalLabel">Gestion des adresses</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="adresseFrame" src="adresses.html" style="width:100%;height:75vh;border:none;"></iframe>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+          <button type="button" class="btn btn-primary" id="refresh-adresse-btn">Rafraîchir l'adresse sélectionnée</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async function() {
@@ -102,7 +119,8 @@
       const isAdmin = (() => { try { const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
 
       const responsableSelect = document.getElementById('responsable_matricule');
-      const adresseSelect = document.getElementById('adresse_id');
+      const adresseHidden = document.getElementById('adresse_id');
+      const adresseLabel = document.getElementById('adresse_label');
 
       async function buildHeaders(json = false) {
         const h = json ? { 'Content-Type': 'application/json' } : {};
@@ -121,10 +139,9 @@
       async function loadRelatedData() {
         try {
           const headers = await buildHeaders(false);
-          const [agentsRes, adressesRes, clientsRes] = await Promise.all([ // Add clientsRes
+          const [agentsRes, clientsRes] = await Promise.all([
             fetch('/api/agents', { headers, credentials: 'same-origin' }),
-            fetch('/api/adresses', { headers, credentials: 'same-origin' }),
-            fetch('/api/clients', { headers, credentials: 'same-origin' }) // Fetch clients
+            fetch('/api/clients', { headers, credentials: 'same-origin' })
           ]);
 
           if (agentsRes.ok) {
@@ -133,12 +150,6 @@
             (Array.isArray(agents)? agents: []).forEach(a => responsableSelect.add(new Option(`${a.nom} ${a.prenom} (${a.matricule})`, a.matricule)));
           }
 
-          if (adressesRes.ok) {
-            const adresses = await adressesRes.json();
-            adresseSelect.innerHTML = '<option value="">Aucune adresse</option>';
-            (Array.isArray(adresses)? adresses: []).forEach(a => adresseSelect.add(new Option(a.libelle || `Adresse #${a.id}`, a.id)));
-          }
-          
           // Populate clients dropdown
           if (clientsRes.ok) {
             const clients = await clientsRes.json();
@@ -170,7 +181,8 @@
           const site = await response.json();
 
           document.getElementById('nom_site').value = site.nom_site || '';
-          document.getElementById('adresse_id').value = site.adresse_id || '';
+          adresseHidden.value = site.adresse_id || '';
+          adresseLabel.textContent = site.adresse_label || site.adresse_nom || `Adresse #${site.adresse_id||''}` || 'Aucune adresse sélectionnée';
           document.getElementById('client_id').value = site.client_id || '';
           document.getElementById('commentaire').value = site.commentaire || '';
           document.getElementById('statut').value = site.statut || 'Actif';
@@ -196,7 +208,7 @@
 
         const payload = {
           nom_site: document.getElementById('nom_site').value,
-          adresse_id: document.getElementById('adresse_id').value || null,
+          adresse_id: adresseHidden.value || null,
           client_id: document.getElementById('client_id').value || null,
           commentaire: document.getElementById('commentaire').value,
           statut: document.getElementById('statut').value,
@@ -234,6 +246,27 @@
 
       const backBtn = document.getElementById('back-btn');
       if (backBtn) backBtn.addEventListener('click', () => window.history.back());
+
+      // Rafraîchir l'adresse après fermeture du modal
+      const refreshBtn = document.getElementById('refresh-adresse-btn');
+      refreshBtn?.addEventListener('click', async () => {
+        const headers = await buildHeaders(false);
+        try {
+          // On recharge la liste des adresses et on prend la dernière créée (option simple)
+          const res = await fetch('/api/adresses', { headers, credentials: 'same-origin' });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const list = await res.json();
+          if (Array.isArray(list) && list.length) {
+            const last = list[list.length - 1];
+            adresseHidden.value = last.id;
+            adresseLabel.textContent = last.libelle || last.ligne1 || `Adresse #${last.id}`;
+          }
+          bootstrap.Modal.getInstance(document.getElementById('adresseModal'))?.hide();
+        } catch (err) {
+          alert("Impossible de récupérer l'adresse. Recharge la page ou sélectionne manuellement dans adresses.html.");
+          console.error(err);
+        }
+      });
     });
   </script>
 </body>
