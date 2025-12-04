@@ -1498,9 +1498,12 @@ app.get('/api/sites/:id', authenticateToken, async (req, res) => {
   }
 });
 app.post('/api/sites', authenticateToken, authorizeAdmin, async (req, res) => {
-  const { nom_site, adresse_id, commentaire } = req.body;
+  const { nom_site, adresse_id, commentaire, client_id } = req.body; // Add client_id
   try {
-    const result = await pool.query('INSERT INTO site (nom_site, adresse_id, commentaire) VALUES ($1,$2,$3) RETURNING *', [nom_site, adresse_id || null, commentaire || null]);
+    const result = await pool.query(
+      'INSERT INTO site (nom_site, adresse_id, commentaire, client_id) VALUES ($1,$2,$3,$4) RETURNING *', // Add client_id to INSERT
+      [nom_site, adresse_id || null, commentaire || null, client_id || null] // Add client_id value
+    );
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error creating site:', err);
@@ -2098,7 +2101,7 @@ app.delete('/api/clients/:id', authenticateToken, async (req, res) => {
 // API Routes for Sites (CRUD)
 app.get('/api/sites', authenticateToken, async (req, res) => {
     try {
-        const result = await pool.query('SELECT site.*, adresse.libelle as adresse_libelle FROM site LEFT JOIN adresse ON site.adresse_id = adresse.id ORDER BY site.nom_site ASC');
+        const result = await pool.query('SELECT s.*, a.libelle as adresse_libelle, c.nom_client as client_nom FROM site s LEFT JOIN adresse a ON s.adresse_id = a.id LEFT JOIN client c ON s.client_id = c.id ORDER BY s.nom_site ASC');
         res.json(result.rows);
     } catch (err) {
         console.error('Error fetching sites:', err);
@@ -2106,23 +2109,11 @@ app.get('/api/sites', authenticateToken, async (req, res) => {
     }
 });
 
-app.post('/api/sites', authenticateToken, async (req, res) => {
-    const { nom_site, adresse_id } = req.body;
-    try {
-        const result = await pool.query(
-            'INSERT INTO site (nom_site, adresse_id) VALUES ($1, $2) RETURNING *',
-            [nom_site, adresse_id]
-        );
-        res.status(201).json(result.rows[0]);
-    } catch (err) {
-        console.error('Error creating site:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
+
 
 app.put('/api/sites/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
-    const { nom_site, adresse_id, commentaire, ticket, responsable_matricule, statut } = req.body;
+    const { nom_site, adresse_id, commentaire, ticket, responsable_matricule, statut, client_id } = req.body; // Add client_id
 
     if (!nom_site || typeof nom_site !== 'string' || nom_site.trim() === '') {
         return res.status(400).json({ error: 'Le champ nom_site est obligatoire.' });
@@ -2130,8 +2121,8 @@ app.put('/api/sites/:id', authenticateToken, async (req, res) => {
 
     try {
         const result = await pool.query(
-            'UPDATE site SET nom_site = $1, adresse_id = $2, commentaire = $3, ticket = $4, responsable_matricule = $5, statut = $6 WHERE id = $7 RETURNING *',
-            [nom_site, adresse_id, commentaire, ticket, responsable_matricule, statut, id]
+            'UPDATE site SET nom_site = $1, adresse_id = $2, commentaire = $3, ticket = $4, responsable_matricule = $5, statut = $6, client_id = COALESCE($7, client_id) WHERE id = $8 RETURNING *', // Add client_id to UPDATE, use COALESCE
+            [nom_site, adresse_id, commentaire, ticket, responsable_matricule, statut, client_id || null, id] // Add client_id value
         );
         if (result.rows.length > 0) {
             res.json(result.rows[0]);
