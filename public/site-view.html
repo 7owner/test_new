@@ -95,61 +95,97 @@
       const qp = new URLSearchParams(location.search);
       const siteId = qp.get('id');
       const token = localStorage.getItem('token');
-      const headers = token? { 'Authorization': `Bearer ${token}` } : {};
-      const isAdmin = (()=>{ try{ const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles)&&p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      
+      const set = (id, val, isHtml = false) => { 
+        const el = document.getElementById(id); 
+        if(el) {
+          if (isHtml) el.innerHTML = val || '—';
+          else el.textContent = val || '—';
+        }
+      };
+
+      if (!siteId) {
+        set('site-name', 'Erreur');
+        set('tickets-list', '<div class="alert alert-danger">ID du site manquant.</div>', true);
+        return;
+      }
+
+      // Add back and edit buttons dynamically
+      const headerContainer = document.querySelector('.d-flex.justify-content-between.align-items-center');
+      if(headerContainer) {
+        headerContainer.innerHTML = `
+          <h1 class="h4 mb-0" id="header-site-name">Chargement...</h1>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
+            <a href="site-edit.html?id=${siteId}" class="btn btn-primary btn-sm" id="edit-site-btn"><i class="bi bi-pencil me-2"></i>Modifier</a>
+          </div>
+        `;
+        document.getElementById('back-btn').addEventListener('click', () => window.history.back());
+      }
+
+
       try {
-        const r = await fetch(`/api/sites/${siteId}/relations`, { headers, credentials:'same-origin' });
-        const data = await r.json(); if (!r.ok) throw new Error(data && data.error || `HTTP ${r.status}`);
-        const s = data.site || {};
-        document.getElementById('site-name').textContent = s.nom_site || '';
-        const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v||''; };
-        set('view_nom_site', s.nom_site);
-        set('view_client', s.client_nom || s.client_name || '—');
-        set('view_commentaire', s.commentaire);
-        // Adresse lisible
-        const adr = s.adresse_nom || s.adresse_complete || s.adresse || '';
-        set('view_adresse', adr || '—');
-        // Contact info dans la sous-titre
-        const contactInfo = s.contact_nom || s.contact_tel || '';
-        set('view_contact', contactInfo ? `${s.contact_nom || ''} ${s.contact_tel || ''}`.trim() : '—');
-        // Contact : site.contact_* ou premier responsable
-        const contact = s.contact_nom ? `${s.contact_nom} ${s.contact_tel||''}` : (data.responsables && data.responsables[0] ? `${data.responsables[0].agent_matricule || ''}` : '—');
-        set('view_contact', contact);
-
-        const tickets = Array.isArray(data.tickets) ? data.tickets : [];
-        const tl = document.getElementById('tickets-list');
-        const statusClass = (etat) => {
-          const e = (etat||'').toLowerCase();
-          if (e.includes('attente')) return 'text-success';
-          if (e.includes('cours')) return 'text-warning';
-          if (e.includes('term')) return 'text-danger';
-          return 'text-muted';
-        };
-        tl.innerHTML='';
-        tickets.forEach(t=>{
-          const el=document.createElement('div');
-          const dateStr = t.date_debut ? new Date(t.date_debut).toLocaleDateString() : (t.date_fin ? new Date(t.date_fin).toLocaleDateString() : '');
-          const etat = (t.etat||t.statut||'').toLowerCase();
-          const badgeClass = etat.includes('attente') ? 'status-attente' : etat.includes('cours') ? 'status-cours' : etat.includes('term') ? 'status-termine' : '';
-          el.className='ticket-item';
-          el.innerHTML=`<div class="d-flex justify-content-between align-items-start">
-            <div>
-              <a class="fw-semibold" href="ticket-view.html?id=${t.id}">#${t.id} — ${t.titre||''}</a>
-              <div class="small text-muted">${t.description||''}</div>
-            </div>
-            <div class="text-end">
-              <div class="status-pill ${badgeClass}">${(t.etat||t.statut||'').replace('_',' ')||'—'}</div>
-              <div class="small text-muted mt-1">${dateStr||''}</div>
-            </div>
-          </div>`;
-          tl.appendChild(el);
+        const data = await fetch(`/api/sites/${siteId}/relations`, { headers, credentials:'same-origin' }).then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
         });
-        if (!tl.innerHTML) tl.innerHTML='<span class="text-muted">Aucun ticket.</span>';
 
-      } catch(e) { console.error('site relations load failed:', e); }
+        const { site, adresse, tickets = [] } = data;
 
-      const backBtn = document.getElementById('back-btn');
-      if (backBtn) backBtn.addEventListener('click', () => window.history.back());
+        // --- Populate Site & Client Info ---
+        set('site-name', site.nom_site);
+        set('header-site-name', site.nom_site); // Also update header
+        set('view_client', site.nom_client || 'Non assigné');
+        const contact = `${site.representant_nom || ''} ${site.representant_tel || ''}`.trim();
+        set('view_contact', contact || 'Non spécifié');
+        set('view_commentaire', site.commentaire || 'Aucun commentaire.');
+
+        // --- Populate Address ---
+        if (adresse) {
+            const adr = [
+                adresse.ligne1,
+                adresse.ligne2,
+                `${adresse.code_postal||''} ${adresse.ville||''}`,
+                adresse.pays
+            ].filter(Boolean).join('<br>');
+            set('view_adresse', adr, true);
+        }
+
+        // --- Populate Tickets ---
+        set('tickets-count', `${tickets.length} ticket(s)`);
+        const ticketsList = document.getElementById('tickets-list');
+        ticketsList.innerHTML = '';
+        if (tickets.length === 0) {
+            ticketsList.innerHTML = '<div class="text-muted">Aucun ticket associé à ce site.</div>';
+        } else {
+            tickets.forEach(t => {
+                const el = document.createElement('div');
+                const dateStr = t.date_debut ? new Date(t.date_debut).toLocaleDateString() : '';
+                const etat = (t.etat || '').toLowerCase();
+                const badgeClass = etat.includes('termin') ? 'status-termine' : etat.includes('cours') ? 'status-cours' : 'status-attente';
+                
+                el.className = 'ticket-item';
+                el.innerHTML = `
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <a class="fw-semibold text-decoration-none" href="ticket-view.html?id=${t.id}">#${t.id} — ${t.titre || 'Sans titre'}</a>
+                      ${t.demande_titre ? `<div class="small text-info fst-italic">Lié à la demande : ${t.demande_titre}</div>` : ''}
+                      <div class="small text-muted">${t.description || 'Pas de description.'}</div>
+                    </div>
+                    <div class="text-end" style="min-width: 100px;">
+                      <div class="status-pill ${badgeClass}">${(t.etat||'').replace('_',' ')}</div>
+                      <div class="small text-muted mt-1">${dateStr}</div>
+                    </div>
+                  </div>`;
+                ticketsList.appendChild(el);
+            });
+        }
+
+      } catch(e) {
+        console.error('Erreur chargement des détails du site:', e);
+        document.querySelector('main').innerHTML = `<div class="alert alert-danger">Impossible de charger les informations du site. ${e.message}</div>`;
+      }
     });
   </script>
 </body>

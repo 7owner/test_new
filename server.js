@@ -1017,17 +1017,25 @@ app.get('/api/attachments/:id/view', authenticateToken, async (req, res) => {
 app.get('/api/sites/:id/relations', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
-    const site = (await pool.query('SELECT * FROM site WHERE id=$1', [id])).rows[0];
+    const siteResult = await pool.query(
+        `SELECT s.*, c.nom_client, c.representant_nom, c.representant_tel
+         FROM site s
+         LEFT JOIN client c ON s.client_id = c.id
+         WHERE s.id = $1`, [id]
+    );
+    const site = siteResult.rows[0];
     if (!site) return res.status(404).json({ error: 'Site not found' });
+
     const affaires = (await pool.query('SELECT af.* FROM site_affaire sa JOIN affaire af ON sa.affaire_id=af.id WHERE sa.site_id=$1 ORDER BY af.id DESC', [id])).rows;
     const does = (await pool.query('SELECT d.* FROM doe d WHERE d.site_id=$1 ORDER BY d.id DESC', [id])).rows;
-    const tickets = (await pool.query('SELECT m.*, dc.id as demande_id FROM ticket m LEFT JOIN demande_client dc ON dc.ticket_id = m.id JOIN doe d ON m.doe_id=d.id WHERE d.site_id=$1 ORDER BY m.id DESC', [id])).rows;
+    const tickets = (await pool.query("SELECT t.*, dc.titre as demande_titre FROM ticket t LEFT JOIN demande_client dc ON t.demande_id = dc.id WHERE t.site_id=$1 ORDER BY t.id DESC", [id])).rows;
     const adresse = site.adresse_id ? (await pool.query('SELECT * FROM adresse WHERE id=$1', [site.adresse_id])).rows[0] : null;
     const rendezvous = (await pool.query('SELECT * FROM rendezvous WHERE site_id=$1 ORDER BY date_rdv DESC, id DESC', [id])).rows;
     const documents = (await pool.query("SELECT * FROM documents_repertoire WHERE cible_type='Site' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     const images = (await pool.query("SELECT id, nom_fichier, type_mime FROM images WHERE cible_type='Site' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     const responsables = (await pool.query("SELECT agent_matricule, role, date_debut, date_fin FROM site_responsable WHERE site_id=$1 ORDER BY COALESCE(date_debut, CURRENT_TIMESTAMP) DESC, id DESC", [id])).rows;
     const agents_assignes = (await pool.query("SELECT agent_matricule, date_debut, date_fin FROM site_agent WHERE site_id=$1 ORDER BY COALESCE(date_debut, CURRENT_TIMESTAMP) DESC, id DESC", [id])).rows;
+
     res.json({ site, adresse, affaires, does, tickets, rendezvous, documents, images, responsables, agents_assignes });
   } catch (err) {
     console.error('Error fetching site relations:', err);
