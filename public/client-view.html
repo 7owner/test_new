@@ -196,7 +196,7 @@
             <div class="info-badge w-100">
               <i class="bi bi-geo-alt"></i>
               <div>
-                <small class="text-muted d-block">Adresse ID</small>
+                <small class="text-muted d-block">Adresse</small>
                 <strong id="client-adresse-id">-</strong>
               </div>
             </div>
@@ -402,7 +402,8 @@
 
         // Affichage des informations du client
         document.getElementById('client-nom').textContent = c.nom_client || 'Non spécifié';
-        document.getElementById('client-adresse-id').textContent = c.adresse_id || 'Non spécifié';
+        const adresse = c.adresse_libelle || c.adresse_id;
+        document.getElementById('client-adresse-id').textContent = adresse || 'Non spécifié';
         document.getElementById('client-commentaire').textContent = c.commentaire || 'Aucun commentaire';
 
         const editLink = document.getElementById('editLink');

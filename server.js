@@ -1509,7 +1509,7 @@ app.delete('/api/representants/:id', authenticateToken, authorizeAdmin, async (r
 app.get('/api/clients/:id/relations', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
-    const c = (await pool.query('SELECT * FROM client WHERE id=$1', [id])).rows[0];
+    const c = (await pool.query('SELECT c.*, a.libelle AS adresse_libelle FROM client c LEFT JOIN adresse a ON c.adresse_id = a.id WHERE c.id=$1', [id])).rows[0];
     if (!c) return res.status(404).json({ error: 'Not found' });
     const sites = (await pool.query('SELECT * FROM site WHERE client_id=$1 ORDER BY id DESC', [id])).rows;
     const demandes = (await pool.query('SELECT d.*, s.nom_site FROM demande_client d LEFT JOIN site s ON s.id=d.site_id WHERE d.client_id=$1 ORDER BY d.created_at DESC', [id])).rows;
