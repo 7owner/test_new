@@ -50,7 +50,7 @@
    <!--<div class="d-flex gap-2">
         <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
         <a href="site-edit.html" class="btn btn-primary btn-sm" id="edit-site-btn"><i class="bi bi-pencil me-2"></i>Modifier</a>
-      </div>-->
+      </div>s-->
     </div>
 
     <div class="card mb-4">
@@ -111,20 +111,6 @@
         return;
       }
 
-      // Add back and edit buttons dynamically
-      const headerContainer = document.querySelector('.d-flex.justify-content-between.align-items-center');
-      if(headerContainer) {
-        headerContainer.innerHTML = `
-          <h1 class="h4 mb-0" id="header-site-name">Chargement...</h1>
-          <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
-            <a href="site-edit.html?id=${siteId}" class="btn btn-primary btn-sm" id="edit-site-btn"><i class="bi bi-pencil me-2"></i>Modifier</a>
-          </div>
-        `;
-        document.getElementById('back-btn').addEventListener('click', () => window.history.back());
-      }
-
-
       try {
         const data = await fetch(`/api/sites/${siteId}/relations`, { headers, credentials:'same-origin' }).then(res => {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -135,7 +121,6 @@
 
         // --- Populate Site & Client Info ---
         set('site-name', site.nom_site);
-        set('header-site-name', site.nom_site); // Also update header
         set('view_client', site.nom_client || 'Non assigné');
         const contact = `${site.representant_nom || ''} ${site.representant_tel || ''}`.trim();
         set('view_contact', contact || 'Non spécifié');
