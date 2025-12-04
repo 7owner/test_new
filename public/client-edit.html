@@ -25,12 +25,12 @@
 <body class="app-bg">
 
 <main class="container mt-5">
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <!--<div class="d-flex justify-content-between align-items-center mb-4">
     <h1 id="title">Modifier le client</h1>
     <button class="btn btn-outline-secondary" onclick="window.history.back()">
       <i class="bi bi-arrow-left"></i> Retour
     </button>
-  </div>
+  </div>-->
 
   <!-- FORM CLIENT -->
   <div class="card mb-4">
@@ -39,15 +39,11 @@
     <div class="card-body">
       <form id="form">
         <input type="hidden" id="clientId">
+        <input type="hidden" id="adresse_id">
 
         <div class="mb-3">
           <label>Nom client *</label>
           <input type="text" class="form-control" id="nom_client" required>
-        </div>
-
-        <div class="mb-3">
-          <label>Adresse</label>
-          <select class="form-select" id="adresse_id"></select>
         </div>
 
         <div class="mb-3">
@@ -140,15 +136,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.getElementById("title").textContent =
     isNew ? "Créer un client" : `Modifier client #${clientId}`;
-
-  async function loadAdresses(){
-    const list = await api("/api/adresses");
-    const sel = document.getElementById("adresse_id");
-    sel.innerHTML = '<option value="">Aucune</option>';
-    list.forEach(a => {
-      sel.innerHTML += `<option value="${a.id}">${a.libelle || "Adresse #"+a.id}</option>`;
-    });
-  }
 
   async function loadClient(){
     if(isNew){
@@ -251,7 +238,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   document.getElementById("form").onsubmit = saveClient;
-  await loadAdresses();
   await loadClient();
 });
 </script>
