@@ -1506,11 +1506,14 @@ app.get('/api/sites/:id', authenticateToken, async (req, res) => {
   }
 });
 app.post('/api/sites', authenticateToken, authorizeAdmin, async (req, res) => {
-  const { nom_site, adresse_id, commentaire, client_id } = req.body; // Add client_id
+  const { nom_site, adresse_id, commentaire, client_id, statut } = req.body; // Add statut
+  if (statut && !['Actif', 'Inactif'].includes(statut)) {
+    return res.status(400).json({ error: 'Invalid value for statut. Must be "Actif" or "Inactif".' });
+  }
   try {
     const result = await pool.query(
-      'INSERT INTO site (nom_site, adresse_id, commentaire, client_id) VALUES ($1,$2,$3,$4) RETURNING *', // Add client_id to INSERT
-      [nom_site, adresse_id || null, commentaire || null, client_id || null] // Add client_id value
+      'INSERT INTO site (nom_site, adresse_id, commentaire, client_id, statut) VALUES ($1,$2,$3,$4,$5) RETURNING *', // Add statut to INSERT
+      [nom_site, adresse_id || null, commentaire || null, client_id || null, statut || 'Actif'] // Add statut value, default to 'Actif'
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -2126,11 +2129,14 @@ app.put('/api/sites/:id', authenticateToken, async (req, res) => {
     if (!nom_site || typeof nom_site !== 'string' || nom_site.trim() === '') {
         return res.status(400).json({ error: 'Le champ nom_site est obligatoire.' });
     }
+    if (statut && !['Actif', 'Inactif'].includes(statut)) { // Add statut validation
+      return res.status(400).json({ error: 'Invalid value for statut. Must be "Actif" or "Inactif".' });
+    }
 
     try {
         const result = await pool.query(
-            'UPDATE site SET nom_site = $1, adresse_id = $2, commentaire = $3, ticket = $4, responsable_matricule = $5, statut = $6, client_id = COALESCE($7, client_id) WHERE id = $8 RETURNING *', // Add client_id to UPDATE, use COALESCE
-            [nom_site, adresse_id, commentaire, ticket, responsable_matricule, statut, client_id || null, id] // Add client_id value
+            'UPDATE site SET nom_site = $1, adresse_id = $2, commentaire = $3, ticket = $4, responsable_matricule = $5, statut = COALESCE($6::site_status, statut), client_id = COALESCE($7, client_id) WHERE id = $8 RETURNING *', // Use site_status ENUM
+            [nom_site, adresse_id, commentaire, ticket, responsable_matricule, statut || null, client_id || null, id] // Add client_id value
         );
         if (result.rows.length > 0) {
             res.json(result.rows[0]);
