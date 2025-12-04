@@ -54,6 +54,9 @@
                 <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#adresseModal">
                   <i class="bi bi-geo-alt me-1"></i> Choisir / gérer les adresses
                 </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#selectAdresseModal">
+                  <i class="bi bi-list-check me-1"></i> Sélectionner une adresse existante
+                </button>
               </div>
               <input type="hidden" id="adresse_id">
             </div>
@@ -94,15 +97,30 @@
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="adresseModalLabel">Gestion des adresses</h5>
+          <h5 class="modal-title visually-hidden" id="adresseModalLabel"></h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <iframe id="adresseFrame" src="adresses.html" style="width:100%;height:75vh;border:none;"></iframe>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal sélection rapide d'adresse -->
+  <div class="modal fade" id="selectAdresseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-list-check me-2"></i>Sélectionner une adresse existante</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="select-adresse-list" class="list-group" style="max-height:60vh;overflow:auto;"></div>
+          <div class="text-muted small mt-2" id="select-adresse-empty">Aucune adresse trouvée.</div>
+        </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-          <button type="button" class="btn btn-primary" id="refresh-adresse-btn">Rafraîchir l'adresse sélectionnée</button>
         </div>
       </div>
     </div>
@@ -121,6 +139,8 @@
       const responsableSelect = document.getElementById('responsable_matricule');
       const adresseHidden = document.getElementById('adresse_id');
       const adresseLabel = document.getElementById('adresse_label');
+      const selectAdresseList = document.getElementById('select-adresse-list');
+      const selectAdresseEmpty = document.getElementById('select-adresse-empty');
 
       async function buildHeaders(json = false) {
         const h = json ? { 'Content-Type': 'application/json' } : {};
@@ -246,27 +266,42 @@
 
       const backBtn = document.getElementById('back-btn');
       if (backBtn) backBtn.addEventListener('click', () => window.history.back());
-
-      // Rafraîchir l'adresse après fermeture du modal
-      const refreshBtn = document.getElementById('refresh-adresse-btn');
-      refreshBtn?.addEventListener('click', async () => {
+      // Remplir la modale de sélection d'adresse
+      const loadSelectAdresses = async () => {
+        if (!selectAdresseList) return;
+        selectAdresseList.innerHTML = '';
+        selectAdresseEmpty.classList.remove('d-none');
         const headers = await buildHeaders(false);
         try {
-          // On recharge la liste des adresses et on prend la dernière créée (option simple)
           const res = await fetch('/api/adresses', { headers, credentials: 'same-origin' });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const list = await res.json();
           if (Array.isArray(list) && list.length) {
-            const last = list[list.length - 1];
-            adresseHidden.value = last.id;
-            adresseLabel.textContent = last.libelle || last.ligne1 || `Adresse #${last.id}`;
+            selectAdresseEmpty.classList.add('d-none');
+            list.forEach(a => {
+              const item = document.createElement('button');
+              item.type = 'button';
+              item.className = 'list-group-item list-group-item-action';
+              const label = a.libelle || [a.ligne1, a.ligne2, `${a.code_postal||''} ${a.ville||''}`, a.pays].filter(Boolean).join(' ');
+              item.innerHTML = `<div class="fw-semibold">${label || `Adresse #${a.id}`}</div>
+                                <div class="small text-muted">${a.ligne1||''} ${a.ligne2||''}</div>`;
+              item.addEventListener('click', () => {
+                adresseHidden.value = a.id;
+                adresseLabel.textContent = label || `Adresse #${a.id}`;
+                bootstrap.Modal.getInstance(document.getElementById('selectAdresseModal'))?.hide();
+              });
+              selectAdresseList.appendChild(item);
+            });
           }
-          bootstrap.Modal.getInstance(document.getElementById('adresseModal'))?.hide();
         } catch (err) {
-          alert("Impossible de récupérer l'adresse. Recharge la page ou sélectionne manuellement dans adresses.html.");
-          console.error(err);
+          console.error('load select adresses:', err);
         }
-      });
+      };
+
+      const selectAdresseModalEl = document.getElementById('selectAdresseModal');
+      if (selectAdresseModalEl) {
+        selectAdresseModalEl.addEventListener('show.bs.modal', loadSelectAdresses);
+      }
     });
   </script>
 </body>
