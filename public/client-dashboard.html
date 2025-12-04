@@ -11,6 +11,32 @@
   <style>
     .dashboard-bg { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); min-height: 100vh; }
     .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+    .pill-btn { border-radius: 999px; }
+    .notif-bell {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #eef2ff;
+      border: 1px solid #d9e0ff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .2s ease;
+    }
+    .notif-bell:hover { background: #e0e7ff; border-color: #cbd5ff; }
+    .notif-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: #ef4444;
+      color: #fff;
+      border-radius: 999px;
+      padding: 2px 6px;
+      font-size: 0.7rem;
+      line-height: 1;
+      display: none;
+    }
   </style>
 </head>
 <body class="dashboard-bg">
@@ -22,6 +48,10 @@
         </a>
       </h1>
       <div class="d-flex align-items-center gap-3">
+      <button class="notif-bell" id="notif-btn" title="Tickets terminés">
+        <i class="bi bi-bell-fill text-primary"></i>
+        <span class="notif-badge" id="notif-badge">0</span>
+      </button>
       <div class="d-flex align-items-center bg-light border rounded-pill px-3 py-1 shadow-sm">
         <i class="bi bi-person-circle text-primary fs-4 me-2"></i>
         <div class="text-nowrap fw-medium text-secondary">Bienvenue</div>
@@ -205,6 +235,8 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.removeItem("token");
     location.href = "/login.html";
   });
+  const notifBtn = document.getElementById("notif-btn");
+  const notifBadge = document.getElementById("notif-badge");
 
   /* ----------------------------
      HELPERS
@@ -342,6 +374,15 @@ document.addEventListener("DOMContentLoaded", () => {
         return setLoading(el, "Aucun historique disponible.");
 
       tickets.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const finishedCount = tickets.filter(t => (t.etat || "").toLowerCase() === "termine").length;
+      if (notifBadge) {
+        if (finishedCount > 0) {
+          notifBadge.textContent = finishedCount;
+          notifBadge.style.display = "inline-block";
+        } else {
+          notifBadge.style.display = "none";
+        }
+      }
 
       el.innerHTML = tickets.map(t => {
         const isTermine = (t.etat || "").toLowerCase() === "termine";
@@ -499,6 +540,12 @@ document.addEventListener("DOMContentLoaded", () => {
   loadSites();
   loadDemands();
   loadHistory();
+  if (notifBtn) {
+    notifBtn.addEventListener("click", () => {
+      const target = document.getElementById("historiqueInterventions");
+      if (target) target.scrollIntoView({ behavior: "smooth" });
+    });
+  }
 
 });
 </script>
