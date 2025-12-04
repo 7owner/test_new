@@ -302,6 +302,17 @@
       if (selectAdresseModalEl) {
         selectAdresseModalEl.addEventListener('show.bs.modal', loadSelectAdresses);
       }
+
+      // Réception sélection depuis l'iframe des adresses
+      window.addEventListener('message', (event) => {
+        if (!event?.data || event.data.type !== 'adresse-select' || !event.data.adresse) return;
+        const a = event.data.adresse;
+        const label = a.label || a.libelle || [a.ligne1, a.ligne2, `${a.code_postal||''} ${a.ville||''}`, a.pays].filter(Boolean).join(' ').trim() || `Adresse #${a.id}`;
+        adresseHidden.value = a.id;
+        adresseLabel.textContent = label;
+        const adrModal = document.getElementById('adresseModal');
+        if (adrModal) bootstrap.Modal.getInstance(adrModal)?.hide();
+      });
     });
   </script>
 </body>
