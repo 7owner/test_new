@@ -75,14 +75,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const label = a.libelle || [a.ligne1, a.ligne2, `${a.code_postal||''} ${a.ville||''}`, a.pays].filter(Boolean).join(' ').trim() || `Adresse #${a.id}`;
       const col = document.createElement('div');
       col.className = 'col-12 col-md-6 col-lg-4';
+      const isInIframe = window.self !== window.top;
+      const selectBtnHtml = isInIframe
+        ? `<button class="btn btn-sm btn-outline-success select-adresse-btn" data-id="${a.id}"><i class="bi bi-check-circle me-1"></i>Sélectionner</button>`
+        : '';
+
       col.innerHTML = `
         <div class="adresse-card h-100 d-flex flex-column">
           <div class="fw-semibold mb-1">${label}</div>
           <div class="text-muted small mb-2">${a.ligne1 || ''} ${a.code_postal || ''} ${a.ville || ''} ${a.pays || ''}</div>
           <div class="d-flex gap-2 mt-auto">
-            <button class="btn btn-sm btn-outline-success w-100 select-adresse-btn" data-id="${a.id}"><i class="bi bi-check-circle"></i></button>
-            <button class="btn btn-sm btn-outline-primary w-100 edit-adresse-btn" data-id="${a.id}"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-sm btn-outline-danger w-100 delete-adresse-btn" data-id="${a.id}"><i class="bi bi-trash"></i></button>
+            ${selectBtnHtml}
+            <button class="btn btn-sm btn-outline-primary flex-grow-1 edit-adresse-btn" data-id="${a.id}"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger flex-grow-1 delete-adresse-btn" data-id="${a.id}"><i class="bi bi-trash"></i></button>
           </div>
         </div>
       `;
