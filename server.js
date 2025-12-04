@@ -1469,12 +1469,19 @@ app.get('/api/clients/:id/representants', authenticateToken, async (req, res) =>
     const { id: clientId } = req.params;
     try {
         const result = await pool.query(
-            `SELECT u.id as user_id, COALESCE(cr.email, u.email) as email, COALESCE(cr.nom, a.nom) as nom, a.prenom, COALESCE(cr.tel, a.tel) as tel, cr.id as client_representant_id, cr.fonction
-             FROM users u
-             JOIN client_representant cr ON u.id = cr.user_id
+            `SELECT cr.id as client_representant_id,
+                    cr.client_id,
+                    cr.user_id,
+                    COALESCE(cr.nom, a.nom) as nom,
+                    a.prenom,
+                    COALESCE(cr.email, u.email) as email,
+                    COALESCE(cr.tel, a.tel) as tel,
+                    cr.fonction
+             FROM client_representant cr
+             LEFT JOIN users u ON u.id = cr.user_id
              LEFT JOIN agent a ON u.id = a.user_id
              WHERE cr.client_id = $1
-             ORDER BY nom, email`,
+             ORDER BY COALESCE(cr.nom, a.nom, u.email)`,
             [clientId]
         );
         res.json(result.rows);
@@ -1580,15 +1587,14 @@ app.get('/api/clients/:id/relations', authenticateToken, async (req, res) => {
   }
 });
 
-// Ajouter un représentant (compte utilisateur) à un client existant
+// Ajouter un représentant (compte utilisateur) à un client existant + lier dans client_representant
 app.post('/api/clients/:id/representant', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
-  const { email, password, nom, tel } = req.body || {};
+  const { email, password, nom, tel, fonction } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'email and password are required' });
 
   const existingClient = (await pool.query('SELECT id, user_id FROM client WHERE id=$1', [id])).rows[0];
   if (!existingClient) return res.status(404).json({ error: 'Client not found' });
-  if (existingClient.user_id) return res.status(409).json({ error: 'Client already has a representative' });
 
   const cx = await pool.connect();
   try {
@@ -1603,6 +1609,11 @@ app.post('/api/clients/:id/representant', authenticateToken, authorizeAdmin, asy
       'UPDATE client SET representant_email=$1, representant_nom=COALESCE($2, representant_nom), representant_tel=COALESCE($3, representant_tel), user_id=$4 WHERE id=$5 RETURNING *',
       [email, nom || null, tel || null, u.id, id]
     );
+    // Lier dans client_representant avec les champs supplémentaires
+    try {
+      await cx.query('INSERT INTO client_representant (client_id, user_id, nom, email, tel, fonction) VALUES ($1,$2,$3,$4,$5,$6)', [id, u.id, nom || null, email || null, tel || null, fonction || null]);
+    } catch (_) {}
+
     await cx.query('COMMIT');
     return res.status(201).json({ user: u, client: cres.rows[0] });
   } catch (e) {

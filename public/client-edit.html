@@ -84,6 +84,18 @@
                   <label for="user-password" class="form-label">Mot de passe temporaire</label>
                   <input type="password" class="form-control" id="user-password" required>
                 </div>
+                <div class="mb-3">
+                  <label for="user-nom" class="form-label">Nom</label>
+                  <input type="text" class="form-control" id="user-nom">
+                </div>
+                <div class="mb-3">
+                  <label for="user-tel" class="form-label">Téléphone</label>
+                  <input type="tel" class="form-control" id="user-tel">
+                </div>
+                <div class="mb-3">
+                  <label for="user-fonction" class="form-label">Fonction</label>
+                  <input type="text" class="form-control" id="user-fonction">
+                </div>
                 <button type="submit" class="btn btn-primary">Créer et lier</button>
               </form>
             </div>
@@ -283,6 +295,9 @@
           e.preventDefault();
           const email = document.getElementById('user-email').value;
           const password = document.getElementById('user-password').value;
+          const nom = document.getElementById('user-nom')?.value || '';
+          const tel = document.getElementById('user-tel')?.value || '';
+          const fonction = document.getElementById('user-fonction')?.value || '';
           try {
               const newUser = await api('/api/users', {
                   method: 'POST',
@@ -290,7 +305,7 @@
               });
               await api(`/api/clients/${clientId}/representants`, {
                   method: 'POST',
-                  body: JSON.stringify({ user_id: newUser.id })
+                  body: JSON.stringify({ user_id: newUser.id, nom, email, tel, fonction })
               });
               await loadRepresentatives();
               alert('Nouvel utilisateur créé et lié avec succès.');
