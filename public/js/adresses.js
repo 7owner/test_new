@@ -72,13 +72,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const start = (currentPage - 1) * pageSize;
     const pageItems = list.slice(start, start + pageSize);
     pageItems.forEach(a => {
+      const label = a.libelle || [a.ligne1, a.ligne2, `${a.code_postal||''} ${a.ville||''}`, a.pays].filter(Boolean).join(' ').trim() || `Adresse #${a.id}`;
       const col = document.createElement('div');
       col.className = 'col-12 col-md-6 col-lg-4';
       col.innerHTML = `
         <div class="adresse-card h-100 d-flex flex-column">
-          <div class="fw-semibold mb-1">${a.libelle || '(Sans libellé)'}</div>
+          <div class="fw-semibold mb-1">${label}</div>
           <div class="text-muted small mb-2">${a.ligne1 || ''} ${a.code_postal || ''} ${a.ville || ''} ${a.pays || ''}</div>
           <div class="d-flex gap-2 mt-auto">
+            <button class="btn btn-sm btn-outline-success w-100 select-adresse-btn" data-id="${a.id}"><i class="bi bi-check-circle"></i></button>
             <button class="btn btn-sm btn-outline-primary w-100 edit-adresse-btn" data-id="${a.id}"><i class="bi bi-pencil"></i></button>
             <button class="btn btn-sm btn-outline-danger w-100 delete-adresse-btn" data-id="${a.id}"><i class="bi bi-trash"></i></button>
           </div>
@@ -207,7 +209,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!btn) return;
       const id = btn.getAttribute('data-id');
       if (!id) return;
-      if (btn.classList.contains('delete-adresse-btn')) {
+      if (btn.classList.contains('select-adresse-btn')) {
+        const addr = allAdresses.find(a => String(a.id) === String(id));
+        if (addr) {
+          const label = addr.libelle || [addr.ligne1, addr.ligne2, `${addr.code_postal||''} ${addr.ville||''}`, addr.pays].filter(Boolean).join(' ').trim() || `Adresse #${addr.id}`;
+          window.parent?.postMessage({ type: 'adresse-select', adresse: { id: addr.id, label, ...addr } }, '*');
+        }
+      } else if (btn.classList.contains('delete-adresse-btn')) {
         if (!confirm('Voulez-vous vraiment supprimer cette adresse ?')) return;
         try {
           const response = await fetch(`/api/adresses/${id}`, { method: 'DELETE', headers: buildHeaders(), credentials: 'same-origin' });
