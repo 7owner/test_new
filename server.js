@@ -1425,6 +1425,86 @@ app.delete('/api/clients/:id', authenticateToken, authorizeAdmin, async (req, re
   }
 });
 
+// -------------------- Representants API (for a Client) --------------------
+
+// List representatives for a client
+app.get('/api/clients/:id/representants', authenticateToken, async (req, res) => {
+    const { id: clientId } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM representant WHERE client_id = $1 ORDER BY nom ASC', [clientId]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(`Error fetching representatives for client ${clientId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Create a representative for a client
+app.post('/api/clients/:id/representants', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id: clientId } = req.params;
+    const { nom, email, tel, fonction } = req.body;
+
+    if (!nom) {
+        return res.status(400).json({ error: 'Name is required' });
+    }
+
+    try {
+        const result = await pool.query(
+            'INSERT INTO representant (client_id, nom, email, tel, fonction) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [clientId, nom, email || null, tel || null, fonction || null]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        if (err.code === '23505') { // unique_violation
+            return res.status(409).json({ error: 'A representative with this email already exists for this client.' });
+        }
+        console.error(`Error creating representative for client ${clientId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Update a representative
+app.put('/api/representants/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { nom, email, tel, fonction } = req.body;
+
+    if (!nom) {
+        return res.status(400).json({ error: 'Name is required' });
+    }
+
+    try {
+        const result = await pool.query(
+            'UPDATE representant SET nom = $1, email = $2, tel = $3, fonction = $4 WHERE id = $5 RETURNING *',
+            [nom, email || null, tel || null, fonction || null, id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Representative not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        if (err.code === '23505') { // unique_violation
+            return res.status(409).json({ error: 'A representative with this email already exists for this client.' });
+        }
+        console.error(`Error updating representative ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Delete a representative
+app.delete('/api/representants/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('DELETE FROM representant WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Representative not found' });
+        }
+        res.status(204).send();
+    } catch (err) {
+        console.error(`Error deleting representative ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // Client relations: include sites and demandes
 app.get('/api/clients/:id/relations', authenticateToken, async (req, res) => {
   const { id } = req.params;
@@ -1433,10 +1513,45 @@ app.get('/api/clients/:id/relations', authenticateToken, async (req, res) => {
     if (!c) return res.status(404).json({ error: 'Not found' });
     const sites = (await pool.query('SELECT * FROM site WHERE client_id=$1 ORDER BY id DESC', [id])).rows;
     const demandes = (await pool.query('SELECT d.*, s.nom_site FROM demande_client d LEFT JOIN site s ON s.id=d.site_id WHERE d.client_id=$1 ORDER BY d.created_at DESC', [id])).rows;
-    res.json({ client: c, sites, demandes });
+    const representants = (await pool.query('SELECT * FROM representant WHERE client_id=$1 ORDER BY nom ASC', [id])).rows; // NEW
+    res.json({ client: c, sites, demandes, representants }); // NEW
   } catch (err) {
     console.error('Error fetching client relations:', err);
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Ajouter un représentant (compte utilisateur) à un client existant
+app.post('/api/clients/:id/representant', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { email, password, nom, tel } = req.body || {};
+  if (!email || !password) return res.status(400).json({ error: 'email and password are required' });
+
+  const existingClient = (await pool.query('SELECT id, user_id FROM client WHERE id=$1', [id])).rows[0];
+  if (!existingClient) return res.status(404).json({ error: 'Client not found' });
+  if (existingClient.user_id) return res.status(409).json({ error: 'Client already has a representative' });
+
+  const cx = await pool.connect();
+  try {
+    await cx.query('BEGIN');
+    const alreadyUser = await cx.query('SELECT id FROM users WHERE email=$1', [email]);
+    if (alreadyUser.rows[0]) { await cx.query('ROLLBACK'); return res.status(409).json({ error: 'User already exists' }); }
+
+    const hashed = await bcrypt.hash(password, 10);
+    const ures = await cx.query('INSERT INTO users (email, password, roles) VALUES ($1,$2,$3) RETURNING id,email,roles', [email, hashed, JSON.stringify(['ROLE_CLIENT'])]);
+    const u = ures.rows[0];
+    const cres = await cx.query(
+      'UPDATE client SET representant_email=$1, representant_nom=COALESCE($2, representant_nom), representant_tel=COALESCE($3, representant_tel), user_id=$4 WHERE id=$5 RETURNING *',
+      [email, nom || null, tel || null, u.id, id]
+    );
+    await cx.query('COMMIT');
+    return res.status(201).json({ user: u, client: cres.rows[0] });
+  } catch (e) {
+    try { await cx.query('ROLLBACK'); } catch(_) {}
+    console.error('clients/add-representant failed:', e);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    cx.release();
   }
 });
 

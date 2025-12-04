@@ -39,7 +39,21 @@
       <a id="editLink" href="#" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Modifier ce client</a>
     </div>
 
-    <div id="clientCard" class="card mb-3"><div class="card-body">Chargement...</div></div>
+    <div class="card mb-3">
+      <div class="card-header"><strong>Détails Client</strong></div>
+      <div class="card-body">
+        <p><strong>Nom du client:</strong> <span id="client-nom"></span></p>
+        <p><strong>Adresse ID:</strong> <span id="client-adresse-id"></span></p>
+        <p><strong>Commentaire:</strong> <span id="client-commentaire"></span></p>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><strong>Représentants</strong></div>
+      <div id="representants-list" class="list-group list-group-flush">
+        <div class="list-group-item text-muted">Chargement...</div>
+      </div>
+    </div>
 
     <div class="row g-3">
       <div class="col-lg-6">
@@ -116,7 +130,7 @@
       const token = localStorage.getItem('token');
       const params = new URLSearchParams(location.search);
       const id = params.get('id');
-      if (!id) { const cc = document.getElementById('clientCard'); if (cc) cc.innerHTML = '<div class="card-body">Client ID manquant</div>'; return; }
+      if (!id) { document.querySelector('main').innerHTML = '<div class="alert alert-danger">Client ID manquant</div>'; return; }
 
       async function fetchJSON(url, opts){
         const base = { headers: { 'Content-Type': 'application/json' } };
@@ -139,25 +153,43 @@
         if (msgsInfo) msgsInfo.textContent = '';
       };
 
-      let isAdmin = false;
       try {
         const data = await fetchJSON('/api/clients/'+id+'/relations');
-        const c = data.client;
-        const cc = document.getElementById('clientCard');
-        cc.innerHTML = '<div class="card-body">'
-          + '<div><strong>'+ (c.nom_client||'-') +'</strong>'
-          + '<div>Repr.: '+ (c.representant_nom||'-') +' | '+ (c.representant_email||'-') +' | '+ (c.representant_tel||'-') +'</div>'
-          + '<div>Adresse ID: '+ (c.adresse_id||'-') +'</div>'
-          + '</div></div>';
+        const { client: c, sites, demandes, representants } = data; // Destructure new data
+
+        // Populate main client details
+        document.getElementById('client-nom').textContent = c.nom_client || '-';
+        document.getElementById('client-adresse-id').textContent = c.adresse_id || '-';
+        document.getElementById('client-commentaire').textContent = c.commentaire || 'Aucun';
+
         try { const el=document.getElementById('editLink'); if (el) el.href = '/client-edit.html?id='+encodeURIComponent(id); } catch {}
 
-        const sites = document.getElementById('sites');
-        sites.innerHTML = '';
-        data.sites.forEach(s=>{ const li=document.createElement('li'); li.innerHTML = '#' + s.id + ' <a href="/site-view.html?id=' + s.id + '">' + (s.nom_site||('Site '+s.id)) + '</a>'; sites.appendChild(li); });
-        const demandes = document.getElementById('demandes');
-        demandes.innerHTML = '';
-        data.demandes.forEach(d=>{ const li=document.createElement('li'); const sitePart = d.site_id ? (' <a href="/site-view.html?id=' + d.site_id + '">' + (d.nom_site||('Site '+d.site_id)) + '</a>') : ' (site: -)'; li.innerHTML = '#' + d.id + ' [' + (d.status||'En cours de traitement') + ']' + sitePart + ' - ' + (d.description||''); demandes.appendChild(li); });
+        const sitesList = document.getElementById('sites');
+        sitesList.innerHTML = '';
+        sites.forEach(s=>{ const li=document.createElement('li'); li.innerHTML = '#' + s.id + ' <a href="/site-view.html?id=' + s.id + '">' + (s.nom_site||('Site '+s.id)) + '</a>'; sitesList.appendChild(li); });
+        const demandesList = document.getElementById('demandes');
+        demandesList.innerHTML = '';
+        demandes.forEach(d=>{ const li=document.createElement('li'); const sitePart = d.site_id ? (' <a href="/site-view.html?id=' + d.site_id + '">' + (d.nom_site||('Site '+d.site_id)) + '</a>') : ' (site: -)'; li.innerHTML = '#' + d.id + ' [' + (d.status||'En cours de traitement') + ']' + sitePart + ' - ' + (d.description||''); demandesList.appendChild(li); });
 
+        // Populate representatives list
+        const representantsList = document.getElementById('representants-list');
+        representantsList.innerHTML = '';
+        if (representants && representants.length > 0) {
+            representants.forEach(rep => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item';
+                item.innerHTML = `
+                    <div class="fw-bold">${rep.nom}</div>
+                    <div class="small text-muted">${rep.fonction || 'N/A'}</div>
+                    <div class="small"><i class="bi bi-envelope-fill"></i> ${rep.email || 'N/A'} | <i class="bi bi-telephone-fill"></i> ${rep.tel || 'N/A'}</div>
+                `;
+                representantsList.appendChild(item);
+            });
+        } else {
+            representantsList.innerHTML = '<div class="list-group-item text-muted">Aucun représentant trouvé.</div>';
+        }
+
+        let isAdmin = false;
         try { const p = token ? JSON.parse(atob(token.split('.')[1])) : null; isAdmin = Array.isArray(p?.roles)&&p.roles.includes('ROLE_ADMIN'); } catch{}
         if (isAdmin) { const box = document.getElementById('adminActions'); if (box) box.style.display = ''; }
 
@@ -205,7 +237,7 @@
           };
 
           // Par site
-          for (const s of data.sites||[]) {
+          for (const s of sites||[]) {
             await loadDocs('Site', s.id);
             // tickets du site
             const siteRel = await fetchJSON(`/api/sites/${s.id}/relations`).catch(()=>null);
@@ -217,7 +249,7 @@
             }
           }
           // Par demande directe
-          for (const d of data.demandes||[]) {
+          for (const d of demandes||[]) {
             await loadDocs('DemandeClient', d.id);
             await loadMessages(d.id);
           }
