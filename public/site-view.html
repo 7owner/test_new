@@ -58,13 +58,11 @@
         <div class="d-flex justify-content-between align-items-start">
           <div>
             <div class="title" id="view_nom_site">—</div>
-            <div class="subtitle small">Client : <span id="view_client">—</span></div>
+            <div class="subtitle small">
+              Client : <span id="view_client">—</span>
+              <span class="ms-3">Contact : <span id="view_contact">—</span></span>
+            </div>
           </div>
-          <span class="pill d-none" id="view_statut"></span>
-        </div>
-        <div class="mt-3 d-none" id="contact-block">
-          <div class="fw-semibold">Contact</div>
-          <div id="view_contact" class="small">—</div>
         </div>
       </div>
       <div class="card-body">
@@ -75,10 +73,6 @@
         <div class="mb-2">
           <div class="fw-semibold text-secondary">Commentaire</div>
           <div id="view_commentaire" class="text-body">—</div>
-        </div>
-        <div class="d-flex flex-wrap gap-3 text-muted small">
-          <div>Date début : <span id="view_date_debut">—</span></div>
-          <div>Date fin : <span id="view_date_fin">—</span></div>
         </div>
       </div>
     </div>
@@ -112,24 +106,12 @@
         set('view_nom_site', s.nom_site);
         set('view_client', s.client_nom || s.client_name || '—');
         set('view_commentaire', s.commentaire);
-        set('view_date_debut', s.date_debut);
-        set('view_date_fin', s.date_fin);
         // Adresse lisible
         const adr = s.adresse_nom || s.adresse_complete || s.adresse || '';
         set('view_adresse', adr || '—');
-        // Statut badge only if exists
-        const statutEl = document.getElementById('view_statut');
-        if (statutEl && s.statut) {
-          statutEl.textContent = s.statut;
-          statutEl.classList.remove('d-none');
-        }
-        // Contact block shown only if info
+        // Contact info dans la sous-titre
         const contactInfo = s.contact_nom || s.contact_tel || '';
-        const contactBlock = document.getElementById('contact-block');
-        if (contactBlock && contactInfo) {
-          document.getElementById('view_contact').textContent = `${s.contact_nom || ''} ${s.contact_tel || ''}`.trim();
-          contactBlock.classList.remove('d-none');
-        }
+        set('view_contact', contactInfo ? `${s.contact_nom || ''} ${s.contact_tel || ''}`.trim() : '—');
         // Contact : site.contact_* ou premier responsable
         const contact = s.contact_nom ? `${s.contact_nom} ${s.contact_tel||''}` : (data.responsables && data.responsables[0] ? `${data.responsables[0].agent_matricule || ''}` : '—');
         set('view_contact', contact);
