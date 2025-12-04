@@ -6,330 +6,573 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link href="/custom.css?v=1" rel="stylesheet">
-  <script src="/nav.js?v=2"></script>
   <style>
-    body { font-family: system-ui, Arial, sans-serif; }
+    body { 
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e8f0f7 100%);
+      padding: 1.5rem;
+    }
+    .main-card {
+      border: none;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .main-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    }
+    .card-header-custom {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.25rem 1.5rem;
+      font-weight: 600;
+      border: none;
+    }
+    .info-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: #f8f9fa;
+      border-radius: 12px;
+      margin-bottom: 0.75rem;
+      border-left: 4px solid #667eea;
+    }
+    .info-badge i {
+      color: #667eea;
+      font-size: 1.2rem;
+    }
+    .section-title {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #667eea;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.75rem;
+    }
+    .list-item-custom {
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 0.75rem;
+      background: white;
+      border: 1px solid #e9ecef;
+      transition: all 0.2s ease;
+    }
+    .list-item-custom:hover {
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+      transform: translateX(4px);
+    }
+    .status-badge {
+      padding: 0.35rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-progress { background: #cfe2ff; color: #084298; }
+    .status-completed { background: #d1e7dd; color: #0f5132; }
+    .image-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 1rem;
+    }
+    .image-thumbnail {
+      position: relative;
+      width: 100%;
+      padding-bottom: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+    .image-thumbnail:hover {
+      transform: scale(1.05);
+    }
+    .image-thumbnail img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .rep-card {
+      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      border-left: 4px solid #667eea;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+    }
+    .admin-section {
+      background: linear-gradient(135deg, #f093fb15 0%, #f5576c15 100%);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+    .btn-gradient {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 0.6rem 1.5rem;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .btn-gradient:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+      color: white;
+    }
+    .loading-spinner {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 3rem;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #6c757d;
+    }
+    .empty-state i {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.3;
+    }
+    .doc-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 0.75rem;
+      border: 1px solid #e9ecef;
+      transition: all 0.2s ease;
+    }
+    .doc-item:hover {
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+    }
+    .doc-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      margin-right: 1rem;
+      font-size: 1.2rem;
+    }
   </style>
 </head>
-<body class="app-bg">
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-    <div class="offcanvas-header">
-      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+<body>
+  <div class="container-fluid" style="max-width: 1400px;">
+    <!-- Header Section -->
+    <div class="main-card">
+      <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <div>
+          <h4 class="mb-0"><i class="bi bi-person-badge me-2"></i>Détails du Client</h4>
+        </div>
+        <button id="editLink" class="btn btn-light btn-sm" style="display: none;">
+          <i class="bi bi-pencil-square me-1"></i>Modifier
+        </button>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="info-badge w-100">
+              <i class="bi bi-building"></i>
+              <div>
+                <small class="text-muted d-block">Nom du client</small>
+                <strong id="client-nom">-</strong>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="info-badge w-100">
+              <i class="bi bi-geo-alt"></i>
+              <div>
+                <small class="text-muted d-block">Adresse ID</small>
+                <strong id="client-adresse-id">-</strong>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="info-badge w-100">
+              <i class="bi bi-chat-left-text"></i>
+              <div>
+                <small class="text-muted d-block">Commentaire</small>
+                <strong id="client-commentaire">-</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="offcanvas-body">
-      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item"><a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
-        <li class="nav-item"><a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
-        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/tickets.html"><i class="bi bi-tools me-2"></i>Tickets</a></li>
-        <li class="nav-item"><a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a></li>
-        <li class="nav-item"><a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a></li>
-        <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
-        <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a></li>
-        <li class="nav-item"><a class="nav-link" href="" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
-      </ul>
+
+    <!-- Representatives Section -->
+    <div class="main-card">
+      <div class="card-header-custom">
+        <i class="bi bi-people me-2"></i>Représentants
+      </div>
+      <div class="card-body p-4">
+        <div id="representants-list">
+          <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Chargement...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sites and Demands Row -->
+    <div class="row g-4 mb-4">
+      <div class="col-lg-6">
+        <div class="main-card h-100">
+          <div class="card-header-custom">
+            <i class="bi bi-building me-2"></i>Sites Associés
+          </div>
+          <div class="card-body p-4">
+            <div id="sites-container">
+              <div class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Chargement...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="main-card h-100">
+          <div class="card-header-custom">
+            <i class="bi bi-clipboard-check me-2"></i>Demandes d'Intervention
+          </div>
+          <div class="card-body p-4">
+            <div id="demandes-container">
+              <div class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Chargement...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Documents Repository -->
+    <div class="main-card">
+      <div class="card-header-custom">
+        <i class="bi bi-folder2-open me-2"></i>Répertoire Documents
+      </div>
+      <div class="card-body p-4">
+        <p class="text-muted mb-4">
+          <i class="bi bi-info-circle me-2"></i>
+          Rassemble toutes les pièces jointes (documents, images, PJ messages) liées aux sites/tickets/demandes de ce client.
+        </p>
+        <div class="row g-4">
+          <div class="col-lg-6">
+            <div class="section-title"><i class="bi bi-file-earmark-text me-2"></i>Documents</div>
+            <div id="repo-docs">
+              <div class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Chargement...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="section-title"><i class="bi bi-image me-2"></i>Images</div>
+            <div id="repo-imgs">
+              <div class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Chargement...</span>
+                </div>
+              </div>
+            </div>
+            <small class="text-muted d-block mt-2" id="repo-msgs-info"></small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Actions -->
+    <div id="adminActions" class="main-card" style="display:none;">
+      <div class="card-header-custom">
+        <i class="bi bi-shield-lock me-2"></i>Actions Administrateur
+      </div>
+      <div class="card-body p-4">
+        <div class="admin-section">
+          <div class="row g-4">
+            <div class="col-md-6">
+              <h5 class="mb-3"><i class="bi bi-building-add me-2"></i>Créer un Site</h5>
+              <div class="mb-3">
+                <label for="new_site_nom" class="form-label fw-semibold">Nom du site</label>
+                <input id="new_site_nom" class="form-control" placeholder="Ex: Site principal">
+              </div>
+              <div class="mb-3">
+                <label for="new_site_comment" class="form-label fw-semibold">Commentaire (optionnel)</label>
+                <textarea id="new_site_comment" class="form-control" rows="2" placeholder="Ajoutez des notes..."></textarea>
+              </div>
+              <button id="btnCreateSite" class="btn btn-gradient w-100">
+                <i class="bi bi-plus-circle me-2"></i>Créer le Site
+              </button>
+            </div>
+            <div class="col-md-6">
+              <h5 class="mb-3"><i class="bi bi-clipboard-plus me-2"></i>Créer une Demande</h5>
+              <div class="mb-3">
+                <label for="new_demande_site" class="form-label fw-semibold">Site ID (optionnel)</label>
+                <input id="new_demande_site" class="form-control" placeholder="Ex: 12" type="number">
+              </div>
+              <div class="mb-3">
+                <label for="new_demande_desc" class="form-label fw-semibold">Description</label>
+                <textarea id="new_demande_desc" class="form-control" rows="2" placeholder="Décrivez la demande..."></textarea>
+              </div>
+              <button id="btnCreateDemande" class="btn btn-gradient w-100">
+                <i class="bi bi-plus-circle me-2"></i>Créer la Demande
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
- <!-- <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h1 class="mb-0">Détails Client</h1>
-      <a id="editLink" href="#" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Modifier ce client</a>
-    </div>-->
-
-    <div class="card mb-3">
-      <div class="card-header"><strong>Détails Client</strong></div>
-      <div class="card-body">
-        <p><strong>Nom du client:</strong> <span id="client-nom"></span></p>
-        <p><strong>Adresse ID:</strong> <span id="client-adresse-id"></span></p>
-        <p><strong>Commentaire:</strong> <span id="client-commentaire"></span></p>
-      </div>
-    </div>
-
-    <div class="card mb-3">
-<<<<<<< HEAD
-=======
-      <div class="card-header"><strong>Détails Client</strong></div>
-      <div class="card-body">
-        <p><strong>Nom du client:</strong> <span id="client-nom"></span></p>
-        <p><strong>Adresse ID:</strong> <span id="client-adresse-id"></span></p>
-        <p><strong>Commentaire:</strong> <span id="client-commentaire"></span></p>
-      </div>
-    </div>
-
-    <div class="card mb-3">
->>>>>>> f0987909ed668df18b93e5ccb64571f7bd5cd6ad
-      <div class="card-header"><strong>Représentants</strong></div>
-      <div id="representants-list" class="list-group list-group-flush">
-        <div class="list-group-item text-muted">Chargement...</div>
-      </div>
-    </div>
-
-    <div class="row g-3">
-      <div class="col-lg-6">
-        <div class="card h-100">
-          <div class="card-header"><strong>Sites</strong></div>
-          <div class="card-body">
-            <ul id="sites" class="mb-0"></ul>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-6">
-        <div class="card h-100">
-          <div class="card-header"><strong>Demandes d'intervention</strong></div>
-          <div class="card-body">
-            <ul id="demandes" class="mb-0"></ul>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card mt-3">
-      <div class="card-header"><strong>Répertoire documents</strong></div>
-      <div class="card-body">
-        <p class="text-muted small">Rassemble toutes les pièces jointes (documents, images, PJ messages) liées aux sites/tickets/demandes de ce client.</p>
-        <div class="row g-3">
-          <div class="col-lg-6">
-            <h6>Documents</h6>
-            <ul id="repo-docs" class="list-group list-group-flush small"></ul>
-          </div>
-          <div class="col-lg-6">
-            <h6>Images</h6>
-            <div id="repo-imgs" class="d-flex flex-wrap gap-2"></div>
-            <div class="text-muted small" id="repo-msgs-info"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="adminActions" class="card mt-3" style="display:none;">
-      <div class="card-header"><strong>Actions administrateur</strong></div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <h5>Créer un site</h5>
-            <div class="mb-2">
-              <label for="new_site_nom" class="form-label">Nom site</label>
-              <input id="new_site_nom" class="form-control">
-            </div>
-            <div class="mb-2">
-              <label for="new_site_comment" class="form-label">Commentaire (optionnel)</label>
-              <input id="new_site_comment" class="form-control">
-            </div>
-            <button id="btnCreateSite" class="btn btn-primary">Créer</button>
-          </div>
-          <div class="col-md-6">
-            <h5>Créer une demande</h5>
-            <div class="mb-2">
-              <label for="new_demande_site" class="form-label">Site ID (optionnel)</label>
-              <input id="new_demande_site" class="form-control" placeholder="ex: 12">
-            </div>
-            <div class="mb-2">
-              <label for="new_demande_desc" class="form-label">Description</label>
-              <textarea id="new_demande_desc" class="form-control" rows="3"></textarea>
-            </div>
-            <button id="btnCreateDemande" class="btn btn-primary">Créer</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams(location.search);
       const id = params.get('id');
-      if (!id) { document.querySelector('main').innerHTML = '<div class="alert alert-danger">Client ID manquant</div>'; return; }
 
-      async function fetchJSON(url, opts){
+      if (!id) {
+        document.body.innerHTML = `
+          <div class="container mt-5">
+            <div class="alert alert-danger">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              Client ID manquant dans l'URL
+            </div>
+          </div>`;
+        return;
+      }
+
+      async function fetchJSON(url, opts) {
         const base = { headers: { 'Content-Type': 'application/json' } };
         if (token) base.headers['Authorization'] = 'Bearer ' + token;
-        const r = await fetch(url, Object.assign(base, opts||{}));
-        const ct = r.headers.get('content-type')||''; const b = ct.includes('application/json') ? await r.json() : null; if(!r.ok) throw new Error((b&&b.error)||r.statusText); return b;
+        const r = await fetch(url, Object.assign(base, opts || {}));
+        const ct = r.headers.get('content-type') || '';
+        const b = ct.includes('application/json') ? await r.json() : null;
+        if (!r.ok) throw new Error((b && b.error) || r.statusText);
+        return b;
       }
-      async function fetchBinaryURL(url){
-        const r = await fetch(url, { headers: token ? { 'Authorization': 'Bearer '+token } : {}, credentials:'same-origin' });
-        if(!r.ok) return null;
+
+      async function fetchBinaryURL(url) {
+        const r = await fetch(url, {
+          headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+          credentials: 'same-origin'
+        });
+        if (!r.ok) return null;
         const blob = await r.blob();
         return URL.createObjectURL(blob);
       }
+
+      function getStatusBadge(status) {
+        const map = {
+          'En cours de traitement': 'status-progress',
+          'Terminé': 'status-completed',
+          'Complété': 'status-completed',
+          'En attente': 'status-pending'
+        };
+        return `<span class="status-badge ${map[status] || 'status-pending'}">${status || 'En cours'}</span>`;
+      }
+
       const docList = document.getElementById('repo-docs');
       const imgList = document.getElementById('repo-imgs');
       const msgsInfo = document.getElementById('repo-msgs-info');
-      const setRepoLoading = () => {
-        if (docList) docList.innerHTML = '<li class="list-group-item text-muted">Chargement...</li>';
-        if (imgList) imgList.innerHTML = '<div class="text-muted">Chargement...</div>';
-        if (msgsInfo) msgsInfo.textContent = '';
-      };
 
       try {
-        const data = await fetchJSON('/api/clients/'+id+'/relations');
-        const { client: c, sites, demandes, representants } = data; // Destructure new data
+        const data = await fetchJSON('/api/clients/' + id + '/relations');
+        const { client: c, sites, demandes, representants } = data;
 
-        // Populate main client details
-        document.getElementById('client-nom').textContent = c.nom_client || '-';
-        document.getElementById('client-adresse-id').textContent = c.adresse_id || '-';
-        document.getElementById('client-commentaire').textContent = c.commentaire || 'Aucun';
+        // Affichage des informations du client
+        document.getElementById('client-nom').textContent = c.nom_client || 'Non spécifié';
+        document.getElementById('client-adresse-id').textContent = c.adresse_id || 'Non spécifié';
+        document.getElementById('client-commentaire').textContent = c.commentaire || 'Aucun commentaire';
 
-        try { const el=document.getElementById('editLink'); if (el) el.href = '/client-edit.html?id='+encodeURIComponent(id); } catch {}
+        const editLink = document.getElementById('editLink');
+        if (editLink) {
+          editLink.href = `/client-edit.html?id=${encodeURIComponent(id)}`;
+          editLink.style.display = 'inline-block';
+        }
 
-        const sitesList = document.getElementById('sites');
-        sitesList.innerHTML = '';
-        sites.forEach(s=>{ const li=document.createElement('li'); li.innerHTML = '#' + s.id + ' <a href="/site-view.html?id=' + s.id + '">' + (s.nom_site||('Site '+s.id)) + '</a>'; sitesList.appendChild(li); });
-        const demandesList = document.getElementById('demandes');
-        demandesList.innerHTML = '';
-        demandes.forEach(d=>{ const li=document.createElement('li'); const sitePart = d.site_id ? (' <a href="/site-view.html?id=' + d.site_id + '">' + (d.nom_site||('Site '+d.site_id)) + '</a>') : ' (site: -)'; li.innerHTML = '#' + d.id + ' [' + (d.status||'En cours de traitement') + ']' + sitePart + ' - ' + (d.description||''); demandesList.appendChild(li); });
-
-        // Populate representatives list
+        // Représentants
         const representantsList = document.getElementById('representants-list');
         representantsList.innerHTML = '';
-        if (representants && representants.length > 0) {
-            representants.forEach(rep => {
-                const item = document.createElement('div');
-                item.className = 'list-group-item';
-                item.innerHTML = `
-                    <div class="fw-bold">${rep.nom}</div>
-                    <div class="small text-muted">${rep.fonction || 'N/A'}</div>
-                    <div class="small"><i class="bi bi-envelope-fill"></i> ${rep.email || 'N/A'} | <i class="bi bi-telephone-fill"></i> ${rep.tel || 'N/A'}</div>
-                `;
-                representantsList.appendChild(item);
-            });
+        if (representants?.length) {
+          representants.forEach(rep => {
+            representantsList.innerHTML += `
+              <div class="rep-card">
+                <div class="d-flex align-items-start">
+                  <div style="width:50px;height:50px;border-radius:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:bold;">
+                    ${(rep.nom || 'N')[0].toUpperCase()}
+                  </div>
+                  <div class="ms-3">
+                    <h6 class="fw-bold mb-1">${rep.nom || 'Inconnu'}</h6>
+                    <small class="text-muted">${rep.fonction || ''}</small><br>
+                    <small><i class="bi bi-envelope me-1"></i>${rep.email || 'N/A'}</small>
+                    <small class="ms-2"><i class="bi bi-phone me-1"></i>${rep.tel || 'N/A'}</small>
+                  </div>
+                </div>
+              </div>`;
+          });
         } else {
-            representantsList.innerHTML = '<div class="list-group-item text-muted">Aucun représentant trouvé.</div>';
+          representantsList.innerHTML = `<div class="empty-state"><i class="bi bi-people"></i><p>Aucun représentant</p></div>`;
         }
 
+        // Sites
+        const sitesContainer = document.getElementById('sites-container');
+        sitesContainer.innerHTML = sites?.length ? '' : `
+          <div class="empty-state">
+            <i class="bi bi-building"></i><p>Aucun site</p>
+          </div>`;
+        sites?.forEach(s =>
+          sitesContainer.innerHTML += `
+            <div class="list-item-custom">
+              <strong>${s.nom_site || 'Site #' + s.id}</strong><br>
+              <a href="/site-view.html?id=${s.id}" class="btn btn-sm btn-outline-primary mt-2">
+                <i class="bi bi-eye"></i> Voir
+              </a>
+            </div>`);
+
+        // Demandes
+        const demandesContainer = document.getElementById('demandes-container');
+        demandesContainer.innerHTML = demandes?.length ? '' : `
+          <div class="empty-state">
+            <i class="bi bi-clipboard-check"></i><p>Aucune demande</p>
+          </div>`;
+        demandes?.forEach(d =>
+          demandesContainer.innerHTML += `
+            <div class="list-item-custom">
+              <strong>#${d.id}</strong> ${getStatusBadge(d.status)}
+              <div class="text-muted small">
+                <i class="bi bi-building me-1"></i>${d.nom_site || 'Aucun site'}
+              </div>
+              <small>${d.description || '(sans description)'}</small>
+            </div>`);
+
+        // ROLE ADMIN
         let isAdmin = false;
-        try { const p = token ? JSON.parse(atob(token.split('.')[1])) : null; isAdmin = Array.isArray(p?.roles)&&p.roles.includes('ROLE_ADMIN'); } catch{}
-        if (isAdmin) { const box = document.getElementById('adminActions'); if (box) box.style.display = ''; }
-
-        const btnSite = document.getElementById('btnCreateSite');
-        if (btnSite) btnSite.addEventListener('click', async () => {
-          if (!isAdmin) return alert('Admin requis');
-          const nom_site = document.getElementById('new_site_nom').value.trim();
-          const commentaire = document.getElementById('new_site_comment').value.trim();
-          if (!nom_site) return alert('Nom requis');
-          try { await fetchJSON('/api/sites', { method:'POST', body: JSON.stringify({ nom_site, client_id: Number(id), commentaire }) }); alert('Site créé'); location.reload(); }
-          catch(e){ alert(e.message); }
-        });
-        const btnDem = document.getElementById('btnCreateDemande');
-        if (btnDem) btnDem.addEventListener('click', async () => {
-          if (!isAdmin) return alert('Admin requis');
-          const site_id_raw = document.getElementById('new_demande_site').value.trim();
-          const description = document.getElementById('new_demande_desc').value.trim();
-          const site_id = site_id_raw ? Number(site_id_raw) : null;
-          if (!description) return alert('Description requise');
-          try { await fetchJSON('/api/clients/'+id+'/demandes', { method:'POST', body: JSON.stringify({ site_id, description }) }); alert('Demande créée'); location.reload(); }
-          catch(e){ alert(e.message); }
-        });
-
-        // Charger le répertoire documents
-        setRepoLoading();
         try {
-          const allDocs = [];
-          const allImages = [];
-          const allMsgAttachments = [];
+          const payload = token ? JSON.parse(atob(token.split('.')[1])) : {};
+          isAdmin = payload?.roles?.includes('ROLE_ADMIN');
+        } catch {}
+        if (isAdmin) document.getElementById('adminActions').style.display = '';
 
-          const loadDocs = async (type, cibleId) => {
-            if (!cibleId) return;
-            const docs = await fetchJSON(`/api/documents?cible_type=${encodeURIComponent(type)}&cible_id=${cibleId}`);
-            if (Array.isArray(docs)) allDocs.push(...docs);
-            const imgs = await fetchJSON(`/api/images?cible_type=${encodeURIComponent(type)}&cible_id=${cibleId}`);
-            if (Array.isArray(imgs)) allImages.push(...imgs);
-          };
+        /* 🔽 RÉPERTOIRE DOCUMENTS + IMAGES 🔽 */
+        const allDocs = [];
+        const allImages = [];
+        const allMsgAttachments = [];
 
-          const loadMessages = async (demandeId) => {
-            if (!demandeId) return;
-            const msgs = await fetchJSON(`/api/conversations/demande-${demandeId}`).catch(()=>null);
-            if (Array.isArray(msgs)) {
-              msgs.forEach(m => { if (Array.isArray(m.attachments)) allMsgAttachments.push(...m.attachments); });
-            }
-          };
+        const loadDocs = async (type, cibleId) => {
+          if (!cibleId) return;
+          try {
+            const docs = await fetchJSON(`/api/documents?cible_type=${type}&cible_id=${cibleId}`);
+            const imgs = await fetchJSON(`/api/images?cible_type=${type}&cible_id=${cibleId}`);
+            if (docs) allDocs.push(...docs);
+            if (imgs) allImages.push(...imgs);
+          } catch {}
+        };
 
-          // Par site
-          for (const s of sites||[]) {
-            await loadDocs('Site', s.id);
-            // tickets du site
-            const siteRel = await fetchJSON(`/api/sites/${s.id}/relations`).catch(()=>null);
-            if (siteRel?.tickets) {
-              for (const t of siteRel.tickets) {
-                await loadDocs('Ticket', t.id);
-                if (t.demande_id) await loadMessages(t.demande_id);
-              }
-            }
-          }
-          // Par demande directe
-          for (const d of demandes||[]) {
-            await loadDocs('DemandeClient', d.id);
-            await loadMessages(d.id);
-          }
+        const loadMessages = async demandeId => {
+          if (!demandeId) return;
+          try {
+            const msgs = await fetchJSON(`/api/conversations/demande-${demandeId}`);
+            msgs?.forEach(m => allMsgAttachments.push(...m.attachments || []));
+          } catch {}
+        };
 
-          // Rendu documents
-          if (docList) {
-            docList.innerHTML = '';
-            if (!allDocs.length && !allMsgAttachments.length) {
-              docList.innerHTML = '<li class="list-group-item text-muted">Aucun document</li>';
-            } else {
-              allDocs.forEach(doc => {
-                const li = document.createElement('li');
-                li.className = 'list-group-item d-flex justify-content-between align-items-center';
-                li.innerHTML = `<span>${doc.nom_fichier || 'Document #'+doc.id}</span>`;
-                const btn = document.createElement('a');
-                btn.className = 'btn btn-sm btn-outline-primary';
-                btn.textContent = 'Télécharger';
-                btn.href = `/api/documents/${doc.id}/download`;
-                btn.target = '_blank';
-                li.appendChild(btn);
-                docList.appendChild(li);
-              });
-              allMsgAttachments.forEach(att => {
-                const li = document.createElement('li');
-                li.className = 'list-group-item d-flex justify-content-between align-items-center';
-                const name = att.file_name || 'Pièce jointe';
-                li.innerHTML = `<span>${name} <span class="badge bg-secondary ms-2">Message</span></span>`;
-                const href = `/api/attachments/${att.id}/view`;
-                const btn = document.createElement('a');
-                btn.className = 'btn btn-sm btn-outline-primary';
-                btn.textContent = 'Télécharger';
-                btn.href = href;
-                btn.target = '_blank';
-                li.appendChild(btn);
-                docList.appendChild(li);
-              });
-            }
-          }
-
-          // Rendu images
-          if (imgList) {
-            imgList.innerHTML = '';
-            if (!allImages.length) {
-              imgList.innerHTML = '<div class="text-muted">Aucune image</div>';
-            } else {
-              for (const img of allImages) {
-                const url = await fetchBinaryURL(`/api/images/${img.id}/view`);
-                if (!url) continue;
-                const link = document.createElement('a');
-                link.href = url; link.target = '_blank';
-                const tag = document.createElement('img');
-                tag.src = url; tag.alt = img.nom_fichier; tag.style = 'width:110px;height:110px;object-fit:cover;border-radius:8px;';
-                link.appendChild(tag);
-                imgList.appendChild(link);
-              }
-            }
-          }
-
-          if (msgsInfo) msgsInfo.textContent = allMsgAttachments.length ? `${allMsgAttachments.length} PJ issues des messages` : '';
-        } catch(e) {
-          if (docList) docList.innerHTML = '<li class="list-group-item text-danger">Erreur de chargement du répertoire</li>';
-          if (imgList) imgList.innerHTML = '<div class="text-danger">Erreur</div>';
+        for (const s of sites || []) {
+          await loadDocs('Site', s.id);
+          try {
+            const rel = await fetchJSON(`/api/sites/${s.id}/relations`);
+            rel.tickets?.forEach(async t => {
+              await loadDocs('Ticket', t.id);
+              if (t.demande_id) await loadMessages(t.demande_id);
+            });
+          } catch {}
         }
-      } catch(e) {
-        const cc = document.getElementById('clientCard'); if (cc) cc.innerHTML = '<div class="card-body">Erreur: '+(e.message||e)+'</div>';
+
+        for (const d of demandes || []) {
+          await loadDocs('DemandeClient', d.id);
+          await loadMessages(d.id);
+        }
+
+        /* 🔹 Affichage des documents */
+        docList.innerHTML = '';
+        if (!allDocs.length && !allMsgAttachments.length) {
+          docList.innerHTML = `<div class="empty-state"><i class="bi bi-file-earmark-text"></i><p>Aucun document</p></div>`;
+        } else {
+          allDocs.forEach(doc => {
+            docList.innerHTML += `
+              <div class="doc-item">
+                <div class="d-flex align-items-center">
+                  <div class="doc-icon"><i class="bi bi-file-earmark-text"></i></div>
+                  <div><strong>${doc.nom_fichier}</strong><br><small class="text-muted">Document</small></div>
+                </div>
+                <a href="/api/documents/${doc.id}/download" class="btn btn-sm btn-outline-primary">
+                  Télécharger
+                </a>
+              </div>`;
+          });
+
+          allMsgAttachments.forEach(att => {
+            docList.innerHTML += `
+              <div class="doc-item">
+                <div class="d-flex align-items-center">
+                  <div class="doc-icon"><i class="bi bi-paperclip"></i></div>
+                  <div><strong>${att.file_name}</strong><br><small class="text-muted">Depuis message</small></div>
+                </div>
+                <a href="/api/attachments/${att.id}/view" class="btn btn-sm btn-outline-primary">
+                  Télécharger
+                </a>
+              </div>`;
+          });
+        }
+
+        /* 🔹 Affichage images */
+        imgList.innerHTML = '';
+        imgList.classList.add('image-gallery');
+        if (!allImages.length) {
+          imgList.innerHTML = `<div class="empty-state"><i class="bi bi-image"></i><p>Aucune image</p></div>`;
+        } else {
+          for (const img of allImages) {
+            const url = await fetchBinaryURL(`/api/images/${img.id}/view`);
+            if (!url) continue;
+            imgList.innerHTML += `
+              <a href="${url}" class="image-thumbnail" target="_blank">
+                <img src="${url}" alt="">
+              </a>`;
+          }
+        }
+
+        if (msgsInfo && allMsgAttachments.length) {
+          msgsInfo.innerHTML = `<i class="bi bi-info-circle me-1"></i>${allMsgAttachments.length} pièce(s) jointe(s) issue(s) des messages`;
+        }
+
+      } catch (err) {
+        console.error(err);
+        alert('Erreur de chargement: ' + err.message);
       }
     });
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 </body>
 </html>
