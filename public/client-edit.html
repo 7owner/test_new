@@ -84,18 +84,6 @@
                   <label for="user-password" class="form-label">Mot de passe temporaire</label>
                   <input type="password" class="form-control" id="user-password" required>
                 </div>
-                <div class="mb-3">
-                  <label for="user-nom" class="form-label">Nom</label>
-                  <input type="text" class="form-control" id="user-nom">
-                </div>
-                <div class="mb-3">
-                  <label for="user-tel" class="form-label">Téléphone</label>
-                  <input type="tel" class="form-control" id="user-tel">
-                </div>
-                <div class="mb-3">
-                  <label for="user-fonction" class="form-label">Fonction</label>
-                  <input type="text" class="form-control" id="user-fonction">
-                </div>
                 <button type="submit" class="btn btn-primary">Créer et lier</button>
               </form>
             </div>
@@ -182,7 +170,7 @@
           if (isNew) {
             const newClient = await api('/api/clients', { method: 'POST', body: JSON.stringify(payload) });
             alert('Client créé avec succès! Vous allez être redirigé pour ajouter des représentants.');
-            window.location.href = `/client-edit.html?id=${newClient.id}`;
+            window.location.href = `/client-edit.html?id=${newClient.id}`; 
           } else {
             await api(`/api/clients/${clientId}`, { method: 'PUT', body: JSON.stringify(payload) });
             alert('Client mis à jour.');
@@ -295,9 +283,6 @@
           e.preventDefault();
           const email = document.getElementById('user-email').value;
           const password = document.getElementById('user-password').value;
-          const nom = document.getElementById('user-nom')?.value || '';
-          const tel = document.getElementById('user-tel')?.value || '';
-          const fonction = document.getElementById('user-fonction')?.value || '';
           try {
               const newUser = await api('/api/users', {
                   method: 'POST',
@@ -305,7 +290,7 @@
               });
               await api(`/api/clients/${clientId}/representants`, {
                   method: 'POST',
-                  body: JSON.stringify({ user_id: newUser.id, nom, email, tel, fonction })
+                  body: JSON.stringify({ user_id: newUser.id })
               });
               await loadRepresentatives();
               alert('Nouvel utilisateur créé et lié avec succès.');
@@ -316,7 +301,43 @@
           }
       });
 
-      // Initialize
+      // Event listener for opening the representant modal to reset forms and clear search
+      document.getElementById('representantModal').addEventListener('show.bs.modal', () => {
+        // Clear search results and input
+        userSearchInput.value = '';
+        userSearchResults.innerHTML = '';
+        // Reset create user form
+        createUserForm.reset();
+        // Ensure "Lier un utilisateur existant" tab is active by default
+        const searchTabBtn = document.getElementById('search-tab');
+        const searchTabPane = document.getElementById('search-tab-pane');
+        const activeTab = new bootstrap.Tab(searchTabBtn);
+        activeTab.show();
+      });
+
+      // Logic for saveRepresentantBtn (inside the modal)
+      document.getElementById('saveRepresentantBtn').addEventListener('click', async () => {
+          const repId = document.getElementById('representantId').value;
+          const payload = {
+              nom: document.getElementById('representantNom').value.trim(),
+              email: document.getElementById('representantEmail').value.trim() || null,
+              tel: document.getElementById('representantTel').value.trim() || null,
+              fonction: document.getElementById('representantFonction').value.trim() || null,
+          };
+          if (!payload.nom) return alert('Le nom du représentant est obligatoire.');
+          try {
+              // The API for linking a user takes user_id, the put API takes the client_representant_id
+              // This is for updating the *link*, not creating a new user or new link
+              await api(`/api/client_representant/${repId}`, { method: 'PUT', body: JSON.stringify(payload) });
+              representantModal.hide();
+              await loadRepresentatives();
+              alert('Représentant mis à jour.');
+          } catch (e) {
+              alert(`Erreur: ${e.message}`);
+          }
+      });
+
+      // Initial load
       await loadAdresses();
       await loadClientData();
     });

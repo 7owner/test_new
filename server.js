@@ -1529,15 +1529,15 @@ app.post('/api/clients/:id/representants', authenticateToken, authorizeAdmin, as
     }
 });
 
-// Update a representative's role/function (targets the junction table record)
+// Update a representative (junction + custom fields)
 app.put('/api/client_representant/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id } = req.params;
-    const { fonction } = req.body;
+    const { fonction=null, nom=null, email=null, tel=null } = req.body || {};
 
     try {
         const result = await pool.query(
-            'UPDATE client_representant SET fonction = $1 WHERE id = $2 RETURNING *',
-            [fonction || null, id]
+            'UPDATE client_representant SET fonction = $1, nom = $2, email = $3, tel = $4 WHERE id = $5 RETURNING *',
+            [fonction, nom, email, tel, id]
         );
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Representative link not found' });
