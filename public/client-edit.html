@@ -17,80 +17,317 @@
     document.addEventListener('DOMContentLoaded', async () => {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams(location.search);
-      const id = params.get('id');
-      const isNew = !id;
-      const h1 = document.getElementById('title');
-      h1.textContent = isNew ? 'Créer un client' : 'Modifier le client #' + id;
+      const clientId = params.get('id');
+      const isNew = !clientId;
+      const h1Title = document.getElementById('title');
 
-      async function fetchJSON(url, opts){ const r=await fetch(url,Object.assign({headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}},opts||{})); const ct=r.headers.get('content-type')||''; const b=ct.includes('application/json')?await r.json():null; if(!r.ok) throw new Error((b&&b.error)||r.statusText); return b; }
+      const clientNomInput = document.getElementById('nom_client');
+      const adresseSelect = document.getElementById('adresse_id');
+      const commentaireTextarea = document.getElementById('commentaire');
+      const form = document.getElementById('form');
 
-      async function loadAdresses(){
+      const representantsList = document.getElementById('representants-list');
+      const addRepresentantBtn = document.getElementById('add-representant-btn');
+      const representantModalEl = document.getElementById('representantModal');
+      const representantModal = new bootstrap.Modal(representantModalEl);
+      const representantForm = document.getElementById('representantForm');
+      const saveRepresentantBtn = document.getElementById('saveRepresentantBtn');
+      
+      let allRepresentants = []; // To store representatives for the current client
+
+      // Representative form fields
+      const repIdField = document.getElementById('representantId');
+      const repNomField = document.getElementById('representantNom');
+      const repEmailField = document.getElementById('representantEmail');
+      const repTelField = document.getElementById('representantTel');
+      const repFonctionField = document.getElementById('representantFonction');
+
+      async function fetchJSON(url, opts) {
+        const base = { headers: { 'Content-Type': 'application/json' } };
+        if (token) base.headers['Authorization'] = 'Bearer ' + token;
+        const r = await fetch(url, Object.assign(base, opts || {}));
+        const ct = r.headers.get('content-type') || '';
+        const body = ct.includes('application/json') ? await r.json() : null;
+        if (!r.ok) {
+          if (r.status === 401 || r.status === 403) window.location.href = '/login.html';
+          throw new Error((body && body.error) || r.statusText);
+        }
+        return body;
+      }
+
+      // --- Main Client Form Logic ---
+      h1Title.textContent = isNew ? 'Créer un client' : `Modifier client #${clientId}`;
+      if (!isNew) {
+          document.getElementById('clientId').value = clientId;
+      } else {
+          // Hide representative section for new clients until client is created
+          document.querySelector('div.card.mb-4:last-of-type').style.display = 'none';
+      }
+
+      async function loadAdresses() {
         try {
           const adrs = await fetchJSON('/api/adresses');
-          const sel = document.getElementById('adresse_id'); sel.innerHTML = '<option value="">(aucune)</option>';
-          adrs.forEach(a=>{ const o=document.createElement('option'); o.value=a.id; o.textContent=a.libelle||('#'+a.id); sel.appendChild(o); });
-        } catch(e) { console.error(e); }
+          adresseSelect.innerHTML = '<option value="">(aucune)</option>';
+          adrs.forEach(a => { const o = document.createElement('option'); o.value = a.id; o.textContent = a.libelle || (`Adresse #${a.id}`); adresseSelect.appendChild(o); });
+        } catch (e) { console.error('Error loading addresses:', e); }
       }
 
-      await loadAdresses();
+      async function loadClientData() {
+        if (!isNew) {
+          try {
+            const data = await fetchJSON('/api/clients/' + clientId + '/relations');
+            const c = data.client;
+            allRepresentants = data.representants || [];
 
-      if (!isNew) {
-        try {
-          const c = await fetchJSON('/api/clients/'+id);
-          document.getElementById('nom_client').value = c.nom_client||'';
-          document.getElementById('representant_nom').value = c.representant_nom||'';
-          document.getElementById('representant_email').value = c.representant_email||'';
-          document.getElementById('representant_tel').value = c.representant_tel||'';
-          document.getElementById('adresse_id').value = c.adresse_id||'';
-          document.getElementById('commentaire').value = c.commentaire||'';
-        } catch(e) { alert(e.message); }
+            clientNomInput.value = c.nom_client || '';
+            adresseSelect.value = c.adresse_id || '';
+            commentaireTextarea.value = c.commentaire || '';
+            renderRepresentants();
+          } catch (e) {
+            alert(e.message);
+            console.error('Error loading client data:', e);
+            window.history.back(); // Go back if client not found
+          }
+        }
       }
 
-      document.getElementById('form').addEventListener('submit', async (ev) => {
+      form.addEventListener('submit', async (ev) => {
         ev.preventDefault();
         const payload = {
-          nom_client: document.getElementById('nom_client').value.trim(),
-          representant_nom: document.getElementById('representant_nom').value.trim()||null,
-          representant_email: document.getElementById('representant_email').value.trim()||null,
-          representant_tel: document.getElementById('representant_tel').value.trim()||null,
-          adresse_id: document.getElementById('adresse_id').value||null,
-          commentaire: document.getElementById('commentaire').value.trim()||null,
+          nom_client: clientNomInput.value.trim(),
+          adresse_id: adresseSelect.value || null,
+          commentaire: commentaireTextarea.value.trim() || null,
         };
+
+        if (!payload.nom_client) {
+          alert('Le nom du client est obligatoire.');
+          return;
+        }
+
         try {
-          if (isNew) await fetchJSON('/api/clients', { method:'POST', body: JSON.stringify(payload) });
-          else await fetchJSON('/api/clients/'+id, { method:'PUT', body: JSON.stringify(payload) });
-          alert('Client enregistré');
-          location.href = '/clients.html';
-        } catch(e) { alert(e.message); }
+          if (isNew) {
+            const newClient = await fetchJSON('/api/clients', { method: 'POST', body: JSON.stringify(payload) });
+            alert('Client créé avec succès!');
+            // Redirect to edit page of the new client
+            window.location.href = `/client-edit.html?id=${newClient.id}`; 
+          } else {
+            await fetchJSON('/api/clients/' + clientId, { method: 'PUT', body: JSON.stringify(payload) });
+            alert('Client mis à jour avec succès!');
+            window.location.href = `/clients.html`; // Go back to list after edit
+          }
+        } catch (e) {
+          console.error('Error saving client:', e);
+          alert(`Erreur lors de l'enregistrement du client: ${e.message || e}`);
+        }
       });
+
+      // --- Representative Management Logic ---
+      function renderRepresentants() {
+        representantsList.innerHTML = '';
+        if (allRepresentants.length === 0) {
+          representantsList.innerHTML = '<li class="list-group-item text-muted">Aucun représentant défini.</li>';
+          return;
+        }
+        allRepresentants.forEach(rep => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item d-flex justify-content-between align-items-center';
+          li.innerHTML = `
+            <div>
+              <div class="fw-bold">${rep.nom}</div>
+              <div class="small text-muted">${rep.fonction || ''}</div>
+              <div class="small"><i class="bi bi-envelope-fill"></i> ${rep.email || ''} | <i class="bi bi-telephone-fill"></i> ${rep.tel || ''}</div>
+            </div>
+            <div>
+              <button class="btn btn-sm btn-outline-primary me-2 edit-representant-btn" data-id="${rep.id}"><i class="bi bi-pencil"></i> Modifier</button>
+              <button class="btn btn-sm btn-outline-danger delete-representant-btn" data-id="${rep.id}"><i class="bi bi-trash"></i> Supprimer</button>
+            </div>
+          `;
+          representantsList.appendChild(li);
+        });
+      }
+
+      function resetRepresentantForm() {
+        repIdField.value = '';
+        repNomField.value = '';
+        repEmailField.value = '';
+        repTelField.value = '';
+        repFonctionField.value = '';
+        document.getElementById('representantModalLabel').textContent = 'Ajouter un représentant';
+      }
+
+      addRepresentantBtn.addEventListener('click', () => {
+        resetRepresentantForm();
+        representantModal.show();
+      });
+
+      representantsList.addEventListener('click', async (event) => {
+        const editBtn = event.target.closest('.edit-representant-btn');
+        const deleteBtn = event.target.closest('.delete-representant-btn');
+        if (editBtn) {
+          const repId = editBtn.dataset.id;
+          const rep = allRepresentants.find(r => String(r.id) === String(repId));
+          if (rep) {
+            repIdField.value = rep.id;
+            repNomField.value = rep.nom;
+            repEmailField.value = rep.email || '';
+            repTelField.value = rep.tel || '';
+            repFonctionField.value = rep.fonction || '';
+            document.getElementById('representantModalLabel').textContent = `Modifier représentant #${rep.id}`;
+            representantModal.show();
+          }
+        } else if (deleteBtn) {
+          const repId = deleteBtn.dataset.id;
+          if (!confirm('Supprimer ce représentant ?')) return;
+          try {
+            await fetchJSON('/api/representants/' + repId, { method: 'DELETE' });
+            allRepresentants = allRepresentants.filter(r => String(r.id) !== String(repId));
+            renderRepresentants();
+            alert('Représentant supprimé.');
+          } catch (e) {
+            console.error('Error deleting representative:', e);
+            alert('Erreur lors de la suppression.');
+          }
+        }
+      });
+
+      saveRepresentantBtn.addEventListener('click', async () => {
+        const repId = repIdField.value;
+        const payload = {
+          nom: repNomField.value.trim(),
+          email: repEmailField.value.trim() || null,
+          tel: repTelField.value.trim() || null,
+          fonction: repFonctionField.value.trim() || null,
+        };
+
+        if (!payload.nom) {
+          alert('Le nom du représentant est obligatoire.');
+          return;
+        }
+
+        try {
+          if (repId) { // Edit existing
+            await fetchJSON('/api/representants/' + repId, { method: 'PUT', body: JSON.stringify(payload) });
+          } else { // Add new
+            await fetchJSON(`/api/clients/${clientId}/representants`, { method: 'POST', body: JSON.stringify(payload) });
+          }
+          representantModal.hide();
+          await loadClientData(); // Reload all client data including updated representants
+          alert('Représentant enregistré.');
+        } catch (e) {
+          console.error('Error saving representative:', e);
+          alert(`Erreur lors de l'enregistrement: ${e.message || e}`);
+        }
+      });
+      
+      // Initial load
+      await loadAdresses();
+      await loadClientData();
     });
   </script>
 </head>
 <body class="app-bg">
-  <h1 id="title">Modifier le client</h1>
-  <div class="card">
-    <form id="form">
-      <label for="nom_client">Nom client</label>
-      <input id="nom_client" required>
-
-      <label for="representant_nom">Représentant (nom)</label>
-      <input id="representant_nom">
-
-      <label for="representant_email">Représentant (email)</label>
-      <input id="representant_email" type="email">
-
-      <label for="representant_tel">Représentant (téléphone)</label>
-      <input id="representant_tel">
-
-      <label for="adresse_id">Adresse</label>
-      <select id="adresse_id"></select>
-
-      <label for="commentaire">Commentaire</label>
-      <textarea id="commentaire" rows="3"></textarea>
-
-      <button type="submit">Enregistrer</button>
-    </form>
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+        <li class="nav-item"><a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
+        <li class="nav-item"><a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/clients.html"><i class="bi bi-person-badge-fill me-2"></i>Clients</a></li>
+        <li class="nav-item"><a class="nav-link" href="/tickets.html"><i class="bi bi-tools me-2"></i>Tickets</a></li>
+        <li class="nav-item"><a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a></li>
+        <li class="nav-item"><a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a></li>
+        <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
+        <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
+      </ul>
+    </div>
   </div>
-</body>
+
+  <main class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <h1 class="mb-0" id="title">Modifier le client</h1>
+      <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()"><i class="bi bi-arrow-left me-1"></i> Retour</button>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="mb-0">Informations Générales</h5>
+      </div>
+      <div class="card-body">
+        <form id="form">
+          <input type="hidden" id="clientId">
+          <div class="mb-3">
+            <label for="nom_client" class="form-label">Nom client</label>
+            <input type="text" class="form-control" id="nom_client" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="adresse_id" class="form-label">Adresse</label>
+            <select class="form-select" id="adresse_id"></select>
+          </div>
+
+          <div class="mb-3">
+            <label for="commentaire" class="form-label">Commentaire</label>
+            <textarea class="form-control" id="commentaire" rows="3"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Enregistrer</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Représentants Management Section -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Représentants</h5>
+            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#representantModal" id="add-representant-btn"><i class="bi bi-person-plus me-1"></i> Ajouter un représentant</button>
+        </div>
+        <ul id="representants-list" class="list-group list-group-flush">
+            <!-- Representatives will be loaded here -->
+        </ul>
+    </div>
+  </main>
+
+  <!-- Representant Modal -->
+  <div class="modal fade" id="representantModal" tabindex="-1" aria-labelledby="representantModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="representantModalLabel">Gérer Représentant</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="representantForm">
+            <input type="hidden" id="representantId">
+            <div class="mb-3">
+              <label for="representantNom" class="form-label">Nom</label>
+              <input type="text" class="form-control" id="representantNom" required>
+            </div>
+            <div class="mb-3">
+              <label for="representantEmail" class="form-label">Email</label>
+              <input type="email" class="form-control" id="representantEmail">
+            </div>
+            <div class="mb-3">
+              <label for="representantTel" class="form-label">Téléphone</label>
+              <input type="text" class="form-control" id="representantTel">
+            </div>
+            <div class="mb-3">
+              <label for="representantFonction" class="form-label">Fonction</label>
+              <input type="text" class="form-control" id="representantFonction">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="saveRepresentantBtn">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </html>
 

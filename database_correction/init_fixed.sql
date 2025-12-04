@@ -469,6 +469,17 @@ CREATE TABLE IF NOT EXISTS documents_repertoire (
 
 ALTER TABLE documents_repertoire ADD COLUMN IF NOT EXISTS auteur_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL;
 
+CREATE TABLE IF NOT EXISTS representant (
+    id SERIAL PRIMARY KEY,
+    client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
+    nom VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    tel VARCHAR(50),
+    fonction VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (client_id, email)
+);
+
 CREATE TABLE IF NOT EXISTS ticket_satisfaction (
     id SERIAL PRIMARY KEY,
     ticket_id BIGINT NOT NULL UNIQUE REFERENCES ticket(id) ON DELETE CASCADE,
