@@ -4,304 +4,192 @@
   <meta charset="utf-8">
   <title>Modifier Client</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap + Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- Navigation -->
   <script src="/nav.js?v=2"></script>
 </head>
+
 <body class="app-bg">
-  <main class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-      <h1 class="mb-0" id="title">Chargement...</h1>
-      <a href="/clients.html" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Retour à la liste</a>
-    </div>
 
-    <div class="card mb-4">
-      <div class="card-header"><h5 class="mb-0">Informations Générales</h5></div>
-      <div class="card-body">
-        <form id="form">
-          <div class="mb-3">
-            <label for="nom_client" class="form-label">Nom client</label>
-            <input type="text" class="form-control" id="nom_client" required>
-          </div>
-          <div class="mb-3">
-            <label for="commentaire" class="form-label">Commentaire</label>
-            <textarea class="form-control" id="commentaire" rows="3"></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Enregistrer</button>
-        </form>
-      </div>
-    </div>
+<main class="container mt-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 id="title">Chargement...</h1>
+    <a href="/clients.html" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Retour
+    </a>
+  </div>
 
-    <div class="card mb-4" id="representants-section" style="display: none;">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Représentants (Utilisateurs)</h5>
-            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#representantModal"><i class="bi bi-person-plus me-1"></i> Gérer les représentants</button>
-        </div>
-        <ul id="representants-list" class="list-group list-group-flush"></ul>
-        <div class="card-body border-top">
-          <h6 class="mb-3">Ajouter un nouveau représentant</h6>
-          <form id="quickRepForm" class="row g-2">
-            <div class="col-md-6">
-              <label class="form-label">Email *</label>
-              <input type="email" class="form-control" id="quick-rep-email" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Mot de passe *</label>
-              <input type="password" class="form-control" id="quick-rep-password" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Nom</label>
-              <input type="text" class="form-control" id="quick-rep-nom">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Téléphone</label>
-              <input type="tel" class="form-control" id="quick-rep-tel">
-            </div>
-            <div class="col-12">
-              <button type="submit" class="btn btn-outline-primary"><i class="bi bi-person-plus me-1"></i>Créer et lier</button>
-              <div id="quick-rep-message" class="mt-2 small"></div>
-            </div>
-          </form>
-        </div>
-    </div>
-  </main>
+  <!-- INFOS CLIENT -->
+  <div class="card mb-4">
+    <div class="card-header"><strong>Informations Générales</strong></div>
 
-  <!-- Representant Modal -->
-  <div class="modal fade" id="representantModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Gérer les représentants</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="card-body">
+      <form id="clientForm">
+        <div class="mb-3">
+          <label class="form-label">Nom du client *</label>
+          <input id="nom_client" class="form-control" required>
         </div>
-        <div class="modal-body">
-          <ul class="nav nav-tabs" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="search-tab" data-bs-toggle="tab" data-bs-target="#search-tab-pane" type="button">Lier un utilisateur existant</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="create-tab" data-bs-toggle="tab" data-bs-target="#create-tab-pane" type="button">Créer un nouvel utilisateur</button>
-            </li>
-          </ul>
-          <div class="tab-content" id="myTabContent">
-            <div class="tab-pane fade show active p-3" id="search-tab-pane" role="tabpanel">
-              <div class="mb-3">
-                <label for="user-search" class="form-label">Rechercher par email</label>
-                <input type="email" class="form-control" id="user-search" placeholder="tape-ici@email.com">
-              </div>
-              <ul id="user-search-results" class="list-group"></ul>
-            </div>
-            <div class="tab-pane fade p-3" id="create-tab-pane" role="tabpanel">
-              <form id="createUserForm">
-                <div class="mb-3">
-                  <label for="user-email" class="form-label">Email</label>
-                  <input type="email" class="form-control" id="user-email" required>
-                </div>
-                <div class="mb-3">
-                  <label for="user-password" class="form-label">Mot de passe temporaire</label>
-                  <input type="password" class="form-control" id="user-password" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Créer et lier</button>
-              </form>
-            </div>
-          </div>
+
+        <div class="mb-3">
+          <label class="form-label">Commentaire</label>
+          <textarea id="commentaire" class="form-control" rows="3"></textarea>
         </div>
-      </div>
+
+        <button class="btn btn-primary"><i class="bi bi-save me-1"></i>Enregistrer</button>
+      </form>
     </div>
   </div>
 
+  <!-- REPRESENTANTS -->
+  <div class="card mb-4" id="repBox" style="display:none;">
+    <div class="card-header fw-bold">Représentants utilisateur</div>
+
+    <ul id="repList" class="list-group list-group-flush"></ul>
+
+    <div class="card-body border-top">
+      <h6>Ajouter / Lier un représentant</h6>
+      <form id="repForm" class="row g-2">
+        <div class="col-md-6">
+          <label class="form-label">Nom (existant ou nouveau) *</label>
+          <input id="rep_nom" class="form-control" required placeholder="Nom représentant">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Téléphone</label>
+          <input id="rep_tel" class="form-control">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Email *</label>
+          <input type="email" id="rep_email" class="form-control" required>
+        </div>
+
+        <button class="btn btn-success mt-2">
+          <i class="bi bi-person-plus"></i> Ajouter / Lier
+        </button>
+
+        <div id="repMsg" class="mt-2 small"></div>
+      </form>
+    </div>
+  </div>
+
+</main>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-        const token = localStorage.getItem('token');
-        if (!token) return location.href = '/login.html';
-        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+document.addEventListener("DOMContentLoaded", async () => {
 
-        const params = new URLSearchParams(location.search);
-        const clientId = params.get('id');
-        const isNew = !clientId;
+  const token = localStorage.getItem("token");
+  if(!token) return location.href="/login.html";
 
-        const h1Title = document.getElementById('title');
-        const clientNomInput = document.getElementById('nom_client');
-        const commentaireTextarea = document.getElementById('commentaire');
-        const mainForm = document.getElementById('form');
-        const representantsSection = document.getElementById('representants-section');
-        const representantsList = document.getElementById('representants-list');
-        const quickRepForm = document.getElementById('quickRepForm');
-        const quickRepMessage = document.getElementById('quick-rep-message');
-        const userSearchInput = document.getElementById('user-search');
-        const userSearchResults = document.getElementById('user-search-results');
-        const createUserForm = document.getElementById('createUserForm');
+  const headers = { "Content-Type":"application/json", "Authorization":"Bearer "+token };
+  const clientId = new URLSearchParams(location.search).get("id");
+  const isNew = !clientId;
 
-        h1Title.textContent = isNew ? 'Créer un client' : `Modifier Client #${clientId}`;
-        if(isNew) {
-            representantsSection.style.display = 'none';
-        }
+  const title = document.getElementById("title");
+  const repBox = document.getElementById("repBox");
+  const repList = document.getElementById("repList");
+  const repMsg = document.getElementById("repMsg");
 
-        async function api(url, opts = {}) {
-            const r = await fetch(url, { headers, ...opts });
-            const body = await r.json().catch(() => ({}));
-            if (!r.ok) throw new Error(body.error || `HTTP ${r.status}`);
-            return body;
-        }
+  title.textContent = isNew ? "Créer un client" : `Modifier Client #${clientId}`;
+  if(isNew) repBox.style.display="none";
 
-        async function loadClientData() {
-            if (isNew) return;
-            try {
-                const client = await api(`/api/clients/${clientId}`);
-                clientNomInput.value = client.nom_client || '';
-                commentaireTextarea.value = client.commentaire || '';
-                await loadRepresentatives();
-            } catch (e) {
-                alert(`Erreur de chargement du client: ${e.message}`);
-                location.href = '/clients.html';
-            }
-        }
+  async function api(url,opt={}) {
+    const r = await fetch(url,{...opt,headers});
+    const b = await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(b.error||"Erreur API");
+    return b;
+  }
 
-        async function loadRepresentatives() {
-            if (isNew) return;
-            try {
-                const reps = await api(`/api/clients/${clientId}/representants`);
-                representantsList.innerHTML = '';
-                if (!reps.length) {
-                    representantsList.innerHTML = '<li class="list-group-item text-muted">Aucun représentant lié.</li>';
-                    return;
-                }
-                reps.forEach(rep => {
-                    const li = document.createElement('li');
-                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
-                    li.innerHTML = `
-                        <div>
-                            <div class="fw-bold">${rep.nom || rep.email} ${rep.prenom || ''}</div>
-                            <div class="small text-muted">${rep.fonction || 'Représentant'}</div>
-                        </div>
-                        <button class="btn btn-sm btn-outline-danger delete-representant-btn" data-id="${rep.client_representant_id}"><i class="bi bi-trash"></i> Retirer</button>
-                    `;
-                    li.querySelector('.delete-representant-btn').addEventListener('click', async () => {
-                        if (!confirm('Retirer ce représentant du client ?')) return;
-                        try {
-                            await api(`/api/client_representant/${rep.client_representant_id}`, { method: 'DELETE' });
-                            loadRepresentatives();
-                        } catch (e) {
-                            alert(`Erreur: ${e.message}`);
-                        }
-                    });
-                    representantsList.appendChild(li);
-                });
-            } catch (e) {
-                representantsList.innerHTML = '<li class="list-group-item text-danger">Erreur de chargement des représentants.</li>';
-            }
-        }
+  // === CHARGER CLIENT ===
+  async function loadClient(){
+    if(isNew) return;
+    const c = await api(`/api/clients/${clientId}`);
+    nom_client.value = c.nom_client;
+    commentaire.value = c.commentaire||"";
+    loadRepresentants();
+  }
 
-        mainForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const payload = {
-                nom_client: clientNomInput.value.trim(),
-                commentaire: commentaireTextarea.value.trim() || null,
-            };
-            if (!payload.nom_client) return alert('Le nom du client est obligatoire.');
-            
-            try {
-                if (isNew) {
-                    const newClient = await api('/api/clients', { method: 'POST', body: JSON.stringify(payload) });
-                    alert('Client créé avec succès! Vous pouvez maintenant ajouter des représentants.');
-                    window.location.href = `/client-edit.html?id=${newClient.id}`;
-                } else {
-                    await api(`/api/clients/${clientId}`, { method: 'PUT', body: JSON.stringify(payload) });
-                    alert('Client mis à jour.');
-                }
-            } catch (e) {
-                alert(`Erreur: ${e.message}`);
-            }
-        });
-
-        userSearchInput.addEventListener('input', async () => {
-            const email = userSearchInput.value.trim();
-            if (email.length < 3) {
-                userSearchResults.innerHTML = '';
-                return;
-            }
-            try {
-                const users = await api(`/api/users/search?email=${encodeURIComponent(email)}`);
-                userSearchResults.innerHTML = '';
-                if (!users.length) {
-                    userSearchResults.innerHTML = '<li class="list-group-item text-muted">Aucun utilisateur trouvé.</li>';
-                    return;
-                }
-                users.forEach(user => {
-                    const li = document.createElement('li');
-                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
-                    li.innerHTML = `<span>${user.email}</span>
-                                    <button class="btn btn-sm btn-success link-user-btn" data-id="${user.id}">Lier</button>`;
-                    li.querySelector('.link-user-btn').addEventListener('click', async () => {
-                        try {
-                            await api(`/api/clients/${clientId}/representants`, { method: 'POST', body: JSON.stringify({ user_id: user.id }) });
-                            await loadRepresentatives();
-                            alert('Utilisateur lié avec succès.');
-                            userSearchResults.innerHTML = '';
-                            userSearchInput.value = '';
-                        } catch (e) {
-                            alert(`Erreur: ${e.message}`);
-                        }
-                    });
-                    userSearchResults.appendChild(li);
-                });
-            } catch (e) {
-                userSearchResults.innerHTML = '<li class="list-group-item text-danger">Erreur de recherche.</li>';
-            }
-        });
-
-        createUserForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('user-email').value;
-            const password = document.getElementById('user-password').value;
-            try {
-                const newUser = await api('/api/users', {
-                    method: 'POST',
-                    body: JSON.stringify({ email, password, role: 'ROLE_CLIENT' })
-                });
-                await api(`/api/clients/${clientId}/representants`, {
-                    method: 'POST',
-                    body: JSON.stringify({ user_id: newUser.id })
-                });
-                await loadRepresentatives();
-                alert('Nouvel utilisateur créé et lié avec succès.');
-                createUserForm.reset();
-            } catch (e) {
-                alert(`Erreur: ${e.message}`);
-            }
-        });
-
-        quickRepForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          if (isNew) {
-            quickRepMessage.className = 'text-warning';
-            quickRepMessage.textContent = 'Créez d’abord le client.';
-            return;
-          }
-          quickRepMessage.textContent = '';
-          const body = {
-            email: document.getElementById('quick-rep-email').value,
-            password: document.getElementById('quick-rep-password').value,
-            nom: document.getElementById('quick-rep-nom').value,
-            tel: document.getElementById('quick-rep-tel').value
-          };
-          try {
-            await api(`/api/clients/${clientId}/representant`, { method: 'POST', body: JSON.stringify(body) });
-            quickRepMessage.className = 'text-success';
-            quickRepMessage.textContent = 'Représentant créé et lié.';
-            quickRepForm.reset();
-            await loadRepresentatives();
-          } catch (err) {
-            quickRepMessage.className = 'text-danger';
-            quickRepMessage.textContent = err.message || 'Erreur lors de l’ajout du représentant.';
-          }
-        });
-
-        if (!isNew) {
-            await loadClientData();
-        }
+  // === CHARGER REPRESENTANTS ===
+  async function loadRepresentants(){
+    const reps = await api(`/api/clients/${clientId}/representants`);
+    repList.innerHTML="";
+    if(!reps.length){
+      repList.innerHTML = `<li class="list-group-item text-muted">Aucun représentant</li>`;
+      return;
+    }
+    reps.forEach(rep=>{
+      repList.innerHTML+=`
+        <li class="list-group-item d-flex justify-content-between">
+          <div>
+            <strong>${rep.nom||rep.email}</strong><br>
+            <small class="text-muted">${rep.email}</small>
+          </div>
+          <button class="btn btn-sm btn-outline-danger" onclick="removeRep(${rep.client_representant_id})">
+            <i class="bi bi-trash"></i>
+          </button>
+        </li>
+      `;
     });
+    repBox.style.display="";
+  }
+
+  window.removeRep = async (id)=>{
+    if(!confirm("Retirer ce représentant ?")) return;
+    await api(`/api/client_representant/${id}`,{method:"DELETE"});
+    loadRepresentants();
+  };
+
+  // === SAUVE CLIENT ===
+  document.getElementById("clientForm").onsubmit = async (e)=>{
+    e.preventDefault();
+    const payload = {
+      nom_client: nom_client.value.trim(),
+      commentaire: commentaire.value.trim()||null
+    };
+
+    if(isNew){
+      const r = await api("/api/clients",{method:"POST",body:JSON.stringify(payload)});
+      location.href=`/client-edit.html?id=${r.id}`;
+    } else {
+      await api(`/api/clients/${clientId}`,{method:"PUT",body:JSON.stringify(payload)});
+      alert("Enregistré ✔");
+    }
+  };
+
+  // === AJOUT REPRESENTANT ===
+  document.getElementById("repForm").onsubmit = async (e)=>{
+    e.preventDefault();
+    repMsg.textContent="";
+
+    const body = {
+      nom: rep_nom.value.trim(),
+      tel: rep_tel.value.trim(),
+      email: rep_email.value.trim()
+    };
+
+    try {
+      await api(`/api/clients/${clientId}/representant`,{
+        method:"POST",
+        body:JSON.stringify(body)
+      });
+      repMsg.className="text-success";
+      repMsg.textContent="Représentant enregistré ✔";
+      repForm.reset();
+      loadRepresentants();
+    } catch(err){
+      repMsg.className="text-danger";
+      repMsg.textContent=err.message;
+    }
+  };
+
+  if(!isNew) loadClient();
+
+});
 </script>
+
 </body>
 </html>
