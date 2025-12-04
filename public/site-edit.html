@@ -174,7 +174,6 @@
           document.getElementById('client_id').value = site.client_id || '';
           document.getElementById('commentaire').value = site.commentaire || '';
           document.getElementById('statut').value = site.statut || 'Actif';
-          document.getElementById('ticket').checked = site.ticket || false;
           if (site.responsable_matricule) {
             responsableSelect.value = site.responsable_matricule;
           }
@@ -201,7 +200,6 @@
           client_id: document.getElementById('client_id').value || null,
           commentaire: document.getElementById('commentaire').value,
           statut: document.getElementById('statut').value,
-          ticket: document.getElementById('ticket').checked,
           responsable_matricule: document.getElementById('responsable_matricule').value || null,
         };
 
