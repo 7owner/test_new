@@ -68,6 +68,7 @@ CREATE TYPE statut_facture      AS ENUM ('Brouillon','Emise','Envoyee','Payee_pa
 CREATE TYPE mode_reglement      AS ENUM ('Virement','Cheque','Carte','Especes','Traite','Autre');
 CREATE TYPE role_agence         AS ENUM ('Admin','Manager','Membre');
 CREATE TYPE type_formation      AS ENUM ('Habilitation','Certification','Permis');
+CREATE TYPE site_status AS ENUM ('Actif', 'Inactif');
 
 -- --------------------------------------------------
 -- CORE ENTITIES (Order fixed)
@@ -131,7 +132,7 @@ CREATE TABLE IF NOT EXISTS site (
     commentaire TEXT,
     ticket BOOLEAN DEFAULT FALSE NOT NULL,
     responsable_matricule VARCHAR(20),
-    statut VARCHAR(50) DEFAULT 'en attente'  -- ✅ Nouveau champ
+    statut site_status DEFAULT 'Actif' NOT NULL
 );
 
 

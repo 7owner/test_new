@@ -38,10 +38,10 @@
       <div class="card-body">
         <form id="site-edit-form">
           <div class="row">
-            <div class="col-md-6 mb-3">
+            <!--<div class="col-md-6 mb-3">
               <label for="id" class="form-label">ID Site</label>
               <input type="text" class="form-control" id="id" readonly>
-            </div>
+            </div>-->
             <div class="col-md-6 mb-3">
               <label for="nom_site" class="form-label">Nom du site</label>
               <input type="text" class="form-control" id="nom_site" required>
@@ -62,17 +62,18 @@
             </div>
           </div>
           <div class="mb-3">
+            <label for="client_id" class="form-label">Client</label>
+            <select class="form-select" id="client_id"></select>
+          </div>
+          <div class="mb-3">
             <label for="responsable_matricule" class="form-label">Responsable</label>
             <select class="form-select" id="responsable_matricule"></select>
           </div>
           <div class="mb-3">
             <label for="statut" class="form-label">Statut</label>
             <select class="form-select" id="statut" required>
-              <option value="en attente">En attente</option>
-              <option value="prise en charge">Prise en charge</option>
-              <option value="en cour">En cours</option>
-              <option value="fini">Fini</option>
-              <option value="sous devis">Sous devis</option>
+              <option value="Actif">Actif</option>
+              <option value="Inactif">Inactif</option>
             </select>
           </div>
           <div class="mb-3 form-check form-switch">
@@ -122,9 +123,10 @@
       async function loadRelatedData() {
         try {
           const headers = await buildHeaders(false);
-          const [agentsRes, adressesRes] = await Promise.all([
+          const [agentsRes, adressesRes, clientsRes] = await Promise.all([ // Add clientsRes
             fetch('/api/agents', { headers, credentials: 'same-origin' }),
-            fetch('/api/adresses', { headers, credentials: 'same-origin' })
+            fetch('/api/adresses', { headers, credentials: 'same-origin' }),
+            fetch('/api/clients', { headers, credentials: 'same-origin' }) // Fetch clients
           ]);
 
           if (agentsRes.ok) {
@@ -138,6 +140,15 @@
             adresseSelect.innerHTML = '<option value="">Aucune adresse</option>';
             (Array.isArray(adresses)? adresses: []).forEach(a => adresseSelect.add(new Option(a.libelle || `Adresse #${a.id}`, a.id)));
           }
+          
+          // Populate clients dropdown
+          if (clientsRes.ok) {
+            const clients = await clientsRes.json();
+            const clientSelect = document.getElementById('client_id');
+            clientSelect.innerHTML = '<option value="">Aucun client</option>';
+            (Array.isArray(clients)? clients: []).forEach(c => clientSelect.add(new Option(c.nom_client, c.id)));
+          }
+
         } catch (e) {
           console.error('Error loading related data:', e);
         }
@@ -160,11 +171,11 @@
           
           const site = await response.json();
 
-          document.getElementById('id').value = site.id;
           document.getElementById('nom_site').value = site.nom_site || '';
           document.getElementById('adresse_id').value = site.adresse_id || '';
+          document.getElementById('client_id').value = site.client_id || '';
           document.getElementById('commentaire').value = site.commentaire || '';
-          document.getElementById('statut').value = site.statut || 'en attente';
+          document.getElementById('statut').value = site.statut || 'Actif';
           document.getElementById('ticket').checked = site.ticket || false;
           if (site.responsable_matricule) {
             responsableSelect.value = site.responsable_matricule;
@@ -189,6 +200,7 @@
         const payload = {
           nom_site: document.getElementById('nom_site').value,
           adresse_id: document.getElementById('adresse_id').value || null,
+          client_id: document.getElementById('client_id').value || null,
           commentaire: document.getElementById('commentaire').value,
           statut: document.getElementById('statut').value,
           ticket: document.getElementById('ticket').checked,
