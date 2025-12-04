@@ -14,12 +14,17 @@ document.addEventListener('DOMContentLoaded', () => {
   } catch(_) {}
 
   async function fetchJSON(url, opts) {
-    const res = await fetch(url, { 
-      headers: { 'Content-Type': 'application/json', 'Authorization': token ? ('Bearer ' + token) : undefined }, 
-      ...opts 
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', 'Authorization': token ? ('Bearer ' + token) : undefined },
+      credentials: 'same-origin',
+      ...opts
     });
     const ct = res.headers.get('content-type') || '';
     const body = ct.includes('application/json') ? await res.json() : null;
+    if (res.status === 401 || res.status === 403) {
+      try { window.location.replace('/login.html'); } catch { window.location.href = '/login.html'; }
+      throw new Error('Unauthorized');
+    }
     if (!res.ok) throw new Error((body && body.error) || res.statusText);
     return body;
   }
