@@ -8,7 +8,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container mt-4">
+    <div id="navbar-placeholder"></div>
+
+    <div class="container mt-5">
         <h1 class="mb-4">Créer un Nouveau Client</h1>
         <form id="clientRegistrationForm">
             <div class="mb-3">
@@ -16,83 +18,150 @@
                 <input type="text" class="form-control" id="nom_client" required>
             </div>
             <div class="mb-3">
-              <label for="adresse_id" class="form-label">Adresse</label>
-              <select class="form-select" id="adresse_id"></select>
+                <label for="representant_nom" class="form-label">Nom du Représentant</label>
+                <input type="text" class="form-control" id="representant_nom">
             </div>
+            <div class="mb-3">
+                <label for="representant_email" class="form-label">Email du Représentant</label>
+                <input type="email" class="form-control" id="representant_email">
+            </div>
+            <div class="mb-3">
+                <label for="representant_tel" class="form-label">Téléphone du Représentant</label>
+                <input type="tel" class="form-control" id="representant_tel">
+            </div>
+           <!-- <div class="mb-3">
+                <label for="adresse_id" class="form-label">ID Adresse (Optionnel)</label>
+                <input type="number" class="form-control" id="adresse_id">
+            </div>-->
             <div class="mb-3">
                 <label for="commentaire" class="form-label">Commentaire (Optionnel)</label>
                 <textarea class="form-control" id="commentaire" rows="3"></textarea>
             </div>
-            <button type="submit" class="btn btn-primary">Créer et Continuer</button>
+            <button type="submit" class="btn btn-primary">Créer Client</button>
         </form>
         <div id="message" class="mt-3"></div>
+
+        <div id="representant-section" class="mt-4 d-none">
+            <hr>
+            <h2 class="h5">Ajouter un représentant (compte utilisateur)</h2>
+            <p class="text-muted">Créez un compte utilisateur pour ce client une fois le client enregistré.</p>
+            <form id="representantForm" class="row g-3">
+                <div class="col-md-6">
+                    <label for="rep_email" class="form-label">Email du représentant</label>
+                    <input type="email" class="form-control" id="rep_email" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="rep_password" class="form-label">Mot de passe</label>
+                    <input type="password" class="form-control" id="rep_password" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="rep_nom" class="form-label">Nom (optionnel)</label>
+                    <input type="text" class="form-control" id="rep_nom">
+                </div>
+                <div class="col-md-6">
+                    <label for="rep_tel" class="form-label">Téléphone (optionnel)</label>
+                    <input type="tel" class="form-control" id="rep_tel">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-outline-primary">Créer le compte représentant</button>
+                </div>
+            </form>
+            <div id="rep-message" class="mt-2"></div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/nav.js?v=2"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('clientRegistrationForm');
             const messageDiv = document.getElementById('message');
-            const adresseSelect = document.getElementById('adresse_id');
-            const token = localStorage.getItem('token');
-
-            async function fetchJSON(url, opts) {
-                const res = await fetch(url, {
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    ...opts
-                });
-                const body = await res.json().catch(() => ({}));
-                if (!res.ok) throw new Error(body.error || res.statusText);
-                return body;
-            }
-
-            async function loadAdresses() {
-                try {
-                    const adrs = await fetchJSON('/api/adresses');
-                    adresseSelect.innerHTML = '<option value="">(Aucune)</option>';
-                    adrs.forEach(a => {
-                        const o = document.createElement('option');
-                        o.value = a.id;
-                        o.textContent = a.libelle || `Adresse #${a.id}: ${a.ligne1}, ${a.code_postal} ${a.ville}`;
-                        adresseSelect.appendChild(o);
-                    });
-                } catch (e) {
-                    console.error('Failed to load addresses', e);
-                }
-            }
+            const repSection = document.getElementById('representant-section');
+            const repForm = document.getElementById('representantForm');
+            const repMessage = document.getElementById('rep-message');
+            let createdClientId = null;
 
             form.addEventListener('submit', async (event) => {
                 event.preventDefault();
 
-                const payload = {
-                    nom_client: document.getElementById('nom_client').value,
-                    adresse_id: document.getElementById('adresse_id').value || null,
-                    commentaire: document.getElementById('commentaire').value
-                };
+                const nom_client = document.getElementById('nom_client').value;
+                const representant_nom = document.getElementById('representant_nom').value;
+                const representant_email = document.getElementById('representant_email').value;
+                const representant_tel = document.getElementById('representant_tel').value;
+                const adresse_id = document.getElementById('adresse_id').value;
+                const commentaire = document.getElementById('commentaire').value;
+
+                const token = localStorage.getItem('token'); // Récupérer le token JWT
 
                 try {
-                    const newClient = await fetchJSON('/api/clients', {
+                    const response = await fetch('/api/clients', {
                         method: 'POST',
-                        body: JSON.stringify(payload)
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            nom_client,
+                            representant_nom,
+                            representant_email,
+                            representant_tel,
+                            adresse_id: adresse_id ? parseInt(adresse_id) : null,
+                            commentaire
+                        })
                     });
-                    messageDiv.className = 'alert alert-success';
-                    messageDiv.textContent = 'Client créé avec succès! Redirection vers la page d\'édition...';
-                    
-                    // Since this page is in an iframe, redirect the parent or the iframe itself
-                    // Redirecting the iframe is simpler here. The user will then be on the edit page inside the modal.
-                    setTimeout(() => {
-                        window.location.href = `/client-edit.html?id=${newClient.id}`;
-                    }, 1500);
 
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        createdClientId = data.id;
+                        messageDiv.className = 'alert alert-success';
+                        messageDiv.textContent = 'Client créé avec succès.';
+                        repSection.classList.remove('d-none');
+                    } else {
+                        messageDiv.className = 'alert alert-danger';
+                        messageDiv.textContent = data.error || 'Erreur lors de la création du client.';
+                    }
                 } catch (error) {
-                    console.error('Erreur lors de la création du client:', error);
+                    console.error('Erreur réseau ou inattendue:', error);
                     messageDiv.className = 'alert alert-danger';
-                    messageDiv.textContent = error.message || 'Erreur de connexion au serveur.';
+                    messageDiv.textContent = 'Erreur de connexion au serveur.';
                 }
             });
 
-            await loadAdresses();
+            if (repForm) {
+                repForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    if (!createdClientId) {
+                        repMessage.className = 'alert alert-warning';
+                        repMessage.textContent = 'Créez d\'abord le client avant d\'ajouter un représentant.';
+                        return;
+                    }
+                    const token = localStorage.getItem('token');
+                    const email = document.getElementById('rep_email').value;
+                    const password = document.getElementById('rep_password').value;
+                    const nom = document.getElementById('rep_nom').value;
+                    const tel = document.getElementById('rep_tel').value;
+                    try {
+                        const resp = await fetch('/api/clients/' + createdClientId + '/representant', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({ email, password, nom, tel })
+                        });
+                        const body = await resp.json().catch(() => ({}));
+                        if (resp.ok) {
+                            repMessage.className = 'alert alert-success';
+                            repMessage.textContent = 'Représentant créé et lié au client.';
+                            repForm.reset();
+                        } else {
+                            repMessage.className = 'alert alert-danger';
+                            repMessage.textContent = body.error || 'Erreur lors de la création du représentant.';
+                        }
+                    } catch (err) {
+                        repMessage.className = 'alert alert-danger';
+                        repMessage.textContent = 'Erreur réseau lors de la création du représentant.';
+                    }
+                });
+            }
         });
     </script>
 </body>
