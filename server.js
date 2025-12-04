@@ -2562,27 +2562,59 @@ app.get('/api/rendus/:id', authenticateToken, async (req, res) => {
     }
 });
 
-app.patch('/api/rendus/:id', authenticateToken, authorizeAdmin, async (req, res) => {
-    const { id } = req.params;
+app.patch('/api/rendus/:id', authenticateToken, async (req, res) => { // authorizeAdmin removed
+    const { id: renduId } = req.params;
     const { resume, valeur } = req.body;
-
-    if (resume === undefined && valeur === undefined) {
-        return res.status(400).json({ error: 'At least one field (resume or valeur) is required for update.' });
-    }
+    const { id: userId, roles } = req.user;
 
     try {
+        const isAdmin = roles.includes('ROLE_ADMIN');
+        
+        // First, get the rendu to find the intervention_id
+        const renduResult = await pool.query('SELECT intervention_id FROM rendu_intervention WHERE id = $1', [renduId]);
+        const rendu = renduResult.rows[0];
+
+        if (!rendu) {
+            return res.status(404).json({ error: 'Rendu not found' });
+        }
+
+        if (!isAdmin) {
+            const interventionResult = await pool.query('SELECT ticket_id FROM intervention WHERE id = $1', [rendu.intervention_id]);
+            const ticketId = interventionResult.rows[0]?.ticket_id;
+            
+            if (!ticketId) {
+                 return res.status(403).json({ error: 'Forbidden' });
+            }
+
+            const clientCheckQuery = `
+                SELECT 1 FROM client c
+                JOIN ticket t ON c.user_id = $2
+                WHERE t.id = $1
+            `;
+            const clientCheck = await pool.query(clientCheckQuery, [ticketId, userId]);
+
+            if (clientCheck.rows.length === 0) {
+                return res.status(403).json({ error: 'Forbidden' });
+            }
+        }
+
+        if (resume === undefined && valeur === undefined) {
+            return res.status(400).json({ error: 'At least one field (resume or valeur) is required for update.' });
+        }
+
         const result = await pool.query(
             'UPDATE rendu_intervention SET resume = COALESCE($1, resume), valeur = COALESCE($2, valeur) WHERE id = $3 RETURNING *',
-            [resume, valeur, id]
+            [resume, valeur, renduId]
         );
 
         if (result.rows.length === 0) {
+            // This case should be rare since we checked for rendu existence before
             return res.status(404).json({ error: 'Rendu not found' });
         }
 
         res.json(result.rows[0]);
     } catch (err) {
-        console.error(`Error updating rendu ${id}:`, err);
+        console.error(`Error updating rendu ${renduId}:`, err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });app.get('/api/rendezvous', authenticateToken, async (req, res) => {
