@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
       col.className = 'col-12 col-md-6 col-lg-4';
       const isInIframe = window.self !== window.top;
       const selectBtnHtml = isInIframe
-        ? `<button class="btn btn-sm btn-outline-success select-adresse-btn" data-id="${a.id}"><i class="bi bi-check-circle me-1"></i>Sélectionner</button>`
+        ? `<button class="btn btn-sm btn-outline-success flex-grow-1 select-adresse-btn" data-id="${a.id}"><i class="bi bi-check-circle me-1"></i>Sélectionner</button>`
         : '';
 
       col.innerHTML = `
@@ -86,8 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="text-muted small mb-2">${a.ligne1 || ''} ${a.code_postal || ''} ${a.ville || ''} ${a.pays || ''}</div>
           <div class="d-flex gap-2 mt-auto">
             ${selectBtnHtml}
-            <button class="btn btn-sm btn-outline-primary flex-grow-1 edit-adresse-btn" data-id="${a.id}"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-sm btn-outline-danger flex-grow-1 delete-adresse-btn" data-id="${a.id}"><i class="bi bi-trash"></i></button>
+            <button class="btn btn-sm btn-outline-primary flex-grow-1 edit-adresse-btn" data-id="${a.id}"><i class="bi bi-pencil me-1"></i>Éditer</button>
+            <button class="btn btn-sm btn-outline-danger flex-grow-1 delete-adresse-btn" data-id="${a.id}"><i class="bi bi-trash me-1"></i>Supprimer</button>
           </div>
         </div>
       `;
