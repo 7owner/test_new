@@ -29,10 +29,10 @@ Cette session a été axée sur la refactorisation, la correction de bugs remont
     *   Formulaire de satisfaction (étoiles + commentaire) dans l’historique ; POST `/api/tickets/{id}/satisfaction`, puis la fiche affiche la réponse.
 *   **Sites (vue/édition)** :
     *   `site-view.html` : bandeau simplifié (nom du site + client/contact), badge statut caché si absent ; suppression des infos Date début/fin et compteur ; adresse affichée en texte.
-    *   `site-edit.html` : sélection d’adresse revue. Boutons « Choisir / gérer les adresses » (iframe `adresses.html`) + « Sélectionner une adresse existante » (liste rapide). Réception `postMessage` depuis l’iframe pour définir l’adresse sélectionnée ; footer du modal d’adresses épuré.
+    *   `site-edit.html` : sélection d’adresse revue. Boutons « Choisir / gérer les adresses » (iframe `adresses.html`) + « Sélectionner une adresse existante » (liste rapide). Réception `postMessage` depuis l’iframe pour définir l’adresse sélectionnée ; footer du modal d’adresses épuré. Ajout de `ticket: false` par défaut dans le payload (colonne non nulle).
     *   Correction de l’erreur « cannot set checked » (suppression de l’ancien switch ticket).
 *   **Gestion des adresses (standalone)** :
-    *   `adresses.html` + `js/adresses.js` : chaque carte dispose d’un bouton “sélectionner” qui envoie `{type:'adresse-select', adresse}` au parent (postMessage). Éditer/supprimer conservés. Pagination et recherche inchangées.
+    *   `adresses.html` + `js/adresses.js` : chaque carte dispose d’un bouton “sélectionner” (si ouvert en iframe) qui envoie `{type:'adresse-select', adresse}` au parent (postMessage). Éditer/supprimer conservés. Pagination et recherche inchangées.
 
 *   **Gestion des fichiers** :
     *   **Upload pour DOE**: La fonctionnalité "Ajouter une image" sur la page `doe-view.html` est maintenant implémentée via une modale, permettant l'envoi d'images en base64.
