@@ -1469,12 +1469,12 @@ app.get('/api/clients/:id/representants', authenticateToken, async (req, res) =>
     const { id: clientId } = req.params;
     try {
         const result = await pool.query(
-            `SELECT u.id as user_id, u.email, a.nom, a.prenom, a.tel, cr.id as client_representant_id, cr.fonction
+            `SELECT u.id as user_id, COALESCE(cr.email, u.email) as email, COALESCE(cr.nom, a.nom) as nom, a.prenom, COALESCE(cr.tel, a.tel) as tel, cr.id as client_representant_id, cr.fonction
              FROM users u
              JOIN client_representant cr ON u.id = cr.user_id
              LEFT JOIN agent a ON u.id = a.user_id
              WHERE cr.client_id = $1
-             ORDER BY a.nom, u.email`,
+             ORDER BY nom, email`,
             [clientId]
         );
         res.json(result.rows);
@@ -1487,16 +1487,30 @@ app.get('/api/clients/:id/representants', authenticateToken, async (req, res) =>
 // Link a user to a client as a representative
 app.post('/api/clients/:id/representants', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id: clientId } = req.params;
-    const { user_id, fonction } = req.body;
+    const { user_id, nom, email, tel, fonction } = req.body;
 
-    if (!user_id) {
-        return res.status(400).json({ error: 'user_id is required' });
+    if (!user_id && !email) { // user_id or email must be provided to identify the user
+        return res.status(400).json({ error: 'user_id or email is required' });
+    }
+
+    let actualUserId = user_id;
+
+    // If email is provided but user_id is not, try to find user by email
+    if (!actualUserId && email) {
+        const userResult = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+        if (userResult.rows.length > 0) {
+            actualUserId = userResult.rows[0].id;
+        } else {
+            return res.status(404).json({ error: 'User with provided email not found. Please create the user first.' });
+        }
+    } else if (!actualUserId) { // If neither user_id nor email
+        return res.status(400).json({ error: 'user_id or email is required' });
     }
 
     try {
         const result = await pool.query(
-            'INSERT INTO client_representant (client_id, user_id, fonction) VALUES ($1, $2, $3) RETURNING *',
-            [clientId, user_id, fonction || null]
+            'INSERT INTO client_representant (client_id, user_id, nom, email, tel, fonction) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [clientId, actualUserId, nom || null, email || null, tel || null, fonction || null]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
