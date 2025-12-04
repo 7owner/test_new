@@ -249,7 +249,8 @@
                 url: `/api/images/${img.id}/view`,
                 nom_fichier: img.nom_fichier,
                 commentaire_image: img.commentaire_image,
-                type: 'Image'
+                type: 'Image',
+                note: img.note || ''
             });
         });
 
@@ -259,7 +260,8 @@
                 url: `/api/documents/${doc.id}/view`,
                 nom_fichier: doc.nom_fichier,
                 commentaire_image: doc.nature || 'Document',
-                type: 'Document'
+                type: 'Document',
+                note: doc.note || ''
             });
         });
 
@@ -270,7 +272,8 @@
                 url: `/api/attachments/${msgAtt.id}/view`,
                 nom_fichier: msgAtt.file_name,
                 commentaire_image: `Pièce jointe du message: "${(msgAtt.message || '').substring(0, 50)}..."`,
-                type: 'Message'
+                type: 'Message',
+                note: msgAtt.note || msgAtt.message || ''
             });
             if (msgAtt.message) {
               messages.push({
@@ -311,6 +314,7 @@
                     </div>
                     <div class="fw-semibold">${att.nom_fichier || 'Fichier'}</div>
                     <div class="attachment-comment">${marked.parse(att.commentaire_image || 'Aucun commentaire')}</div>
+                    ${att.note ? `<div class="mt-2 small text-muted">Résumé : ${marked.parse(att.note)}</div>` : ''}
                 `;
                 card.append(prev, info);
                 col.append(card);

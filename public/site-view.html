@@ -58,7 +58,7 @@
         <div class="d-flex justify-content-between align-items-start">
           <div>
             <div class="title" id="view_nom_site">—</div>
-            <div class="subtitle small">ID : <span id="view_id">—</span></div>
+            <div class="subtitle small">Client : <span id="view_client">—</span></div>
           </div>
           <span class="pill" id="view_statut">—</span>
         </div>
@@ -70,7 +70,7 @@
       <div class="card-body">
         <div class="mb-2">
           <div class="fw-semibold text-secondary">Adresse</div>
-          <div id="view_adresse_id" class="text-body">—</div>
+          <div id="view_adresse" class="text-body">—</div>
         </div>
         <div class="mb-2">
           <div class="fw-semibold text-secondary">Commentaire</div>
@@ -110,7 +110,15 @@
         const s = data.site || {};
         document.getElementById('site-name').textContent = s.nom_site || '';
         const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v||''; };
-        set('view_id', s.id); set('view_nom_site', s.nom_site); set('view_adresse_id', s.adresse_id); set('view_commentaire', s.commentaire); set('view_statut', s.statut); set('view_date_debut', s.date_debut); set('view_date_fin', s.date_fin);
+        set('view_nom_site', s.nom_site);
+        set('view_client', s.client_nom || s.client_name || '—');
+        set('view_commentaire', s.commentaire);
+        set('view_statut', s.statut);
+        set('view_date_debut', s.date_debut);
+        set('view_date_fin', s.date_fin);
+        // Adresse lisible
+        const adr = s.adresse_nom || s.adresse_complete || s.adresse || '';
+        set('view_adresse', adr || '—');
         // Contact : site.contact_* ou premier responsable
         const contact = s.contact_nom ? `${s.contact_nom} ${s.contact_tel||''}` : (data.responsables && data.responsables[0] ? `${data.responsables[0].agent_matricule || ''}` : '—');
         set('view_contact', contact);
