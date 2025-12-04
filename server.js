@@ -415,6 +415,43 @@ app.post('/api/register', authenticateToken, authorizeAdmin, async (req, res) =>
     }
 });
 
+// Admin: Search for users
+app.get('/api/users/search', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { email } = req.query;
+    if (!email) {
+        return res.status(400).json({ error: 'Email query parameter is required.' });
+    }
+    try {
+        const result = await pool.query("SELECT id, email FROM users WHERE email ILIKE $1 LIMIT 10", [`%${email}%`]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error searching users:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Admin: Create a new user
+app.post('/api/users', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { email, password, role } = req.body;
+    if (!email || !password || !role) {
+        return res.status(400).json({ error: 'Email, password, and role are required' });
+    }
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const result = await pool.query(
+            'INSERT INTO users (email, password, roles) VALUES ($1, $2, $3) RETURNING id, email, roles',
+            [email, hashedPassword, JSON.stringify([role])]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        if (err.code === '23505') {
+            return res.status(409).json({ error: 'User with this email already exists.' });
+        }
+        console.error('Error creating user by admin:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // API Route for user login
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
@@ -1425,13 +1462,21 @@ app.delete('/api/clients/:id', authenticateToken, authorizeAdmin, async (req, re
   }
 });
 
-// -------------------- Representants API (for a Client) --------------------
+// -------------------- Client Representatives API (Junction) --------------------
 
-// List representatives for a client
+// List representatives (users) for a client
 app.get('/api/clients/:id/representants', authenticateToken, async (req, res) => {
     const { id: clientId } = req.params;
     try {
-        const result = await pool.query('SELECT * FROM representant WHERE client_id = $1 ORDER BY nom ASC', [clientId]);
+        const result = await pool.query(
+            `SELECT u.id as user_id, u.email, a.nom, a.prenom, a.tel, cr.id as client_representant_id, cr.fonction
+             FROM users u
+             JOIN client_representant cr ON u.id = cr.user_id
+             LEFT JOIN agent a ON u.id = a.user_id
+             WHERE cr.client_id = $1
+             ORDER BY a.nom, u.email`,
+            [clientId]
+        );
         res.json(result.rows);
     } catch (err) {
         console.error(`Error fetching representatives for client ${clientId}:`, err);
@@ -1439,68 +1484,61 @@ app.get('/api/clients/:id/representants', authenticateToken, async (req, res) =>
     }
 });
 
-// Create a representative for a client
+// Link a user to a client as a representative
 app.post('/api/clients/:id/representants', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id: clientId } = req.params;
-    const { nom, email, tel, fonction } = req.body;
+    const { user_id, fonction } = req.body;
 
-    if (!nom) {
-        return res.status(400).json({ error: 'Name is required' });
+    if (!user_id) {
+        return res.status(400).json({ error: 'user_id is required' });
     }
 
     try {
         const result = await pool.query(
-            'INSERT INTO representant (client_id, nom, email, tel, fonction) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [clientId, nom, email || null, tel || null, fonction || null]
+            'INSERT INTO client_representant (client_id, user_id, fonction) VALUES ($1, $2, $3) RETURNING *',
+            [clientId, user_id, fonction || null]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
         if (err.code === '23505') { // unique_violation
-            return res.status(409).json({ error: 'A representative with this email already exists for this client.' });
+            return res.status(409).json({ error: 'This user is already a representative for this client.' });
         }
-        console.error(`Error creating representative for client ${clientId}:`, err);
+        console.error(`Error adding representative to client ${clientId}:`, err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
-// Update a representative
-app.put('/api/representants/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+// Update a representative's role/function (targets the junction table record)
+app.put('/api/client_representant/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id } = req.params;
-    const { nom, email, tel, fonction } = req.body;
-
-    if (!nom) {
-        return res.status(400).json({ error: 'Name is required' });
-    }
+    const { fonction } = req.body;
 
     try {
         const result = await pool.query(
-            'UPDATE representant SET nom = $1, email = $2, tel = $3, fonction = $4 WHERE id = $5 RETURNING *',
-            [nom, email || null, tel || null, fonction || null, id]
+            'UPDATE client_representant SET fonction = $1 WHERE id = $2 RETURNING *',
+            [fonction || null, id]
         );
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Representative not found' });
+            return res.status(404).json({ error: 'Representative link not found' });
         }
         res.json(result.rows[0]);
     } catch (err) {
-        if (err.code === '23505') { // unique_violation
-            return res.status(409).json({ error: 'A representative with this email already exists for this client.' });
-        }
-        console.error(`Error updating representative ${id}:`, err);
+        console.error(`Error updating client_representant ${id}:`, err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
-// Delete a representative
-app.delete('/api/representants/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+// Unlink a user from a client
+app.delete('/api/client_representant/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id } = req.params;
     try {
-        const result = await pool.query('DELETE FROM representant WHERE id = $1 RETURNING *', [id]);
+        const result = await pool.query('DELETE FROM client_representant WHERE id = $1 RETURNING *', [id]);
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Representative not found' });
+            return res.status(404).json({ error: 'Representative link not found' });
         }
         res.status(204).send();
     } catch (err) {
-        console.error(`Error deleting representative ${id}:`, err);
+        console.error(`Error deleting client_representant ${id}:`, err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
