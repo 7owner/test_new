@@ -1,168 +1,163 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Créer un Nouveau Client</title>
-    <link rel="stylesheet" href="custom.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="utf-8">
+  <title>Créer un Client</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- Custom -->
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=2"></script>
+
+  <style>
+    .card {border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.08);}
+  </style>
 </head>
-<body>
-    <div id="navbar-placeholder"></div>
 
-    <div class="container mt-5">
-        <h1 class="mb-4">Créer un Nouveau Client</h1>
-        <form id="clientRegistrationForm">
-            <div class="mb-3">
-                <label for="nom_client" class="form-label">Nom du Client (Entreprise)</label>
-                <input type="text" class="form-control" id="nom_client" required>
-            </div>
-            <div class="mb-3">
-                <label for="representant_nom" class="form-label">Nom du Représentant</label>
-                <input type="text" class="form-control" id="representant_nom">
-            </div>
-            <div class="mb-3">
-                <label for="representant_email" class="form-label">Email du Représentant</label>
-                <input type="email" class="form-control" id="representant_email">
-            </div>
-            <div class="mb-3">
-                <label for="representant_tel" class="form-label">Téléphone du Représentant</label>
-                <input type="tel" class="form-control" id="representant_tel">
-            </div>
-           <!-- <div class="mb-3">
-                <label for="adresse_id" class="form-label">ID Adresse (Optionnel)</label>
-                <input type="number" class="form-control" id="adresse_id">
-            </div>-->
-            <div class="mb-3">
-                <label for="commentaire" class="form-label">Commentaire (Optionnel)</label>
-                <textarea class="form-control" id="commentaire" rows="3"></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Créer Client</button>
-        </form>
-        <div id="message" class="mt-3"></div>
+<body class="app-bg">
 
-        <div id="representant-section" class="mt-4 d-none">
-            <hr>
-            <h2 class="h5">Ajouter un représentant (compte utilisateur)</h2>
-            <p class="text-muted">Créez un compte utilisateur pour ce client une fois le client enregistré.</p>
-            <form id="representantForm" class="row g-3">
-                <div class="col-md-6">
-                    <label for="rep_email" class="form-label">Email du représentant</label>
-                    <input type="email" class="form-control" id="rep_email" required>
-                </div>
-                <div class="col-md-6">
-                    <label for="rep_password" class="form-label">Mot de passe</label>
-                    <input type="password" class="form-control" id="rep_password" required>
-                </div>
-                <div class="col-md-6">
-                    <label for="rep_nom" class="form-label">Nom (optionnel)</label>
-                    <input type="text" class="form-control" id="rep_nom">
-                </div>
-                <div class="col-md-6">
-                    <label for="rep_tel" class="form-label">Téléphone (optionnel)</label>
-                    <input type="tel" class="form-control" id="rep_tel">
-                </div>
-                <div class="col-12">
-                    <button type="submit" class="btn btn-outline-primary">Créer le compte représentant</button>
-                </div>
-            </form>
-            <div id="rep-message" class="mt-2"></div>
+<main class="container mt-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0"><i class="bi bi-building-add me-2"></i>Nouveau Client</h1>
+    <button class="btn btn-outline-secondary" onclick="history.back()">
+      <i class="bi bi-arrow-left"></i> Retour
+    </button>
+  </div>
+
+  <!-- Formulaire création -->
+  <div class="card mb-4">
+    <div class="card-header fw-bold"><i class="bi bi-info-circle"></i> Informations</div>
+    <div class="card-body">
+      <form id="clientForm">
+        <div class="mb-3">
+          <label class="form-label">Nom du Client *</label>
+          <input id="nom_client" class="form-control" required>
         </div>
+        <div class="mb-3">
+          <label class="form-label">Adresse (optionnel)</label>
+          <select id="adresse_id" class="form-select"></select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Commentaire</label>
+          <textarea id="commentaire" class="form-control" rows="3"></textarea>
+        </div>
+        <button class="btn btn-primary w-100"><i class="bi bi-save me-1"></i>Créer</button>
+      </form>
+      <div id="msg" class="mt-3"></div>
     </div>
+  </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/nav.js?v=2"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('clientRegistrationForm');
-            const messageDiv = document.getElementById('message');
-            const repSection = document.getElementById('representant-section');
-            const repForm = document.getElementById('representantForm');
-            const repMessage = document.getElementById('rep-message');
-            let createdClientId = null;
+  <!-- Section représentant -->
+  <div id="repSection" class="card d-none">
+    <div class="card-header fw-bold"><i class="bi bi-person-plus"></i> Ajouter un Représentant</div>
+    <div class="card-body">
+      <form id="repForm" class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Nom</label>
+          <input id="rep_nom" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Téléphone</label>
+          <input id="rep_tel" class="form-control">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Email *</label>
+          <input id="rep_email" type="email" class="form-control" required>
+        </div>
+        <button class="btn btn-outline-primary w-100">
+          <i class="bi bi-person-check me-1"></i>Créer le compte utilisateur
+        </button>
+      </form>
+      <div id="repMsg" class="mt-2"></div>
+    </div>
+  </div>
 
-            form.addEventListener('submit', async (event) => {
-                event.preventDefault();
+</main>
 
-                const nom_client = document.getElementById('nom_client').value;
-                const representant_nom = document.getElementById('representant_nom').value;
-                const representant_email = document.getElementById('representant_email').value;
-                const representant_tel = document.getElementById('representant_tel').value;
-                const adresse_id = document.getElementById('adresse_id').value;
-                const commentaire = document.getElementById('commentaire').value;
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const token = localStorage.getItem("token");
+  if (!token) return location.href = "/login.html";
 
-                const token = localStorage.getItem('token'); // Récupérer le token JWT
+  const selAdresse = document.getElementById("adresse_id");
+  const msg = document.getElementById("msg");
+  const repSection = document.getElementById("repSection");
+  let newClientId = null;
 
-                try {
-                    const response = await fetch('/api/clients', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            nom_client,
-                            representant_nom,
-                            representant_email,
-                            representant_tel,
-                            adresse_id: adresse_id ? parseInt(adresse_id) : null,
-                            commentaire
-                        })
-                    });
+  async function api(url, opt={}) {
+    const h={headers:{'Content-Type':'application/json',"Authorization":"Bearer "+token}};
+    const r=await fetch(url,{...opt,...h});
+    const body=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(body.error||"Erreur API");
+    return body;
+  }
 
-                    const data = await response.json();
+  // Charger les adresses
+  try {
+    const adrs = await api("/api/adresses");
+    selAdresse.innerHTML = '<option value="">(aucune)</option>';
+    adrs.forEach(a=>{
+      selAdresse.innerHTML+=`<option value="${a.id}">${a.libelle||"Adresse #"+a.id}</option>`;
+    });
+  } catch {}
 
-                    if (response.ok) {
-                        createdClientId = data.id;
-                        messageDiv.className = 'alert alert-success';
-                        messageDiv.textContent = 'Client créé avec succès.';
-                        repSection.classList.remove('d-none');
-                    } else {
-                        messageDiv.className = 'alert alert-danger';
-                        messageDiv.textContent = data.error || 'Erreur lors de la création du client.';
-                    }
-                } catch (error) {
-                    console.error('Erreur réseau ou inattendue:', error);
-                    messageDiv.className = 'alert alert-danger';
-                    messageDiv.textContent = 'Erreur de connexion au serveur.';
-                }
-            });
+  // Submit Client
+  document.getElementById("clientForm").onsubmit = async e => {
+    e.preventDefault();
+    msg.textContent="";
 
-            if (repForm) {
-                repForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    if (!createdClientId) {
-                        repMessage.className = 'alert alert-warning';
-                        repMessage.textContent = 'Créez d\'abord le client avant d\'ajouter un représentant.';
-                        return;
-                    }
-                    const token = localStorage.getItem('token');
-                    const email = document.getElementById('rep_email').value;
-                    const password = document.getElementById('rep_password').value;
-                    const nom = document.getElementById('rep_nom').value;
-                    const tel = document.getElementById('rep_tel').value;
-                    try {
-                        const resp = await fetch('/api/clients/' + createdClientId + '/representant', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                            body: JSON.stringify({ email, password, nom, tel })
-                        });
-                        const body = await resp.json().catch(() => ({}));
-                        if (resp.ok) {
-                            repMessage.className = 'alert alert-success';
-                            repMessage.textContent = 'Représentant créé et lié au client.';
-                            repForm.reset();
-                        } else {
-                            repMessage.className = 'alert alert-danger';
-                            repMessage.textContent = body.error || 'Erreur lors de la création du représentant.';
-                        }
-                    } catch (err) {
-                        repMessage.className = 'alert alert-danger';
-                        repMessage.textContent = 'Erreur réseau lors de la création du représentant.';
-                    }
-                });
-            }
-        });
-    </script>
+    const body = {
+      nom_client: nom_client.value.trim(),
+      adresse_id: adresse_id.value || null,
+      commentaire: commentaire.value || null
+    };
+
+    try {
+      const r = await api("/api/clients",{method:"POST",body:JSON.stringify(body)});
+      newClientId = r.id;
+      msg.className="alert alert-success";
+      msg.textContent="Client créé !" ;
+      repSection.classList.remove("d-none");
+    } catch(e){
+      msg.className="alert alert-danger";
+      msg.textContent=e.message;
+    }
+  };
+
+  // Submit Représentant
+  document.getElementById("repForm").onsubmit = async e => {
+    e.preventDefault();
+    if(!newClientId){
+      repMsg.className="alert alert-warning";
+      repMsg.textContent="Créez d'abord un client.";
+      return;
+    }
+    try {
+      await api(`/api/clients/${newClientId}/representants`,{
+        method:"POST",
+        body:JSON.stringify({
+          nom: rep_nom.value.trim(),
+          tel: rep_tel.value.trim(),
+          email: rep_email.value.trim()
+        })
+      });
+      repMsg.className="alert alert-success";
+      repMsg.textContent="Représentant ajouté 👍";
+      repForm.reset();
+      setTimeout(()=>location.href=`/client-view.html?id=${newClientId}`,1200);
+    } catch(e){
+      repMsg.className="alert alert-danger";
+      repMsg.textContent=e.message;
+    }
+  };
+
+});
+</script>
+
 </body>
 </html>

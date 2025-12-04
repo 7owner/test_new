@@ -4,243 +4,299 @@
   <meta charset="utf-8">
   <title>Modifier Client</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <!-- Bootstrap + Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-  <!-- Custom -->
   <link href="/custom.css?v=1" rel="stylesheet">
-  <script src="/nav.js?v=1"></script>
-
-  <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 16px; }
-    label { display:block; margin:.4rem 0 .2rem; }
-    input, textarea, select { padding:.5rem; width:100%; max-width:520px; }
-    button { padding:.5rem .8rem; margin-top:.6rem; }
-    .card { border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.08);}
-  </style>
+  <script src="/nav.js?v=2"></script>
 </head>
-
 <body class="app-bg">
-
-<main class="container mt-5">
-  <!--<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 id="title">Modifier le client</h1>
-    <button class="btn btn-outline-secondary" onclick="window.history.back()">
-      <i class="bi bi-arrow-left"></i> Retour
-    </button>
-  </div>-->
-
-  <!-- FORM CLIENT -->
-  <div class="card mb-4">
-    <div class="card-header"><strong>Informations Générales</strong></div>
-
-    <div class="card-body">
-      <form id="form">
-        <input type="hidden" id="clientId">
-        <input type="hidden" id="adresse_id">
-
-        <div class="mb-3">
-          <label>Nom client *</label>
-          <input type="text" class="form-control" id="nom_client" required>
-        </div>
-
-        <div class="mb-3">
-          <label>Commentaire</label>
-          <textarea class="form-control" id="commentaire" rows="3"></textarea>
-        </div>
-
-        <button class="btn btn-primary" type="submit">
-          <i class="bi bi-save me-1"></i> Enregistrer
-        </button>
-      </form>
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+        <li class="nav-item"><a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
+        <li class="nav-item"><a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/clients.html"><i class="bi bi-person-badge-fill me-2"></i>Clients</a></li>
+        <li class="nav-item"><a class="nav-link" href="/tickets.html"><i class="bi bi-tools me-2"></i>Tickets</a></li>
+        <li class="nav-item"><a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a></li>
+        <li class="nav-item"><a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a></li>
+        <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
+        <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
+      </ul>
     </div>
   </div>
 
-  <!-- REPRESENTANTS -->
-  <div class="card mb-4" id="representants-section">
-    <div class="card-header d-flex justify-content-between">
-      <strong>Représentants</strong>
-      <button class="btn btn-sm btn-success" id="add-representant-btn">
-        <i class="bi bi-person-plus me-1"></i> Ajouter
-      </button>
+  <main class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <h1 class="mb-0" id="title">Chargement...</h1>
+      <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()"><i class="bi bi-arrow-left me-1"></i> Retour</button>
     </div>
 
-    <ul id="representants-list" class="list-group list-group-flush">
-      <li class="list-group-item text-muted">Chargement...</li>
-    </ul>
-  </div>
-
-</main>
-
-
-<!-- MODAL Représentant -->
-<div class="modal fade" id="representantModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 id="representantModalLabel" class="modal-title">Ajouter un représentant</h5>
-        <button class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="mb-0">Informations Générales</h5>
       </div>
-
-      <div class="modal-body">
-        <form id="representantForm">
-          <input type="hidden" id="representantId">
-
-          <label>Nom *</label>
-          <input id="representantNom" class="form-control" required>
-
-          <label class="mt-2">Email</label>
-          <input id="representantEmail" class="form-control">
-
-          <label class="mt-2">Téléphone</label>
-          <input id="representantTel" class="form-control">
-
-          <label class="mt-2">Fonction</label>
-          <input id="representantFonction" class="form-control">
+      <div class="card-body">
+        <form id="form">
+          <input type="hidden" id="clientId">
+          <div class="mb-3">
+            <label for="nom_client" class="form-label">Nom client</label>
+            <input type="text" class="form-control" id="nom_client" required>
+          </div>
+          <div class="mb-3">
+            <label for="adresse_id" class="form-label">Adresse</label>
+            <select class="form-select" id="adresse_id"></select>
+          </div>
+          <div class="mb-3">
+            <label for="commentaire" class="form-label">Commentaire</label>
+            <textarea class="form-control" id="commentaire" rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Enregistrer</button>
         </form>
       </div>
+    </div>
 
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-        <button class="btn btn-primary" id="saveRepresentantBtn">Enregistrer</button>
+    <!-- Représentants Management Section -->
+    <div class="card mb-4" id="representants-section">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Représentants</h5>
+            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#representantModal" id="add-representant-btn"><i class="bi bi-person-plus me-1"></i> Ajouter</button>
+        </div>
+        <ul id="representants-list" class="list-group list-group-flush">
+            <!-- Representatives will be loaded here -->
+        </ul>
+    </div>
+  </main>
+
+  <!-- Representant Modal -->
+  <div class="modal fade" id="representantModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="representantModalLabel">Gérer Représentant</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="representantForm">
+            <input type="hidden" id="representantId">
+            <div class="mb-3">
+              <label for="representantNom" class="form-label">Nom</label>
+              <input type="text" class="form-control" id="representantNom" required>
+            </div>
+            <div class="mb-3">
+              <label for="representantEmail" class="form-label">Email</label>
+              <input type="email" class="form-control" id="representantEmail">
+            </div>
+            <div class="mb-3">
+              <label for="representantTel" class="form-label">Téléphone</label>
+              <input type="text" class="form-control" id="representantTel">
+            </div>
+            <div class="mb-3">
+              <label for="representantFonction" class="form-label">Fonction</label>
+              <input type="text" class="form-control" id="representantFonction">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="saveRepresentantBtn">Enregistrer</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-
-<!-- Bootstrap JS + Script Logic -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
-document.addEventListener("DOMContentLoaded", async () => {
-  const token = localStorage.getItem("token");
-  if (!token) return location.href = "/login.html";
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = localStorage.getItem('token');
+      const params = new URLSearchParams(location.search);
+      const clientId = params.get('id');
+      const isNew = !clientId;
+      const h1Title = document.getElementById('title');
 
-  const params = new URLSearchParams(location.search);
-  const clientId = params.get("id");
-  const isNew = !clientId;
+      const clientNomInput = document.getElementById('nom_client');
+      const adresseSelect = document.getElementById('adresse_id');
+      const commentaireTextarea = document.getElementById('commentaire');
+      const form = document.getElementById('form');
 
-  const modal = new bootstrap.Modal("#representantModal");
+      const representantsList = document.getElementById('representants-list');
+      const addRepresentantBtn = document.getElementById('add-representant-btn');
+      const representantModalEl = document.getElementById('representantModal');
+      const representantModal = new bootstrap.Modal(representantModalEl);
+      const representantForm = document.getElementById('representantForm');
+      const saveRepresentantBtn = document.getElementById('saveRepresentantBtn');
+      
+      let allRepresentants = [];
 
-  // API helper
-  async function api(url, opt = {}) {
-    const h = { headers: { "Content-Type": "application/json" }};
-    if(token) h.headers.Authorization = "Bearer "+token;
-    const r = await fetch(url, { ...opt, ...h });
-    if(!r.ok) throw new Error((await r.json()).error || "Erreur API");
-    return r.json();
-  }
+      const repIdField = document.getElementById('representantId');
+      const repNomField = document.getElementById('representantNom');
+      const repEmailField = document.getElementById('representantEmail');
+      const repTelField = document.getElementById('representantTel');
+      const repFonctionField = document.getElementById('representantFonction');
 
-  document.getElementById("title").textContent =
-    isNew ? "Créer un client" : `Modifier client #${clientId}`;
+      async function fetchJSON(url, opts) {
+        const res = await fetch(url, { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, ...opts });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) window.location.href = '/login.html';
+          throw new Error(body.error || res.statusText);
+        }
+        return body;
+      }
 
-  async function loadClient(){
-    if(isNew){
-      document.getElementById("representants-section").style.display="none";
-      return;
-    }
-    const data = await api(`/api/clients/${clientId}/relations`);
-    const c = data.client;
-    document.getElementById("nom_client").value = c.nom_client;
-    document.getElementById("adresse_id").value = c.adresse_id || "";
-    document.getElementById("commentaire").value = c.commentaire || "";
-    renderRepresentants(data.representants || []);
-  }
+      h1Title.textContent = isNew ? 'Créer un client' : `Modifier client #${clientId}`;
+      if (!isNew) {
+          document.getElementById('clientId').value = clientId;
+      } else {
+          document.getElementById('representants-section').style.display = 'none';
+      }
 
-  async function saveClient(ev){
-    ev.preventDefault();
-    const c = {
-      nom_client: nom_client.value.trim(),
-      adresse_id: adresse_id.value || null,
-      commentaire: commentaire.value.trim() || null
-    };
+      async function loadAdresses() {
+        try {
+          const adrs = await fetchJSON('/api/adresses');
+          adresseSelect.innerHTML = '<option value="">(Aucune)</option>';
+          adrs.forEach(a => { const o = document.createElement('option'); o.value = a.id; o.textContent = a.libelle || (`Adresse #${a.id}`); adresseSelect.appendChild(o); });
+        } catch (e) { console.error('Error loading addresses:', e); }
+      }
 
-    if(isNew){
-      const res = await api("/api/clients", { method:"POST", body:JSON.stringify(c) });
-      alert("Client créé !");
-      location.href = `/client-edit.html?id=${res.id}`;
-    } else {
-      await api(`/api/clients/${clientId}`, { method:"PUT", body:JSON.stringify(c) });
-      alert("Modifications enregistrées !");
-      location.href = "/clients.html";
-    }
-  }
+      async function loadClientData() {
+        if (!isNew) {
+          try {
+            const data = await fetchJSON('/api/clients/' + clientId + '/relations');
+            const c = data.client;
+            allRepresentants = data.representants || [];
+            clientNomInput.value = c.nom_client || '';
+            adresseSelect.value = c.adresse_id || '';
+            commentaireTextarea.value = c.commentaire || '';
+            renderRepresentants();
+          } catch (e) {
+            alert(e.message);
+            window.history.back();
+          }
+        }
+      }
 
-  function renderRepresentants(list){
-    const ul = document.getElementById("representants-list");
-    ul.innerHTML="";
-    if(!list.length){
-      ul.innerHTML='<li class="list-group-item text-muted">Aucun</li>';
-      return;
-    }
-    list.forEach(rep=>{
-      ul.innerHTML+=`
-      <li class="list-group-item d-flex justify-content-between">
-        <div>
-          <strong>${rep.nom}</strong><br>
-          <small>${rep.fonction || ""}</small><br>
-          <small class="text-muted">${rep.email || ""} | ${rep.tel || ""}</small>
-        </div>
-        <div>
-          <button class="btn btn-sm btn-outline-primary" onclick="editRep(${rep.id})">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button class="btn btn-sm btn-outline-danger" onclick="delRep(${rep.id})">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
-      </li>`;
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const payload = {
+          nom_client: clientNomInput.value.trim(),
+          adresse_id: adresseSelect.value || null,
+          commentaire: commentaireTextarea.value.trim() || null,
+        };
+        if (!payload.nom_client) {
+          alert('Le nom du client est obligatoire.');
+          return;
+        }
+        try {
+          if (isNew) {
+            const newClient = await fetchJSON('/api/clients', { method: 'POST', body: JSON.stringify(payload) });
+            alert('Client créé avec succès!');
+            window.location.href = `/client-edit.html?id=${newClient.id}`; 
+          } else {
+            await fetchJSON('/api/clients/' + clientId, { method: 'PUT', body: JSON.stringify(payload) });
+            alert('Client mis à jour avec succès!');
+            window.location.href = `/clients.html`;
+          }
+        } catch (e) {
+          alert(`Erreur: ${e.message || e}`);
+        }
+      });
+
+      function renderRepresentants() {
+        representantsList.innerHTML = '';
+        if (allRepresentants.length === 0) {
+          representantsList.innerHTML = '<li class="list-group-item text-muted">Aucun représentant défini.</li>';
+          return;
+        }
+        allRepresentants.forEach(rep => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item d-flex justify-content-between align-items-center';
+          li.innerHTML = `
+            <div>
+              <div class="fw-bold">${rep.nom}</div>
+              <div class="small text-muted">${rep.fonction || ''}</div>
+              <div class="small"><i class="bi bi-envelope"></i> ${rep.email || ''} | <i class="bi bi-telephone"></i> ${rep.tel || ''}</div>
+            </div>
+            <div>
+              <button class="btn btn-sm btn-outline-primary me-2 edit-representant-btn" data-id="${rep.id}"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger delete-representant-btn" data-id="${rep.id}"><i class="bi bi-trash"></i></button>
+            </div>
+          `;
+          representantsList.appendChild(li);
+        });
+      }
+
+      function resetRepresentantForm() {
+        repIdField.value = '';
+        representantForm.reset();
+        document.getElementById('representantModalLabel').textContent = 'Ajouter un représentant';
+      }
+
+      addRepresentantBtn.addEventListener('click', () => {
+        resetRepresentantForm();
+      });
+
+      representantsList.addEventListener('click', async (event) => {
+        const editBtn = event.target.closest('.edit-representant-btn');
+        const deleteBtn = event.target.closest('.delete-representant-btn');
+        if (editBtn) {
+          const repId = editBtn.dataset.id;
+          const rep = allRepresentants.find(r => String(r.id) === String(repId));
+          if (rep) {
+            repIdField.value = rep.id;
+            repNomField.value = rep.nom;
+            repEmailField.value = rep.email || '';
+            repTelField.value = rep.tel || '';
+            repFonctionField.value = rep.fonction || '';
+            document.getElementById('representantModalLabel').textContent = `Modifier représentant #${rep.id}`;
+            representantModal.show();
+          }
+        } else if (deleteBtn) {
+          const repId = deleteBtn.dataset.id;
+          if (!confirm('Supprimer ce représentant ?')) return;
+          try {
+            await fetchJSON('/api/representants/' + repId, { method: 'DELETE' });
+            await loadClientData();
+            alert('Représentant supprimé.');
+          } catch (e) {
+            alert('Erreur lors de la suppression.');
+          }
+        }
+      });
+
+      saveRepresentantBtn.addEventListener('click', async () => {
+        const repId = repIdField.value;
+        const payload = {
+          nom: repNomField.value.trim(),
+          email: repEmailField.value.trim() || null,
+          tel: repTelField.value.trim() || null,
+          fonction: repFonctionField.value.trim() || null,
+        };
+        if (!payload.nom) { alert('Le nom du représentant est obligatoire.'); return; }
+        try {
+          if (repId) {
+            await fetchJSON('/api/representants/' + repId, { method: 'PUT', body: JSON.stringify(payload) });
+          } else {
+            await fetchJSON(`/api/clients/${clientId}/representants`, { method: 'POST', body: JSON.stringify(payload) });
+          }
+          representantModal.hide();
+          await loadClientData();
+          alert('Représentant enregistré.');
+        } catch (e) {
+          alert(`Erreur: ${e.message || e}`);
+        }
+      });
+      
+      // Initial load
+      await loadAdresses();
+      await loadClientData();
     });
-  }
-
-  window.editRep = async (id)=>{
-    const r = await api(`/api/representants/${id}`);
-    representantId.value = r.id;
-    representantNom.value = r.nom;
-    representantEmail.value = r.email || "";
-    representantTel.value = r.tel || "";
-    representantFonction.value = r.fonction || "";
-    representantModalLabel.textContent = "Modifier représentant";
-    modal.show();
-  };
-
-  window.delRep = async (id) => {
-    if(!confirm("Supprimer ?")) return;
-    await api(`/api/representants/${id}`, { method:"DELETE" });
-    await loadClient();
-  };
-
-  document.getElementById("add-representant-btn").onclick = ()=>{
-    representantId.value="";
-    representantForm.reset();
-    representantModalLabel.textContent="Ajouter représentant";
-    modal.show();
-  };
-
-  document.getElementById("saveRepresentantBtn").onclick = async () => {
-    const body = {
-      nom: representantNom.value.trim(),
-      email: representantEmail.value.trim(),
-      tel: representantTel.value.trim(),
-      fonction: representantFonction.value.trim()
-    };
-    const id = representantId.value;
-    if(id)
-      await api(`/api/representants/${id}`, { method:"PUT", body:JSON.stringify(body) });
-    else
-      await api(`/api/clients/${clientId}/representants`, { method:"POST", body:JSON.stringify(body) });
-
-    modal.hide();
-    await loadClient();
-  };
-
-  document.getElementById("form").onsubmit = saveClient;
-  await loadClient();
-});
-</script>
+  </script>
 
 </body>
 </html>
