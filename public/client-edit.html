@@ -136,6 +136,8 @@
         h1Title.textContent = isNew ? 'Créer un client' : `Modifier Client #${clientId}`;
         if(isNew) {
             representantsSection.style.display = 'none';
+        } else {
+            representantsSection.style.display = '';
         }
 
         async function api(url, opts = {}) {
