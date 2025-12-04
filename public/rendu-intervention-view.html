@@ -6,6 +6,7 @@
   <title>Détails du rendu d'intervention</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=2"></script>
   <style>
@@ -91,8 +92,8 @@
             <input type="text" class="form-control" id="edit-valeur-input" placeholder="Ex: 1500€">
           </div>
           <div class="row g-3">
-            <div class="col-lg-6">
-              <label class="form-label fw-semibold" for="edit-resume-input">Résumé (Markdown)</label>
+              <div class="col-lg-6">
+                <label class="form-label fw-semibold" for="edit-resume-input">Résumé (Markdown)</label>
               <textarea class="form-control" id="edit-resume-input" rows="8" placeholder="Saisissez le résumé en Markdown..."></textarea>
             </div>
             <div class="col-lg-6">
@@ -113,6 +114,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       const token = localStorage.getItem('token');
@@ -144,6 +146,7 @@
       const editValeurInput = document.getElementById('edit-valeur-input');
       const editResumeInput = document.getElementById('edit-resume-input');
       const editResumePreview = document.getElementById('edit-resume-preview');
+      let editResumeEditor = null;
       let currentRendu = null;
       let saving = false;
 
@@ -175,26 +178,35 @@
         updateDisplay(rendu.valeur, rendu.resume);
 
         const updatePreview = () => {
-          const text = editResumeInput.value || '';
+          const text = editResumeEditor ? editResumeEditor.value() : (editResumeInput.value || '');
           editResumePreview.innerHTML = text ? marked.parse(text) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
         };
 
         editBtn.addEventListener('click', () => {
           if (!currentRendu) return;
+          if (!editResumeEditor) {
+            editResumeEditor = new EasyMDE({
+              element: editResumeInput,
+              spellChecker: false,
+              forceSync: true,
+              status: false,
+              minHeight: "220px",
+              toolbar: ["bold","italic","heading","|","quote","unordered-list","ordered-list","|","link","table","code","preview"]
+            });
+            editResumeEditor.codemirror.on('change', updatePreview);
+          }
           editValeurInput.value = currentRendu.valeur || '';
-          editResumeInput.value = currentRendu.resume || '';
+          editResumeEditor.value(currentRendu.resume || '');
           updatePreview();
           editModal.show();
         });
-
-        editResumeInput.addEventListener('input', updatePreview);
 
         document.getElementById('save-meta-btn').addEventListener('click', async () => {
           if (saving) return;
           saving = true;
           const payload = {
             valeur: editValeurInput.value.trim(),
-            resume: editResumeInput.value || ''
+            resume: editResumeEditor ? editResumeEditor.value() : (editResumeInput.value || '')
           };
           try {
             const resp = await fetch(`/api/rendus/${renduId}`, {
