@@ -72,6 +72,14 @@
       </div>
     </div>
 
+    <div class="card mb-4 d-none" id="messages-card">
+      <div class="card-body">
+        <h5 class="mb-2"><i class="bi bi-chat-dots me-2"></i>Messages liés</h5>
+        <p class="text-muted small mb-3">Extraits des messages accompagnant les pièces jointes.</p>
+        <div class="row g-3" id="messages-grid"></div>
+      </div>
+    </div>
+
     <div class="d-flex gap-2 no-print">
       <button class="btn btn-secondary" id="back-to-intervention-btn">Retour à l'intervention</button>
       <a class="btn btn-outline-primary" id="open-rendu-new-btn"><i class="bi bi-plus-circle me-1"></i>Nouveau rendu</a>
@@ -141,6 +149,8 @@
       const newRenduBtn = document.getElementById('open-rendu-new-btn');
       const backBtn = document.getElementById('back-btn');
       const editBtn = document.getElementById('edit-meta-btn');
+      const messagesCard = document.getElementById('messages-card');
+      const messagesGrid = document.getElementById('messages-grid');
       const editModalEl = document.getElementById('editMetaModal');
       const editModal = new bootstrap.Modal(editModalEl);
       const editValeurInput = document.getElementById('edit-valeur-input');
@@ -231,6 +241,7 @@
 
         // Process and render attachments
         const attachments = [];
+        const messages = [];
         (images || []).forEach(img => {
             attachments.push({
                 kind: 'image',
@@ -260,6 +271,13 @@
                 commentaire_image: `Pièce jointe du message: "${(msgAtt.message || '').substring(0, 50)}..."`,
                 type: 'Message'
             });
+            if (msgAtt.message) {
+              messages.push({
+                message: msgAtt.message,
+                created_at: msgAtt.created_at || msgAtt.date || null,
+                fichier: msgAtt.file_name
+              });
+            }
         });
         
         countBadge.textContent = `${attachments.length} pièce(s)`;
@@ -302,6 +320,26 @@
       } catch (error) {
         console.error('Failed to load rendu details:', error);
         document.querySelector('main').innerHTML = `<div class="alert alert-danger">Impossible de charger le rendu. ${error.message}</div>`;
+      }
+
+      // Afficher les messages liés (si présents)
+      if (messages.length && messagesCard && messagesGrid) {
+        messagesCard.classList.remove('d-none');
+        messagesGrid.innerHTML = messages.map(m => {
+          const dateTxt = m.created_at ? new Date(m.created_at).toLocaleString() : '';
+          return `
+            <div class="col-12 col-md-6 col-lg-4">
+              <div class="border rounded p-3 h-100 bg-light">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <span class="badge bg-secondary">Message</span>
+                  ${dateTxt ? `<small class="text-muted">${dateTxt}</small>` : ''}
+                </div>
+                <div class="fw-semibold mb-1">${m.fichier || 'Pièce jointe'}</div>
+                <div class="small text-muted">${m.message.replace(/\n/g,'<br>')}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
       }
     });
   </script>
