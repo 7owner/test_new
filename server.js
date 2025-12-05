@@ -803,10 +803,23 @@ app.get('/api/documents/:id', authenticateToken, async (req, res) => {
 // Upload document via JSON base64 and save to disk
 app.post('/api/documents', authenticateToken, async (req, res) => {
   try {
-    const { cible_type, cible_id, nature, nom_fichier, type_mime, base64, auteur_matricule } = req.body || {};
+    const { cible_type, cible_id, nom_fichier, type_mime, base64, auteur_matricule } = req.body || {};
+    let { nature } = req.body || {}; // Keep it mutable
+
     if (!cible_type || !cible_id || !nom_fichier) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
+
+    // Sanitize the 'nature' field based on mime type
+    const mime = type_mime || '';
+    if (mime.startsWith('video/')) {
+      nature = 'Video';
+    } else if (mime.startsWith('audio/')) {
+      nature = 'Audio';
+    } else {
+      nature = 'Document'; // Default for images, pdf, etc.
+    }
+
     // Authorization: Admins allowed for all. Clients allowed only for their own Site/DemandeClient
     const roles = (req.user && Array.isArray(req.user.roles)) ? req.user.roles : [];
     const isAdmin = roles.includes('ROLE_ADMIN');
@@ -840,7 +853,7 @@ app.post('/api/documents', authenticateToken, async (req, res) => {
     }
     const result = await pool.query(
       `INSERT INTO documents_repertoire (cible_type, cible_id, nature, nom_fichier, type_mime, taille_octets, chemin_fichier, checksum_sha256, auteur_matricule)
-       VALUES ($1,$2,COALESCE($3::doc_nature,'Document'::doc_nature),$4,COALESCE($5,'application/octet-stream'),$6,$7,$8,$9) RETURNING *`,
+       VALUES ($1,$2,$3::doc_nature,$4,$5,$6,$7,$8,$9) RETURNING *`,
       [cible_type, cible_id, nature, nom_fichier, type_mime || null, taille_octets, chemin_fichier, checksum_sha256, auteur_matricule || null]
     );
     res.status(201).json(result.rows[0]);
