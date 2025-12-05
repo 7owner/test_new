@@ -58,7 +58,10 @@
       <div class="hero mb-3">
         <div class="d-flex justify-content-between align-items-start">
           <div>
-            <div class="title" id="site-name">—</div>
+            <div class="title" id="site-name-container">
+                <span id="site-name"></span>
+                <span id="contract-titles" class="ms-2 small"></span>
+            </div>
             <div class="subtitle small">
               Client : <span id="view_client" class="link-button" style="color: #e0e7ff;">—</span>
               <span class="ms-3">Contact : <span id="view_contact">—</span></span>
@@ -116,6 +119,21 @@
     </div>
   </div>
 
+  <!-- Modal contrat -->
+  <div class="modal fade" id="contractModal" tabindex="-1" aria-labelledby="contractModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="contractModalLabel">Détails du Contrat</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0">
+          <iframe id="contractModalFrame" src="about:blank" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async function() {
@@ -145,10 +163,22 @@
             return res.json();
         });
 
-        const { site, adresse, tickets = [], representants = [], client } = data;
+        const { site, adresse, tickets = [], representants = [], client, contrats = [] } = data; // Added contrats
 
         // --- Populate Site & Client Info ---
         set('site-name', site.nom_site);
+        
+        // Display contract titles
+        const contractTitlesSpan = document.getElementById('contract-titles');
+        if (contractTitlesSpan && contrats.length > 0) {
+          const contractLinks = contrats.map(c => 
+            `<a href="#" class="link-button" data-bs-toggle="modal" data-bs-target="#contractModal" data-contract-id="${c.id}">${c.titre || 'Contrat #' + c.id}</a>`
+          );
+          contractTitlesSpan.innerHTML = `(${contractLinks.join(', ')})`;
+        } else if (contractTitlesSpan) {
+          contractTitlesSpan.innerHTML = '';
+        }
+
         set('view_client', site.nom_client || client?.nom_client || 'Non assigné');
         const contact = `${site.representant_nom || ''} ${site.representant_tel || ''}`.trim();
         set('view_contact', contact || 'Non spécifié');
@@ -231,6 +261,19 @@
             if (modalEl) {
               const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
               modal.show();
+            }
+          });
+        }
+
+        // Contract Modal Handler
+        const contractModal = document.getElementById('contractModal');
+        if (contractModal) {
+          contractModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget; // Button that triggered the modal
+            const contractId = button.getAttribute('data-contract-id'); // Extract info from data-* attributes
+            const iframe = document.getElementById('contractModalFrame');
+            if (contractId && iframe) {
+              iframe.src = `contrat-view.html?id=${contractId}`;
             }
           });
         }

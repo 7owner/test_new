@@ -50,8 +50,8 @@ document.addEventListener('DOMContentLoaded', async function() {
           const tr = tableBody.insertRow();
           const debut = fmt(site.date_debut); const fin = site.date_fin? fmt(site.date_fin) : 'En cours';
           const hasTicket = !!site.ticket || openDemandSites.has(String(site.id));
-          const addressQuery = encodeURIComponent(site.adresse_libelle || '');
-          const addressLink = addressQuery ? `<a href="https://www.google.com/maps/search/?api=1&query=${addressQuery}" target="_blank" rel="noopener noreferrer">${site.adresse_libelle || site.adresse_id || 'N/A'}</a>` : (site.adresse_libelle || site.adresse_id || 'N/A');
+        const addressQuery = encodeURIComponent(site.adresse_ligne1 || site.adresse_libelle || '');
+        const addressLink = addressQuery ? `<a href="https://www.google.com/maps/search/?api=1&query=${addressQuery}" target="_blank" rel="noopener noreferrer">${site.adresse_libelle || site.adresse_ligne1 || site.adresse_id || 'N/A'}</a>` : (site.adresse_libelle || site.adresse_ligne1 || site.adresse_id || 'N/A');
 
           tr.innerHTML = `
             <td>${site.nom_site||''}</td>
@@ -77,7 +77,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (endDate) endDate.setHours(23, 59, 59, 999);
 
         let rows = (apiSites||[]).filter(s => {
-          const m = String(s.nom_site||'').toLowerCase().includes(term) || String(s.id||'').toLowerCase().includes(term);
+          const addressText = `${s.adresse_ligne1 || ''}`.toLowerCase();
+          const m = String(s.nom_site||'').toLowerCase().includes(term)
+            || String(s.id||'').toLowerCase().includes(term)
+            || addressText.includes(term);
           const st = status ? s.statut === status : true;
 
           const siteStart = s.date_debut ? new Date(s.date_debut) : null;
