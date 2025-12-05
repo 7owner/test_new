@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
     .dashboard-bg { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); min-height: 100vh; }
+    .embed header, .embed #offcanvasNavbar { display: none !important; }
+    .embed .container { margin-top: 0 !important; }
     .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
     .conversations-list {
       height: 80vh;
@@ -131,6 +133,12 @@
         if (!token) {
           location.href = '/login.html';
           return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const isEmbed = window.self !== window.top || params.get('embed') === '1' || params.get('modal') === '1';
+        if (isEmbed) {
+          document.body.classList.add('embed');
         }
         
         const user = JSON.parse(atob(token.split('.')[1]));
