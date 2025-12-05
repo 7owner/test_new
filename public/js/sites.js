@@ -51,8 +51,12 @@ document.addEventListener('DOMContentLoaded', async function() {
           const debut = fmt(site.date_debut); const fin = site.date_fin? fmt(site.date_fin) : 'En cours';
           const hasTicket = !!site.ticket || openDemandSites.has(String(site.id));
         const line1 = site.adresse_ligne1 || site.ligne1 || (site.adresse && (site.adresse.ligne1 || site.adresse.ligne_1)) || '';
-        const displayAddress = line1 || site.adresse_libelle || site.adresse_id || 'N/A';
-        const addressQuery = encodeURIComponent(line1 || site.adresse_libelle || '');
+        const line2 = site.adresse_ligne2 || site.ligne2 || (site.adresse && (site.adresse.ligne2 || site.adresse.ligne_2)) || '';
+        const cpVille = [site.adresse_code_postal || (site.adresse && site.adresse.code_postal) || '', site.adresse_ville || (site.adresse && site.adresse.ville) || ''].filter(Boolean).join(' ');
+        const pays = site.adresse_pays || (site.adresse && site.adresse.pays) || '';
+        const fullAddress = [line1, line2, cpVille, pays].filter(Boolean).join(' ');
+        const displayAddress = fullAddress || site.adresse_libelle || site.adresse_id || 'N/A';
+        const addressQuery = encodeURIComponent(fullAddress || site.adresse_libelle || '');
           const addressLink = addressQuery
             ? `<a href="https://www.google.com/maps/search/?api=1&query=${addressQuery}" target="_blank" rel="noopener noreferrer">${displayAddress}</a>`
             : displayAddress;
@@ -81,7 +85,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (endDate) endDate.setHours(23, 59, 59, 999);
 
         let rows = (apiSites||[]).filter(s => {
-          const addressText = `${s.adresse_ligne1 || ''}`.toLowerCase();
+          const l1 = s.adresse_ligne1 || s.ligne1 || (s.adresse && (s.adresse.ligne1 || s.adresse.ligne_1)) || '';
+          const l2 = s.adresse_ligne2 || s.ligne2 || (s.adresse && (s.adresse.ligne2 || s.adresse.ligne_2)) || '';
+          const cpv = [s.adresse_code_postal || (s.adresse && s.adresse.code_postal) || '', s.adresse_ville || (s.adresse && s.adresse.ville) || ''].filter(Boolean).join(' ');
+          const pays = s.adresse_pays || (s.adresse && s.adresse.pays) || '';
+          const addressText = `${l1} ${l2} ${cpv} ${pays}`.toLowerCase();
           const m = String(s.nom_site||'').toLowerCase().includes(term)
             || String(s.id||'').toLowerCase().includes(term)
             || addressText.includes(term);
