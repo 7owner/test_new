@@ -39,6 +39,8 @@
     .status-attente { background:#e5fbe5; color:#15803d; }
     .status-cours   { background:#fff7d6; color:#b45309; }
     .status-termine { background:#ffe0e0; color:#b91c1c; }
+    .link-button { color:#667eea; font-weight:600; cursor:pointer; text-decoration:none; }
+    .link-button:hover { text-decoration:underline; color:#764ba2; }
   </style>
 </head>
 <body>
@@ -58,7 +60,7 @@
           <div>
             <div class="title" id="site-name">—</div>
             <div class="subtitle small">
-              Client : <span id="view_client">—</span>
+              Client : <span id="view_client" class="link-button">—</span>
               <span class="ms-3">Contact : <span id="view_contact">—</span></span>
             </div>
           </div>
@@ -99,6 +101,21 @@
 
   </main>
 
+  <!-- Modal client -->
+  <div class="modal fade" id="clientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Client</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0" style="height:80vh;">
+          <iframe id="clientModalFrame" src="about:blank" style="width:100%;height:100%;border:0;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async function() {
@@ -128,11 +145,11 @@
             return res.json();
         });
 
-        const { site, adresse, tickets = [], representants = [] } = data;
+        const { site, adresse, tickets = [], representants = [], client } = data;
 
         // --- Populate Site & Client Info ---
         set('site-name', site.nom_site);
-        set('view_client', site.nom_client || 'Non assigné');
+        set('view_client', site.nom_client || client?.nom_client || 'Non assigné');
         const contact = `${site.representant_nom || ''} ${site.representant_tel || ''}`.trim();
         set('view_contact', contact || 'Non spécifié');
         set('view_commentaire', site.commentaire || 'Aucun commentaire.');
@@ -200,6 +217,22 @@
                 </div>`;
             });
           }
+        }
+
+        // Modal client
+        const clientId = site.client_id || client?.id;
+        const clientLink = document.getElementById('view_client');
+        if (clientId && clientLink) {
+          clientLink.classList.add('link-button');
+          clientLink.addEventListener('click', () => {
+            const frame = document.getElementById('clientModalFrame');
+            if (frame) frame.src = `client-view.html?id=${clientId}`;
+            const modalEl = document.getElementById('clientModal');
+            if (modalEl) {
+              const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+              modal.show();
+            }
+          });
         }
 
       } catch(e) {
