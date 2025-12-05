@@ -758,39 +758,13 @@
         }
         if (messagesBtn) {
           messagesBtn.classList.remove('d-none');
-          messagesBtn.addEventListener('click', async () => {
+          messagesBtn.addEventListener('click', () => {
             if (!demandeId) {
-              const list = (Array.isArray(data.demandes) && data.demandes.length)
-                ? `Demandes disponibles: ${data.demandes.map(d=>`#${d.id}`).join(', ')}`
-                : 'Aucune demande liée à ce ticket.';
-              messagesContainer.innerHTML = `<div class="text-muted">${list}</div>`;
-              if (messagesModalEl) bootstrap.Modal.getOrCreateInstance(messagesModalEl).show();
+              alert('Aucune demande liée à ce ticket.');
               return;
             }
-            if (messagesContainer) messagesContainer.innerHTML = '<div class="text-muted">Chargement...</div>';
-            try {
-              const conv = await fetchJSON(`/api/conversations/demande-${demandeId}`);
-              if (!Array.isArray(conv) || !conv.length) {
-                messagesContainer.innerHTML = '<div class="text-muted">Aucun message pour cette demande.</div>';
-              } else {
-                messagesContainer.innerHTML = '';
-                conv.forEach(msg => {
-                  const content = msg.body || msg.content || msg.message || '';
-                  messagesContainer.innerHTML += `
-                    <div class="border rounded p-2 mb-2">
-                      <div class="d-flex justify-content-between small text-muted">
-                        <span>${msg.author_name || msg.author_email || 'Utilisateur'}</span>
-                        <span>${msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}</span>
-                      </div>
-                      <div>${content}</div>
-                    </div>`;
-                });
-              }
-            } catch (e) {
-              console.error('Messages demande', e);
-              if (messagesContainer) messagesContainer.innerHTML = '<div class="text-danger">Impossible de charger les messages.</div>';
-            }
-            if (messagesModalEl) bootstrap.Modal.getOrCreateInstance(messagesModalEl).show();
+            // Redirige vers la messagerie filtrée sur la conversation de la demande
+            window.location.href = `/messagerie.html?conversation=demande-${demandeId}`;
           }, { once: true });
         }
         set('view_responsable', t.responsable || 'Non assigné');
