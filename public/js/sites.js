@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       function render(rows) {
         tableBody.innerHTML = '';
-        if (!rows.length) { const tr = tableBody.insertRow(); tr.innerHTML = '<td colspan="6" class="text-center text-muted">Aucun site trouvé.</td>'; return; }
+        if (!rows.length) { const tr = tableBody.insertRow(); tr.innerHTML = '<td colspan="7" class="text-center text-muted">Aucun site trouvé.</td>'; return; }
         rows.forEach(site => {
           const tr = tableBody.insertRow();
           const debut = fmt(site.date_debut); const fin = site.date_fin? fmt(site.date_fin) : 'En cours';
@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           tr.innerHTML = `
             <td>${site.nom_site||''}</td>
             <td>${addressLink}</td>
+            <td>${site.statut || '—'}</td>
             <td><span class="badge ${hasTicket? 'bg-danger':'bg-success'}">${hasTicket? 'Oui':'Non'}</span></td>
             <td>${site.responsable_matricule? getAgentName(site.responsable_matricule): 'Non assigné'}</td>
             <td><small>Début: ${debut||''}<br>Fin: ${fin||''}</small></td>
