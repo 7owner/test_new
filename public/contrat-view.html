@@ -10,19 +10,22 @@
   <script src="/nav.js?v=2"></script>
 </head>
 <body class="app-bg p-3">
-  <div class="card mb-3">
+  <div class="card mb-3 shadow-sm">
     <div class="card-body">
-      <h4 class="mb-3" id="titre">Contrat</h4>
-      <p class="mb-1"><strong>Début :</strong> <span id="date-debut">-</span></p>
-      <p class="mb-3"><strong>Fin :</strong> <span id="date-fin">-</span></p>
+      <h4 class="mb-1" id="titre">Contrat</h4>
+      <div class="text-muted small">Période</div>
+      <div class="fw-semibold mb-2"><span id="date-debut">-</span> &rarr; <span id="date-fin">-</span></div>
       <div id="feedback" class="small"></div>
     </div>
   </div>
 
-  <div class="card">
+  <div class="card shadow-sm">
     <div class="card-body">
-      <h5 class="card-title">Sites associés</h5>
-      <ul id="sites-list" class="list-group list-group-flush"></ul>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="card-title mb-0">Sites associés</h5>
+        <span class="badge bg-primary" id="sites-count">0 site(s)</span>
+      </div>
+      <div id="sites-grid" class="row g-3"></div>
     </div>
   </div>
 
@@ -63,21 +66,41 @@
         document.getElementById('date-debut').textContent = contrat.date_debut ? new Date(contrat.date_debut).toLocaleDateString() : '—';
         document.getElementById('date-fin').textContent = contrat.date_fin ? new Date(contrat.date_fin).toLocaleDateString() : '—';
 
-        const list = document.getElementById('sites-list');
-        list.innerHTML = '';
+        const grid = document.getElementById('sites-grid');
+        const count = document.getElementById('sites-count');
+        grid.innerHTML = '';
+        count.textContent = `${sites.length} site(s)`;
         if (!sites.length) {
-          list.innerHTML = '<li class="list-group-item text-muted">Aucun site lié.</li>';
+          grid.innerHTML = '<div class="col-12 text-muted small">Aucun site lié.</div>';
         } else {
           sites.forEach(s => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center';
-            li.innerHTML = `
-              <span>${s.nom_site || 'Site #'+s.site_id}</span>
-              <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#siteModal" data-site-id="${s.site_id}">
-                Voir le site
-              </button>
-            `;
-            list.appendChild(li);
+            const col = document.createElement('div');
+            col.className = 'col-12 col-md-6';
+            const line1 = s.adresse_ligne1 || s.ligne1 || (s.adresse && (s.adresse.ligne1 || s.adresse.ligne_1)) || s.adresse_libelle || s.adresse_id || '';
+            const lineFull = [
+              line1,
+              s.adresse_ligne2 || '',
+              [s.adresse_code_postal || '', s.adresse_ville || ''].filter(Boolean).join(' '),
+              s.adresse_pays || ''
+            ].filter(Boolean).join(' ');
+            const query = encodeURIComponent(lineFull || line1 || '');
+            const addressLink = query ? `<a href="https://www.google.com/maps/search/?api=1&query=${query}" target="_blank" rel="noopener noreferrer">${lineFull || 'Adresse non renseignée'}</a>` : (lineFull || 'Adresse non renseignée');
+            col.innerHTML = `
+              <div class="border rounded p-3 h-100 d-flex flex-column shadow-sm">
+                <div class="fw-semibold mb-1">${s.nom_site || 'Site #'+s.site_id}</div>
+                <div class="text-muted small mb-2">ID: ${s.site_id}</div>
+                <div class="mb-2">
+                  <div class="text-uppercase text-muted small">Adresse</div>
+                  <div>${addressLink}</div>
+                </div>
+                <div class="mt-auto d-flex justify-content-between align-items-center">
+                  <span class="badge bg-light text-dark">${s.statut || 'N/A'}</span>
+                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#siteModal" data-site-id="${s.site_id}">
+                    Voir le site
+                  </button>
+                </div>
+              </div>`;
+            grid.appendChild(col);
           });
         }
       } catch (err) {
