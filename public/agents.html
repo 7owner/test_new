@@ -275,6 +275,10 @@
     const tokenAgentFrame = document.getElementById('tokenAgentFrame');
 
     if (createAgentModal) {
+      createAgentModal.addEventListener('show.bs.modal', function () {
+        const frame = createAgentModal.querySelector('iframe');
+        if (frame) frame.src = '/agent-new.html';
+      });
       createAgentModal.addEventListener('hidden.bs.modal', function() {
         fetchAgents(); // Re-fetch agents when create modal is closed
       });
@@ -305,6 +309,7 @@
         const agentMatricule = button.getAttribute('data-id');
         tokenAgentFrame.src = `/agent-token-new.html?matricule=${agentMatricule}`;
       });
+      tokenAgentModal.addEventListener('hidden.bs.modal', fetchAgents);
     }
   });
   </script>
@@ -326,7 +331,8 @@
         const token = localStorage.getItem('token');
         const response = await fetch(`/api/agents/${matricule}`, {
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${token}` },
+          credentials: 'same-origin'
         });
 
         const result = await response.json();
