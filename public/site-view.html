@@ -171,10 +171,9 @@
         // Display contract titles
         const contractTitlesSpan = document.getElementById('contract-titles');
         if (contractTitlesSpan && contrats.length > 0) {
-          const contractLinks = contrats.map(c => 
-            `<a href="#" class="link-button" data-bs-toggle="modal" data-bs-target="#contractModal" data-contract-id="${c.id}">${c.titre || 'Contrat #' + c.id}</a>`
-          );
-          contractTitlesSpan.innerHTML = `(${contractLinks.join(', ')})`;
+                    const contractLinks = contrats.map(c =>
+                      `<a href="#" class="link-button" style="color: white;" data-bs-toggle="modal" data-bs-target="#contractModal" data-contract-id="${c.id}">${c.titre || 'Contrat #' + c.id}</a>`
+                    );          contractTitlesSpan.innerHTML = `(${contractLinks.join(', ')})`;
         } else if (contractTitlesSpan) {
           contractTitlesSpan.innerHTML = '';
         }
