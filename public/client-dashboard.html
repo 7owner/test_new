@@ -759,30 +759,52 @@
         }
       });
 
-      // Gestion ouverture des modales via data-modal
-      document.body.addEventListener("click", (e) => {
+      /* ------------ Gestion modales (logique oldclient) ------------ */
+      const frameMap = {
+        viewSiteModal: "viewSiteFrame",
+        editSiteModal: "editSiteFrame",
+        createSiteModal: "createSiteFrame",
+        createDemandeModal: "createDemandeFrame",
+        viewDemandeModal: "viewDemandeFrame",
+        editDemandeModal: "editDemandeFrame",
+        filesDemandeModal: "filesDemandeFrame"
+      };
+
+      const modalUrlMap = {
+        viewSiteModal: (id) => `/client-site-view.html?id=${id}`,
+        editSiteModal: (id) => `/client-site-edit.html?id=${id}`,
+        createSiteModal: () => `/client-new-site.html`,
+        createDemandeModal: () => `/client-new-demand.html`,
+        viewDemandeModal: (id) => `/client-demand-view.html?id=${id}`,
+        editDemandeModal: (id) => `/client-demand-edit.html?id=${id}`,
+        filesDemandeModal: (id) => `/client-demand-files.html?id=${id}`
+      };
+
+      document.body.addEventListener("click", e => {
         const btn = e.target.closest("[data-modal]");
         if (!btn) return;
-        const modalId = btn.getAttribute("data-modal");
-        const itemId = btn.getAttribute("data-id");
-        const modalEl = document.getElementById(modalId);
-        if (!modalEl) return;
 
-        const frameMap = {
-          viewSiteModal: { frame: "viewSiteFrame", src: (id) => `/client-site-view.html?id=${id}` },
-          editSiteModal: { frame: "editSiteFrame", src: (id) => `/client-site-edit.html?id=${id}` },
-          viewDemandeModal: { frame: "viewDemandeFrame", src: (id) => `/client-demand-view.html?id=${id}` },
-          editDemandeModal: { frame: "editDemandeFrame", src: (id) => `/client-demand-edit.html?id=${id}` },
-          createDemandeModal: { frame: "createDemandeFrame", src: () => `/client-new-demand.html` },
-          filesDemandeModal: { frame: "filesDemandeFrame", src: (id) => `/client-demand-files.html?id=${id}` }
-        };
-        const cfg = frameMap[modalId];
-        if (cfg) {
-          const frame = document.getElementById(cfg.frame);
-          if (frame) frame.src = cfg.src(itemId || "");
+        const modalId = btn.dataset.modal;
+        const itemId = btn.dataset.id;
+        const urlBuilder = modalUrlMap[modalId];
+
+        if (!urlBuilder) {
+          console.error("No URL builder found for modal:", modalId);
+          return;
         }
-        const modal = new bootstrap.Modal(modalEl);
-        modal.show();
+
+        const modalEl = document.getElementById(modalId);
+        const frame = document.getElementById(frameMap[modalId]);
+
+        if (modalEl && frame) {
+          const url = urlBuilder(itemId || '');
+          if (frame.getAttribute('src') !== url) {
+            frame.src = url;
+          }
+          new bootstrap.Modal(modalEl).show();
+        } else {
+          console.error("Modal or frame not found for:", modalId);
+        }
       });
 
       // Initial load
