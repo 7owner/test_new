@@ -81,9 +81,17 @@
           </div>
           <div class="mb-3">
             <label for="agence" class="form-label">Agence</label>
-            <select class="form-select" id="agence" required>
-              <option value="">Sélectionner une agence</option>
-            </select>
+            <div class="input-group">
+              <select class="form-select" id="agence" required>
+                <option value="">Sélectionner une agence</option>
+              </select>
+              <button class="btn btn-outline-secondary" type="button" id="refresh-agences" title="Rafraîchir la liste">
+                <i class="bi bi-arrow-repeat"></i>
+              </button>
+              <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#agenceModal" title="Créer/Gérer les agences">
+                <i class="bi bi-building-add"></i>
+              </button>
+            </div>
           </div>
           <div class="mb-3 form-check">
             <input type="checkbox" class="form-check-input" id="actif" checked>
@@ -102,6 +110,21 @@
       </div>
     </div>
   </main>
+
+  <!-- Modal gestion agences -->
+  <div class="modal fade" id="agenceModal" tabindex="-1" aria-labelledby="agenceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="agenceModalLabel">Gérer les agences</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body p-0">
+          <iframe id="agenceFrame" src="about:blank" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script>
@@ -127,10 +150,8 @@
         form.querySelectorAll('input, select, textarea, button[type=submit]').forEach(el => el.setAttribute('disabled','true'));
       }
 
-      (async () => {
+      async function loadAgences() {
         try {
-          const token = localStorage.getItem('token');
-          const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
           const res = await fetch('/api/agences', { headers: await buildHeaders(false), credentials: 'same-origin' });
           if (!res.ok) return;
           const agences = await res.json();
@@ -144,7 +165,9 @@
             });
           }
         } catch(e) { console.warn('Erreur chargement /api/agences:', e); }
-      })();
+      }
+
+      loadAgences();
 
       const isValidEmail = (em) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(em||'').trim());
 
@@ -190,6 +213,18 @@
           alert('Échec de la création: ' + (e.message || e));
         }
       });
+
+      const refreshBtn = document.getElementById('refresh-agences');
+      if (refreshBtn) refreshBtn.addEventListener('click', loadAgences);
+
+      const agenceModal = document.getElementById('agenceModal');
+      if (agenceModal) {
+        agenceModal.addEventListener('show.bs.modal', () => {
+          const frame = document.getElementById('agenceFrame');
+          if (frame) frame.src = '/agences.html';
+        });
+        agenceModal.addEventListener('hidden.bs.modal', loadAgences);
+      }
     });
   </script>
 </body>
