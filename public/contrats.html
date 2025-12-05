@@ -86,93 +86,35 @@
     </div>
   </main>
 
-  <!-- Create Modal -->
+  <!-- Modals (iframes) -->
   <div class="modal fade" id="createContratModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-xl">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Nouveau contrat</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
+        <div class="modal-header"><h5 class="modal-title">Nouveau contrat</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
-          <form id="create-form">
-            <div class="mb-3">
-              <label class="form-label">Titre</label>
-              <input class="form-control" id="create-titre" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Date de début</label>
-              <input type="date" class="form-control" id="create-debut" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Date de fin</label>
-              <input type="date" class="form-control" id="create-fin">
-            </div>
-          </form>
-          <div id="create-feedback" class="small mt-2"></div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button class="btn btn-primary" id="create-submit">Créer</button>
+          <iframe src="/contrat-new.html" style="width:100%;height:80vh;border:none;"></iframe>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Edit Modal -->
-  <div class="modal fade" id="editContratModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Modifier contrat</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <form id="edit-form">
-            <input type="hidden" id="edit-id">
-            <div class="mb-3">
-              <label class="form-label">Titre</label>
-              <input class="form-control" id="edit-titre" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Date de début</label>
-              <input type="date" class="form-control" id="edit-debut" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Date de fin</label>
-              <input type="date" class="form-control" id="edit-fin">
-            </div>
-          </form>
-          <div id="edit-feedback" class="small mt-2"></div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button class="btn btn-primary" id="edit-submit">Enregistrer</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- View Modal -->
   <div class="modal fade" id="viewContratModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Contrat</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
+        <div class="modal-header"><h5 class="modal-title">Voir contrat</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
-          <div id="view-content">
-            <div class="mb-2"><strong>Titre :</strong> <span id="view-titre"></span></div>
-            <div class="mb-2"><strong>Début :</strong> <span id="view-debut"></span></div>
-            <div class="mb-3"><strong>Fin :</strong> <span id="view-fin"></span></div>
-            <h6>Sites associés</h6>
-            <ul id="view-sites" class="list-group"></ul>
-          </div>
-          <div id="view-feedback" class="small mt-2"></div>
+          <iframe id="viewContratFrame" style="width:100%;height:80vh;border:none;"></iframe>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="editContratModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Modifier contrat</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <iframe id="editContratFrame" style="width:100%;height:80vh;border:none;"></iframe>
         </div>
       </div>
     </div>
@@ -194,11 +136,8 @@
       const createModal = new bootstrap.Modal(document.getElementById('createContratModal'));
       const editModal = new bootstrap.Modal(document.getElementById('editContratModal'));
       const viewModal = new bootstrap.Modal(document.getElementById('viewContratModal'));
-
-      const createFeedback = document.getElementById('create-feedback');
-      const editFeedback = document.getElementById('edit-feedback');
-      const viewFeedback = document.getElementById('view-feedback');
-      const viewSites = document.getElementById('view-sites');
+      const viewContratFrame = document.getElementById('viewContratFrame');
+      const editContratFrame = document.getElementById('editContratFrame');
 
       let contrats = [];
 
@@ -277,45 +216,12 @@
         const delBtn = e.target.closest('.btn-del');
         if (viewBtn) {
           const id = viewBtn.getAttribute('data-id');
-          viewFeedback.textContent = '';
-          viewSites.innerHTML = '<li class="list-group-item text-muted">Chargement...</li>';
-          try {
-            const contrat = await api(`/api/contrats/${id}`);
-            const sites = await api(`/api/contrats/${id}/sites`);
-            document.getElementById('view-titre').textContent = contrat.titre || '';
-            document.getElementById('view-debut').textContent = formatDate(contrat.date_debut);
-            document.getElementById('view-fin').textContent = formatDate(contrat.date_fin) || '—';
-            viewSites.innerHTML = '';
-            if (!sites.length) {
-              viewSites.innerHTML = '<li class="list-group-item text-muted">Aucun site lié.</li>';
-            } else {
-              sites.forEach(s => {
-                viewSites.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                  <span>${s.nom_site || 'Site #'+s.site_id}</span>
-                  <a class="btn btn-sm btn-outline-primary" href="/site-view.html?id=${s.site_id}">Voir le site</a>
-                </li>`;
-              });
-            }
-            viewModal.show();
-          } catch (err) {
-            viewFeedback.className = 'small text-danger';
-            viewFeedback.textContent = err.message || 'Erreur de chargement';
-            viewSites.innerHTML = '';
-            viewModal.show();
-          }
+          if (viewContratFrame) viewContratFrame.src = `/contrat-view.html?id=${id}`;
+          viewModal.show();
         } else if (editBtn) {
           const id = editBtn.getAttribute('data-id');
-          editFeedback.textContent = '';
-          document.getElementById('edit-id').value = id;
-          try {
-            const c = await api(`/api/contrats/${id}`);
-            document.getElementById('edit-titre').value = c.titre || '';
-            document.getElementById('edit-debut').value = c.date_debut ? c.date_debut.substring(0,10) : '';
-            document.getElementById('edit-fin').value = c.date_fin ? c.date_fin.substring(0,10) : '';
-            editModal.show();
-          } catch (err) {
-            alert(err.message || 'Erreur de chargement du contrat');
-          }
+          if (editContratFrame) editContratFrame.src = `/contrat-edit.html?id=${id}`;
+          editModal.show();
         } else if (delBtn) {
           const id = delBtn.getAttribute('data-id');
           if (!confirm('Supprimer ce contrat ?')) return;
@@ -325,55 +231,6 @@
           } catch (err) {
             alert(err.message || 'Suppression impossible');
           }
-        }
-      });
-
-      document.getElementById('create-submit').addEventListener('click', async () => {
-        createFeedback.textContent = '';
-        const payload = {
-          titre: document.getElementById('create-titre').value.trim(),
-          date_debut: document.getElementById('create-debut').value,
-          date_fin: document.getElementById('create-fin').value || null
-        };
-        if (!payload.titre || !payload.date_debut) {
-          createFeedback.className = 'small text-danger';
-          createFeedback.textContent = 'Titre et date de début requis.';
-          return;
-        }
-        try {
-          await api('/api/contrats', { method:'POST', body: JSON.stringify(payload) });
-          createFeedback.className = 'small text-success';
-          createFeedback.textContent = 'Contrat créé.';
-          await loadContrats();
-          setTimeout(()=> createModal.hide(), 300);
-        } catch (err) {
-          createFeedback.className = 'small text-danger';
-          createFeedback.textContent = err.message || 'Erreur lors de la création';
-        }
-      });
-
-      document.getElementById('edit-submit').addEventListener('click', async () => {
-        editFeedback.textContent = '';
-        const payload = {
-          titre: document.getElementById('edit-titre').value.trim(),
-          date_debut: document.getElementById('edit-debut').value,
-          date_fin: document.getElementById('edit-fin').value || null
-        };
-        const id = document.getElementById('edit-id').value;
-        if (!payload.titre || !payload.date_debut) {
-          editFeedback.className = 'small text-danger';
-          editFeedback.textContent = 'Titre et date de début requis.';
-          return;
-        }
-        try {
-          await api(`/api/contrats/${id}`, { method:'PUT', body: JSON.stringify(payload) });
-          editFeedback.className = 'small text-success';
-          editFeedback.textContent = 'Contrat mis à jour.';
-          await loadContrats();
-          setTimeout(()=> editModal.hide(), 300);
-        } catch (err) {
-          editFeedback.className = 'small text-danger';
-          editFeedback.textContent = err.message || 'Erreur lors de la mise à jour';
         }
       });
 

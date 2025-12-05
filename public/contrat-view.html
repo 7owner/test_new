@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contrat</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=2"></script>
+</head>
+<body class="app-bg p-3">
+  <div class="card mb-3">
+    <div class="card-body">
+      <h4 class="mb-3" id="titre">Contrat</h4>
+      <p class="mb-1"><strong>Début :</strong> <span id="date-debut">-</span></p>
+      <p class="mb-3"><strong>Fin :</strong> <span id="date-fin">-</span></p>
+      <div id="feedback" class="small"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Sites associés</h5>
+      <ul id="sites-list" class="list-group list-group-flush"></ul>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const params = new URLSearchParams(location.search);
+      const id = params.get('id');
+      const feedback = document.getElementById('feedback');
+      if (!id) { feedback.className='text-danger'; feedback.textContent='ID manquant'; return; }
+      const token = localStorage.getItem('token');
+      const headers = { 'Authorization': token? `Bearer ${token}` : '' };
+      async function api(url) {
+        const r = await fetch(url, { headers });
+        const b = await r.json().catch(()=>({}));
+        if (!r.ok) throw new Error(b.error || r.statusText);
+        return b;
+      }
+      try {
+        const contrat = await api(`/api/contrats/${id}`);
+        const sites = await api(`/api/contrats/${id}/sites`);
+        document.getElementById('titre').textContent = contrat.titre || 'Contrat';
+        document.getElementById('date-debut').textContent = contrat.date_debut ? new Date(contrat.date_debut).toLocaleDateString() : '—';
+        document.getElementById('date-fin').textContent = contrat.date_fin ? new Date(contrat.date_fin).toLocaleDateString() : '—';
+
+        const list = document.getElementById('sites-list');
+        list.innerHTML = '';
+        if (!sites.length) {
+          list.innerHTML = '<li class="list-group-item text-muted">Aucun site lié.</li>';
+        } else {
+          sites.forEach(s => {
+            list.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>${s.nom_site || 'Site #'+s.site_id}</span>
+              <a class="btn btn-sm btn-outline-primary" href="/site-view.html?id=${s.site_id}" target="_top">Voir le site</a>
+            </li>`;
+          });
+        }
+      } catch (err) {
+        feedback.className = 'text-danger';
+        feedback.textContent = err.message || 'Erreur de chargement';
+      }
+    });
+  </script>
+</body>
+</html>
