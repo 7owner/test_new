@@ -50,8 +50,11 @@ document.addEventListener('DOMContentLoaded', async function() {
           const tr = tableBody.insertRow();
           const debut = fmt(site.date_debut); const fin = site.date_fin? fmt(site.date_fin) : 'En cours';
           const hasTicket = !!site.ticket || openDemandSites.has(String(site.id));
-        const addressQuery = encodeURIComponent(site.adresse_ligne1 || site.adresse_libelle || '');
-        const addressLink = addressQuery ? `<a href="https://www.google.com/maps/search/?api=1&query=${addressQuery}" target="_blank" rel="noopener noreferrer">${site.adresse_libelle || site.adresse_ligne1 || site.adresse_id || 'N/A'}</a>` : (site.adresse_libelle || site.adresse_ligne1 || site.adresse_id || 'N/A');
+          const displayAddress = site.adresse_ligne1 || site.adresse_libelle || site.adresse_id || 'N/A';
+          const addressQuery = encodeURIComponent(site.adresse_ligne1 || site.adresse_libelle || '');
+          const addressLink = addressQuery
+            ? `<a href="https://www.google.com/maps/search/?api=1&query=${addressQuery}" target="_blank" rel="noopener noreferrer">${displayAddress}</a>`
+            : displayAddress;
 
           tr.innerHTML = `
             <td>${site.nom_site||''}</td>
