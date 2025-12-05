@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const agenceListDiv = document.getElementById('agenceList');
+    const countBadge = document.getElementById('agence-count');
     const addAgenceForm = document.getElementById('addAgenceForm');
     const inIframe = window !== window.parent;
 
@@ -25,21 +26,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const agences = await response.json();
             agenceListDiv.innerHTML = '';
+            if (countBadge) countBadge.textContent = `${(agences || []).length} agence(s)`;
+            if (!agences || !agences.length) {
+                agenceListDiv.innerHTML = '<div class="col-12 text-muted small text-center py-3">Aucune agence.</div>';
+                return;
+            }
             (agences || []).forEach(agence => {
-                const agenceEl = document.createElement('div');
-                agenceEl.className = 'p-4 bg-gray-50 rounded-lg border flex justify-between items-center';
-                agenceEl.innerHTML = `
+                const col = document.createElement('div');
+                col.className = 'col-12 col-md-6';
+                col.innerHTML = `
+                  <div class="list-card h-100 d-flex flex-column justify-content-between">
                     <div>
-                        <p class="font-semibold">${agence.titre}</p>
-                        <p class="text-sm text-gray-600">${agence.email || ''}</p>
+                      <div class="fw-semibold">${agence.titre || 'Agence'}</div>
+                      <div class="text-muted small">${agence.designation || ''}</div>
+                      <div class="small mt-1"><i class="bi bi-envelope me-1"></i>${agence.email || '—'}</div>
+                      <div class="small"><i class="bi bi-telephone me-1"></i>${agence.telephone || '—'}</div>
                     </div>
-                    <div class="flex gap-2 items-center">
-                        <button class="select-agence-btn text-green-600 hover:text-green-800" data-id="${agence.id}">Choisir</button>
-                        <button class="edit-agence-btn text-blue-500 hover:text-blue-700" data-id="${agence.id}">Modifier</button>
-                        <button class="delete-agence-btn text-red-500 hover:text-red-700" data-id="${agence.id}">Supprimer</button>
+                    <div class="d-flex gap-2 mt-3 flex-wrap">
+                      <button class="btn btn-sm btn-outline-success select-agence-btn" data-id="${agence.id}"><i class="bi bi-check2"></i> Choisir</button>
+                      <button class="btn btn-sm btn-outline-primary edit-agence-btn" data-id="${agence.id}"><i class="bi bi-pencil"></i> Modifier</button>
+                      <button class="btn btn-sm btn-outline-danger delete-agence-btn" data-id="${agence.id}"><i class="bi bi-trash"></i> Supprimer</button>
                     </div>
+                  </div>
                 `;
-                agenceListDiv.appendChild(agenceEl);
+                agenceListDiv.appendChild(col);
             });
         } catch (error) {
             console.error('Error fetching agences:', error);
@@ -122,9 +132,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else if (event.target.classList.contains('select-agence-btn')) {
                 const agenceId = event.target.dataset.id;
-                const card = event.target.closest('.p-4');
-                const titre = card?.querySelector('p.font-semibold')?.textContent || '';
-                const email = card?.querySelector('p.text-sm')?.textContent || '';
+                const card = event.target.closest('.list-card');
+                const titre = card?.querySelector('.fw-semibold')?.textContent || '';
+                const email = card?.querySelector('.bi-envelope')?.parentElement?.textContent?.trim() || '';
                 sendToParent({ id: Number(agenceId), titre, email });
             }
         });
