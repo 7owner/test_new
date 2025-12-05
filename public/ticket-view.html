@@ -611,8 +611,8 @@
         const siteData = data.site || {};
         let clientId = siteData.client_id || data.client?.id || t.client_id;
         const siteNom = siteData.nom_site || `Site #${siteData.id || t.site_id || ''}` || 'N/A';
-        const siteClient = siteData.client_nom || data.client?.nom_client || 'N/A';
-        const siteStatut = siteData.status || siteData.statut || 'N/A';
+        let siteClient = siteData.client_nom || data.client?.nom_client || 'N/A';
+        let siteStatut = siteData.status || siteData.statut || 'N/A';
         const siteLink = document.getElementById('site-view-link');
         if (siteLink && siteData.id) {
           siteLink.classList.remove('d-none');
@@ -639,6 +639,16 @@
           } else {
             document.getElementById('view_adresse').textContent = siteData.adresse_libelle || siteData.adresse || 'N/A';
           }
+          if (rel?.site?.nom_client) {
+            siteClient = rel.site.nom_client;
+            document.getElementById('view_client').textContent = siteClient;
+          }
+          if (rel?.site?.status || rel?.site?.statut) {
+            siteStatut = rel.site.status || rel.site.statut;
+            document.getElementById('site-statut').textContent = siteStatut;
+          }
+          const contactStr2 = `${rel?.site?.representant_nom || rel?.site?.contact_nom || ''} ${rel?.site?.representant_tel || rel?.site?.contact_tel || ''}`.trim();
+          if (contactStr2 && contactEl) contactEl.textContent = contactStr2;
           const commEl = document.getElementById('view_commentaire');
           if (commEl) commEl.textContent = rel?.site?.commentaire || siteData.commentaire || 'Aucun commentaire';
 
