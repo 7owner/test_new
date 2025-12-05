@@ -699,7 +699,7 @@
           const repsList = document.getElementById('representants-list');
           if (repsList) {
             repsList.innerHTML = '';
-            const reps = rel?.representants || [];
+            const reps = rel?.representants || data.representants || [];
             if (!reps.length) {
               repsList.innerHTML = '<div class="text-muted">Aucun représentant.</div>';
             } else {
