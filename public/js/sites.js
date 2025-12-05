@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           col.className = 'col-12 col-md-6 col-lg-4';
           const debut = fmt(site.date_debut); const fin = site.date_fin? fmt(site.date_fin) : 'En cours';
           const hasTicket = !!site.ticket || openDemandSites.has(String(site.id));
-        const line1 = site.adresse_ligne1 || site.ligne1 || (site.adresse && (site.adresse.ligne1 || site.adresse.ligne_1)) || site.adresse_libelle || '';
+        const line1 = site.adresse_ligne1 || site.ligne1 || (site.adresse && (site.adresse.ligne1 || site.adresse.ligne_1)) || '';
         const line2 = site.adresse_ligne2 || site.ligne2 || (site.adresse && (site.adresse.ligne2 || site.adresse.ligne_2)) || '';
         const cpVille = [site.adresse_code_postal || (site.adresse && site.adresse.code_postal) || '', site.adresse_ville || (site.adresse && site.adresse.ville) || ''].filter(Boolean).join(' ');
         const pays = site.adresse_pays || (site.adresse && site.adresse.pays) || '';
