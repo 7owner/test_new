@@ -40,18 +40,6 @@
       <div class="card-body">
         <form id="ticket-edit-form">
           <div class="mb-3">
-            <label for="id" class="form-label">ID Ticket</label>
-            <input type="text" class="form-control" id="id" required readonly>
-          </div>
-          <div class="mb-3">
-            <label for="doe_id" class="form-label">DOE associé</label>
-            <select class="form-select" id="doe_id" required></select>
-          </div>
-          <div class="mb-3">
-            <label for="affaire_id" class="form-label">Affaire associée</label>
-            <select class="form-select" id="affaire_id" required></select>
-          </div>
-          <div class="mb-3">
             <label for="titre" class="form-label">Titre</label>
             <input type="text" class="form-control" id="titre" required>
           </div>
@@ -101,41 +89,15 @@
       } catch(e) { console.error('Could not parse token', e); }
 
       const form = document.getElementById('ticket-edit-form');
-      const doeSelect = document.getElementById('doe_id');
-      const affaireSelect = document.getElementById('affaire_id');
       const responsableSelect = document.getElementById('responsable');
 
       // Fetch related data for dropdowns
       async function fetchData() {
         try {
-          const [does, affaires, agents, ticketRel] = await Promise.all([
-            fetch('/api/does', { headers }).then(res => res.json()),
-            fetch('/api/affaires', { headers }).then(res => res.json()),
+          const [agents, ticketRel] = await Promise.all([
             fetch('/api/agents', { headers }).then(res => res.json()),
             fetch(`/api/tickets/${ticketId}/relations`, { headers }).then(res => res.json())
           ]);
-
-          // Populate DOES
-          doeSelect.innerHTML = '<option value="">Sélectionner un DOE</option>';
-          if (Array.isArray(does)) {
-            does.forEach(d => {
-              const opt = document.createElement('option');
-              opt.value = d.id;
-              opt.textContent = `${d.titre} (ID: ${d.id})`;
-              doeSelect.appendChild(opt);
-            });
-          }
-
-          // Populate Affaires
-          affaireSelect.innerHTML = '<option value="">Sélectionner une affaire</option>';
-          if (Array.isArray(affaires)) {
-            affaires.forEach(a => {
-              const opt = document.createElement('option');
-              opt.value = a.id;
-              opt.textContent = `${a.nom_affaire} (ID: ${a.id})`;
-              affaireSelect.appendChild(opt);
-            });
-          }
 
           // Populate Responsables
           responsableSelect.innerHTML = '<option value="">Non assigné</option>';
@@ -151,12 +113,9 @@
           // Populate form with ticket data
           const ticket = ticketRel.ticket;
           if (ticket) {
-            document.getElementById('id').value = ticket.id;
             document.getElementById('titre').value = ticket.titre || '';
             document.getElementById('description').value = ticket.description || '';
             document.getElementById('etat').value = ticket.etat || 'Pas_commence';
-            doeSelect.value = ticket.doe_id || '';
-            affaireSelect.value = ticket.affaire_id || '';
             responsableSelect.value = ticket.responsable || '';
             document.getElementById('cancel-button').href = `ticket-view.html?id=${ticket.id}`;
           } else {
@@ -181,15 +140,8 @@
           titre: document.getElementById('titre').value,
           description: document.getElementById('description').value,
           responsable: document.getElementById('responsable').value || null,
-          doe_id: document.getElementById('doe_id').value,
-          affaire_id: document.getElementById('affaire_id').value,
           etat: document.getElementById('etat').value
         };
-
-        if (!payload.doe_id || !payload.affaire_id) {
-          alert('Les champs DOE et Affaire sont obligatoires.');
-          return;
-        }
 
         try {
           const res = await fetch(`/api/tickets/${ticketId}`, {
