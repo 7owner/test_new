@@ -1081,8 +1081,24 @@ app.get('/api/sites/:id/relations', authenticateToken, async (req, res) => {
         ORDER BY c.date_debut DESC`,
         [id]
     )).rows;
+    const representants = site.client_id ? (await pool.query(`
+      SELECT
+        cr.id AS client_representant_id,
+        cr.client_id,
+        cr.user_id,
+        COALESCE(cr.nom, a.nom, u.email) AS nom,
+        COALESCE(cr.email, u.email) AS email,
+        COALESCE(cr.tel, a.tel, '') AS tel,
+        cr.fonction
+      FROM client_representant cr
+      LEFT JOIN users u ON u.id = cr.user_id
+      LEFT JOIN agent a ON a.user_id = u.id
+      WHERE cr.client_id = $1
+      ORDER BY COALESCE(cr.nom, a.nom, u.email)`,
+      [site.client_id]
+    )).rows : [];
 
-    res.json({ site, adresse, affaires, does, tickets, rendezvous, documents, images, responsables, agents_assignes, contrats }); // NEW: Add contrats to response
+    res.json({ site, adresse, affaires, does, tickets, rendezvous, documents, images, responsables, agents_assignes, contrats, representants });
   } catch (err) {
     console.error('Error fetching site relations:', err);
     res.status(500).json({ error: 'Internal Server Error' });

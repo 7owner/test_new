@@ -86,6 +86,17 @@
       </div>
     </div>
 
+    <div class="card mt-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 mb-0">Représentants client</h2>
+        </div>
+        <div id="representants-list">
+          <div class="text-muted">Chargement...</div>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
@@ -117,7 +128,7 @@
             return res.json();
         });
 
-        const { site, adresse, tickets = [] } = data;
+        const { site, adresse, tickets = [], representants = [] } = data;
 
         // --- Populate Site & Client Info ---
         set('site-name', site.nom_site);
@@ -165,6 +176,30 @@
                   </div>`;
                 ticketsList.appendChild(el);
             });
+        }
+
+        // --- Représentants client ---
+        const repsList = document.getElementById('representants-list');
+        if (repsList) {
+          repsList.innerHTML = '';
+          if (!representants.length) {
+            repsList.innerHTML = '<div class="text-muted">Aucun représentant.</div>';
+          } else {
+            representants.forEach(rep => {
+              const badge = (rep.nom || rep.email || 'N')[0].toUpperCase();
+              repsList.innerHTML += `
+                <div class="d-flex align-items-start mb-2">
+                  <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;">
+                    ${badge}
+                  </div>
+                  <div class="ms-3">
+                    <div class="fw-semibold">${rep.nom || 'Inconnu'}</div>
+                    <div class="small text-muted">${rep.fonction || ''}</div>
+                    <div class="small text-muted"><i class="bi bi-envelope me-1"></i>${rep.email || 'N/A'} ${rep.tel ? `<span class="ms-2"><i class="bi bi-phone me-1"></i>${rep.tel}</span>` : ''}</div>
+                  </div>
+                </div>`;
+            });
+          }
         }
 
       } catch(e) {
