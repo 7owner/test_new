@@ -52,21 +52,17 @@ document.addEventListener('DOMContentLoaded', async function() {
           col.className = 'col-12 col-md-6 col-lg-4';
           const debut = fmt(site.date_debut); const fin = site.date_fin? fmt(site.date_fin) : 'En cours';
           const hasTicket = !!site.ticket || openDemandSites.has(String(site.id));
-        const line1 = site.adresse_ligne1 || site.ligne1 || (site.adresse && (site.adresse.ligne1 || site.adresse.ligne_1)) || '';
+        const line1 = site.adresse_ligne1 || site.ligne1 || (site.adresse && (site.adresse.ligne1 || site.adresse.ligne_1)) || site.adresse_libelle || '';
         const line2 = site.adresse_ligne2 || site.ligne2 || (site.adresse && (site.adresse.ligne2 || site.adresse.ligne_2)) || '';
         const cpVille = [site.adresse_code_postal || (site.adresse && site.adresse.code_postal) || '', site.adresse_ville || (site.adresse && site.adresse.ville) || ''].filter(Boolean).join(' ');
         const pays = site.adresse_pays || (site.adresse && site.adresse.pays) || '';
-        const fullAddress = [line1, line2, cpVille, pays].filter(Boolean).join(' ');
-        const displayAddress = fullAddress || 'Adresse non renseignée';
-        const addressQuery = encodeURIComponent(fullAddress || '');
-          const addressLink = addressQuery
-            ? `<a href="https://www.google.com/maps/search/?api=1&query=${addressQuery}" target="_blank" rel="noopener noreferrer">${displayAddress}</a>`
-            : displayAddress;
+        const addressLines = [line1, line2, cpVille, pays].filter(Boolean);
+        const displayAddress = addressLines.length ? addressLines.join('<br>') : 'Adresse non renseignée';
 
           col.innerHTML = `
             <div class="border rounded p-3 h-100 d-flex flex-column shadow-sm">
               <div class="fw-semibold mb-1">${site.nom_site||'Site'}</div>
-              <div class="mb-2"><span class="text-uppercase text-muted small">Adresse</span><br>${addressLink}</div>
+              <div class="mb-2"><span class="text-uppercase text-muted small">Adresse</span><br>${displayAddress}</div>
               <div class="mb-2"><span class="text-uppercase text-muted small">Responsable</span><br>${site.responsable_matricule? getAgentName(site.responsable_matricule): 'Non assigné'}</div>
               <div class="mb-2 d-flex gap-2 flex-wrap">
                 <span class="badge ${site.statut==='Actif'?'bg-success-subtle text-success':'bg-light text-dark'}">${site.statut || '—'}</span>
