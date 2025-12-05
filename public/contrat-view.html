@@ -87,8 +87,7 @@
             const addressLink = query ? `<a href="https://www.google.com/maps/search/?api=1&query=${query}" target="_blank" rel="noopener noreferrer">${lineFull || 'Adresse non renseignée'}</a>` : (lineFull || 'Adresse non renseignée');
             col.innerHTML = `
               <div class="border rounded p-3 h-100 d-flex flex-column shadow-sm">
-                <div class="fw-semibold mb-1">${s.nom_site || 'Site #'+s.site_id}</div>
-                <div class="text-muted small mb-2">ID: ${s.site_id}</div>
+                <div class="fw-semibold mb-1">${s.nom_site || 'Site'}</div>
                 <div class="mb-2">
                   <div class="text-uppercase text-muted small">Adresse</div>
                   <div>${addressLink}</div>
