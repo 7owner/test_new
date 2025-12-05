@@ -609,6 +609,7 @@
 
         // Carte Site associé
         const siteData = data.site || {};
+        let clientId = siteData.client_id || data.client?.id || t.client_id;
         const siteNom = siteData.nom_site || `Site #${siteData.id || t.site_id || ''}` || 'N/A';
         const siteClient = siteData.client_nom || data.client?.nom_client || 'N/A';
         const siteStatut = siteData.status || siteData.statut || 'N/A';
@@ -671,6 +672,7 @@
             const relRes = await fetch(`/api/sites/${siteData.id}/relations`, { headers, credentials: 'same-origin' });
             if (relRes.ok) {
               const rel = await relRes.json();
+              if (rel?.site?.client_id) clientId = rel.site.client_id;
               fillSiteDetails(rel);
             } else {
               fillSiteDetails({ site: siteData });
@@ -683,7 +685,6 @@
         }
 
         // Modal client (ouvre client-view dans une iframe)
-        const clientId = siteData.client_id || data.client?.id || t.client_id;
         const clientLink = document.getElementById('view_client');
         if (clientId && clientLink) {
           clientLink.classList.add('link-button');
