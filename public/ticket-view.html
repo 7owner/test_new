@@ -228,14 +228,13 @@
 
     <!-- ✅ Ticket Infos -->
     <div class="card-body p-4">
+      <h3 class="mb-3 fw-semibold"><i class="bi bi-info-circle me-2"></i>Informations générales</h3>
       <div class="info-grid">
-        <div class="info-item"><label>ID</label><div class="value" id="view_id">-</div></div>
         <div class="info-item"><label>Titre</label><div class="value" id="view_titre">-</div></div>
         <div class="info-item"><label>État</label><div class="value" id="view_etat">-</div></div>
         <div class="info-item"><label>Temps écoulé</label><div class="value timer-display" id="view_elapsed">-</div></div>
         <div class="info-item"><label>Début</label><div class="value" id="view_date_debut">-</div></div>
         <div class="info-item"><label>Fin</label><div class="value" id="view_date_fin">-</div></div>
-        <div class="info-item"><label>Durée totale</label><div class="value" id="view_duree">-</div></div>
         <div class="info-item"><label>Affaire</label><div class="value" id="view_affaire">-</div></div>
         <div class="info-item"><label>DOE</label><div class="value" id="view_doe">-</div></div>
         <div class="info-item"><label>Site</label><div class="value" id="view_site">-</div></div>
@@ -257,8 +256,28 @@
         <i class="bi bi-plus-circle me-1"></i>Ajouter
       </button>
     </div>
-    <div class="card-body p-4" id="ticket-interventions-list">
-      <div class="loading-spinner"><div class="spinner-border text-primary"></div></div>
+    <div class="card-body p-4">
+      <h3 class="mb-3 fw-semibold"><i class="bi bi-list-task me-2"></i>Suivi des interventions</h3>
+      <div id="ticket-interventions-list">
+        <div class="loading-spinner"><div class="spinner-border text-primary"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Site associé -->
+  <div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-building me-2"></i>Site associé</span>
+      <a id="site-view-link" class="btn btn-light btn-sm d-none" href="#"><i class="bi bi-eye"></i> Voir le site</a>
+    </div>
+    <div class="card-body p-4">
+      <h3 class="mb-3 fw-semibold"><i class="bi bi-geo-alt me-2"></i>Détails du site</h3>
+      <div class="info-grid">
+        <div class="info-item"><label>Nom du site</label><div class="value" id="site-nom">-</div></div>
+        <div class="info-item"><label>Adresse</label><div class="value" id="site-adresse">-</div></div>
+        <div class="info-item"><label>Client</label><div class="value" id="site-client">-</div></div>
+        <div class="info-item"><label>Statut</label><div class="value" id="site-statut">-</div></div>
+      </div>
     </div>
   </div>
 
@@ -272,7 +291,10 @@
             <i class="bi bi-plus-circle me-1"></i>Ajouter
           </button>
         </div>
-        <div class="card-body p-4" id="responsables-list"></div>
+        <div class="card-body p-4">
+          <h3 class="mb-3 fw-semibold"><i class="bi bi-people-fill me-2"></i>Responsables</h3>
+          <div id="responsables-list"></div>
+        </div>
       </div>
     </div>
 
@@ -284,7 +306,10 @@
             <i class="bi bi-plus-circle me-1"></i>Ajouter
           </button>
         </div>
-        <div class="card-body p-4" id="agents-list"></div>
+        <div class="card-body p-4">
+          <h3 class="mb-3 fw-semibold"><i class="bi bi-person-badge me-2"></i>Agents assignés</h3>
+          <div id="agents-list"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -302,6 +327,164 @@
     </div>
   </div>
 
+</div>
+
+<!-- Modale création intervention -->
+<div class="modal fade" id="createInterventionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-wrench-adjustable me-2"></i>Nouvelle intervention</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="create-intervention-form">
+          <div class="mb-3">
+            <label for="intervention-titre" class="form-label fw-bold">Titre</label>
+            <input type="text" id="intervention-titre" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="intervention-description" class="form-label fw-bold">Description</label>
+            <textarea id="intervention-description" class="form-control" rows="3" required></textarea>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="intervention-date-debut" class="form-label fw-bold">Date début</label>
+              <input type="date" id="intervention-date-debut" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label for="intervention-date-fin" class="form-label fw-bold">Date fin (optionnel)</label>
+              <input type="date" id="intervention-date-fin" class="form-control">
+            </div>
+          </div>
+          <div class="mb-3 mt-3">
+            <label for="intervention-status" class="form-label fw-bold">Statut</label>
+            <select id="intervention-status" class="form-select" required>
+              <option value="En_attente">En attente</option>
+              <option value="Termine">Terminé</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-gradient w-100">
+            <i class="bi bi-check-circle me-2"></i>Créer l'intervention
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modale ajout responsable -->
+<div class="modal fade" id="addResponsableModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Ajouter un responsable</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addResponsableForm">
+          <div class="mb-3">
+            <label for="responsable-select" class="form-label fw-bold">Sélectionner un agent admin</label>
+            <select id="responsable-select" class="form-select" required>
+              <option value="">-- Sélectionner --</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-gradient" id="save-responsable-btn">
+          <i class="bi bi-check-circle me-1"></i>Enregistrer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modale ajout agent -->
+<div class="modal fade" id="addAgentModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Ajouter un agent</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addAgentForm">
+          <div class="mb-3">
+            <label for="agent-select" class="form-label fw-bold">Sélectionner un agent</label>
+            <select id="agent-select" class="form-select" required>
+              <option value="">-- Sélectionner --</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-gradient" id="save-agent-btn">
+          <i class="bi bi-check-circle me-1"></i>Enregistrer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modale création affaire -->
+<div class="modal fade" id="createAffaireModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-briefcase me-2"></i>Nouvelle affaire</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="create-affaire-form">
+          <div class="mb-3">
+            <label for="affaire-nom" class="form-label fw-bold">Nom de l'affaire</label>
+            <input type="text" id="affaire-nom" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="affaire-numero" class="form-label fw-bold">Numéro (optionnel)</label>
+            <input type="text" id="affaire-numero" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label for="affaire-description" class="form-label fw-bold">Description</label>
+            <textarea id="affaire-description" class="form-control" rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn btn-success w-100">
+            <i class="bi bi-check-circle me-2"></i>Créer et lier
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modale création DOE -->
+<div class="modal fade" id="createDoeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title"><i class="bi bi-file-earmark-text me-2"></i>Nouveau DOE</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="create-doe-form">
+          <div class="mb-3">
+            <label for="doe-titre" class="form-label fw-bold">Titre</label>
+            <input type="text" id="doe-titre" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="doe-description" class="form-label fw-bold">Description</label>
+            <textarea id="doe-description" class="form-control" rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn btn-info w-100">
+            <i class="bi bi-check-circle me-2"></i>Créer et lier
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modals et JS -->
@@ -351,13 +534,12 @@
           t.etat = 'En_cours';
         }
         set('ticket-title', t.titre || '(Sans titre)');
-        set('view_id', t.id); set('view_titre', t.titre||''); set('view_description', t.description||''); set('view_etat', t.etat||'');
+        set('view_titre', t.titre||''); set('view_description', t.description||''); set('view_etat', t.etat||'');
         set('view_date_debut', fmt(t.date_debut)); set('view_date_fin', t.date_fin? fmt(t.date_fin) : 'En cours');
         const endIso = (t.etat === 'Termine')
           ? (t.date_fin || new Date().toISOString())
           : t.date_fin;
         startElapsed(t.date_debut, endIso);
-        if (t.date_debut && t.date_fin) { const dd=new Date(t.date_debut), df=new Date(t.date_fin); const dj=Math.floor((df-dd)/(1000*60*60*24)); set('view_duree', `${dj} jours`); }
         const doe = data.doe;
         const doeEl=document.getElementById('view_doe');
         if (doeEl) doeEl.innerHTML = (doe && doe.id) ? `<a href="doe-view.html?id=${doe.id}">${doe.titre || 'DOE'}</a>` : 'N/A';
@@ -377,6 +559,22 @@
           const s = data.site; if (s && s.id) { const name = s.nom_site? ` — ${s.nom_site}` : ''; siteEl.innerHTML = `<a href="site-view.html?id=${s.id}">Site #${s.id}${name}</a>`; }
           else if (t.site_id) siteEl.innerHTML = `<a href="site-view.html?id=${t.site_id}">Site #${t.site_id}</a>`; else siteEl.textContent='N/A';
         }
+
+        // Carte Site associé
+        const siteData = data.site || {};
+        const siteNom = siteData.nom_site || `Site #${siteData.id || t.site_id || ''}` || 'N/A';
+        const siteAdresse = siteData.adresse_libelle || siteData.adresse || 'N/A';
+        const siteClient = siteData.client_nom || data.client?.nom_client || 'N/A';
+        const siteStatut = siteData.status || siteData.statut || 'N/A';
+        const siteLink = document.getElementById('site-view-link');
+        if (siteLink && siteData.id) {
+          siteLink.classList.remove('d-none');
+          siteLink.href = `site-view.html?id=${siteData.id}`;
+        }
+        document.getElementById('site-nom').textContent = siteNom;
+        document.getElementById('site-adresse').textContent = siteAdresse;
+        document.getElementById('site-client').textContent = siteClient;
+        document.getElementById('site-statut').textContent = siteStatut;
         set('view_responsable', t.responsable || 'Non assigné');
 
         const list = document.getElementById('ticket-interventions-list'); list.innerHTML = '';
