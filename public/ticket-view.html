@@ -228,13 +228,18 @@
 
     <!-- ✅ Ticket Infos -->
     <div class="card-body p-4">
-      <h3 class="mb-3 fw-semibold"><i class="bi bi-info-circle me-2"></i><div class="value" id="view_titre">-</div></h3>
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <h3 class="mb-0 fw-semibold d-flex align-items-center"><i class="bi bi-info-circle me-2"></i><span id="view_titre">-</span></h3>
+        <div class="d-flex gap-2">
+          <a href="tickets.html" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Retour</a>
+          <a id="edit-ticket-btn" href="#" class="btn btn-primary btn-sm d-none"><i class="bi bi-pencil-square me-1"></i>Modifier</a>
+        </div>
+      </div>
       <div class="info-grid">
-        <!--<div class="info-item"><label>Titre</label><div class="value" id="view_titre">-</div></div>-->
         <div class="info-item"><label>État</label><div class="value" id="view_etat">-</div></div>
         <div class="info-item"><label>Temps écoulé</label><div class="value timer-display" id="view_elapsed">-</div></div>
-        <!--<div class="info-item"><label>Début</label><div class="value" id="view_date_debut">-</div></div>-->
-        <!--<div class="info-item"><label>Fin</label><div class="value" id="view_date_fin">-</div></div>-->
+        <div class="info-item"><label>Début</label><div class="value" id="view_date_debut">-</div></div>
+        <div class="info-item"><label>Fin</label><div class="value" id="view_date_fin">-</div></div>
         <div class="info-item"><label>Affaire</label><div class="value" id="view_affaire">-</div></div>
         <div class="info-item"><label>DOE</label><div class="value" id="view_doe">-</div></div>
         <div class="info-item"><label>Site</label><div class="value" id="view_site">-</div></div>
@@ -267,11 +272,13 @@
   <!-- Site associé -->
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
-      <span><i class="bi bi-building me-2"></i><label>Statut</label><div class="value" id="site-statut">-</div></span>
-      <a id="site-view-link" class="btn btn-light btn-sm d-none" href="#"><i class="bi bi-eye"></i> Voir le site</a>
+      <span class="d-flex align-items-center gap-2"><i class="bi bi-building me-1"></i>Site associé</span>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-light text-dark" id="site-statut">-</span>
+        <a id="site-view-link" class="btn btn-light btn-sm d-none" href="#"><i class="bi bi-eye"></i> Voir le site</a>
+      </div>
     </div>
     <div class="card-body p-4">
-       <div class="card mb-4">
       <div class="hero mb-3">
         <div class="d-flex justify-content-between align-items-start">
           <div>
@@ -283,7 +290,7 @@
           </div>
         </div>
       </div>
-      <div class="card-body">
+      <div class="card-body p-0">
         <div class="mb-2">
           <div class="fw-semibold text-secondary">Adresse</div>
           <div id="view_adresse" class="text-body">—</div>
@@ -293,20 +300,15 @@
           <div id="view_commentaire" class="text-body">—</div>
         </div>
       </div>
-    </div>
-        <div class="card mt-4">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2 class="h5 mb-0">Représentants client</h2>
+      <div class="card mt-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h5 mb-0">Représentants client</h2>
+          </div>
+          <div id="representants-list">
+            <div class="text-muted">Chargement...</div>
+          </div>
         </div>
-        <div id="representants-list">
-          <div class="text-muted">Chargement...</div>
-        </div>
-      </div>
-    </div>
-
-
-
       </div>
     </div>
   </div>
@@ -601,10 +603,15 @@
           siteLink.classList.remove('d-none');
           siteLink.href = `site-view.html?id=${siteData.id}`;
         }
-        document.getElementById('site-nom').textContent = siteNom;
-        document.getElementById('site-adresse').textContent = siteAdresse;
-        document.getElementById('site-client').textContent = siteClient;
+        document.getElementById('site-name').textContent = siteNom;
+        document.getElementById('view_adresse').textContent = siteAdresse;
+        document.getElementById('view_client').textContent = siteClient;
         document.getElementById('site-statut').textContent = siteStatut;
+        const contactStr = `${siteData.representant_nom || ''} ${siteData.representant_tel || ''}`.trim();
+        const contactEl = document.getElementById('view_contact');
+        if (contactEl) contactEl.textContent = contactStr || 'Non spécifié';
+        const commEl = document.getElementById('view_commentaire');
+        if (commEl) commEl.textContent = siteData.commentaire || 'Aucun commentaire';
         set('view_responsable', t.responsable || 'Non assigné');
 
         const list = document.getElementById('ticket-interventions-list'); list.innerHTML = '';
