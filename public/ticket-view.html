@@ -736,9 +736,14 @@
         if (!demandeId && Array.isArray(data.demandes) && data.demandes.length === 1) {
           demandeId = data.demandes[0].id;
         }
-        if (demandeId && messagesBtn) {
+        if (messagesBtn) {
           messagesBtn.classList.remove('d-none');
           messagesBtn.addEventListener('click', async () => {
+            if (!demandeId) {
+              messagesContainer.innerHTML = '<div class="text-muted">Aucune demande liée à ce ticket.</div>';
+              if (messagesModalEl) bootstrap.Modal.getOrCreateInstance(messagesModalEl).show();
+              return;
+            }
             if (messagesContainer) messagesContainer.innerHTML = '<div class="text-muted">Chargement...</div>';
             try {
               const conv = await fetchJSON(`/api/conversations/demande-${demandeId}`);

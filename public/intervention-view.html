@@ -4,125 +4,180 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Détails de l'intervention</title>
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link href="/custom.css?v=1" rel="stylesheet">
-  <script src="/nav.js?v=1"></script>
+
   <style>
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 1.5rem;
+    }
+    .main-card {
+      border: none;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      background: white;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .main-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    }
+    .card-header-gradient {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.2rem 1.5rem;
+      font-weight: 600;
+      border: none;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 1rem;
+    }
+    .info-item {
+      padding: 0.9rem 1rem;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 12px;
+      border-left: 4px solid #667eea;
+    }
+    .info-item label {
+      font-size: 0.75rem;
+      color: #6c757d;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+    .info-item .value {
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: #212529;
+    }
+    .timer-display {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #667eea;
+      font-family: 'Courier New', monospace;
+    }
+    .btn-gradient {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .btn-gradient:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+      color: white;
+    }
+    .btn-outline-gradient {
+      border: 2px solid #667eea;
+      color: #667eea;
+      background: transparent;
+      padding: 0.6rem 1.2rem;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .btn-outline-gradient:hover {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: transparent;
+    }
+    .link-button {
+      color:#667eea;
+      font-weight:600;
+      cursor:pointer;
+      text-decoration:none;
+    }
+    .link-button:hover {
+      text-decoration:underline;
+      color:#764ba2;
+    }
     .markdown-body h1, .markdown-body h2, .markdown-body h3 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
     .markdown-body p { margin-bottom: 0.5rem; }
     .markdown-body ul { padding-left: 1.25rem; margin-bottom: 0.5rem; }
     .markdown-body strong { font-weight: 600; }
     .markdown-body code { background: #f6f8fa; padding: 2px 4px; border-radius: 4px; }
-    .link-button { color:#667eea; font-weight:600; cursor:pointer; text-decoration:none; }
-    .link-button:hover { text-decoration:underline; color:#764ba2; }
+
+    .document-item {
+      background: #f8f9fa;
+      border-radius: 10px;
+      border: 1px solid #e9ecef;
+    }
   </style>
 </head>
 <body>
+<div class="container-fluid" style="max-width: 1200px;">
 
-
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-    <div class="offcanvas-header">
-      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
+  <!-- ✅ Bloc infos intervention -->
+  <div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h4 class="mb-0 d-flex align-items-center">
+        <i class="bi bi-tools me-2"></i>
+        <span>Intervention</span>
+      </h4>
+      <div class="small opacity-75">
+        <span id="header-status-text"></span>
+      </div>
     </div>
-    <div class="offcanvas-body">
-      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item"><a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
-        <li class="nav-item"><a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
-        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a></li>
-        <li class="nav-item"><a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a></li>
-        <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
-        <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
-      </ul>
+    <div class="card-body p-4">
+      <div class="mb-3">
+        <label class="text-muted small fw-bold"><i class="bi bi-text-paragraph me-1"></i>Description :</label>
+        <div class="p-3 bg-light rounded" id="view_description">—</div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Statut</label>
+          <div class="value" id="view_status">—</div>
+        </div>
+        <div class="info-item">
+          <label>Temps écoulé</label>
+          <div class="value timer-display" id="view_elapsed">—</div>
+        </div>
+        <div class="info-item">
+          <label>Date début</label>
+          <div class="value" id="view_date_debut">—</div>
+        </div>
+        <div class="info-item">
+          <label>Date fin</label>
+          <div class="value" id="view_date_fin">—</div>
+        </div>
+        <div class="info-item">
+          <label>Ticket associé</label>
+          <div class="value" id="view_ticket_link">Non lié</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <main class="container mt-5">
+  <!-- ✅ Rendus d'intervention -->
+  <div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-journal-text me-2"></i>Rendus d'intervention</span>
+      <a href="#" class="btn btn-light btn-sm" id="add-rendu-btn">
+        <i class="bi bi-plus-circle me-1"></i>Ajouter un rendu
+      </a>
+    </div>
+    <div class="card-body p-4">
+      <div id="rendu-intervention-list"></div>
+      <button type="button" class="btn btn-outline-gradient mt-3 d-none" id="show-materiels-btn">
+        <i class="bi bi-box-seam me-1"></i> Voir matériels utilisés
+      </button>
+    </div>
+  </div>
 
-    
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <h1 class="mb-4">Détails de l'intervention <span id="intervention-id"></span></h1>
-    </div>
-
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Informations Générales</h2>
-        <p><strong>ID:</strong> <span id="view_id"></span></p>
-        <p><strong>Ticket:</strong> <span id="view_maintenance_id"></span></p>
-        <p><strong>Description:</strong> <span id="view_description"></span></p>
-        <p><strong>Date Début:</strong> <span id="view_date_debut"></span></p>
-        <p><strong>Date Fin:</strong> <span id="view_date_fin"></span></p>
-        <p><strong>Statut:</strong> <span id="view_status"></span></p>
-        <p><strong>Temps écoulé:</strong> <span id="view_elapsed"></span></p>
-        <p><strong>Intervention précédente:</strong> <span id="view_intervention_precedente_id"></span></p>
-      </div>
-    </div>
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Rendus d'Intervention</h2>
-        <div id="rendu-intervention-list"></div>
-        <a href="#" class="btn btn-primary mt-3" id="add-rendu-btn"><i class="bi bi-plus-circle me-2"></i>Ajouter un rendu</a>
-        <a class="btn btn-outline-secondary mt-3 d-none" id="take-ticket-link"><i class="bi bi-hand-index"></i> Prendre le ticket (page)</a>
-        <button type="button" class="btn btn-info mt-3 d-none" id="show-materiels-btn"><i class="bi bi-box-seam"></i> Voir matériels utilisés</button>
-      </div>
-      <div class="mt-3" id="secondaires-block" style="display:none;">
-        <h5>Responsables secondaires</h5>
-        <ul id="secondaires-list" class="mb-0"></ul>
-      </div>
-      
-    </div>
-
-    <div class="card mb-4" id="materiels-card" style="display:none;">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Matériels utilisés</h2>
-        <ul id="materiels-list" class="mb-0"></ul>
-      </div>
-    </div>
-
-    <!-- Responsables Section -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <h2 class="card-title mb-4">Responsables</h2>
-            <ul id="responsables-list" class="list-group mb-3">
-                <!-- Responsables will be loaded here -->
-            </ul>
-            <button id="add-responsable-btn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addResponsableModal">Ajouter un responsable</button>
-        </div>
-    </div>
-
-    <!-- Agents Section -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <h2 class="card-title mb-4">Agents Assignés</h2>
-            <ul id="agents-list" class="list-group mb-3">
-                <!-- Agents will be loaded here -->
-            </ul>
-            <button id="add-agent-btn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAgentModal">Ajouter un agent</button>
-        </div>
-    </div>
-    
-    <!-- Documents Section -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h2 class="card-title mb-0">Documents associés</h2>
-              <button id="add-document-btn" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-2"></i>Ajouter un document</button>
-            </div>
-            <div id="documents-list"></div>
-        </div>
-    </div>
-
-    <div class="d-flex gap-2">
-      <!--<a href="interventions.html" class="btn btn-secondary" id="back-link">Retour à la liste</a>-->
-      <a href="#" class="btn btn-warning" id="edit-intervention-btn"><i class="bi bi-pencil"></i> Modifier</a>
-      <button type="button" class="btn btn-info d-none" id="show-materiels-btn"><i class="bi bi-box-seam"></i> Voir matériels</button>
-    </div>
-  </main>
-
-  <!-- Modal Matériels -->
+  <!-- ✅ Matériels (modal uniquement) -->
   <div class="modal fade" id="materielsModal" tabindex="-1" aria-labelledby="materielsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -134,707 +189,635 @@
           <div class="mb-3">
             <input type="text" class="form-control" id="materiel-filter" placeholder="Filtrer par référence, désignation...">
           </div>
-          <div class="row" id="materiels-grid">
-            <!-- Cartes matériels -->
-          </div>
+          <div class="row" id="materiels-grid"></div>
           <div id="materiels-empty" class="text-muted d-none">Aucun matériel associé à cette intervention.</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Add Responsable Modal -->
-  <div class="modal fade" id="addResponsableModal" tabindex="-1" aria-labelledby="addResponsableModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="addResponsableModalLabel">Ajouter un responsable</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="addResponsableForm">
-            <div class="mb-3">
-              <label for="responsable-select" class="form-label">Sélectionner un agent (doit être admin et "Chef")</label>
-              <select class="form-select" id="responsable-select" required>
-                <!-- Agent options will be loaded here -->
-              </select>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="save-responsable-btn">Enregistrer</button>
-        </div>
-      </div>
+  <!-- ✅ Responsables -->
+  <div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-people me-2"></i>Responsables</span>
+      <button id="add-responsable-btn" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addResponsableModal">
+        <i class="bi bi-plus-circle me-1"></i>Ajouter
+      </button>
+    </div>
+    <div class="card-body p-4">
+      <ul id="responsables-list" class="list-group mb-0"></ul>
     </div>
   </div>
 
-  <!-- Add Agent Modal -->
-  <div class="modal fade" id="addAgentModal" tabindex="-1" aria-labelledby="addAgentModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="addAgentModalLabel">Ajouter un agent</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="addAgentForm">
-            <div class="mb-3">
-              <label for="agent-select" class="form-label">Sélectionner un agent</label>
-              <select class="form-select" id="agent-select" required>
-                <!-- Agent options will be loaded here -->
-              </select>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="save-agent-btn">Enregistrer</button>
-        </div>
-      </div>
+  <!-- ✅ Agents assignés -->
+  <div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-person-badge me-2"></i>Agents assignés</span>
+      <button id="add-agent-btn" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addAgentModal">
+        <i class="bi bi-plus-circle me-1"></i>Ajouter
+      </button>
+    </div>
+    <div class="card-body p-4">
+      <ul id="agents-list" class="list-group mb-0"></ul>
     </div>
   </div>
 
-  <!-- Modal client -->
-  <div class="modal fade" id="clientModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Client</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-0" style="height:80vh;">
-          <iframe id="clientModalFrame" src="about:blank" style="width:100%;height:100%;border:0;"></iframe>
-        </div>
+  <!-- ✅ Documents associés -->
+  <div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-folder2-open me-2"></i>Documents associés</span>
+      <button id="add-document-btn" class="btn btn-light btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>Ajouter un document
+      </button>
+    </div>
+    <div class="card-body p-4">
+      <div id="documents-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modale ajout responsable -->
+<div class="modal fade" id="addResponsableModal" tabindex="-1" aria-labelledby="addResponsableModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addResponsableModalLabel">Ajouter un responsable</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addResponsableForm">
+          <div class="mb-3">
+            <label for="responsable-select" class="form-label">
+              Sélectionner un agent (doit être admin et "Chef")
+            </label>
+            <select class="form-select" id="responsable-select" required>
+              <!-- options agents -->
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-gradient" id="save-responsable-btn">Enregistrer</button>
       </div>
     </div>
   </div>
-  
-    <!-- Add Document Modal -->
-    <div class="modal fade" id="addDocumentModal" tabindex="-1" aria-labelledby="addDocumentModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="addDocumentModalLabel">Ajouter un document</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<!-- Modale ajout agent -->
+<div class="modal fade" id="addAgentModal" tabindex="-1" aria-labelledby="addAgentModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addAgentModalLabel">Ajouter un agent</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addAgentForm">
+          <div class="mb-3">
+            <label for="agent-select" class="form-label">Sélectionner un agent</label>
+            <select class="form-select" id="agent-select" required>
+              <!-- options agents -->
+            </select>
           </div>
-          <div class="modal-body">
-            <form id="add-document-form">
-              <div class="mb-3">
-                <label for="doc-file-input" class="form-label">Fichier</label>
-                <input class="form-control" type="file" id="doc-file-input" required>
-              </div>
-              <div class="mb-3">
-                <label for="doc-name-input" class="form-label">Nom du fichier (optionnel)</label>
-                <input type="text" class="form-control" id="doc-name-input" placeholder="Ex: rapport_intervention.pdf">
-              </div>
-              <div class="mb-3">
-                <label for="doc-nature-input" class="form-label">Nature du document</label>
-                <select class="form-select" id="doc-nature-input">
-                    <option value="Document">Document</option>
-                    <option value="Video">Vidéo</option>
-                    <option value="Audio">Audio</option>
-                    <option value="Autre">Autre</option>
-                </select>
-              </div>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-            <button type="button" class="btn btn-primary" id="save-document-btn">Enregistrer</button>
-          </div>
-        </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-gradient" id="save-agent-btn">Enregistrer</button>
       </div>
     </div>
+  </div>
+</div>
 
-  <!-- Modal supprimé: prise de ticket via page dédiée -->
+<!-- Modal client (pour ouvrir client-view dans une iframe, si tu l’utilises plus tard) -->
+<div class="modal fade" id="clientModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Client</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body p-0" style="height:80vh;">
+        <iframe id="clientModalFrame" src="about:blank" style="width:100%;height:100%;border:0;"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', async function () {
-      const urlParams = new URLSearchParams(window.location.search);
-      const interventionId = urlParams.get('id');
-      const token = localStorage.getItem('token');
-      const headers = { 'Authorization': `Bearer ${token}` };
+<!-- Modal ajout document -->
+<div class="modal fade" id="addDocumentModal" tabindex="-1" aria-labelledby="addDocumentModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addDocumentModalLabel">Ajouter un document</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <form id="add-document-form">
+          <div class="mb-3">
+            <label for="doc-file-input" class="form-label">Fichier</label>
+            <input class="form-control" type="file" id="doc-file-input" required>
+          </div>
+          <div class="mb-3">
+            <label for="doc-name-input" class="form-label">Nom du fichier (optionnel)</label>
+            <input type="text" class="form-control" id="doc-name-input" placeholder="Ex: rapport_intervention.pdf">
+          </div>
+          <div class="mb-3">
+            <label for="doc-nature-input" class="form-label">Nature du document</label>
+            <select class="form-select" id="doc-nature-input">
+              <option value="Document">Document</option>
+              <option value="Video">Vidéo</option>
+              <option value="Audio">Audio</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-gradient" id="save-document-btn">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-      const formatElapsed = (startStr, endStr, status) => {
-        if (!startStr) return '—';
-        const start = new Date(startStr).getTime();
-        if (Number.isNaN(start)) return '—';
-        const isClosed = status === 'Termine' || status === 'Terminé' || status === 'Fermé';
-        const end = endStr ? new Date(endStr).getTime() : (isClosed ? Date.now() : Date.now());
-        if (Number.isNaN(end)) return '—';
-        const diff = Math.max(0, end - start);
-        const totalMin = Math.floor(diff / 60000);
-        const days = Math.floor(totalMin / (60 * 24));
-        const hours = Math.floor((totalMin % (60 * 24)) / 60);
-        const mins = totalMin % 60;
-        const parts = [];
-        if (days) parts.push(`${days} j`);
-        parts.push(`${String(hours).padStart(2,'0')} h ${String(mins).padStart(2,'0')} min`);
-        return parts.join(' ');
-      };
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  const urlParams = new URLSearchParams(window.location.search);
+  const interventionId = urlParams.get('id');
+  const token = localStorage.getItem('token');
+  const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
 
-      let isAdmin = false;
+  const rendusList = document.getElementById('rendu-intervention-list');
+  const responsablesList = document.getElementById('responsables-list');
+  const agentsList = document.getElementById('agents-list');
+  const documentsList = document.getElementById('documents-list');
+  const responsableSelect = document.getElementById('responsable-select');
+  const agentSelect = document.getElementById('agent-select');
+  const showMaterielsBtn = document.getElementById('show-materiels-btn');
+  const materielsModal = document.getElementById('materielsModal');
+  const materielsModalInstance = materielsModal ? new bootstrap.Modal(materielsModal) : null;
+  const materielsGrid = document.getElementById('materiels-grid');
+  const materielsEmpty = document.getElementById('materiels-empty');
+  const materielFilter = document.getElementById('materiel-filter');
+
+  let ticketId = null;
+  let demandeId = null;
+  let allAgents = [];
+  let materielsCache = [];
+  let isAdmin = false;
+
+  // Decode JWT roles
+  try {
+    if (token) {
+      const p = JSON.parse(atob(token.split('.')[1]));
+      isAdmin = Array.isArray(p && p.roles) && p.roles.includes('ROLE_ADMIN');
+    }
+  } catch {}
+
+  // Masquer certains boutons pour non-admin
+  if (!isAdmin) {
+    const addRespBtn = document.getElementById('add-responsable-btn');
+    const addAgentBtn = document.getElementById('add-agent-btn');
+    const addDocBtn  = document.getElementById('add-document-btn');
+    if (addRespBtn) addRespBtn.style.display = 'none';
+    if (addAgentBtn) addAgentBtn.style.display = 'none';
+    if (addDocBtn)  addDocBtn.style.display  = 'none';
+  } else {
+    if (showMaterielsBtn) showMaterielsBtn.classList.remove('d-none');
+  }
+
+  const renderMd = (txt='') => { try { return marked.parse(txt); } catch { return txt; } };
+
+  async function fetchJSON(url, opts = {}) {
+    const res = await fetch(url, { ...opts, headers: { ...headers, ...opts.headers } });
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        location.href = '/login.html';
+        return;
+      }
+      const err = await res.json().catch(() => ({ error: 'HTTP ' + res.status }));
+      throw new Error(err.error || 'HTTP ' + res.status);
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  const formatElapsed = (startStr, endStr, status) => {
+    if (!startStr) return '—';
+    const start = new Date(startStr).getTime();
+    if (Number.isNaN(start)) return '—';
+    const isClosed = status === 'Termine' || status === 'Terminé' || status === 'Fermé';
+    const end = endStr ? new Date(endStr).getTime() : Date.now();
+    if (Number.isNaN(end)) return '—';
+    const diff = Math.max(0, end - start);
+    const totalMin = Math.floor(diff / 60000);
+    const days  = Math.floor(totalMin / (60 * 24));
+    const hours = Math.floor((totalMin % (60 * 24)) / 60);
+    const mins  = totalMin % 60;
+    const parts = [];
+    if (days) parts.push(days + ' j');
+    parts.push(String(hours).padStart(2,'0') + ' h ' + String(mins).padStart(2,'0') + ' min');
+    return parts.join(' ');
+  };
+
+  function renderMateriels(filterTerm = '') {
+    if (!materielsGrid || !materielsEmpty) return;
+    const norm = s => (s || '').toString().toLowerCase();
+    const term = norm(filterTerm);
+
+    const group = { consommables: [], cables: [], outils: [], autres: [] };
+    const classify = cat => {
+      const c = norm(cat);
+      if (c.includes('consomm')) return 'consommables';
+      if (c.includes('cabl'))    return 'cables';
+      if (c.includes('outil'))   return 'outils';
+      return 'autres';
+    };
+
+    materielsCache
+      .filter(m => {
+        const txt = norm(`${m.reference} ${m.designation} ${m.categorie} ${m.commentaire}`);
+        return !term || txt.includes(term);
+      })
+      .forEach(m => {
+        group[classify(m.categorie)].push(m);
+      });
+
+    const sections = [
+      { key: 'consommables', label: 'Consommables' },
+      { key: 'cables',       label: 'Câbles' },
+      { key: 'outils',       label: 'Outils' },
+      { key: 'autres',       label: 'Autres' }
+    ];
+
+    materielsGrid.innerHTML = '';
+    let count = 0;
+    sections.forEach(sec => {
+      const items = group[sec.key] || [];
+      if (!items.length) return;
+      const header = document.createElement('div');
+      header.className = 'col-12';
+      header.innerHTML = `<h6 class="mt-2 mb-2">${sec.label} (${items.length})</h6>`;
+      materielsGrid.appendChild(header);
+      items.forEach(m => {
+        count++;
+        const col = document.createElement('div');
+        col.className = 'col-12 col-md-6';
+        col.innerHTML = `
+          <div class="border rounded p-2 mb-2">
+            <div class="fw-semibold">${m.designation || 'Matériel'}</div>
+            <div class="text-muted small">Ref: ${m.reference || '—'} • Catégorie: ${m.categorie || '—'}</div>
+            <div class="small">Qté: ${m.quantite || 1} ${m.commentaire ? '• ' + m.commentaire : ''}</div>
+          </div>`;
+        materielsGrid.appendChild(col);
+      });
+    });
+
+    if (count === 0) {
+      materielsEmpty.classList.remove('d-none');
+    } else {
+      materielsEmpty.classList.add('d-none');
+    }
+  }
+
+  async function loadMateriels() {
+    materielsCache = [];
+    try {
+      const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
+      if (rel && Array.isArray(rel.materiels)) {
+        materielsCache = rel.materiels;
+      } else {
+        const res = await fetch(`/api/interventions/${interventionId}/materiels`, { headers });
+        if (res.ok) {
+          const data = await res.json().catch(() => []);
+          if (Array.isArray(data)) materielsCache = data;
+        }
+      }
+    } catch (e) {
+      console.warn('Chargement materiels:', e);
+    } finally {
+      renderMateriels(materielFilter ? materielFilter.value : '');
+    }
+  }
+
+  function displayResponsables(responsables = []) {
+    responsablesList.innerHTML = '';
+    if (!responsables.length) {
+      responsablesList.innerHTML = '<li class="list-group-item text-muted">Aucun responsable assigné.</li>';
+      return;
+    }
+    responsables.forEach(r => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item';
+      li.textContent = `${r.prenom || ''} ${r.nom || ''} (${r.matricule || r.agent_matricule || ''})${r.role ? ' - ' + r.role : ''}`;
+      responsablesList.appendChild(li);
+    });
+  }
+
+  function displayAgents(agents = []) {
+    agentsList.innerHTML = '';
+    if (!agents.length) {
+      agentsList.innerHTML = '<li class="list-group-item text-muted">Aucun agent assigné.</li>';
+      return;
+    }
+    agents.forEach(a => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      li.textContent = `${a.prenom || ''} ${a.nom || ''} (${a.agent_matricule || a.matricule || ''})`;
+      if (isAdmin) {
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn btn-danger btn-sm';
+        removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
+        removeBtn.onclick = () => removeAgent(a.agent_matricule || a.matricule);
+        li.appendChild(removeBtn);
+      }
+      agentsList.appendChild(li);
+    });
+  }
+
+  async function removeAgent(agentMatricule) {
+    if (!ticketId || !agentMatricule || !confirm(`Retirer l'agent ${agentMatricule} de ce ticket ?`)) return;
+    try {
+      await fetchJSON(`/api/tickets/${ticketId}/agents/${agentMatricule}`, { method: 'DELETE' });
+      fetchAndDisplayTicketRelations();
+    } catch (e) {
+      console.error('Error removing agent:', e);
+      alert('Erreur lors du retrait de l\'agent.');
+    }
+  }
+
+  function displayDocuments(documents = []) {
+    documentsList.innerHTML = '';
+    if (!documents.length) {
+      documentsList.innerHTML = '<p class="text-muted mb-0">Aucun document associé.</p>';
+      return;
+    }
+    documents.forEach(doc => {
+      const viewUrl = `/api/documents/${doc.id}/view`;
+      const el = document.createElement('div');
+      el.className = 'document-item mb-2 p-2 d-flex justify-content-between align-items-center';
+      el.innerHTML = `
+        <div>
+          <a href="${viewUrl}" target="_blank">${doc.nom_fichier}</a>
+          <span class="text-muted small"> (${doc.nature || 'Document'})</span>
+        </div>`;
+      documentsList.appendChild(el);
+    });
+  }
+
+  function renderRendus(rendus = []) {
+    if (!rendusList) return;
+    if (!rendus.length) {
+      rendusList.innerHTML = '<p class="text-muted mb-0">Aucun rendu enregistré pour cette intervention.</p>';
+      return;
+    }
+    rendusList.innerHTML = '';
+    rendus.forEach(r => {
+      const card = document.createElement('div');
+      card.className = 'card card-body mb-2';
+      const resumeFull = r.resume || '';
+      const resumeSnippet = resumeFull.length > 150 ? resumeFull.substring(0, 150) + '…' : resumeFull;
+      card.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <h6 class="mb-1">Rendu</h6>
+            <p class="small text-muted mb-2">Valeur : ${r.valeur || 'Non spécifiée'}</p>
+            <div class="markdown-body small">${renderMd(resumeSnippet)}</div>
+          </div>
+          <a href="rendu-intervention-view.html?id=${r.id}" class="btn btn-sm btn-outline-primary ms-3">
+            <i class="bi bi-eye me-1"></i>Voir
+          </a>
+        </div>`;
+      rendusList.appendChild(card);
+    });
+  }
+
+  async function fetchAndDisplayTicketRelations() {
+    if (!ticketId) {
+      displayResponsables([]);
+      displayAgents([]);
+      return;
+    }
+    try {
+      const relations = await fetchJSON(`/api/tickets/${ticketId}/relations`);
+      displayResponsables(relations.responsables || []);
+      displayAgents(relations.agents_assignes || []);
+    } catch (e) {
+      console.error('Error fetching ticket relations:', e);
+    }
+  }
+
+  async function fetchAndPopulateAll() {
+    try {
+      const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
+      if (!rel || !rel.intervention) {
+        document.body.innerHTML = '<div class="container mt-5"><div class="alert alert-danger">Intervention introuvable.</div></div>';
+        return;
+      }
+
+      const it = rel.intervention;
+      ticketId  = rel.ticket ? rel.ticket.id : null;
+      demandeId = rel.ticket ? rel.ticket.demande_id : null;
+
+      const statusText = it.status || it.statut || '—';
+      const elapsed = formatElapsed(it.date_debut, it.date_fin, statusText);
+
+      const descEl   = document.getElementById('view_description');
+      const debEl    = document.getElementById('view_date_debut');
+      const finEl    = document.getElementById('view_date_fin');
+      const statEl   = document.getElementById('view_status');
+      const elapsedEl= document.getElementById('view_elapsed');
+      const headerStatusText = document.getElementById('header-status-text');
+      const ticketLinkEl = document.getElementById('view_ticket_link');
+
+      if (descEl)   descEl.textContent    = it.description || '—';
+      if (debEl)    debEl.textContent     = it.date_debut || '—';
+      if (finEl)    finEl.textContent     = it.date_fin || '—';
+      if (statEl)   statEl.textContent    = statusText;
+      if (elapsedEl)elapsedEl.textContent = elapsed;
+      if (headerStatusText) headerStatusText.textContent = statusText;
+
+      if (ticketLinkEl) {
+        if (ticketId) {
+          ticketLinkEl.innerHTML = `<a href="ticket-view.html?id=${ticketId}" class="link-button">Voir le ticket</a>`;
+        } else {
+          ticketLinkEl.textContent = 'Non lié';
+        }
+      }
+
+      // Documents / materiels / rendus / agents / responsables
+      displayDocuments(rel.documents || []);
+
+      if (Array.isArray(rel.materiels)) {
+        materielsCache = rel.materiels;
+        renderMateriels(materielFilter ? materielFilter.value : '');
+      }
+
       try {
-        const p = token ? JSON.parse(atob(token.split('.')[1])) : null;
-        isAdmin = Array.isArray(p && p.roles) && p.roles.includes('ROLE_ADMIN');
-      } catch {}
-
-      if (!isAdmin) {
-          document.getElementById('add-responsable-btn').style.display = 'none';
-          document.getElementById('add-agent-btn').style.display = 'none';
-          document.getElementById('add-document-btn').style.display = 'none';
+        const rendus = await fetchJSON(`/api/interventions/${interventionId}/rendus`);
+        renderRendus(rendus || []);
+      } catch (e) {
+        console.error('Failed to load rendus:', e);
+        rendusList.innerHTML = '<p class="text-danger">Erreur de chargement des rendus.</p>';
       }
 
-      let ticketId = null;
-      let demandeId = null;
-      let allAgents = [];
-      let materielsCache = [];
+      allAgents = await fetchJSON('/api/agents');
+      const options = (allAgents || []).map(agent =>
+        `<option value="${agent.matricule}">${agent.nom} ${agent.prenom || ''} (${agent.matricule})</option>`
+      ).join('');
+      if (responsableSelect) responsableSelect.innerHTML = options;
+      if (agentSelect)       agentSelect.innerHTML       = options;
 
-      const responsableSelect = document.getElementById('responsable-select');
-      const agentSelect = document.getElementById('agent-select');
-      const responsablesList = document.getElementById('responsables-list');
-      const agentsList = document.getElementById('agents-list');
-      const imagesList = document.getElementById('intervention-images-list');
-      const imgFormWrapper = document.getElementById('intervention-image-form-wrapper');
-      const imgFileInput = document.getElementById('intervention-image-file');
-      const imgCommentInput = document.getElementById('intervention-image-comment');
-      const imgUploadBtn = document.getElementById('intervention-image-upload-btn');
-      const documentsList = document.getElementById('documents-list');
-      const rendusList = document.getElementById('rendu-intervention-list');
-      const materielsModal = document.getElementById('materielsModal');
-      const materielsModalInstance = materielsModal ? new bootstrap.Modal(materielsModal) : null;
-      const materielsGrid = document.getElementById('materiels-grid');
-      const materielsEmpty = document.getElementById('materiels-empty');
-      const materielFilter = document.getElementById('materiel-filter');
-      const renderMd = (txt='') => { try { return marked.parse(txt); } catch { return txt; } };
+      fetchAndDisplayTicketRelations();
 
-
-      async function fetchJSON(url, opts = {}) {
-        const res = await fetch(url, { ...opts, headers: { ...headers, ...opts.headers } });
-        if (!res.ok) {
-          if (res.status === 401 || res.status === 403) location.href = '/login.html';
-          const errorData = await res.json().catch(() => ({ error: `HTTP error ${res.status}` }));
-          throw new Error(errorData.error);
-        }
-        if (res.status === 204) return null;
-        return res.json();
-      }
-
-      function renderMateriels(filterTerm = '') {
-        if (!materielsGrid || !materielsEmpty) return;
-        const norm = (s) => (s || '').toString().toLowerCase();
-        const term = norm(filterTerm);
-
-        const group = { consommables: [], cables: [], outils: [], autres: [] };
-        const classify = (cat) => {
-          const c = norm(cat);
-          if (c.includes('consomm')) return 'consommables';
-          if (c.includes('cabl')) return 'cables';
-          if (c.includes('outil')) return 'outils';
-          return 'autres';
-        };
-
-        materielsCache
-          .filter(m => {
-            const txt = norm(`${m.reference} ${m.designation} ${m.categorie} ${m.commentaire}`);
-            return !term || txt.includes(term);
-          })
-          .forEach(m => {
-            group[classify(m.categorie)].push(m);
-          });
-
-        const sections = [
-          { key: 'consommables', label: 'Consommables' },
-          { key: 'cables', label: 'Câbles' },
-          { key: 'outils', label: 'Outils' },
-          { key: 'autres', label: 'Autres' },
-        ];
-
-        materielsGrid.innerHTML = '';
-        let count = 0;
-        sections.forEach(sec => {
-          const items = group[sec.key] || [];
-          if (!items.length) return;
-          const header = document.createElement('div');
-          header.className = 'col-12';
-          header.innerHTML = `<h6 class="mt-2 mb-2">${sec.label} (${items.length})</h6>`;
-          materielsGrid.appendChild(header);
-          items.forEach(m => {
-            count++;
-            const col = document.createElement('div');
-            col.className = 'col-12 col-md-6';
-            col.innerHTML = `
-              <div class="border rounded p-2 mb-2">
-                <div class="fw-semibold">${m.designation || 'Matériel'}</div>
-                <div class="text-muted small">Ref: ${m.reference || '—'} • Catégorie: ${m.categorie || '—'}</div>
-                <div class="small">Qté: ${m.quantite || 1} ${m.commentaire ? '• ' + m.commentaire : ''}</div>
-              </div>
-            `;
-            materielsGrid.appendChild(col);
-          });
-        });
-
-        if (count === 0) {
-          materielsEmpty.classList.remove('d-none');
-        } else {
-          materielsEmpty.classList.add('d-none');
-        }
-      }
-
-      async function loadMateriels() {
-        materielsCache = [];
-        try {
-          const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
-          if (rel && Array.isArray(rel.materiels)) {
-            materielsCache = rel.materiels;
-          } else {
-            const res = await fetch(`/api/interventions/${interventionId}/materiels`, { headers });
-            if (res.ok) {
-              const data = await res.json().catch(() => []);
-              if (Array.isArray(data)) materielsCache = data;
-            }
-          }
-        } catch (e) {
-          console.warn('Chargement materiels:', e);
-        } finally {
-          renderMateriels(materielFilter ? materielFilter.value : '');
-        }
-      }
-
-      function displayResponsables(responsables = []) {
-        responsablesList.innerHTML = '';
-        if (responsables.length > 0) {
-            responsables.forEach(r => {
-                const li = document.createElement('li');
-                li.className = 'list-group-item';
-                li.textContent = `${r.prenom || ''} ${r.nom || ''} (${r.matricule || r.agent_matricule}) - ${r.role}`;
-                responsablesList.appendChild(li);
-            });
-        } else {
-            responsablesList.innerHTML = '<li class="list-group-item text-muted">Aucun responsable assigné.</li>';
-        }
-      }
-
-      async function loadImages() {
-        if (!imagesList) return;
-        imagesList.innerHTML = '<div class="text-muted">Chargement…</div>';
-        try {
-          const imgs = await fetchJSON(`/api/images?cible_type=Intervention&cible_id=${interventionId}`);
-          if (!imgs || !imgs.length) {
-            imagesList.innerHTML = '<div class="text-muted">Aucune image associée.</div>';
-            return;
-          }
-          imagesList.innerHTML = '';
-          imgs.forEach(img => {
-            const col = document.createElement('div');
-            col.className = 'col';
-            const viewUrl = `/api/images/${img.id}/view`;
-            col.innerHTML = `
-              <div class="border rounded p-2 h-100">
-                <div class="small mb-1"><strong>${img.nom_fichier || 'Image'}</strong></div>
-                ${img.commentaire_image ? `<div class="text-muted small mb-1">${renderMd(img.commentaire_image)}</div>` : ''}
-                <a class="btn btn-sm btn-outline-primary w-100" href="${viewUrl}" target="_blank"><i class="bi bi-eye me-1"></i>Voir</a>
-              </div>`;
-            imagesList.appendChild(col);
-          });
-        } catch (e) {
-          console.error('Erreur chargement images:', e);
-          imagesList.innerHTML = '<div class="text-danger">Impossible de charger les images.</div>';
-        }
-      }
-
-      async function uploadImage() {
-        const file = imgFileInput && imgFileInput.files && imgFileInput.files[0];
-        if (!file) { alert('Sélectionnez un fichier image.'); return; }
-        try {
-          const base64 = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
-          const body = {
-            nom_fichier: file.name,
-            type_mime: file.type || 'image/jpeg',
-            base64,
-            commentaire_image: imgCommentInput ? imgCommentInput.value.trim() : null,
-            cible_type: 'Intervention',
-            cible_id: interventionId
-          };
-          const res = await fetch('/api/images', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...headers },
-            body: JSON.stringify(body)
-          });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-          imgFileInput.value = '';
-          if (imgCommentInput) imgCommentInput.value = '';
-          await loadImages();
-          alert('Image ajoutée.');
-        } catch (e) {
-          console.error('Upload image:', e);
-          alert(`Erreur lors de l'upload: ${e.message}`);
-        }
-      }
-      
-      function displayDocuments(documents = []) {
-        documentsList.innerHTML = '';
-        if (documents.length > 0) {
-            documents.forEach(doc => {
-            const docEl = document.createElement('div');
-            docEl.className = 'document-item mb-2 p-2 border rounded';
-            const viewUrl = `/api/documents/${doc.id}/view`;
-            docEl.innerHTML = `<a href="${viewUrl}" target="_blank">${doc.nom_fichier}</a> <span class="text-muted">- (${doc.nature})</span>`;
-            documentsList.appendChild(docEl);
-            });
-        } else {
-            documentsList.innerHTML = '<p class="text-muted">Aucun document associé.</p>';
-        }
-      }
-      
-      function renderRendus(rendus = []) {
-        if (!rendusList) return;
-        if (!rendus.length) {
-            rendusList.innerHTML = '<p class="text-muted">Aucun rendu enregistré pour cette intervention.</p>';
-            return;
-        }
-        rendusList.innerHTML = '';
-        rendus.forEach(r => {
-            const card = document.createElement('div');
-            card.className = 'card card-body mb-2';
-            const resumeSnippet = (r.resume || '').substring(0, 150) + ((r.resume || '').length > 150 ? '...' : '');
-            card.innerHTML = `
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h6 class="mb-1">Rendu #${r.id}</h6>
-                        <p class="small text-muted mb-2">Valeur: ${r.valeur || 'Non spécifiée'}</p>
-                        <div class="markdown-body small">${renderMd(resumeSnippet)}</div>
-                    </div>
-                    <a href="rendu-intervention-view.html?id=${r.id}" class="btn btn-sm btn-outline-primary ms-3">
-                        <i class="bi bi-eye me-1"></i>Voir
-                    </a>
-                </div>
-            `;
-            rendusList.appendChild(card);
-        });
-      }
-
-
-      function displayAgents(agents = []) {
-        agentsList.innerHTML = '';
-        if (agents.length > 0) {
-            agents.forEach(a => {
-                const li = document.createElement('li');
-                li.className = 'list-group-item d-flex justify-content-between align-items-center';
-                li.textContent = `${a.prenom || ''} ${a.nom || ''} (${a.agent_matricule})`;
-                if (isAdmin) {
-                    const removeBtn = document.createElement('button');
-                    removeBtn.className = 'btn btn-danger btn-sm';
-                    removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
-                    removeBtn.onclick = () => removeAgent(a.agent_matricule);
-                    li.appendChild(removeBtn);
-                }
-                agentsList.appendChild(li);
-            });
-        } else {
-            agentsList.innerHTML = '<li class="list-group-item text-muted">Aucun agent assigné.</li>';
-        }
-      }
-      
-      async function removeAgent(agentMatricule) {
-        if (!ticketId || !confirm(`Voulez-vous vraiment retirer l'agent ${agentMatricule} de ce ticket ?`)) return;
-        try {
-            await fetchJSON(`/api/tickets/${ticketId}/agents/${agentMatricule}`, { method: 'DELETE' });
-            fetchAndDisplayTicketRelations();
-        } catch (error) {
-            console.error('Error removing agent:', error);
-            alert('Erreur lors du retrait de l\'agent.');
-        }
-      }
-
-      async function fetchAndDisplayTicketRelations() {
-          if (!ticketId) {
-            displayResponsables([]);
-            displayAgents([]);
-            return;
-          };
-          try {
-              const relations = await fetchJSON(`/api/tickets/${ticketId}/relations`);
-              displayResponsables(relations.responsables);
-              displayAgents(relations.agents_assignes);
-          } catch (error) {
-              console.error('Error fetching ticket relations:', error);
-          }
-      }
-      
-      async function fetchAndPopulateAll() {
-        try {
-          const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
-          if (rel && rel.intervention) {
-            const elapsed = formatElapsed(rel.intervention.date_debut, rel.intervention.date_fin, rel.intervention.status || rel.intervention.statut);
-            document.getElementById('intervention-id').textContent = rel.intervention.id;
-            document.getElementById('view_id').textContent = rel.intervention.id;
-            document.getElementById('view_maintenance_id').textContent = rel.ticket ? rel.ticket.id : '';
-            document.getElementById('view_description').textContent = rel.intervention.description || '';
-            document.getElementById('view_date_debut').textContent = rel.intervention.date_debut || '';
-            document.getElementById('view_date_fin').textContent = rel.intervention.date_fin || '';
-            document.getElementById('view_status').textContent = rel.intervention.status || '';
-            document.getElementById('view_intervention_precedente_id').textContent = rel.intervention.intervention_precedente_id || '';
-            const elapsedEl = document.getElementById('view_elapsed');
-            if (elapsedEl) elapsedEl.textContent = elapsed;
-            ticketId = rel.ticket ? rel.ticket.id : null;
-            demandeId = rel.ticket ? rel.ticket.demande_id : null;
-              displayDocuments(rel.documents); 
-              loadImages();
-              // materiels issus de relations si disponibles
-              if (Array.isArray(rel.materiels)) {
-                materielsCache = rel.materiels;
-                renderMateriels(materielFilter ? materielFilter.value : '');
-              }
-            // Site associé (via ticket)
-            const siteId = rel.ticket?.site_id || rel.site_id || rel.intervention?.site_id;
-            if (siteId) {
-              const siteCard = document.getElementById('site-card');
-              if (siteCard) siteCard.classList.remove('d-none');
-              try {
-                const siteRelRes = await fetch(`/api/sites/${siteId}/relations`, { headers });
-                if (siteRelRes.ok) {
-                  const siteRel = await siteRelRes.json();
-                  const site = siteRel.site || {};
-                  let clientId = site.client_id || siteRel.client?.id;
-                  document.getElementById('site-name').textContent = site.nom_site || `Site #${site.id || siteId}`;
-                  document.getElementById('site-statut').textContent = site.status || site.statut || 'N/A';
-                  document.getElementById('site-adresse').innerHTML = siteRel.adresse ? [
-                    siteRel.adresse.ligne1,
-                    siteRel.adresse.ligne2,
-                    `${siteRel.adresse.code_postal || ''} ${siteRel.adresse.ville || ''}`.trim(),
-                    siteRel.adresse.pays
-                  ].filter(Boolean).join('<br>') : (site.adresse_libelle || 'N/A');
-                  document.getElementById('site-commentaire').textContent = site.commentaire || 'Aucun commentaire';
-                  const contactStr = `${site.representant_nom || siteRel.site?.contact_nom || ''} ${site.representant_tel || siteRel.site?.contact_tel || ''}`.trim();
-                  document.getElementById('site-contact').textContent = contactStr || 'Non spécifié';
-                  const clientEl = document.getElementById('site-client');
-                  clientEl.textContent = site.nom_client || siteRel.client?.nom_client || 'Non assigné';
-                  const siteLink = document.getElementById('site-view-link');
-                  if (siteLink) { siteLink.href = `site-view.html?id=${siteId}`; }
-
-                  // reps
-                  const repsEl = document.getElementById('site-representants');
-                  if (repsEl) {
-                    repsEl.innerHTML = '';
-                    const reps = siteRel.representants || [];
-                    if (!reps.length) repsEl.innerHTML = '<div class="text-muted small">Aucun représentant.</div>';
-                    else reps.forEach(rep => {
-                      const badge = (rep.nom || rep.email || 'N')[0].toUpperCase();
-                      const tel = rep.tel ? `<span class="ms-2"><i class="bi bi-phone me-1"></i>${rep.tel}</span>` : '';
-                      repsEl.innerHTML += `
-                        <div class="d-flex align-items-start mb-2">
-                          <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;">${badge}</div>
-                          <div class="ms-3">
-                            <div class="fw-semibold">${rep.nom || 'Inconnu'}</div>
-                            <div class="small text-muted">${rep.fonction || ''}</div>
-                            <div class="small text-muted"><i class="bi bi-envelope me-1"></i>${rep.email || 'N/A'} ${tel}</div>
-                          </div>
-                        </div>`;
-                    });
-                  }
-
-                  // Modal client
-                  if (clientId && clientEl) {
-                    clientEl.classList.add('link-button');
-                    clientEl.addEventListener('click', () => {
-                      const frame = document.getElementById('clientModalFrame');
-                      if (frame) frame.src = `client-view.html?id=${clientId}`;
-                      const modalEl = document.getElementById('clientModal');
-                      if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
-                    }, { once: true });
-                  }
-                }
-              } catch (e) { console.warn('Site associé non chargé', e); }
-            }
-          }
-
-            // NEW: Fetch and render Rendus separately
-            try {
-                const rendus = await fetchJSON(`/api/interventions/${interventionId}/rendus`);
-                renderRendus(rendus);
-            } catch(e) {
-                console.error("Failed to load rendus", e);
-                if (rendusList) rendusList.innerHTML = '<p class="text-danger">Erreur de chargement des rendus.</p>';
-            }
-
-            allAgents = await fetchJSON('/api/agents');
-            const options = allAgents.map(agent => `<option value="${agent.matricule}">${agent.nom} ${agent.prenom || ''} (${agent.matricule})</option>`).join('');
-            responsableSelect.innerHTML = options;
-            agentSelect.innerHTML = options;
-            
-            fetchAndDisplayTicketRelations();
-
-          } catch (e) {
-            console.error('Erreur chargement initial', e);
-            document.querySelector('main').innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
-          }
-      }
-      
-      document.getElementById('save-responsable-btn').addEventListener('click', async () => {
-        const agent_matricule = responsableSelect.value;
-        if (!ticketId || !agent_matricule) return;
-        try {
-            await fetchJSON(`/api/tickets/${ticketId}/responsables`, {
-                method: 'POST',
-                body: JSON.stringify({ agent_matricule }),
-                headers: { 'Content-Type': 'application/json' }
-            });
-            bootstrap.Modal.getInstance(document.getElementById('addResponsableModal')).hide();
-            fetchAndDisplayTicketRelations();
-        } catch (error) {
-            console.error('Error adding responsable:', error);
-            alert(`Erreur: ${error.message}`);
-        }
-      });
-      
-      document.getElementById('save-agent-btn').addEventListener('click', async () => {
-        const agent_matricule = agentSelect.value;
-        if (!ticketId || !agent_matricule) return;
-        try {
-            await fetchJSON(`/api/tickets/${ticketId}/agents`, {
-                method: 'POST',
-                body: JSON.stringify({ agent_matricule }),
-                headers: { 'Content-Type': 'application/json' }
-            });
-            bootstrap.Modal.getInstance(document.getElementById('addAgentModal')).hide();
-            fetchAndDisplayTicketRelations();
-        } catch (error) {
-            console.error('Error adding agent:', error);
-            alert('Erreur lors de l\'ajout de l\'agent.');
-        }
-      });
-
-      const addRenduBtn = document.getElementById('add-rendu-btn');
-      if (addRenduBtn) {
-        addRenduBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          if (!interventionId) {
-            alert('Intervention inconnue.');
-            return;
-          }
-          let url = `rendu-intervention-new.html?id=${interventionId}`;
-          if (demandeId) {
-              url += `&demande_id=${demandeId}`;
-          }
-          window.location.href = url;
-        });
-      }
-      const editInterBtn = document.getElementById('edit-intervention-btn');
-      if (editInterBtn) {
-        editInterBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          if (!interventionId) { alert('Intervention inconnue.'); return; }
-          window.location.href = `intervention-edit.html?id=${interventionId}`;
-        });
-      }
-
-      const showMaterielsBtn = document.getElementById('show-materiels-btn');
-      if (showMaterielsBtn) {
-        if (isAdmin) showMaterielsBtn.classList.remove('d-none');
-        showMaterielsBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          if (materielsModalInstance) materielsModalInstance.show();
-          if (!materielsCache.length) loadMateriels();
-          else renderMateriels(materielFilter ? materielFilter.value : '');
-        });
-      }
-      if (materielFilter) {
-        materielFilter.addEventListener('input', () => renderMateriels(materielFilter.value));
-      }
-
-      const backLink = document.getElementById('back-link');
-      if (backLink) {
-        backLink.addEventListener('click', (e) => {
-          e.preventDefault();
-          if (document.referrer) {
-            history.back();
-          } else {
-            location.href = 'interventions.html';
-          }
-        });
-      }
-
-      const addDocumentModalEl = document.getElementById('addDocumentModal');
-    const addDocumentModal = new bootstrap.Modal(addDocumentModalEl);
-    const addDocumentBtn = document.getElementById('add-document-btn');
-    const saveDocumentBtn = document.getElementById('save-document-btn');
-
-    if (addDocumentBtn) {
-      addDocumentBtn.addEventListener('click', () => {
-        document.getElementById('add-document-form').reset();
-        addDocumentModal.show();
-      });
+    } catch (e) {
+      console.error('Erreur chargement initial', e);
+      document.body.innerHTML = `<div class="container mt-5"><div class="alert alert-danger">${e.message}</div></div>`;
     }
+  }
 
-    function toBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = error => reject(error);
-      });
-    }
-
-    if (saveDocumentBtn) {
-      saveDocumentBtn.addEventListener('click', async () => {
-        const fileInput = document.getElementById('doc-file-input');
-        const file = fileInput.files[0];
-        if (!file) {
-          alert('Veuillez sélectionner un fichier.');
-          return;
-        }
-
-        const base64 = await toBase64(file);
-        const nom_fichier = document.getElementById('doc-name-input').value.trim() || file.name;
-        const nature = document.getElementById('doc-nature-input').value;
-
-        const payload = {
-          base64,
-          nom_fichier,
-          nature,
-          type_mime: file.type,
-          cible_type: 'Intervention',
-          cible_id: interventionId
-        };
-        
-        saveDocumentBtn.disabled = true;
-        saveDocumentBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enregistrement...';
-
-        try {
-          await fetchJSON('/api/documents', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          addDocumentModal.hide();
-          fetchAndPopulateAll(); // Refresh data
-        } catch (e) {
-          alert(`Échec de l'ajout: ${e.message}`);
-        } finally {
-          saveDocumentBtn.disabled = false;
-          saveDocumentBtn.textContent = 'Enregistrer';
-        }
-      });
-    }
-
-      fetchAndPopulateAll();
-      if (imgFormWrapper && isAdmin) {
-        imgFormWrapper.classList.remove('d-none');
-        if (imgUploadBtn) imgUploadBtn.addEventListener('click', uploadImage);
+  // Bouton ajouter responsable
+  const saveResponsableBtn = document.getElementById('save-responsable-btn');
+  if (saveResponsableBtn) {
+    saveResponsableBtn.addEventListener('click', async () => {
+      const agent_matricule = responsableSelect.value;
+      if (!ticketId || !agent_matricule) return;
+      try {
+        await fetchJSON(`/api/tickets/${ticketId}/responsables`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent_matricule })
+        });
+        bootstrap.Modal.getInstance(document.getElementById('addResponsableModal')).hide();
+        fetchAndDisplayTicketRelations();
+      } catch (e) {
+        console.error('Error adding responsable:', e);
+        alert(`Erreur: ${e.message}`);
       }
     });
-  </script>
+  }
+
+  // Bouton ajouter agent
+  const saveAgentBtn = document.getElementById('save-agent-btn');
+  if (saveAgentBtn) {
+    saveAgentBtn.addEventListener('click', async () => {
+      const agent_matricule = agentSelect.value;
+      if (!ticketId || !agent_matricule) return;
+      try {
+        await fetchJSON(`/api/tickets/${ticketId}/agents`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent_matricule })
+        });
+        bootstrap.Modal.getInstance(document.getElementById('addAgentModal')).hide();
+        fetchAndDisplayTicketRelations();
+      } catch (e) {
+        console.error('Error adding agent:', e);
+        alert('Erreur lors de l\'ajout de l\'agent.');
+      }
+    });
+  }
+
+  // Bouton ajouter rendu
+  const addRenduBtn = document.getElementById('add-rendu-btn');
+  if (addRenduBtn) {
+    addRenduBtn.addEventListener('click', e => {
+      e.preventDefault();
+      if (!interventionId) {
+        alert('Intervention inconnue.');
+        return;
+      }
+      let url = `rendu-intervention-new.html?id=${interventionId}`;
+      if (demandeId) url += `&demande_id=${demandeId}`;
+      window.location.href = url;
+    });
+  }
+
+  // Bouton voir matériels
+  if (showMaterielsBtn) {
+    showMaterielsBtn.addEventListener('click', e => {
+      e.preventDefault();
+      if (materielsModalInstance) materielsModalInstance.show();
+      if (!materielsCache.length) loadMateriels();
+      else renderMateriels(materielFilter ? materielFilter.value : '');
+    });
+  }
+  if (materielFilter) {
+    materielFilter.addEventListener('input', () => renderMateriels(materielFilter.value));
+  }
+
+  // Documents : ajout
+  const addDocumentModalEl = document.getElementById('addDocumentModal');
+  const addDocumentModal = addDocumentModalEl ? new bootstrap.Modal(addDocumentModalEl) : null;
+  const addDocumentBtn = document.getElementById('add-document-btn');
+  const saveDocumentBtn = document.getElementById('save-document-btn');
+
+  if (addDocumentBtn && addDocumentModal) {
+    addDocumentBtn.addEventListener('click', () => {
+      const form = document.getElementById('add-document-form');
+      if (form) form.reset();
+      addDocumentModal.show();
+    });
+  }
+
+  function toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload  = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = error => reject(error);
+    });
+  }
+
+  if (saveDocumentBtn) {
+    saveDocumentBtn.addEventListener('click', async () => {
+      const fileInput = document.getElementById('doc-file-input');
+      const file = fileInput.files[0];
+      if (!file) {
+        alert('Veuillez sélectionner un fichier.');
+        return;
+      }
+
+      const base64 = await toBase64(file);
+      const nom_fichier = (document.getElementById('doc-name-input').value || '').trim() || file.name;
+      const nature = document.getElementById('doc-nature-input').value;
+
+      const payload = {
+        base64,
+        nom_fichier,
+        nature,
+        type_mime: file.type,
+        cible_type: 'Intervention',
+        cible_id: interventionId
+      };
+
+      saveDocumentBtn.disabled = true;
+      saveDocumentBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enregistrement...';
+
+      try {
+        await fetchJSON('/api/documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (addDocumentModal) addDocumentModal.hide();
+        fetchAndPopulateAll();
+      } catch (e) {
+        alert(`Échec de l'ajout: ${e.message}`);
+      } finally {
+        saveDocumentBtn.disabled = false;
+        saveDocumentBtn.textContent = 'Enregistrer';
+      }
+    });
+  }
+
+  fetchAndPopulateAll();
+});
+</script>
 </body>
 </html>
-
-
