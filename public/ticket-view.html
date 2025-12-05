@@ -309,7 +309,7 @@
             <div class="text-muted">Chargement...</div>
           </div>
           <div class="mt-3 d-flex justify-content-end">
-            <button class="btn btn-outline-primary btn-sm d-none" id="view-messages-btn">
+            <button class="btn btn-outline-primary btn-sm d-none" id="view-messages-btn" data-bs-toggle="modal" data-bs-target="#messagesModal">
               <i class="bi bi-chat-dots me-1"></i> Voir messages
             </button>
           </div>
@@ -563,6 +563,8 @@
       const qp = new URLSearchParams(location.search);
       const ticketId = qp.get('id');
       const token = localStorage.getItem('token');
+      const userPayload = (()=>{ try{ return token? JSON.parse(atob(token.split('.')[1])):null; } catch { return null; } })();
+      const userId = userPayload ? userPayload.id : null;
       const headers = token? { 'Authorization': `Bearer ${token}` } : {};
       const isAdmin = (()=>{ try{ const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles)&&p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
       function set(id, val){ const el=document.getElementById(id); if(el) el.textContent = val||''; }
@@ -745,9 +747,8 @@
           });
         }
 
-        // Messages demande (si demande_id lié au ticket)
+        // Messages demande (si demande_id lié au ticket) -> en MODAL
         const messagesBtn = document.getElementById('view-messages-btn');
-        const messagesModalEl = document.getElementById('messagesModal');
         const messagesContainer = document.getElementById('messages-container');
         if (!demandeId && Array.isArray(data.demandes) && data.demandes.length) {
           // Prend la demande au plus grand id si aucune n'est directement liée
@@ -756,20 +757,50 @@
             return d.id > acc ? d.id : acc;
           }, null);
         }
-        if (messagesBtn) {
+
+        if (messagesBtn && demandeId) { // Only show button if there is a demandeId
           messagesBtn.classList.remove('d-none');
-          messagesBtn.addEventListener('click', () => {
-            let conversationId;
-            if (demandeId) {
-              conversationId = `demande-${demandeId}`;
-            } else if (ticketId) {
-              conversationId = `ticket-${ticketId}`;
-            } else {
-              alert('ID de ticket ou de demande manquant.');
+          messagesBtn.addEventListener('click', async () => {
+            if (!demandeId) { // Double check
+              messagesContainer.innerHTML = '<div class="alert alert-warning">Aucune demande liée à ce ticket pour afficher les messages.</div>';
               return;
             }
-            window.location.href = `/messagerie.html?conversation_id=${conversationId}`;
-          }, { once: true });
+
+            messagesContainer.innerHTML = '<div class="text-muted">Chargement des messages...</div>';
+
+            try {
+              const conversationId = `demande-${demandeId}`;
+              const messages = await fetchJSON(`/api/conversations/${conversationId}`);
+
+              if (!messages || messages.length === 0) {
+                messagesContainer.innerHTML = '<div class="text-muted">Aucun message dans cette conversation.</div>';
+                return;
+              }
+
+              messagesContainer.innerHTML = messages.map(msg => {
+                const isSent = msg.sender_id === userId;
+                const attachmentsHTML = (msg.attachments || []).map(att =>
+                  `<br><a href="/api/attachments/${att.id}/view" target="_blank" download="${att.file_name}">${att.file_name}</a>`
+                ).join('');
+
+                // Basic styling for sent/received messages
+                const msgStyle = isSent 
+                  ? 'background-color: #e1f5fe; text-align: right; border-radius: 10px; padding: 10px; margin-bottom: 10px; margin-left: 20%;' 
+                  : 'background-color: #f1f1f1; border-radius: 10px; padding: 10px; margin-bottom: 10px; margin-right: 20%;';
+
+                return `
+                  <div style="${msgStyle}">
+                    <p class="mb-1">${msg.body || ''}</p>
+                    <small class="text-muted">${new Date(msg.created_at).toLocaleString()}</small>
+                    ${attachmentsHTML}
+                  </div>`;
+              }).join('');
+
+            } catch (error) {
+              console.error('Error loading messages:', error);
+              messagesContainer.innerHTML = `<div class="alert alert-danger">Erreur: ${error.message}</div>`;
+            }
+          });
         }
         set('view_responsable', t.responsable || 'Non assigné');
 
