@@ -86,6 +86,22 @@
       <div class="col">
         <div class="metric-card h-100">
           <div class="d-flex align-items-center gap-3">
+            <div class="metric-icon icon-purple"><i class="bi bi-building"></i></div>
+            <div>
+              <div class="metric-label">Sites sous contrat</div>
+              <div class="metric-value" id="adminSitesCount">-</div>
+              <div class="metric-sub text-primary">Actifs / non actifs</div>
+            </div>
+          </div>
+          <div class="mt-auto">
+            <a href="/sites.html" class="btn btn-outline-primary btn-sm">Ouvrir</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="metric-card h-100">
+          <div class="d-flex align-items-center gap-3">
             <div class="metric-icon icon-orange"><i class="bi bi-people-fill"></i></div>
             <div>
               <div class="metric-label">Agents</div>
@@ -145,6 +161,18 @@
       }
       setText('adminClientsCount', await fetchCount('/api/clients'));
       setText('adminContratsCount', await fetchCount('/api/contrats'));
+      // Sites sous contrat: actifs/non actifs
+      try {
+        const rSites = await fetch('/api/sites', { headers, credentials:'same-origin' });
+        const rows = rSites.ok ? await rSites.json() : [];
+        const sites = Array.isArray(rows) ? rows : [];
+        const actifs = sites.filter(s => !s.date_fin || new Date(s.date_fin) >= new Date()).length;
+        const inactifs = sites.length - actifs;
+        setText('adminSitesCount', `${actifs} / ${sites.length}`);
+        const sub = document.querySelector('#adminSitesCount')?.parentElement?.querySelector('.metric-sub');
+        if (sub) sub.textContent = `${actifs} actifs · ${inactifs} non actifs`;
+      } catch { setText('adminSitesCount', '-'); }
+
       setText('adminAgentsCount', await fetchCount('/api/agents'));
       setText('adminFacturesCount', await fetchCount('/api/factures'));
       setText('adminReglementsCount', await fetchCount('/api/reglements'));

@@ -103,4 +103,21 @@ async function buildHeaders(json=false){
       })();
       (async () => { try { const r = await fetch('/api/factures', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('facturesCount').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
       (async () => { try { const r = await fetch('/api/reglements', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('reglementsCount').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
+
+      // Messagerie: nombre de conversations
+      (async () => {
+        const elCount = document.getElementById('messagesCount');
+        const elBreak = document.getElementById('messagesBreakdown');
+        if (!elCount) return;
+        try {
+          const r = await fetch('/api/conversations', { headers: await buildHeaders(false), credentials:'same-origin' });
+          const rows = r.ok ? await r.json() : [];
+          const convs = Array.isArray(rows) ? rows : [];
+          elCount.textContent = convs.length;
+          if (elBreak) elBreak.textContent = 'Conversations';
+        } catch {
+          elCount.textContent = '-';
+          if (elBreak) elBreak.textContent = 'Conversations';
+        }
+      })();
     });
