@@ -592,6 +592,22 @@
           elapsedTimer = setInterval(update, 1000);
         }
       }
+
+      async function fetchJSON(url, opts) {
+        const init = Object.assign(
+          { credentials: 'same-origin', headers: Object.assign({}, headers) },
+          opts || {}
+        );
+        // Merge headers if provided in opts
+        if (opts && opts.headers) {
+          init.headers = Object.assign({}, headers, opts.headers);
+        }
+        const r = await fetch(url, init);
+        const ct = r.headers.get('content-type') || '';
+        const b = ct.includes('application/json') ? await r.json().catch(() => null) : null;
+        if (!r.ok) throw new Error((b && b.error) || r.statusText);
+        return b;
+      }
       try {
         const res = await fetch(`/api/tickets/${ticketId}/relations`, { headers, credentials: 'same-origin' });
         if (res.status===401||res.status===403){ location.href='/login.html'; return; }
@@ -759,13 +775,14 @@
               } else {
                 messagesContainer.innerHTML = '';
                 conv.forEach(msg => {
+                  const content = msg.body || msg.content || msg.message || '';
                   messagesContainer.innerHTML += `
                     <div class="border rounded p-2 mb-2">
                       <div class="d-flex justify-content-between small text-muted">
                         <span>${msg.author_name || msg.author_email || 'Utilisateur'}</span>
                         <span>${msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}</span>
                       </div>
-                      <div>${msg.content || ''}</div>
+                      <div>${content}</div>
                     </div>`;
                 });
               }
