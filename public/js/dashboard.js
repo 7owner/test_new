@@ -72,6 +72,19 @@ async function buildHeaders(json=false){
       (async () => { try { const r = await fetch('/api/agents', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('activeAgents').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
       (async () => { try { const r = await fetch('/api/sites', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('sitesUnderContract').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
       (async () => {
+        const el = document.getElementById('contratsCount');
+        if (!el) return;
+        try {
+          const r = await fetch('/api/contrats', { headers: await buildHeaders(false), credentials:'same-origin' });
+          const rows = r.ok ? await r.json() : [];
+          const contrats = Array.isArray(rows) ? rows : [];
+          const actifs = contrats.filter(c => !c.date_fin || new Date(c.date_fin) >= new Date()).length;
+          el.textContent = `${actifs} / ${contrats.length}`;
+        } catch {
+          el.textContent = '-';
+        }
+      })();
+      (async () => {
         const elPending = document.getElementById('demandesPending');
         const elBreakdown = document.getElementById('demandesBreakdown');
         try {

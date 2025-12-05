@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des Contrats</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=2"></script>
+  <style>
+    .dashboard-bg { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); min-height: 100vh; }
+    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+    .filters-card { background: #fff; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+  </style>
+</head>
+<body class="dashboard-bg">
+  <header class="header d-flex justify-content-between align-items-center mb-4 p-3 bg-white shadow-sm rounded">
+    <h1 class="m-0"><a href="/dashboard.html" class="text-decoration-none text-dark"><img src="/logo_logicielle.png" alt="Logo" style="height: 30px; vertical-align: middle; margin-right: 10px;"></a></h1>
+    <div class="d-flex align-items-center gap-3">
+      <div class="d-flex align-items-center bg-light border rounded-pill px-3 py-1 shadow-sm">
+        <i class="bi bi-person-circle text-primary fs-4 me-2"></i>
+        <div class="text-nowrap fw-medium text-secondary">Bienvenue</div>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar"><i class="bi bi-list"></i></button>
+    </div>
+  </header>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
+    </div>
+    <div class="offcanvas-body">
+      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+        <li class="nav-item"><a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
+        <li class="nav-item"><a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/contrats.html"><i class="bi bi-file-earmark-text me-2"></i>Contrats</a></li>
+        <li class="nav-item"><a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a></li>
+        <li class="nav-item"><a class="nav-link" href="/tickets.html"><i class="bi bi-ticket-detailed me-2"></i>Tickets</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <main class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <h1 class="m-0">Contrats</h1>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-primary" id="toggle-filters-btn"><i class="bi bi-funnel-fill me-1"></i>Masquer les filtres</button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createContratModal"><i class="bi bi-plus-circle me-2"></i>Créer un contrat</button>
+      </div>
+    </div>
+
+    <div class="filters-card p-3 mb-4" id="filters-row">
+      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        <h5 class="mb-0">Filtres</h5>
+      </div>
+      <div class="row g-2">
+        <div class="col-lg-6 col-md-8 col-12">
+          <input type="text" id="contrat-search" class="form-control" placeholder="Rechercher par titre...">
+        </div>
+        <div class="col-lg-3 col-md-4 col-12">
+          <input type="date" id="contrat-date-start" class="form-control" title="Date de début min">
+        </div>
+        <div class="col-lg-3 col-md-4 col-12">
+          <input type="date" id="contrat-date-end" class="form-control" title="Date de début max">
+        </div>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>Titre</th>
+            <th>Début</th>
+            <th>Fin</th>
+            <th>Sites liés</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="contrats-table-body"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Create Modal -->
+  <div class="modal fade" id="createContratModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Nouveau contrat</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="create-form">
+            <div class="mb-3">
+              <label class="form-label">Titre</label>
+              <input class="form-control" id="create-titre" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Date de début</label>
+              <input type="date" class="form-control" id="create-debut" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Date de fin</label>
+              <input type="date" class="form-control" id="create-fin">
+            </div>
+          </form>
+          <div id="create-feedback" class="small mt-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button class="btn btn-primary" id="create-submit">Créer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal fade" id="editContratModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Modifier contrat</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="edit-form">
+            <input type="hidden" id="edit-id">
+            <div class="mb-3">
+              <label class="form-label">Titre</label>
+              <input class="form-control" id="edit-titre" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Date de début</label>
+              <input type="date" class="form-control" id="edit-debut" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Date de fin</label>
+              <input type="date" class="form-control" id="edit-fin">
+            </div>
+          </form>
+          <div id="edit-feedback" class="small mt-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button class="btn btn-primary" id="edit-submit">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Modal -->
+  <div class="modal fade" id="viewContratModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Contrat</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="view-content">
+            <div class="mb-2"><strong>Titre :</strong> <span id="view-titre"></span></div>
+            <div class="mb-2"><strong>Début :</strong> <span id="view-debut"></span></div>
+            <div class="mb-3"><strong>Fin :</strong> <span id="view-fin"></span></div>
+            <h6>Sites associés</h6>
+            <ul id="view-sites" class="list-group"></ul>
+          </div>
+          <div id="view-feedback" class="small mt-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token');
+      const headers = token ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } : { 'Content-Type': 'application/json' };
+
+      const tableBody = document.getElementById('contrats-table-body');
+      const searchInput = document.getElementById('contrat-search');
+      const dateStart = document.getElementById('contrat-date-start');
+      const dateEnd = document.getElementById('contrat-date-end');
+      const toggleFiltersBtn = document.getElementById('toggle-filters-btn');
+      const filtersRow = document.getElementById('filters-row');
+
+      const createModal = new bootstrap.Modal(document.getElementById('createContratModal'));
+      const editModal = new bootstrap.Modal(document.getElementById('editContratModal'));
+      const viewModal = new bootstrap.Modal(document.getElementById('viewContratModal'));
+
+      const createFeedback = document.getElementById('create-feedback');
+      const editFeedback = document.getElementById('edit-feedback');
+      const viewFeedback = document.getElementById('view-feedback');
+      const viewSites = document.getElementById('view-sites');
+
+      let contrats = [];
+
+      async function api(url, opts={}) {
+        const res = await fetch(url, { headers, ...opts });
+        const body = await res.json().catch(()=> ({}));
+        if (!res.ok) throw new Error(body.error || res.statusText);
+        return body;
+      }
+
+      function formatDate(d) {
+        if (!d) return '';
+        const dt = new Date(d);
+        return isNaN(dt.getTime()) ? '' : dt.toLocaleDateString();
+      }
+
+      async function loadContrats() {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-muted">Chargement...</td></tr>';
+        try {
+          const list = await api('/api/contrats');
+          contrats = await Promise.all(list.map(async c => {
+            try {
+              const sites = await api(`/api/contrats/${c.id}/sites`);
+              return { ...c, sites_count: sites.length };
+            } catch { return { ...c, sites_count: 0 }; }
+          }));
+          applyFilters();
+        } catch (e) {
+          tableBody.innerHTML = '<tr><td colspan="5" class="text-danger">Erreur de chargement.</td></tr>';
+        }
+      }
+
+      function applyFilters() {
+        const term = (searchInput.value || '').toLowerCase();
+        const start = dateStart.value ? new Date(dateStart.value) : null;
+        const end = dateEnd.value ? new Date(dateEnd.value) : null;
+        if (start) start.setHours(0,0,0,0);
+        if (end) end.setHours(23,59,59,999);
+
+        const rows = (contrats || []).filter(c => {
+          const matchTerm = c.titre && c.titre.toLowerCase().includes(term);
+          const deb = c.date_debut ? new Date(c.date_debut) : null;
+          if (start && deb && deb < start) return false;
+          if (end && deb && deb > end) return false;
+          return matchTerm;
+        });
+        render(rows);
+      }
+
+      function render(rows) {
+        tableBody.innerHTML = '';
+        if (!rows.length) {
+          tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Aucun contrat trouvé.</td></tr>';
+          return;
+        }
+        rows.forEach(c => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${c.titre || ''}</td>
+            <td>${formatDate(c.date_debut)}</td>
+            <td>${formatDate(c.date_fin) || '—'}</td>
+            <td><span class="badge bg-info text-dark">${c.sites_count ?? 0}</span></td>
+            <td>
+              <button class="btn btn-sm btn-info me-1 btn-view" data-id="${c.id}"><i class="bi bi-eye"></i> Voir</button>
+              <button class="btn btn-sm btn-warning me-1 btn-edit" data-id="${c.id}"><i class="bi bi-pencil"></i> Modifier</button>
+              <button class="btn btn-sm btn-outline-danger btn-del" data-id="${c.id}"><i class="bi bi-trash"></i></button>
+            </td>
+          `;
+          tableBody.appendChild(tr);
+        });
+      }
+
+      tableBody.addEventListener('click', async (e) => {
+        const viewBtn = e.target.closest('.btn-view');
+        const editBtn = e.target.closest('.btn-edit');
+        const delBtn = e.target.closest('.btn-del');
+        if (viewBtn) {
+          const id = viewBtn.getAttribute('data-id');
+          viewFeedback.textContent = '';
+          viewSites.innerHTML = '<li class="list-group-item text-muted">Chargement...</li>';
+          try {
+            const contrat = await api(`/api/contrats/${id}`);
+            const sites = await api(`/api/contrats/${id}/sites`);
+            document.getElementById('view-titre').textContent = contrat.titre || '';
+            document.getElementById('view-debut').textContent = formatDate(contrat.date_debut);
+            document.getElementById('view-fin').textContent = formatDate(contrat.date_fin) || '—';
+            viewSites.innerHTML = '';
+            if (!sites.length) {
+              viewSites.innerHTML = '<li class="list-group-item text-muted">Aucun site lié.</li>';
+            } else {
+              sites.forEach(s => {
+                viewSites.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                  <span>${s.nom_site || 'Site #'+s.site_id}</span>
+                  <a class="btn btn-sm btn-outline-primary" href="/site-view.html?id=${s.site_id}">Voir le site</a>
+                </li>`;
+              });
+            }
+            viewModal.show();
+          } catch (err) {
+            viewFeedback.className = 'small text-danger';
+            viewFeedback.textContent = err.message || 'Erreur de chargement';
+            viewSites.innerHTML = '';
+            viewModal.show();
+          }
+        } else if (editBtn) {
+          const id = editBtn.getAttribute('data-id');
+          editFeedback.textContent = '';
+          document.getElementById('edit-id').value = id;
+          try {
+            const c = await api(`/api/contrats/${id}`);
+            document.getElementById('edit-titre').value = c.titre || '';
+            document.getElementById('edit-debut').value = c.date_debut ? c.date_debut.substring(0,10) : '';
+            document.getElementById('edit-fin').value = c.date_fin ? c.date_fin.substring(0,10) : '';
+            editModal.show();
+          } catch (err) {
+            alert(err.message || 'Erreur de chargement du contrat');
+          }
+        } else if (delBtn) {
+          const id = delBtn.getAttribute('data-id');
+          if (!confirm('Supprimer ce contrat ?')) return;
+          try {
+            await api(`/api/contrats/${id}`, { method: 'DELETE' });
+            await loadContrats();
+          } catch (err) {
+            alert(err.message || 'Suppression impossible');
+          }
+        }
+      });
+
+      document.getElementById('create-submit').addEventListener('click', async () => {
+        createFeedback.textContent = '';
+        const payload = {
+          titre: document.getElementById('create-titre').value.trim(),
+          date_debut: document.getElementById('create-debut').value,
+          date_fin: document.getElementById('create-fin').value || null
+        };
+        if (!payload.titre || !payload.date_debut) {
+          createFeedback.className = 'small text-danger';
+          createFeedback.textContent = 'Titre et date de début requis.';
+          return;
+        }
+        try {
+          await api('/api/contrats', { method:'POST', body: JSON.stringify(payload) });
+          createFeedback.className = 'small text-success';
+          createFeedback.textContent = 'Contrat créé.';
+          await loadContrats();
+          setTimeout(()=> createModal.hide(), 300);
+        } catch (err) {
+          createFeedback.className = 'small text-danger';
+          createFeedback.textContent = err.message || 'Erreur lors de la création';
+        }
+      });
+
+      document.getElementById('edit-submit').addEventListener('click', async () => {
+        editFeedback.textContent = '';
+        const payload = {
+          titre: document.getElementById('edit-titre').value.trim(),
+          date_debut: document.getElementById('edit-debut').value,
+          date_fin: document.getElementById('edit-fin').value || null
+        };
+        const id = document.getElementById('edit-id').value;
+        if (!payload.titre || !payload.date_debut) {
+          editFeedback.className = 'small text-danger';
+          editFeedback.textContent = 'Titre et date de début requis.';
+          return;
+        }
+        try {
+          await api(`/api/contrats/${id}`, { method:'PUT', body: JSON.stringify(payload) });
+          editFeedback.className = 'small text-success';
+          editFeedback.textContent = 'Contrat mis à jour.';
+          await loadContrats();
+          setTimeout(()=> editModal.hide(), 300);
+        } catch (err) {
+          editFeedback.className = 'small text-danger';
+          editFeedback.textContent = err.message || 'Erreur lors de la mise à jour';
+        }
+      });
+
+      searchInput.addEventListener('input', applyFilters);
+      dateStart.addEventListener('change', applyFilters);
+      dateEnd.addEventListener('change', applyFilters);
+
+      if (toggleFiltersBtn && filtersRow) {
+        toggleFiltersBtn.addEventListener('click', () => {
+          const hidden = filtersRow.classList.toggle('d-none');
+          toggleFiltersBtn.innerHTML = hidden ? '<i class="bi bi-funnel me-1"></i>Afficher les filtres' : '<i class="bi bi-funnel-fill me-1"></i>Masquer les filtres';
+        });
+      }
+
+      loadContrats();
+    });
+  </script>
+</body>
+</html>

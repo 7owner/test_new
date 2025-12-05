@@ -1,61 +1,84 @@
-# Contexte du Projet : projet_var_v4 (Session 7)
+# Contexte du Projet : projet_var_v4 (Mises à jour récentes)
 
-Cette session a été axée sur la refactorisation, la correction de bugs remontés par les logs Heroku, l'amélioration de l'ergonomie (UX), et l'ajout de nouvelles fonctionnalités de gestion de fichiers.
+Ce document résume les correctifs et évolutions réalisés durant les dernières sessions.
 
-## Améliorations de l'interface et de l'expérience utilisateur (UX)
+## Améliorations majeures et nouvelles fonctionnalités
 
-*   **Filtres améliorés** :
-    *   **Afficher/Masquer**: Les pages `agents.html`, `sites.html`, `tickets.html` et `demandes-client-admin.html` disposent désormais d'un bouton pour afficher ou masquer les sections de filtres, offrant une interface plus épurée.
-    *   **Mise en page en grille**: Les filtres sur ces mêmes pages ont été réorganisés en utilisant le système de grille de Bootstrap pour une meilleure ergonomie et un affichage adaptatif ("responsive").
-    *   **Nouveaux filtres pour la messagerie**: L'interface de `messagerie.html` a été enrichie avec des filtres par statut de la demande et par plage de dates.
+### 1. Refonte complète de la gestion des représentants de client
+Le modèle de données pour les représentants a été entièrement revu pour les lier aux utilisateurs du système (`users`) et permettre une gestion plus flexible.
 
-*   **Navigation améliorée** :
-    *   Correction du bouton "Retour" sur `intervention-edit.html` et `intervention-view.html` pour utiliser `history.back()`, offrant une navigation plus intuitive.
+*   **Schema BDD**:
+    *   Suppression de la table `representant`.
+    *   Création de la table `client_representant` (table de jointure) liant `client` et `users`, incluant des champs spécifiques au rôle (`nom`, `email`, `tel`, `fonction`).
+*   **API (`server.js`)**:
+    *   Suppression des anciens endpoints CRUD pour `representant`.
+    *   Nouveaux endpoints pour `client_representant`:
+        *   `GET /api/clients/:id/representants`: Liste les représentants (utilisateurs) d'un client.
+        *   `POST /api/clients/:id/representants`: Lie un utilisateur existant ou nouvellement créé à un client en tant que représentant.
+        *   `PUT /api/client_representant/:id`: Met à jour les détails du lien (ex: `fonction`, `nom`, `email`, `tel`) entre un utilisateur et un client.
+        *   `DELETE /api/client_representant/:id`: Supprime le lien entre un utilisateur et un client.
+    *   Nouveaux endpoints génériques de gestion des utilisateurs (pour admins):
+        *   `GET /api/users/search?email=...`: Recherche des utilisateurs par email.
+        *   `POST /api/users`: Crée un nouvel utilisateur (avec rôle spécifié, ex: `ROLE_CLIENT`).
+*   **Frontend**:
+    *   **`clients.html`**: Amélioration de l'UI et ajout d'une barre de recherche/filtre.
+    *   **`client-new.html`**: Simplifié pour la seule création du client, puis redirection vers `client-edit.html` pour la gestion des représentants.
+    *   **`client-view.html`**: Affiche la liste des représentants liés, avec leurs détails complets.
+    *   **`client-edit.html`**: Entièrement refactorisé pour une gestion complète des représentants via une modale (recherche, création, modification, suppression).
 
-*   **Dashboard Client (`client-dashboard.html`)** :
-    *   **Correction des modales**: La logique JavaScript gérant les fenêtres modales a été réparée pour assurer une ouverture et un chargement de contenu fiables.
-    *   **Amélioration UX**: Le bouton "Modifier" pour une demande client est maintenant désactivé si la demande a déjà été convertie en ticket, avec une infobulle explicative.
+### 2. Gestion des Contrats
+Introduction d'une nouvelle entité `contrat` avec une association multiple aux sites et gestion de fichiers.
 
-*   **Formulaires** :
-    *   Un exemple de texte (`placeholder`) a été ajouté au champ "Description" sur `ticket-edit.html` pour guider l'utilisateur.
+*   **Schema BDD**:
+    *   Ajout de `Contrat` à l'ENUM `doc_cible_type`.
+    *   Création de la table `contrat` (`titre`, `date_debut`, `date_fin`, `created_at`).
+    *   Création de la table `contrat_site_association` (table de jointure) liant `contrat` et `site` (relation N-N).
+*   **API (`server.js`)**:
+    *   Endpoints CRUD complets pour `contrat` (`GET`, `POST`, `PUT`, `DELETE /api/contrats`).
+    *   Endpoints pour `contrat_site_association`:
+        *   `GET /api/contrats/:id/sites`
+        *   `POST /api/contrats/:id/sites`
+        *   `DELETE /api/contrat_site_association/:id`
+    *   Mise à jour de `GET /api/sites/:id/relations` pour inclure les contrats associés.
 
-## Nouvelles fonctionnalités et corrections
+### 3. Fiabilisation du stockage des pièces jointes
+Transition du stockage des pièces jointes des messages du système de fichiers éphémère vers la base de données (blob).
 
-*   **Gestion des pièces jointes / rendus d’intervention (front)** :
-    *   `rendu-intervention-view.html` : ajout d’une modale d’édition (EasyMDE) pour mettre à jour valeur et résumé d’un rendu, envoi PATCH `/api/rendus/{id}` ; affichage du résumé Markdown et des notes sous chaque carte si présentes ; section Messages affichée pour les PJ des messages.
-    *   `rendu-intervention-new.html` (déjà stylé) : agrégation des pièces des messages de la demande via `/api/conversations/demande-{id}` en plus des images/documents Ticket/Site/Intervention/Demande.
-*   **Satisfaction client (dashboard client)** :
-    *   Ajout d’une cloche de notifications des tickets terminés ; badge décrémente après envoi de satisfaction.
-    *   Formulaire de satisfaction (étoiles + commentaire) dans l’historique ; POST `/api/tickets/{id}/satisfaction`, puis la fiche affiche la réponse.
-*   **Sites (vue/édition)** :
-    *   `site-view.html` : bandeau simplifié (nom du site + client/contact), badge statut caché si absent ; suppression des infos Date début/fin et compteur ; adresse affichée en texte.
-    *   `site-edit.html` : sélection d’adresse revue. Boutons « Choisir / gérer les adresses » (iframe `adresses.html`) + « Sélectionner une adresse existante » (liste rapide). Réception `postMessage` depuis l’iframe pour définir l’adresse sélectionnée ; footer du modal d’adresses épuré. Ajout de `ticket: false` par défaut dans le payload (colonne non nulle).
-    *   Correction de l’erreur « cannot set checked » (suppression de l’ancien switch ticket).
-*   **Gestion des adresses (standalone)** :
-    *   `adresses.html` + `js/adresses.js` : chaque carte dispose d’un bouton “sélectionner” (si ouvert en iframe) qui envoie `{type:'adresse-select', adresse}` au parent (postMessage). Éditer/supprimer conservés. Pagination et recherche inchangées.
+*   **Schema BDD**:
+    *   `messagerie_attachment`: Remplacement de `file_path VARCHAR` par `file_blob BYTEA`.
+*   **API (`server.js`)**:
+    *   `multer` configuré pour `memoryStorage`.
+    *   Endpoint `POST /api/conversations/:conversation_id/messages` mis à jour pour sauvegarder les blobs.
+    *   Nouvel endpoint `GET /api/attachments/:id/view` pour servir les fichiers directement depuis la BDD.
+    *   Modification des requêtes d'attachements pour ne plus renvoyer `file_path`.
+*   **Frontend**: Mise à jour de toutes les pages concernées pour utiliser le nouvel endpoint `GET /api/attachments/:id/view` pour l'affichage/téléchargement des PJ.
+*   **Placeholders**: Remplacement des URLs `via.placeholder.com` par des SVG Data URIs auto-contenues pour éviter les erreurs `ERR_NAME_NOT_RESOLVED`.
 
-*   **Gestion des fichiers** :
-    *   **Upload pour DOE**: La fonctionnalité "Ajouter une image" sur la page `doe-view.html` est maintenant implémentée via une modale, permettant l'envoi d'images en base64.
-    *   **Upload pour Interventions**: La fonctionnalité "Ajouter un document" a été ajoutée à `intervention-view.html`, également via une modale.
-    *   **Upload pour Sites et Demandes Client**: Les pages `client-site-files.html` et `client-demand-files.html` permettent désormais aux clients d'uploader des documents directement liés à leurs sites ou à leurs demandes.
-    *   **Agrégation des fichiers de site**: La page `client-site-files.html` affiche maintenant une vue complète de tous les fichiers : ceux du site, ceux des tickets associés au site, et également les pièces jointes des messages liés à ces tickets.
+### 4. Robustesse des Entités principales (Site, Intervention, Ticket)
 
-*   **Messagerie (`messagerie.html`)** :
-    *   **Performance**: Le filtrage des conversations est maintenant effectué côté serveur pour de meilleures performances, en utilisant les paramètres `search`, `site`, `client`, `status`, `startDate`, et `endDate`.
-    *   **Correction des liens**: Un bug dans la génération des liens pour les pièces jointes (`hrefForAttachment`) a été corrigé.
+*   **Schema BDD**:
+    *   `intervention`: Ajout des colonnes `site_id` et `demande_id`.
+    *   `ticket`: Ajout de la colonne `demande_id`.
+    *   `site`: La colonne `statut` utilise désormais un ENUM `site_status` ('Actif', 'Inactif').
+    *   `ticket_satisfaction`: Nouvelle table pour les retours client sur les tickets.
+*   **API (`server.js`)**:
+    *   Endpoints CRUD pour `sites`, `interventions`, `tickets` mis à jour pour gérer ces nouvelles colonnes.
+    *   Endpoint `GET /api/interventions/:id` et `GET /api/tickets/:id` ajoutés.
+    *   Endpoint `GET /api/clients/:id/relations` mis à jour pour inclure les représentants.
+    *   Nouvel endpoint `POST /api/tickets/:id/satisfaction` pour soumettre un avis client.
+*   **Frontend**:
+    *   `site-edit.html`: Mise à jour pour gérer le nouveau `statut` (dropdown) et la sélection de `client_id`. Correction de l'erreur `TypeError` due à un commentaire HTML.
+    *   `client-new.html`: Simplifié pour la création de client, redirigeant vers l'édition pour les représentants.
+    *   `client-view.html`: Affiche la liste des représentants.
 
-*   **Sécurité et Refactorisation (Client)** :
-    *   Création de pages sécurisées (`client-site-view.html`, `client-site-edit.html`) pour les clients, ne montrant que les informations et actions autorisées.
-    *   Création de nouvelles routes API sécurisées (`/api/client/sites/...`) avec des contrôles de propriété pour que les clients ne puissent accéder qu'à leurs propres données.
+### 5. Résolution d'erreurs diverses
 
-*   **Nettoyage du code** :
-    *   Suppression des champs redondants "intervention précédente" et "maintenance associées" des formulaires et des API de création/modification d'interventions.
-    *   Suppression des références à l'ancien fichier `/script.js` dans les pages `doe-edit.html` et `interventions.html` pour corriger les erreurs 404.
+*   Correction des erreurs `404 Not Found` pour les endpoints `GET /api/interventions/:id` et `GET /api/tickets/:id`.
+*   Correction de l'erreur `403 Forbidden` sur `PATCH /api/rendus/:id` en implémentant une autorisation granulaire (Admin ou client propriétaire).
+*   Correction de l'erreur `500 Internal Server Error` (colonne "valeur" manquante) sur `POST /api/interventions/:id/rendus` en ajoutant la colonne `valeur` à la table `rendu_intervention` et en exécutant l'ALTER TABLE sur Heroku.
+*   Correction de l'erreur `409 Conflict` (doublons) sur `POST /api/clients/:id/representants` en affichant l'état des utilisateurs déjà liés.
+*   Correction de `TypeError: Cannot set properties of null` dans `site-edit.html` en rendant la case à cocher "Ticket Ouvert" visible.
+*   Correction de `TypeError: Cannot set properties of null` dans `client-edit.html` en résolvant l'incohérence entre HTML et JS.
+*   Correction d'erreur `invalid input value for enum site_status` lors de la migration du type `statut` de `site`.
 
-## Corrections de la base de données et de l'API (suite aux logs Heroku)
-
-*   **Schéma `images`**: Ajout de la colonne `commentaire_image` manquante dans `database_correction/init_fixed.sql` et instruction `ALTER TABLE` fournie pour la base de données de production.
-*   **Schéma `documents_repertoire`**: Ajout des colonnes manquantes (`type_mime`, `taille_octets`, etc.) dans `init_fixed.sql` et instruction `ALTER TABLE` fournie.
-*   **Correction de type de données**: Ajout d'un "cast" explicite (`::doc_nature`) dans l'API `POST /api/documents` pour corriger une erreur de type avec l'ENUM PostgreSQL.
-*   **Correction de requête**: Suppression de colonnes (`date_debut`, `date_fin`) qui n'existaient pas dans la requête de l'API `GET /api/images`.
-*   **Statut d'Intervention**: L'ENUM `statut_intervention` a été mis à jour pour n'autoriser que `'En_attente'` et `'Termine'`, et les API et interfaces ont été adaptées en conséquence.
+Cette mise à jour a significativement enrichi les fonctionnalités et stabilisé l'application.

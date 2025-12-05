@@ -1072,8 +1072,17 @@ app.get('/api/sites/:id/relations', authenticateToken, async (req, res) => {
     const images = (await pool.query("SELECT id, nom_fichier, type_mime FROM images WHERE cible_type='Site' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     const responsables = (await pool.query("SELECT agent_matricule, role, date_debut, date_fin FROM site_responsable WHERE site_id=$1 ORDER BY COALESCE(date_debut, CURRENT_TIMESTAMP) DESC, id DESC", [id])).rows;
     const agents_assignes = (await pool.query("SELECT agent_matricule, date_debut, date_fin FROM site_agent WHERE site_id=$1 ORDER BY COALESCE(date_debut, CURRENT_TIMESTAMP) DESC, id DESC", [id])).rows;
+    // NEW: Fetch associated contracts
+    const contrats = (await pool.query(`
+        SELECT c.*, csa.id as association_id
+        FROM contrat c
+        JOIN contrat_site_association csa ON c.id = csa.contrat_id
+        WHERE csa.site_id = $1
+        ORDER BY c.date_debut DESC`,
+        [id]
+    )).rows;
 
-    res.json({ site, adresse, affaires, does, tickets, rendezvous, documents, images, responsables, agents_assignes });
+    res.json({ site, adresse, affaires, does, tickets, rendezvous, documents, images, responsables, agents_assignes, contrats }); // NEW: Add contrats to response
   } catch (err) {
     console.error('Error fetching site relations:', err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1549,7 +1558,7 @@ app.put('/api/client_representant/:id', authenticateToken, authorizeAdmin, async
     }
 });
 
-// Unlink a user from a client
+// Delete a representative
 app.delete('/api/client_representant/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id } = req.params;
     try {
@@ -1560,6 +1569,149 @@ app.delete('/api/client_representant/:id', authenticateToken, authorizeAdmin, as
         res.status(204).send();
     } catch (err) {
         console.error(`Error deleting client_representant ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// -------------------- Contrats API --------------------
+
+// List all contracts
+app.get('/api/contrats', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM contrat ORDER BY created_at DESC');
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching contracts:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Get a single contract by ID
+app.get('/api/contrats/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM contrat WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Contract not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(`Error fetching contract ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Create a contract
+app.post('/api/contrats', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { titre, date_debut, date_fin } = req.body;
+    if (!titre || !date_debut) {
+        return res.status(400).json({ error: 'Title and start date are required' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO contrat (titre, date_debut, date_fin) VALUES ($1, $2, $3) RETURNING *',
+            [titre, date_debut, date_fin || null]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error('Error creating contract:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Update a contract
+app.put('/api/contrats/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { titre, date_debut, date_fin } = req.body;
+    if (!titre || !date_debut) {
+        return res.status(400).json({ error: 'Title and start date are required' });
+    }
+    try {
+        const result = await pool.query(
+            'UPDATE contrat SET titre = $1, date_debut = $2, date_fin = $3 WHERE id = $4 RETURNING *',
+            [titre, date_debut, date_fin || null, id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Contract not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(`Error updating contract ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Delete a contract
+app.delete('/api/contrats/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('DELETE FROM contrat WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Contract not found' });
+        }
+        res.status(204).send();
+    } catch (err) {
+        console.error(`Error deleting contract ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// -------------------- Contrat-Site Association API --------------------
+
+// List sites for a specific contract
+app.get('/api/contrats/:id/sites', authenticateToken, async (req, res) => {
+    const { id: contratId } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT cs.id as association_id, s.id as site_id, s.nom_site, s.adresse_id, s.commentaire
+             FROM contrat_site_association cs
+             JOIN site s ON cs.site_id = s.id
+             WHERE cs.contrat_id = $1
+             ORDER BY s.nom_site`,
+            [contratId]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error(`Error fetching sites for contract ${contratId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Link a site to a contract
+app.post('/api/contrats/:id/sites', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id: contratId } = req.params;
+    const { site_id } = req.body;
+
+    if (!site_id) {
+        return res.status(400).json({ error: 'site_id is required' });
+    }
+
+    try {
+        const result = await pool.query(
+            'INSERT INTO contrat_site_association (contrat_id, site_id) VALUES ($1, $2) RETURNING *',
+            [contratId, site_id]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        if (err.code === '23505') { // unique_violation
+            return res.status(409).json({ error: 'This site is already linked to this contract.' });
+        }
+        console.error(`Error linking site ${site_id} to contract ${contratId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Unlink a site from a contract (deletes the association record)
+app.delete('/api/contrat_site_association/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('DELETE FROM contrat_site_association WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Contract-site association not found' });
+        }
+        res.status(204).send();
+    } catch (err) {
+        console.error(`Error unlinking site from contract ${id}:`, err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });

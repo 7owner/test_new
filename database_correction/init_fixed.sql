@@ -60,7 +60,7 @@ CREATE TYPE sujet_type          AS ENUM ('ticket','intervention');
 CREATE TYPE statut_rdv          AS ENUM ('Planifie','Confirme','Termine','Annule');
 CREATE TYPE doc_cible_type      AS ENUM (
     'Affaire','Agent','Agence','Adresse','Client','Site','RendezVous','DOE','Ticket','Intervention',
-    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention', 'DemandeClient'
+    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention', 'DemandeClient', 'Contrat'
 );
 CREATE TYPE doc_nature          AS ENUM ('Document','Video','Audio','Autre');
 CREATE TYPE statut_achat        AS ENUM ('Brouillon','Valide','Commande','Recu_partiel','Recu','Annule');
@@ -69,6 +69,22 @@ CREATE TYPE mode_reglement      AS ENUM ('Virement','Cheque','Carte','Especes','
 CREATE TYPE role_agence         AS ENUM ('Admin','Manager','Membre');
 CREATE TYPE type_formation      AS ENUM ('Habilitation','Certification','Permis');
 CREATE TYPE site_status AS ENUM ('Actif', 'Inactif');
+
+-- Add new Contrat table and its association with sites
+CREATE TABLE IF NOT EXISTS contrat (
+    id SERIAL PRIMARY KEY,
+    titre VARCHAR(255) NOT NULL,
+    date_debut DATE NOT NULL,
+    date_fin DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS contrat_site_association (
+    id SERIAL PRIMARY KEY,
+    contrat_id BIGINT NOT NULL REFERENCES contrat(id) ON DELETE CASCADE,
+    site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
+    UNIQUE (contrat_id, site_id)
+);
 
 -- --------------------------------------------------
 -- CORE ENTITIES (Order fixed)
