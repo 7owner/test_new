@@ -1,10 +1,10 @@
 document.addEventListener('DOMContentLoaded', async function() {
-      const tableBody = document.getElementById('sites-table-body');
+      const grid = document.getElementById('sites-grid');
+      const countBadge = document.getElementById('sites-count');
       const searchInput = document.getElementById('site-search');
     const statusFilter = document.getElementById('site-status-filter');
     const dateStartInput = document.getElementById('site-date-start');
     const dateEndInput = document.getElementById('site-date-end');
-    const thDates = document.getElementById('th-dates');
     const filtersRow = document.getElementById('filters-row');
     const toggleFiltersBtn = document.getElementById('toggle-filters-btn');
 
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       function getAgentName(m) { const a=(apiAgents||[]).find(x=> String(x.matricule)===String(m)); return a? `${a.nom||''} ${a.prenom||''}`.trim() : 'Non assigné'; }
 
       async function load() {
-        tableBody.innerHTML = '<tr><td colspan="7" class="text-muted">Chargement...</td></tr>';
+        grid.innerHTML = '<div class="col-12 text-muted small">Chargement...</div>';
         const headers = token? { 'Authorization': `Bearer ${token}` } : {};
         try {
           const [sRes, aRes, dRes] = await Promise.all([
@@ -39,15 +39,17 @@ document.addEventListener('DOMContentLoaded', async function() {
           }
           applyFilters();
         } catch (e) {
-          tableBody.innerHTML = '<tr><td colspan="7" class="text-danger">Erreur de chargement.</td></tr>';
+          grid.innerHTML = '<div class="col-12 text-danger">Erreur de chargement.</div>';
         }
       }
 
       function render(rows) {
-        tableBody.innerHTML = '';
-        if (!rows.length) { const tr = tableBody.insertRow(); tr.innerHTML = '<td colspan="7" class="text-center text-muted">Aucun site trouvé.</td>'; return; }
+        grid.innerHTML = '';
+        if (countBadge) countBadge.textContent = `${rows.length} site(s)`;
+        if (!rows.length) { grid.innerHTML = '<div class="col-12 text-center text-muted">Aucun site trouvé.</div>'; return; }
         rows.forEach(site => {
-          const tr = tableBody.insertRow();
+          const col = document.createElement('div');
+          col.className = 'col-12 col-md-6 col-lg-4';
           const debut = fmt(site.date_debut); const fin = site.date_fin? fmt(site.date_fin) : 'En cours';
           const hasTicket = !!site.ticket || openDemandSites.has(String(site.id));
         const line1 = site.adresse_ligne1 || site.ligne1 || (site.adresse && (site.adresse.ligne1 || site.adresse.ligne_1)) || '';
@@ -61,17 +63,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             ? `<a href="https://www.google.com/maps/search/?api=1&query=${addressQuery}" target="_blank" rel="noopener noreferrer">${displayAddress}</a>`
             : displayAddress;
 
-          tr.innerHTML = `
-            <td>${site.nom_site||''}</td>
-            <td>${addressLink}</td>
-            <td>${site.statut || '—'}</td>
-            <td><span class="badge ${hasTicket? 'bg-danger':'bg-success'}">${hasTicket? 'Oui':'Non'}</span></td>
-            <td>${site.responsable_matricule? getAgentName(site.responsable_matricule): 'Non assigné'}</td>
-            <td><small>Début: ${debut||''}<br>Fin: ${fin||''}</small></td>
-            <td>
-              <button class="btn btn-sm btn-info me-1" data-bs-toggle="modal" data-bs-target="#viewSiteModal" data-id="${site.id}"><i class="bi bi-eye"></i> Voir</button>
-              ${isAdmin ? `<button class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editSiteModal" data-id="${site.id}"><i class="bi bi-pencil"></i> Modifier</button>` : ''}
-            </td>`;
+          col.innerHTML = `
+            <div class="border rounded p-3 h-100 d-flex flex-column shadow-sm">
+              <div class="fw-semibold mb-1">${site.nom_site||('Site #'+site.id)}</div>
+              <div class="text-muted small mb-2">ID: ${site.id}</div>
+              <div class="mb-2"><span class="text-uppercase text-muted small">Adresse</span><br>${addressLink}</div>
+              <div class="mb-2"><span class="text-uppercase text-muted small">Responsable</span><br>${site.responsable_matricule? getAgentName(site.responsable_matricule): 'Non assigné'}</div>
+              <div class="mb-2 d-flex gap-2 flex-wrap">
+                <span class="badge ${site.statut==='Actif'?'bg-success-subtle text-success':'bg-light text-dark'}">${site.statut || '—'}</span>
+                <span class="badge ${hasTicket? 'bg-danger':'bg-success'}">${hasTicket? 'Ticket ouvert':'Ticket fermé'}</span>
+              </div>
+              <div class="text-muted small mb-2">Début: ${debut||''}<br>Fin: ${fin||''}</div>
+              <div class="mt-auto d-flex gap-2">
+                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#viewSiteModal" data-id="${site.id}"><i class="bi bi-eye"></i> Voir</button>
+                ${isAdmin ? `<button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editSiteModal" data-id="${site.id}"><i class="bi bi-pencil"></i> Modifier</button>` : ''}
+              </div>
+            </div>`;
+          grid.appendChild(col);
         });
       }
 
@@ -116,7 +124,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       statusFilter.addEventListener('change', applyFilters);
       dateStartInput.addEventListener('change', applyFilters);
       dateEndInput.addEventListener('change', applyFilters);
-      thDates.addEventListener('click', ()=>{ sortAsc=!sortAsc; applyFilters(); });
+      // tri par date désactivé (table remplacée par cartes), on garde l'ordre par date_debut croissante
 
       // NEW Toggle filters button logic
       if (toggleFiltersBtn && filtersRow) {

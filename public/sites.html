@@ -81,22 +81,11 @@
       </div>
     </div>
 
-    <div class="table-responsive">
-      <table class="table table-striped table-hover">
-        <thead>
-          <tr>
-            <th>Nom du Site</th>
-            <th>Adresse</th>
-            <th>Statut</th>
-            <th>Ticket Ouvert</th>
-            <th>Responsable</th>
-            <th style="cursor:pointer" id="th-dates" title="Cliquer pour trier">Dates</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="sites-table-body"></tbody>
-      </table>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="mb-0">Liste des sites</h5>
+      <span class="badge bg-primary" id="sites-count">0 site(s)</span>
     </div>
+    <div id="sites-grid" class="row g-3"></div>
   </main>
 
   <div class="modal fade" id="createSiteModal" tabindex="-1" aria-labelledby="createSiteModalLabel" aria-hidden="true">
