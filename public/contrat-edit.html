@@ -48,6 +48,23 @@
       </div>
       <ul id="sites-list" class="list-group list-group-flush"></ul>
       <div id="sites-feedback" class="small mt-2"></div>
+
+      <hr class="my-4">
+      <h6 class="mb-3">Créer et associer un site</h6>
+      <form id="create-site-form" class="row g-2">
+        <div class="col-md-6">
+          <label class="form-label">Nom du site</label>
+          <input class="form-control" id="new-site-nom" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Commentaire</label>
+          <input class="form-control" id="new-site-commentaire" placeholder="Optionnel">
+        </div>
+        <div class="col-12 d-grid d-md-block">
+          <button type="submit" class="btn btn-outline-success"><i class="bi bi-plus-circle me-1"></i>Créer et associer</button>
+        </div>
+      </form>
+      <div id="create-site-feedback" class="small mt-2"></div>
     </div>
   </div>
 
@@ -62,6 +79,8 @@
       const sitesFeedback = document.getElementById('sites-feedback');
       const sitesList = document.getElementById('sites-list');
       const siteSelect = document.getElementById('site-select');
+      const createSiteForm = document.getElementById('create-site-form');
+      const createSiteFeedback = document.getElementById('create-site-feedback');
       if (!id) { feedback.className='small text-danger'; feedback.textContent='ID manquant'; return; }
 
       async function api(url, opts={}) {
@@ -173,6 +192,32 @@
         } catch (err) {
           sitesFeedback.className = 'small text-danger';
           sitesFeedback.textContent = err.message || 'Association impossible';
+        }
+      });
+
+      createSiteForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        createSiteFeedback.textContent = '';
+        const nom_site = document.getElementById('new-site-nom').value.trim();
+        const commentaire = document.getElementById('new-site-commentaire').value.trim() || null;
+        if (!nom_site) {
+          createSiteFeedback.className = 'small text-danger';
+          createSiteFeedback.textContent = 'Le nom du site est requis.';
+          return;
+        }
+        try {
+          // 1) Créer le site
+          const site = await api('/api/sites', { method:'POST', body: JSON.stringify({ nom_site, commentaire }) });
+          // 2) Associer
+          await api(`/api/contrats/${id}/sites`, { method:'POST', body: JSON.stringify({ site_id: site.id }) });
+          createSiteFeedback.className = 'small text-success';
+          createSiteFeedback.textContent = 'Site créé et associé.';
+          createSiteForm.reset();
+          await loadSitesList();
+          await loadSites();
+        } catch (err) {
+          createSiteFeedback.className = 'small text-danger';
+          createSiteFeedback.textContent = err.message || 'Erreur lors de la création/association';
         }
       });
     });
