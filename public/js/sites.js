@@ -57,8 +57,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const cpVille = [site.adresse_code_postal || (site.adresse && site.adresse.code_postal) || '', site.adresse_ville || (site.adresse && site.adresse.ville) || ''].filter(Boolean).join(' ');
         const pays = site.adresse_pays || (site.adresse && site.adresse.pays) || '';
         const fullAddress = [line1, line2, cpVille, pays].filter(Boolean).join(' ');
-        const displayAddress = fullAddress || site.adresse_libelle || site.adresse_id || 'N/A';
-        const addressQuery = encodeURIComponent(fullAddress || site.adresse_libelle || '');
+        const displayAddress = fullAddress || 'Adresse non renseignée';
+        const addressQuery = encodeURIComponent(fullAddress || '');
           const addressLink = addressQuery
             ? `<a href="https://www.google.com/maps/search/?api=1&query=${addressQuery}" target="_blank" rel="noopener noreferrer">${displayAddress}</a>`
             : displayAddress;
