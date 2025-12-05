@@ -65,7 +65,10 @@
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Pièces jointes liées</h5>
-          <span class="badge bg-primary" id="attachments-count">0 pièce(s)</span>
+          <div class="d-flex gap-2 align-items-center">
+            <span class="badge bg-primary" id="attachments-count">0 pièce(s)</span>
+            <a class="btn btn-outline-primary btn-sm" id="manage-attachments-btn"><i class="bi bi-pencil-square me-1"></i>Modifier</a>
+          </div>
         </div>
         <p class="text-muted small mb-3">Images / documents provenant du ticket, du site, de la demande client ou des messages associés.</p>
         <div class="row g-3" id="attachments-grid"></div>
@@ -149,6 +152,7 @@
       const newRenduBtn = document.getElementById('open-rendu-new-btn');
       const backBtn = document.getElementById('back-btn');
       const editBtn = document.getElementById('edit-meta-btn');
+      const manageAttachmentsBtn = document.getElementById('manage-attachments-btn');
       const messagesCard = document.getElementById('messages-card');
       const messagesGrid = document.getElementById('messages-grid');
       const editModalEl = document.getElementById('editMetaModal');
@@ -179,6 +183,7 @@
         backInterBtn.onclick = () => location.href = `intervention-view.html?id=${rendu.intervention_id}`;
         newRenduBtn.href = `rendu-intervention-new.html?id=${rendu.intervention_id}`;
         backBtn.onclick = () => location.href = `intervention-view.html?id=${rendu.intervention_id}`;
+        if (manageAttachmentsBtn) manageAttachmentsBtn.href = `rendu-intervention-edit.html?id=${renduId}#attachments`;
 
 
         // Populate summary cards
