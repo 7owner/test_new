@@ -35,7 +35,36 @@
   <main class="container mt-5">
 
     <h1 class="mb-4">Créer un nouveau ticket</h1>
-    
+
+    <!-- Site associé (prévisualisation) -->
+    <div class="card mb-4 d-none" id="site-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <div class="text-muted small">Site associé</div>
+            <h4 class="mb-0" id="site-name">—</h4>
+            <div class="text-secondary small">Client : <span id="site-client">—</span> · Contact : <span id="site-contact">—</span></div>
+          </div>
+          <a id="site-view-link" class="btn btn-outline-primary btn-sm" href="#" target="_blank">Voir le site</a>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="fw-semibold text-secondary">Adresse</div>
+            <div id="site-adresse">—</div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-semibold text-secondary">Commentaire</div>
+            <div id="site-commentaire">—</div>
+          </div>
+        </div>
+        <div class="mt-3">
+          <div class="fw-semibold text-secondary mb-2">Représentants client</div>
+          <div id="site-representants" class="d-flex flex-column gap-2">
+            <div class="text-muted small">Chargement...</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
 
     <div class="card">
@@ -127,6 +156,8 @@
       const doeTitleSpan = document.getElementById('doe-title');
       const doeDescriptionSpan = document.getElementById('doe-description');
       const viewDoeBtn = document.getElementById('view-doe-btn');
+      const siteCard = document.getElementById('site-card');
+      const siteViewLink = document.getElementById('site-view-link');
 
       // Load DOE
       try {
@@ -180,6 +211,53 @@
           setTimeout(applyFilter, 800);
         }
       } catch(_){}
+
+      // Prévisualisation site associé (si ?site_id=...)
+      try {
+        const siteParam = new URLSearchParams(location.search).get('site_id');
+        if (siteParam) {
+          const resSite = await fetch(`/api/sites/${siteParam}/relations`, { headers, credentials:'same-origin' });
+          if (resSite.ok) {
+            const siteData = await resSite.json();
+            const { site = {}, adresse = {}, representants = [] } = siteData;
+            if (siteCard) siteCard.classList.remove('d-none');
+            if (siteViewLink) { siteViewLink.href = `site-view.html?id=${site.id || siteParam}`; }
+            document.getElementById('site-name').textContent = site.nom_site || `Site #${site.id || siteParam}`;
+            document.getElementById('site-client').textContent = site.nom_client || 'Non assigné';
+            const contactStr = `${site.representant_nom || ''} ${site.representant_tel || ''}`.trim();
+            document.getElementById('site-contact').textContent = contactStr || 'Non spécifié';
+            const adrHtml = [
+              adresse.ligne1,
+              adresse.ligne2,
+              [adresse.code_postal, adresse.ville].filter(Boolean).join(' '),
+              adresse.pays
+            ].filter(Boolean).join('<br>');
+            document.getElementById('site-adresse').innerHTML = adrHtml || 'Non renseignée';
+            document.getElementById('site-commentaire').textContent = site.commentaire || 'Aucun commentaire';
+            const repsEl = document.getElementById('site-representants');
+            if (repsEl) {
+              repsEl.innerHTML = '';
+              if (!representants.length) {
+                repsEl.innerHTML = '<div class="text-muted small">Aucun représentant.</div>';
+              } else {
+                representants.forEach(rep => {
+                  const badge = (rep.nom || rep.email || 'N')[0].toUpperCase();
+                  const tel = rep.tel ? `<span class="ms-2"><i class="bi bi-phone me-1"></i>${rep.tel}</span>` : '';
+                  repsEl.innerHTML += `
+                    <div class="d-flex align-items-start p-2 border rounded">
+                      <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;">${badge}</div>
+                      <div class="ms-2">
+                        <div class="fw-semibold">${rep.nom || 'Inconnu'}</div>
+                        <div class="small text-muted">${rep.fonction || ''}</div>
+                        <div class="small text-muted"><i class="bi bi-envelope me-1"></i>${rep.email || 'N/A'} ${tel}</div>
+                      </div>
+                    </div>`;
+                });
+              }
+            }
+          }
+        }
+      } catch(_){ /* affichage non bloquant */ }
 
       // Submit
       const form = document.getElementById('ticket-new-form');
