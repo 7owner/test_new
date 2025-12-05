@@ -3,246 +3,180 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Modifier un agent</title>
+  <title>Modifier Agent</title>
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link href="/custom.css?v=1" rel="stylesheet">
-  <script src="/nav.js?v=1"></script>
+
+  <style>
+    body {
+      background: linear-gradient(135deg,#eef2ff 0%,#f8fbff 100%);
+      font-family: system-ui,sans-serif;
+      padding:2rem;
+    }
+    .main-card {
+      border:none;
+      border-radius:20px;
+      background:#fff;
+      box-shadow:0 8px 28px rgba(0,0,0,.08);
+      padding:2rem;
+      max-width:900px;
+      margin-inline:auto;
+    }
+    .section-title {
+      font-weight:600;
+      color:#4a4f57;
+      margin-bottom:.7rem;
+    }
+  </style>
 </head>
 <body>
 
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-    <div class="offcanvas-header">
-      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body">
-      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item"><a class="nav-link" href="/dashboard.html">Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link active" aria-current="page" href="/agents.html">Agents</a></li>
-        <li class="nav-item"><a class="nav-link" href="/sites.html">Sites</a></li>
-        <li class="nav-item"><a class="nav-link" href="/interventions.html">Interventions</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" id="logout-link">Déconnexion</a></li>
-      </ul>
-    </div>
-  </div>
+<div class="main-card">
 
-  <main class="container mt-5">
-   
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-       <h1 class="mb-4">Modifier un agent</h1>
-     <!-- <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>-->
-    </div>
-    <div class="card">
-      <div class="card-body">
-        <form id="agent-edit-form">
-          <h2 class="card-title mb-4">Informations de l'agent</h2>
-          <div class="mb-3">
-            <label for="matricule" class="form-label">Matricule</label>
-            <input type="text" class="form-control" id="matricule" required readonly>
-          </div>
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label for="nom" class="form-label">Nom</label>
-              <input type="text" class="form-control" id="nom" required>
-            </div>
-            <div class="col-md-6 mb-3">
-              <label for="prenom" class="form-label">Prénom</label>
-              <input type="text" class="form-control" id="prenom" required>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label for="email" class="form-label">Email</label>
-              <input type="email" class="form-control" id="email" required>
-            </div>
-            <div class="col-md-6 mb-3">
-              <label for="telephone" class="form-label">Téléphone</label>
-              <input type="tel" class="form-control" id="telephone">
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Agence</label>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-              <span id="agence_label" class="fw-semibold text-primary">Aucune agence sélectionnée</span>
-              <input type="hidden" id="agence">
-              <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#agenceModal" title="Créer/Gérer les agences">
-                <i class="bi bi-building-add me-1"></i>Choisir / créer
-              </button>
-              <button class="btn btn-sm btn-outline-secondary" type="button" id="clear-agence">
-                <i class="bi bi-x-lg"></i>
-              </button>
-            </div>
-          </div>
-          <div class="mb-3 form-check form-switch">
-            <input type="checkbox" class="form-check-input" id="actif">
-            <label class="form-check-label" for="actif">Actif</label>
-          </div>
-          <div class="mb-3 form-check form-switch">
-            <input type="checkbox" class="form-check-input" id="admin">
-            <label class="form-check-label" for="admin">Administrateur</label>
-          </div>
+  <h2 class="fw-bold mb-4"><i class="bi bi-pencil-square me-2"></i>Modifier l’agent</h2>
 
-          <div class="d-flex gap-2 mt-4">
-            <button type="submit" class="btn btn-primary" id="save-agent-btn"><i class="bi bi-save me-2"></i>Enregistrer les modifications</button>
-            <a href="agents.html" class="btn btn-secondary">Annuler</a>
-          </div>
-          
-          <hr class="my-4">
+  <form id="agent-edit-form">
 
-          <h3 class="mt-4 mb-3">Informations Passeport (Lecture seule)</h3>
-          <div class="mb-3">
-            <label for="permis" class="form-label">Permis</label>
-            <textarea class="form-control" id="permis" rows="2" readonly></textarea>
-          </div>
-          <div class="mb-3">
-            <label for="habilitations" class="form-label">Habilitations</label>
-            <textarea class="form-control" id="habilitations" rows="2" readonly></textarea>
-          </div>
-          <div class="mb-3">
-            <label for="certifications" class="form-label">Certifications</label>
-            <textarea class="form-control" id="certifications" rows="2" readonly></textarea>
-          </div>
-          <div class="mb-3">
-            <a href="agent-passport-new.html" class="btn btn-info"><i class="bi bi-journal-plus me-2"></i>Gérer le Passeport</a>
-          </div>
-
-          <hr class="my-4">
-
-          <h3 class="mt-4 mb-3">Fichiers Associés</h3>
-          <div class="mb-3">
-            <label for="files" class="form-label">Télécharger des fichiers</label>
-            <input class="form-control" type="file" id="files" multiple>
-            <small class="form-text text-muted">La logique d'upload n'est pas implémentée dans cette page.</small>
-          </div>
-
-        </form>
+    <!-- Identité -->
+    <div class="section-title">Identité</div>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Nom</label>
+        <input type="text" id="nom" class="form-control" required>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Prénom</label>
+        <input type="text" id="prenom" class="form-control" required>
       </div>
     </div>
-  </main>
 
-  <!-- Modal gestion agences -->
-  <div class="modal fade" id="agenceModal" tabindex="-1" aria-labelledby="agenceModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="agenceModalLabel">Gérer les agences</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-        </div>
-        <div class="modal-body p-0">
-          <iframe id="agenceFrame" src="about:blank" style="width: 100%; height: 80vh; border: none;"></iframe>
-        </div>
+    <!-- Contact -->
+    <div class="section-title">Contacts</div>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Email</label>
+        <input type="email" id="email" class="form-control" required>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Téléphone</label>
+        <input type="tel" id="telephone" class="form-control">
       </div>
     </div>
+
+    <!-- Agence -->
+    <div class="section-title">Agence</div>
+    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+      <span id="agence_label" class="fw-semibold text-primary">Aucune sélection</span>
+      <input type="hidden" id="agence">
+      <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#agenceModal">
+        <i class="bi bi-building-add me-1"></i>Choisir
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" id="clear-agence">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Options -->
+    <div class="row mt-3">
+      <div class="col-md-6 form-check form-switch">
+        <input type="checkbox" class="form-check-input" id="actif">
+        <label class="form-check-label" for="actif">Actif</label>
+      </div>
+      <div class="col-md-6 form-check form-switch">
+        <input type="checkbox" class="form-check-input" id="admin">
+        <label class="form-check-label" for="admin">Administrateur</label>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="d-flex gap-2 mt-4">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle me-2"></i>Enregistrer
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<!-- Modal sélection agence -->
+<div class="modal fade" id="agenceModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <iframe id="agenceFrame" style="width:100%;height:80vh;border:none;"></iframe>
+    </div>
   </div>
+</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', async function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const matricule = urlParams.get('matricule');
-      if (!matricule) {
-        alert("Matricule de l'agent manquant.");
-        window.location.href = "agents.html";
-        return;
-      }
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",async()=>{
+  const p=new URLSearchParams(location.search);
+  const matricule=p.get("matricule");
+  if(!matricule)return location.href="agents.html";
 
-      const form = document.getElementById('agent-edit-form');
-      const token = localStorage.getItem('token');
-      const headers = { 
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      };
+  const token=localStorage.getItem("token");
+  const headers=token?{ "Authorization":"Bearer "+token }:{};
 
-      const agenceHidden = document.getElementById('agence');
-      const agenceLabel = document.getElementById('agence_label');
+  const aH=document.getElementById("agence");
+  const aL=document.getElementById("agence_label");
 
-      try {
-        const res = await fetch(`/api/agents/${matricule}/relations`, { headers, credentials: 'same-origin' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const agent = data.agent;
-        const passeport = data.passeport;
+  // Load Agent
+  try{
+    const res=await fetch(`/api/agents/${matricule}/relations`,{headers});
+    const d=await res.json();
+    const a=d.agent;
 
-        if (!agent) throw new Error('Agent data not found in response');
+    document.getElementById("nom").value = a.nom||"";
+    document.getElementById("prenom").value = a.prenom||"";
+    document.getElementById("email").value = a.email||"";
+    document.getElementById("telephone").value = a.tel||"";
+    document.getElementById("actif").checked = !!a.actif;
+    document.getElementById("admin").checked = !!a.admin;
+    aH.value = a.agence_id || "";
+    aL.textContent = d.agence?.titre || "Aucune sélection";
+  } catch(e){ console.error(e); }
 
-        document.getElementById('matricule').value = agent.matricule;
-        document.getElementById('nom').value = agent.nom || '';
-        document.getElementById('prenom').value = agent.prenom || '';
-        document.getElementById('email').value = agent.email || '';
-        document.getElementById('telephone').value = agent.tel || '';
-        agenceHidden.value = agent.agence_id || '';
-        agenceLabel.textContent = (data.agence && data.agence.titre) || `Agence #${agent.agence_id || ''}` || 'Aucune agence sélectionnée';
-        document.getElementById('actif').checked = agent.actif;
-        document.getElementById('admin').checked = agent.admin;
-
-        if (passeport) {
-          document.getElementById('permis').value = passeport.permis || '';
-          document.getElementById('habilitations').value = passeport.habilitations || '';
-          document.getElementById('certifications').value = passeport.certifications || '';
-        }
-
-      } catch (e) {
-        console.error('Failed to load agent data', e);
-        alert("Agent non trouvé ou erreur de chargement.");
-        window.location.href = "agents.html";
-      }
-
-      form.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-        const payload = {
-          nom: document.getElementById('nom').value.trim(),
-          prenom: document.getElementById('prenom').value.trim(),
-          email: document.getElementById('email').value.trim(),
-          tel: document.getElementById('telephone').value.trim(),
-          agence_id: Number(agenceHidden.value),
-          actif: document.getElementById('actif').checked,
-          admin: document.getElementById('admin').checked
-        };
-
-        if (!payload.nom || !payload.prenom || !payload.email || !payload.agence_id) {
-          alert('Veuillez remplir tous les champs obligatoires.');
-          return;
-        }
-
-        try {
-          const res = await fetch(`/api/agents/${matricule}`, {
-            method: 'PUT',
-            headers,
-            credentials: 'same-origin',
-            body: JSON.stringify(payload)
-          });
-          if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.error || `HTTP ${res.status}`);
-          }
-          alert('Agent mis à jour avec succès !');
-          window.location.href = `agent-view.html?matricule=${matricule}`;
-        } catch (e) {
-          console.error('Failed to update agent', e);
-          alert('Erreur lors de la mise à jour: ' + e.message);
-        }
-      });
-
-      const agenceModal = document.getElementById('agenceModal');
-      if (agenceModal) {
-        agenceModal.addEventListener('show.bs.modal', () => {
-          const frame = document.getElementById('agenceFrame');
-          if (frame) frame.src = '/agences.html';
-        });
-      }
-
-      // Réception sélection d'agence depuis la modale
-      window.addEventListener('message', (event) => {
-        if (!event?.data || event.data.type !== 'agence-select' || !event.data.agence) return;
-        const a = event.data.agence;
-        if (!a.id) return;
-        agenceHidden.value = a.id;
-        agenceLabel.textContent = a.titre || `Agence #${a.id}`;
-        const modalInstance = bootstrap.Modal.getInstance(document.getElementById('agenceModal'));
-        if (modalInstance) modalInstance.hide();
-      });
+  // Submit update
+  document.getElementById("agent-edit-form").addEventListener("submit",async(ev)=>{
+    ev.preventDefault();
+    const body={
+      nom:nom.value.trim(),
+      prenom:prenom.value.trim(),
+      email:email.value.trim(),
+      tel:telephone.value.trim(),
+      actif:actif.checked,
+      admin:admin.checked,
+      agence_id:Number(aH.value)
+    };
+    const res=await fetch(`/api/agents/${matricule}`,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json",...headers},
+      body:JSON.stringify(body)
     });
-  </script>
+    if(!res.ok)return alert("Erreur");
+    location.href=`agent-view.html?matricule=${matricule}`;
+  });
+
+  // Select agence from modal
+  window.addEventListener("message",(ev)=>{
+    if(ev.data?.type!=="agence-select")return;
+    const g=ev.data.agence;
+    aH.value=g.id;
+    aL.textContent=g.titre;
+    bootstrap.Modal.getInstance(document.getElementById("agenceModal")).hide();
+  });
+  document.getElementById("cancel-btn").addEventListener("click",()=>history.back());
+  document.getElementById("clear-agence").addEventListener("click",()=>{
+    aH.value="";
+    aL.textContent="Aucune sélection";
+  });
+
+  document.getElementById("agenceModal").addEventListener("show.bs.modal",()=>{
+    document.getElementById("agenceFrame").src="/agences.html";
+  });
+
+});
+</script>
 </body>
 </html>

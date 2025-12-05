@@ -9,124 +9,146 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
   <style>
-    body { background: #f4f6fb; font-family: system-ui; }
-    .profile-card { border: none; border-radius: 18px; box-shadow: 0 6px 28px rgba(0,0,0,0.06);}
-    .avatar {
-      width:75px;height:75px;border-radius:50%;
-      background:linear-gradient(135deg,#667eea,#764ba2);
-      display:flex;align-items:center;justify-content:center;
-      color:white;font-size:26px;font-weight:700;
+    body {
+      background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%);
+      font-family: system-ui, sans-serif;
+      padding: 1.5rem;
     }
-    .section-title { font-weight:700;margin-bottom:.4rem;font-size:.95rem; }
-    .small-title { font-size: .85rem; color:#6c757d; }
-    .border-bottom { border-color:#e3e6ef!important; }
+    .main-card {
+      border: none;
+      border-radius: 20px;
+      background: #fff;
+      box-shadow: 0 8px 28px rgba(0,0,0,.08);
+      padding: 1.8rem;
+      margin-bottom: 1.5rem;
+    }
+    .avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: linear-gradient(135deg,#667eea,#764ba2);
+      color:#fff;
+      font-size: 26px;
+      font-weight: 700;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .section-title {
+      font-weight:600;
+      color:#4a4f57;
+      margin-bottom:.5rem;
+    }
+    .info-line {
+      font-size:.95rem;
+      margin-bottom:.35rem;
+    }
+    .link-mini {cursor:pointer;color:#635bff;text-decoration:none;font-weight:600;font-size:.85rem;}
+    .link-mini:hover{text-decoration:underline;}
+    .small-title {color:#6b7280;font-size:.8rem;}
   </style>
 </head>
 <body>
 
-<main class="container my-4">
+<div class="container" style="max-width:1200px;">
 
-  <div class="card profile-card">
-    <div class="card-body p-4">
+  <div class="main-card">
 
-      <!-- HEADER -->
-      <div class="d-flex align-items-center gap-3 mb-4">
-        <div id="avatar-initials" class="avatar">AG</div>
-        <div>
-          <div class="small-title">Agent</div>
-          <h4 id="agent-fullname" class="mb-1">—</h4>
-          <div id="agent-role" class="text-muted small">—</div>
-        </div>
+    <!-- HEAD -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <div id="avatar-initials" class="avatar">AG</div>
+      <div>
+        <div class="small-title">Agent</div>
+        <h3 id="agent-fullname" class="fw-bold mb-1">—</h3>
+        <div id="agent-role" class="text-muted small">—</div>
       </div>
-
-      <!-- CONTACTS -->
-      <div class="mb-4">
-        <div class="section-title">Contacts</div>
-        <div class="d-flex flex-column gap-1 small">
-          <span><i class="bi bi-envelope me-2"></i><span id="view_email">—</span></span>
-          <span><i class="bi bi-phone me-2"></i><span id="view_tel">—</span></span>
-        </div>
-      </div>
-
-      <!-- DERNIÈRES INTERVENTIONS -->
-      <div class="mb-4">
-        <div class="section-title">📌 Dernières interventions</div>
-        <div id="interventions-list" class="small"></div>
-      </div>
-
-      <!-- NAVIGATION AGENT -->
-      <div class="d-flex flex-wrap gap-2 mt-3">
-        <a id="formation-link" class="btn btn-outline-primary btn-sm" href="#">Formations</a>
-        <a id="heures-link" class="btn btn-outline-secondary btn-sm" href="#">Heures</a>
-        <a id="edit-agent-btn" class="btn btn-primary btn-sm" href="#">Modifier</a>
-      </div>
-
-      <!-- Bouton retour -->
-      <div class="mt-3">
-        <button type="button" class="btn btn-light btn-sm" id="back-btn">
-          <i class="bi bi-arrow-left"></i> Retour
-        </button>
-      </div>
-
     </div>
+
+    <!-- CONTACTS -->
+    <div class="mb-4">
+      <div class="section-title">📞 Contacts</div>
+      <div class="info-line"><i class="bi bi-envelope me-2"></i><span id="view_email">—</span></div>
+      <div class="info-line"><i class="bi bi-phone me-2"></i><span id="view_tel">—</span></div>
+    </div>
+
+    <!-- INTERVENTIONS -->
+    <div class="mb-4">
+      <div class="section-title">🛠️ Dernières interventions</div>
+      <div id="interventions-list" class="small"></div>
+    </div>
+
+    <!-- LINKS -->
+    <div class="d-flex flex-wrap gap-2 mt-3">
+      <a id="formation-link" class="btn btn-outline-primary btn-sm" href="#">Formations</a>
+      <a id="heures-link" class="btn btn-outline-secondary btn-sm" href="#">Heures</a>
+    </div>
+
+    <!-- Retour -->
+    <div class="mt-4">
+      <!--<button type="button" class="btn btn-light" id="back-btn">
+        <i class="bi bi-arrow-left"></i> Retour
+      </button>-->
+    </div>
+
   </div>
 
-</main>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener("DOMContentLoaded", async () => {
 
   const params = new URLSearchParams(location.search);
-  const matricule = params.get('matricule');
+  const matricule = params.get("matricule");
   if (!matricule) return alert("Matricule manquant");
 
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   const headers = token ? { "Authorization": "Bearer "+ token } : {};
 
-  const setInitials = (nom, prenom) => {
-    const i1 = (prenom||'')[0] || '';
-    const i2 = (nom||'')[0] || '';
-    document.getElementById("avatar-initials").textContent = (i1+i2).toUpperCase() || "AG";
+  const setInitials = (n,p) => {
+    const i1=(p||'')[0]||''; const i2=(n||'')[0]||'';
+    document.getElementById("avatar-initials").textContent =
+      (i1+i2).toUpperCase()||"AG";
   };
 
   const renderInterventions = (arr=[]) => {
-    const wrap = document.getElementById("interventions-list");
-    wrap.innerHTML = arr.length ?
-      arr.slice(0,5).map(i => `
-        <div class="border-bottom py-2">
-          <div class="fw-semibold small">${i.site_nom || "Site"} </div>
-          <div class="text-muted small">${i.description || "—"}</div>
-        </div>
-      `).join("")
-      : `<div class="text-muted small">Aucune intervention récente.</div>`;
+    const el = document.getElementById("interventions-list");
+    if (!arr.length) return el.innerHTML = "<small class='text-muted'>Aucune intervention récente.</small>";
+    el.innerHTML = arr.slice(0,4).map(i=>`
+      <div class="border-bottom py-2 small">
+        <strong>${i.site_nom || "Site inconnu"}</strong><br>
+        <span class="text-muted">${i.description || ""}</span>
+      </div>
+    `).join("");
   };
 
   try {
-    const r = await fetch(`/api/agents/${encodeURIComponent(matricule)}/relations`, {headers});
+    const r = await fetch(`/api/agents/${encodeURIComponent(matricule)}/relations`,{headers});
     const data = await r.json();
     if (!r.ok) throw new Error(data.error);
 
     const a = data.agent || {};
     document.getElementById("agent-fullname").textContent =
       `${a.nom||''} ${a.prenom||''}`.trim() || "—";
-    document.getElementById("agent-role").textContent = a.fonction || "—";
+    document.getElementById("agent-role").textContent =
+      a.fonction || "—";
     document.getElementById("view_email").textContent = a.email || "—";
     document.getElementById("view_tel").textContent = a.tel || "—";
 
     setInitials(a.nom, a.prenom);
     renderInterventions(data.interventions || []);
 
-    document.getElementById("formation-link").href = `agent-formation-view.html?matricule=${matricule}`;
-    document.getElementById("heures-link").href = `agent-heures.html?matricule=${matricule}`;
-    document.getElementById("edit-agent-btn").href = `agent-edit.html?matricule=${matricule}`;
-  }
-  catch(e) {
+    document.getElementById("formation-link").href =
+      `agent-formation-view.html?matricule=${encodeURIComponent(matricule)}`;
+    document.getElementById("heures-link").href =
+      `agent-heures.html?matricule=${encodeURIComponent(matricule)}`;
+
+  } catch(e){
     console.error(e);
   }
 
-  const back = () => document.referrer ? history.back() : location.href="agents.html";
-  document.getElementById("back-btn").addEventListener("click", back);
+  document.getElementById("back-btn")
+    .addEventListener("click",()=>history.back());
 });
 </script>
 
