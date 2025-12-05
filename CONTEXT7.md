@@ -82,3 +82,9 @@ Transition du stockage des pièces jointes des messages du système de fichiers 
 *   Correction d'erreur `invalid input value for enum site_status` lors de la migration du type `statut` de `site`.
 
 Cette mise à jour a significativement enrichi les fonctionnalités et stabilisé l'application.
+
+### 6. Dernières intégrations (sites/clients/tickets/interventions)
+
+* `ticket-view.html` : bloc Site associé enrichi via `/api/sites/{id}/relations` (nom client, statut, adresse, contact, représentants), lien client en modal, bouton "Voir messages" redirige vers `messagerie.html?conversation_id=demande-{id}`. Représentants admin CRUD, bouton visible en admin.
+* `intervention-view.html` : ajout d'une carte Site associé (mêmes infos et lien client modal) alimentée par `/api/sites/{id}/relations`.
+* `client-demand-view.html` : l'envoi de message inclut désormais `demande_id` dans le FormData pour associer la conversation à la demande.

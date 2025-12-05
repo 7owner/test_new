@@ -759,12 +759,16 @@
         if (messagesBtn) {
           messagesBtn.classList.remove('d-none');
           messagesBtn.addEventListener('click', () => {
-            if (!demandeId) {
-              alert('Aucune demande liée à ce ticket.');
+            let conversationId;
+            if (demandeId) {
+              conversationId = `demande-${demandeId}`;
+            } else if (ticketId) {
+              conversationId = `ticket-${ticketId}`;
+            } else {
+              alert('ID de ticket ou de demande manquant.');
               return;
             }
-            // Redirige vers la messagerie filtrée sur la conversation de la demande
-            window.location.href = `/messagerie.html?conversation_id=demande-${demandeId}`;
+            window.location.href = `/messagerie.html?conversation_id=${conversationId}`;
           }, { once: true });
         }
         set('view_responsable', t.responsable || 'Non assigné');
