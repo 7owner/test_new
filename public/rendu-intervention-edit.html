@@ -245,22 +245,20 @@
           attachmentsGrid.append(col);
         });
 
-        const addCol = document.createElement('div');
-        addCol.className = 'col-12 col-sm-6 col-lg-4';
-        const addCard = document.createElement('div');
-        addCard.className = 'add-card';
-        addCard.onclick = () => {
-          if (interventionId) location.href = `rendu-intervention-new.html?id=${interventionId}`;
-        };
-        addCard.innerHTML = `
+          const addCol = document.createElement('div');
+          addCol.className = 'col-12 col-sm-6 col-lg-4';
+          const addCard = document.createElement('div');
+          addCard.className = 'add-card';
+          addCard.onclick = () => addFileInput && addFileInput.click();
+          addCard.innerHTML = `
           <div class="add-card-content">
             <i class="bi bi-plus-circle"></i>
             <div class="fw-bold">Ajouter un fichier</div>
-            <div class="small">Ouvre l'éditeur avancé.</div>
+            <div class="small">Cliquez pour ajouter</div>
           </div>`;
-        addCol.append(addCard);
-        attachmentsGrid.append(addCol);
-        countBadge.textContent = `${filtered.length} / ${attachments.length} pièce(s)`;
+          addCol.append(addCard);
+          attachmentsGrid.append(addCol);
+          countBadge.textContent = `${filtered.length} / ${attachments.length} pièce(s)`;
       };
 
       const loadData = async () => {
