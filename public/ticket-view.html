@@ -617,6 +617,9 @@
         if (!res.ok) throw new Error(data && data.error || `HTTP ${res.status}`);
         const t = data.ticket; if (!t) throw new Error('Not found');
         let demandeId = t.demande_id || null;
+        if (!demandeId && Array.isArray(data.demandes) && data.demandes.length) {
+          demandeId = data.demandes.reduce((acc, d) => acc && acc > d.id ? acc : d.id, null);
+        }
         // Si au moins une intervention, forcer état affiché à En cours
         if (Array.isArray(data.interventions) && data.interventions.length > 0 && t.etat !== 'Termine') {
           t.etat = 'En_cours';
