@@ -750,57 +750,33 @@
           });
         }
 
-                const messagesBtn = document.getElementById('view-messages-btn');
-                const messagesContainer = document.getElementById('messages-container');
-                // The button should always be displayed if the ticket ID is available
-                // The ticketId is guaranteed to be present in ticket-view.html
-                if (messagesBtn && ticketId) {
-                  messagesBtn.classList.remove('d-none');
-                  messagesBtn.addEventListener('click', async () => {
-                    let conversationId;
-                    if (demandeId) {
-                      conversationId = `demande-${demandeId}`;
-                    } else if (ticketId) {
-                      conversationId = `ticket-${ticketId}`;
-                    } else {
-                      messagesContainer.innerHTML = '<div class="alert alert-warning">Impossible de déterminer la conversation (manque ID de demande ou de ticket).</div>';
-                      return;
-                    }
-        
-                    messagesContainer.innerHTML = '<div class="text-muted">Chargement des messages...</div>';
-        
-                    try {
-                      const messages = await fetchJSON(`/api/conversations/${conversationId}`);
-        
-                      if (!messages || messages.length === 0) {
-                        messagesContainer.innerHTML = '<div class="text-muted">Aucun message dans cette conversation.</div>';
-                        return;
-                      }
-        
-                      messagesContainer.innerHTML = messages.map(msg => {
-                        const isSent = msg.sender_id === userId;
-                        const attachmentsHTML = (msg.attachments || []).map(att =>
-                          `<br><a href="/api/attachments/${att.id}/view" target="_blank" download="${att.file_name}">${att.file_name}</a>`
-                        ).join('');
-        
-                        const msgStyle = isSent
-                          ? 'background-color: #e1f5fe; text-align: right; border-radius: 10px; padding: 10px; margin-bottom: 10px; margin-left: 20%;'
-                          : 'background-color: #f1f1f1; border-radius: 10px; padding: 10px; margin-bottom: 10px; margin-right: 20%;';
-        
-                        return `
-                          <div style="${msgStyle}">
-                            <p class="mb-1">${msg.body || ''}</p>
-                            <small class="text-muted">${new Date(msg.created_at).toLocaleString()}</small>
-                            ${attachmentsHTML}
-                          </div>`;
-                      }).join('');
-        
-                    } catch (error) {
-                      console.error('Error loading messages:', error);
-                      messagesContainer.innerHTML = `<div class="alert alert-danger">Erreur: ${error.message}</div>`;
-                    }
-                  });
-                }        set('view_responsable', t.responsable || 'Non assigné');
+        const messagesBtn = document.getElementById('view-messages-btn');
+        if (messagesBtn && ticketId) {
+          messagesBtn.classList.remove('d-none');
+          messagesBtn.addEventListener('click', async () => {
+            let conversationId = null;
+            // priorité : demande liée
+            if (demandeId) {
+              conversationId = `demande-${demandeId}`;
+            } else {
+              // tentative de récupérer une demande depuis les relations à la volée
+              try {
+                const fresh = await fetchJSON(`/api/tickets/${ticketId}/relations`);
+                if (Array.isArray(fresh?.demandes) && fresh.demandes.length) {
+                  const dId = fresh.demandes.reduce((acc, d) => acc && acc > d.id ? acc : d.id, null);
+                  if (dId) conversationId = `demande-${dId}`;
+                }
+              } catch (e) {
+                console.warn('Impossible de récupérer les demandes pour le ticket', e);
+              }
+              // fallback ticket
+              if (!conversationId) conversationId = `ticket-${ticketId}`;
+            }
+            // redirection messagerie avec double paramètre pour compatibilité
+            window.location.href = `/messagerie.html?conversation_id=${conversationId}&conversation=${conversationId}`;
+          });
+        }
+        set('view_responsable', t.responsable || 'Non assigné');
 
         const list = document.getElementById('ticket-interventions-list'); list.innerHTML = '';
         const items = Array.isArray(data.interventions)? data.interventions : [];
