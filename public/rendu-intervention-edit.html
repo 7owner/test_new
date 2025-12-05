@@ -74,7 +74,13 @@
           <div class="mb-4" id="attachments-section">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Pièces jointes</h5>
-              <span class="badge bg-primary" id="attachments-count">0 pièce(s)</span>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary" id="attachments-count">0 pièce(s)</span>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="add-file-btn">
+                  <i class="bi bi-plus-circle me-1"></i> Ajouter un fichier
+                </button>
+                <input type="file" id="add-file-input" class="d-none">
+              </div>
             </div>
             <p class="text-muted small mb-3">Cliquez sur une carte pour ouvrir la pièce jointe. Ajoutez de nouveaux fichiers via le bouton + (redirigé vers l’éditeur avancé).</p>
             <div class="row g-2 align-items-center mb-3">
@@ -135,6 +141,8 @@
       const filterKind = document.getElementById('filter-kind');
       const cancelBtn = document.getElementById('cancel-button');
       const backBtn = document.getElementById('back-btn');
+      const addFileBtn = document.getElementById('add-file-btn');
+      const addFileInput = document.getElementById('add-file-input');
 
       let interventionId = null;
       let attachments = [];
@@ -147,6 +155,59 @@
         }
         return res.json();
       };
+
+      const toBase64 = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const uploadDocument = async (file) => {
+        const base64 = await toBase64(file);
+        const payload = {
+          base64,
+          nom_fichier: file.name,
+          nature: file.type || 'Document',
+          type_mime: file.type || 'application/octet-stream',
+          cible_type: 'RenduIntervention',
+          cible_id: renduId
+        };
+        const res = await fetch('/api/documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...headers },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(()=> ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        // Ajoute dans la grille locale
+        attachments.push({
+          kind: file.type.startsWith('image/') ? 'image' : 'doc',
+          url: `/api/documents/${data.id || ''}/view`,
+          nom_fichier: file.name,
+          commentaire_image: payload.nature || 'Document',
+          type: 'Upload',
+          note: ''
+        });
+        refreshAttachments();
+      };
+
+      if (addFileBtn && addFileInput) {
+        addFileBtn.addEventListener('click', () => addFileInput.click());
+        addFileInput.addEventListener('change', async () => {
+          const file = addFileInput.files && addFileInput.files[0];
+          if (!file) return;
+          try {
+            await uploadDocument(file);
+            alert('Fichier ajouté au rendu.');
+          } catch (e) {
+            console.error(e);
+            alert(`Échec de l\'ajout du fichier: ${e.message}`);
+          } finally {
+            addFileInput.value = '';
+          }
+        });
+      }
 
       const refreshAttachments = () => {
         if (!attachmentsGrid) return;
