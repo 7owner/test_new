@@ -268,6 +268,44 @@
       </div>
     </div>
 
+    <!-- Modal Edition Représentant -->
+    <div class="modal fade" id="editRepModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Modifier représentant</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="editRepForm">
+              <input type="hidden" id="edit-rep-id">
+              <div class="mb-3">
+                <label class="form-label">Nom</label>
+                <input class="form-control" id="edit-rep-nom">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input class="form-control" id="edit-rep-email" type="email">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Téléphone</label>
+                <input class="form-control" id="edit-rep-tel" type="tel">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Fonction</label>
+                <input class="form-control" id="edit-rep-fonction">
+              </div>
+            </form>
+            <div id="edit-rep-feedback" class="small mt-2"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+            <button class="btn btn-primary" id="save-rep-btn">Enregistrer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Sites and Demands Row -->
     <div class="row g-4 mb-4">
       <div class="col-lg-6">
@@ -436,11 +474,17 @@
       const editRepModalEl = document.getElementById('editRepModal');
       const editRepModal = editRepModalEl ? new bootstrap.Modal(editRepModalEl) : null;
       const editRepFeedback = document.getElementById('edit-rep-feedback');
+      const saveRepBtn = document.getElementById('save-rep-btn');
       let currentRepEditing = null;
 
       try {
         const data = await fetchJSON('/api/clients/' + id + '/relations');
         const { client: c, sites, demandes, representants } = data;
+        let isAdmin = false;
+        try {
+          const payload = token ? JSON.parse(atob(token.split('.')[1])) : {};
+          isAdmin = payload?.roles?.includes('ROLE_ADMIN');
+        } catch {}
 
         // Affichage des informations du client
         document.getElementById('client-nom').textContent = c.nom_client || 'Non spécifié';
@@ -459,18 +503,27 @@
         representantsList.innerHTML = '';
         if (representants?.length) {
           representants.forEach(rep => {
+            const badge = (rep.nom || rep.email || 'N')[0].toUpperCase();
+            const nomAff = rep.nom || rep.email || 'Inconnu';
             representantsList.innerHTML += `
               <div class="rep-card">
-                <div class="d-flex align-items-start">
-                  <div style="width:50px;height:50px;border-radius:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:bold;">
-                    ${(rep.nom || 'N')[0].toUpperCase()}
+                <div class="d-flex align-items-start justify-content-between">
+                  <div class="d-flex align-items-start">
+                    <div style="width:50px;height:50px;border-radius:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:bold;">
+                      ${badge}
+                    </div>
+                    <div class="ms-3">
+                      <h6 class="fw-bold mb-1">${nomAff}</h6>
+                      <small class="text-muted">${rep.fonction || ''}</small><br>
+                      <small><i class="bi bi-envelope me-1"></i>${rep.email || 'N/A'}</small>
+                      <small class="ms-2"><i class="bi bi-phone me-1"></i>${rep.tel || 'N/A'}</small>
+                    </div>
                   </div>
-                  <div class="ms-3">
-                    <h6 class="fw-bold mb-1">${rep.nom || 'Inconnu'}</h6>
-                    <small class="text-muted">${rep.fonction || ''}</small><br>
-                    <small><i class="bi bi-envelope me-1"></i>${rep.email || 'N/A'}</small>
-                    <small class="ms-2"><i class="bi bi-phone me-1"></i>${rep.tel || 'N/A'}</small>
-                  </div>
+                  ${isAdmin ? `
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-secondary rep-edit-btn" data-id="${rep.client_representant_id}"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger rep-del-btn" data-id="${rep.client_representant_id}"><i class="bi bi-trash"></i></button>
+                  </div>` : ''}
                 </div>
               </div>`;
           });
@@ -509,13 +562,62 @@
               <small>${d.description || '(sans description)'}</small>
             </div>`);
 
-        // ROLE ADMIN
-        let isAdmin = false;
-        try {
-          const payload = token ? JSON.parse(atob(token.split('.')[1])) : {};
-          isAdmin = payload?.roles?.includes('ROLE_ADMIN');
-        } catch {}
         if (isAdmin) document.getElementById('adminActions').style.display = '';
+
+        // Actions reps (admin)
+        if (isAdmin) {
+          representantsList.querySelectorAll('.rep-del-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const repId = btn.getAttribute('data-id');
+              if (!repId) return;
+              if (!confirm('Supprimer ce représentant ?')) return;
+              try {
+                await fetchJSON(`/api/client_representant/${repId}`, { method: 'DELETE' });
+                location.reload();
+              } catch (err) {
+                alert(err.message || 'Suppression impossible');
+              }
+            });
+          });
+
+          representantsList.querySelectorAll('.rep-edit-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const repId = btn.getAttribute('data-id');
+              const rep = (representants || []).find(r => String(r.client_representant_id) === String(repId));
+              if (!rep || !editRepModal) return;
+              currentRepEditing = rep.client_representant_id;
+              editRepFeedback.textContent = '';
+              document.getElementById('edit-rep-id').value = rep.client_representant_id;
+              document.getElementById('edit-rep-nom').value = rep.nom || '';
+              document.getElementById('edit-rep-email').value = rep.email || '';
+              document.getElementById('edit-rep-tel').value = rep.tel || '';
+              document.getElementById('edit-rep-fonction').value = rep.fonction || '';
+              editRepModal.show();
+            });
+          });
+        }
+
+        if (saveRepBtn) {
+          saveRepBtn.addEventListener('click', async () => {
+            if (!currentRepEditing) return;
+            editRepFeedback.textContent = '';
+            const payload = {
+              nom: document.getElementById('edit-rep-nom').value,
+              email: document.getElementById('edit-rep-email').value,
+              tel: document.getElementById('edit-rep-tel').value,
+              fonction: document.getElementById('edit-rep-fonction').value
+            };
+            try {
+              await fetchJSON(`/api/client_representant/${currentRepEditing}`, { method: 'PUT', body: JSON.stringify(payload) });
+              editRepFeedback.className = 'small text-success';
+              editRepFeedback.textContent = 'Représentant mis à jour';
+              setTimeout(() => { editRepModal.hide(); location.reload(); }, 600);
+            } catch (err) {
+              editRepFeedback.className = 'small text-danger';
+              editRepFeedback.textContent = err.message || 'Erreur lors de la mise à jour';
+            }
+          });
+        }
 
         /* 🔽 RÉPERTOIRE DOCUMENTS + IMAGES 🔽 */
         const allDocs = [];
