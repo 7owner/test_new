@@ -397,7 +397,11 @@
       const docList = document.getElementById('repo-docs');
       const imgList = document.getElementById('repo-imgs');
       const msgsInfo = document.getElementById('repo-msgs-info');
-
+      const editRepModalEl = document.getElementById('editRepModal');
+      const editRepModal = editRepModalEl ? new bootstrap.Modal(editRepModalEl) : null;
+      const editRepFeedback = document.getElementById('edit-rep-feedback');
+      const saveRepBtn = document.getElementById('save-rep-btn');
+      let currentRepEditing = null;
 
       try {
         const data = await fetchJSON('/api/clients/' + id + '/relations');
@@ -502,7 +506,44 @@
             });
           });
 
+          representantsList.querySelectorAll('.rep-edit-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const repId = btn.getAttribute('data-id');
+              const rep = (representants || []).find(r => String(r.client_representant_id) === String(repId));
+              if (!rep || !editRepModal) return;
+              currentRepEditing = rep.client_representant_id;
+              editRepFeedback.textContent = '';
+              document.getElementById('edit-rep-id').value = rep.client_representant_id;
+              document.getElementById('edit-rep-nom').value = rep.nom || '';
+              document.getElementById('edit-rep-email').value = rep.email || '';
+              document.getElementById('edit-rep-tel').value = rep.tel || '';
+              document.getElementById('edit-rep-fonction').value = rep.fonction || '';
+              editRepModal.show();
+            });
+          });
+        }
 
+        if (saveRepBtn) {
+          saveRepBtn.addEventListener('click', async () => {
+            if (!currentRepEditing) return;
+            editRepFeedback.textContent = '';
+            const payload = {
+              nom: document.getElementById('edit-rep-nom').value,
+              email: document.getElementById('edit-rep-email').value,
+              tel: document.getElementById('edit-rep-tel').value,
+              fonction: document.getElementById('edit-rep-fonction').value
+            };
+            try {
+              await fetchJSON(`/api/client_representant/${currentRepEditing}`, { method: 'PUT', body: JSON.stringify(payload) });
+              editRepFeedback.className = 'small text-success';
+              editRepFeedback.textContent = 'Représentant mis à jour';
+              setTimeout(() => { editRepModal.hide(); location.reload(); }, 600);
+            } catch (err) {
+              editRepFeedback.className = 'small text-danger';
+              editRepFeedback.textContent = err.message || 'Erreur lors de la mise à jour';
+            }
+          });
+        }
 
         /* 🔽 RÉPERTOIRE DOCUMENTS + IMAGES 🔽 */
         const allDocs = [];
