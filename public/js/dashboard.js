@@ -70,7 +70,24 @@ async function buildHeaders(json=false){
 
       // Compteurs
       (async () => { try { const r = await fetch('/api/agents', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('activeAgents').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
-      (async () => { try { const r = await fetch('/api/sites', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('sitesUnderContract').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
+      (async () => {
+        try {
+          const r = await fetch('/api/sites', { headers: await buildHeaders(false), credentials:'same-origin' });
+          const rows = r.ok? await r.json(): [];
+          const sites = Array.isArray(rows)? rows : [];
+          const actifs = sites.filter(s => !s.date_fin || new Date(s.date_fin) >= new Date()).length;
+          const inactifs = sites.length - actifs;
+          const elCount = document.getElementById('sitesUnderContract');
+          const elBreakdown = document.getElementById('sitesUnderContractBreakdown');
+          if (elCount) elCount.textContent = `${actifs} / ${sites.length}`;
+          if (elBreakdown) elBreakdown.textContent = `${actifs} actifs · ${inactifs} non actifs`;
+        } catch {
+          const elCount = document.getElementById('sitesUnderContract');
+          const elBreakdown = document.getElementById('sitesUnderContractBreakdown');
+          if (elCount) elCount.textContent = '-';
+          if (elBreakdown) elBreakdown.textContent = 'Actifs / non actifs';
+        }
+      })();
       (async () => {
         const el = document.getElementById('contratsCount');
         if (!el) return;
