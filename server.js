@@ -1838,7 +1838,7 @@ app.get('/api/sites', authenticateToken, async (req, res) => {
         ORDER BY s.id DESC`);
       return res.json(result.rows);
     }
-    const result = await pool.query('SELECT s.*, a.libelle as adresse_libelle FROM site s LEFT JOIN adresse a ON s.adresse_id = a.id ORDER BY s.id DESC');
+    const result = await pool.query('SELECT s.*, a.libelle as adresse_libelle, a.ligne1, a.ligne2, a.code_postal, a.ville, a.pays FROM site s LEFT JOIN adresse a ON s.adresse_id = a.id ORDER BY s.id DESC');
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching sites:', err);
@@ -2470,15 +2470,6 @@ app.delete('/api/clients/:id', authenticateToken, async (req, res) => {
 });
 
 // API Routes for Sites (CRUD)
-app.get('/api/sites', authenticateToken, async (req, res) => {
-    try {
-        const result = await pool.query('SELECT s.*, a.libelle as adresse_libelle, c.nom_client as client_nom FROM site s LEFT JOIN adresse a ON s.adresse_id = a.id LEFT JOIN client c ON s.client_id = c.id ORDER BY s.nom_site ASC');
-        res.json(result.rows);
-    } catch (err) {
-        console.error('Error fetching sites:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
 
 
 
