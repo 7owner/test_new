@@ -267,16 +267,46 @@
   <!-- Site associé -->
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
-      <span><i class="bi bi-building me-2"></i>Site associé</span>
+      <span><i class="bi bi-building me-2"></i><label>Statut</label><div class="value" id="site-statut">-</div></span>
       <a id="site-view-link" class="btn btn-light btn-sm d-none" href="#"><i class="bi bi-eye"></i> Voir le site</a>
     </div>
     <div class="card-body p-4">
-      <h3 class="mb-3 fw-semibold"><i class="bi bi-geo-alt me-2"></i>Détails du site</h3>
-      <div class="info-grid">
-        <div class="info-item"><label>Nom du site</label><div class="value" id="site-nom">-</div></div>
-        <div class="info-item"><label>Adresse</label><div class="value" id="site-adresse">-</div></div>
-        <div class="info-item"><label>Client</label><div class="value" id="site-client">-</div></div>
-        <div class="info-item"><label>Statut</label><div class="value" id="site-statut">-</div></div>
+       <div class="card mb-4">
+      <div class="hero mb-3">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="title" id="site-name">—</div>
+            <div class="subtitle small">
+              Client : <span id="view_client">—</span>
+              <span class="ms-3">Contact : <span id="view_contact">—</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="mb-2">
+          <div class="fw-semibold text-secondary">Adresse</div>
+          <div id="view_adresse" class="text-body">—</div>
+        </div>
+        <div class="mb-2">
+          <div class="fw-semibold text-secondary">Commentaire</div>
+          <div id="view_commentaire" class="text-body">—</div>
+        </div>
+      </div>
+    </div>
+        <div class="card mt-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 mb-0">Représentants client</h2>
+        </div>
+        <div id="representants-list">
+          <div class="text-muted">Chargement...</div>
+        </div>
+      </div>
+    </div>
+
+
+
       </div>
     </div>
   </div>
