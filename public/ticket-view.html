@@ -733,14 +733,21 @@
         const messagesBtn = document.getElementById('view-messages-btn');
         const messagesModalEl = document.getElementById('messagesModal');
         const messagesContainer = document.getElementById('messages-container');
-        if (!demandeId && Array.isArray(data.demandes) && data.demandes.length === 1) {
-          demandeId = data.demandes[0].id;
+        if (!demandeId && Array.isArray(data.demandes) && data.demandes.length) {
+          // Prend la demande au plus grand id si aucune n'est directement liée
+          demandeId = data.demandes.reduce((acc, d) => {
+            if (!acc) return d.id;
+            return d.id > acc ? d.id : acc;
+          }, null);
         }
         if (messagesBtn) {
           messagesBtn.classList.remove('d-none');
           messagesBtn.addEventListener('click', async () => {
             if (!demandeId) {
-              messagesContainer.innerHTML = '<div class="text-muted">Aucune demande liée à ce ticket.</div>';
+              const list = (Array.isArray(data.demandes) && data.demandes.length)
+                ? `Demandes disponibles: ${data.demandes.map(d=>`#${d.id}`).join(', ')}`
+                : 'Aucune demande liée à ce ticket.';
+              messagesContainer.innerHTML = `<div class="text-muted">${list}</div>`;
               if (messagesModalEl) bootstrap.Modal.getOrCreateInstance(messagesModalEl).show();
               return;
             }
