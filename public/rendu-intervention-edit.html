@@ -118,6 +118,37 @@
     </div>
   </main>
 
+  <!-- Modal édition pièce jointe -->
+  <div class="modal fade" id="attachmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-paperclip me-2"></i>Modifier la pièce jointe</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Nom du fichier</label>
+            <input type="text" class="form-control" id="att-name-input" readonly>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Commentaire</label>
+            <textarea class="form-control" id="att-comment-input" rows="3" placeholder="Commentaire sur la pièce jointe"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Remplacer le fichier</label>
+            <input type="file" class="form-control" id="att-file-input">
+            <small class="text-muted">Le remplacement est uploadé immédiatement.</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-att-btn"><i class="bi bi-check"></i> Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
@@ -143,9 +174,16 @@
       const backBtn = document.getElementById('back-btn');
       const addFileBtn = document.getElementById('add-file-btn');
       const addFileInput = document.getElementById('add-file-input');
+      const attModalEl = document.getElementById('attachmentModal');
+      const attModal = attModalEl ? new bootstrap.Modal(attModalEl) : null;
+      const attNameInput = document.getElementById('att-name-input');
+      const attCommentInput = document.getElementById('att-comment-input');
+      const attFileInput = document.getElementById('att-file-input');
+      const saveAttBtn = document.getElementById('save-att-btn');
 
       let interventionId = null;
       let attachments = [];
+      let currentEditIndex = null;
 
       const fetchJSON = async (url) => {
         const res = await fetch(url, { headers });
@@ -192,6 +230,54 @@
         refreshAttachments();
       };
 
+      if (saveAttBtn) {
+        saveAttBtn.addEventListener('click', async () => {
+          if (currentEditIndex === null) return;
+          const att = attachments[currentEditIndex];
+          if (!att) return;
+          const newComment = attCommentInput ? attCommentInput.value : att.commentaire_image;
+          const file = attFileInput && attFileInput.files && attFileInput.files[0];
+          try {
+            if (file) {
+              // upload immédiat du nouveau fichier
+              const base64 = await toBase64(file);
+              const payload = {
+                base64,
+                nom_fichier: file.name,
+                nature: newComment || file.type || 'Document',
+                type_mime: file.type || 'application/octet-stream',
+                cible_type: 'RenduIntervention',
+                cible_id: renduId
+              };
+              const res = await fetch('/api/documents', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...headers },
+                body: JSON.stringify(payload)
+              });
+              const data = await res.json().catch(()=> ({}));
+              if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+              attachments[currentEditIndex] = {
+                kind: file.type.startsWith('image/') ? 'image' : 'doc',
+                url: `/api/documents/${data.id || ''}/view`,
+                nom_fichier: file.name,
+                commentaire_image: payload.nature || 'Document',
+                type: 'Upload',
+                note: att.note || ''
+              };
+            } else {
+              attachments[currentEditIndex].commentaire_image = newComment;
+            }
+            refreshAttachments();
+            if (attModal) attModal.hide();
+          } catch (e) {
+            console.error(e);
+            alert(`Échec de l'ajout du fichier: ${e.message}`);
+          } finally {
+            if (attFileInput) attFileInput.value = '';
+          }
+        });
+      }
+
       if (addFileBtn && addFileInput) {
         addFileBtn.addEventListener('click', () => addFileInput.click());
         addFileInput.addEventListener('change', async () => {
@@ -209,6 +295,16 @@
         });
       }
 
+      const openEditModal = (idx) => {
+        currentEditIndex = idx;
+        const att = attachments[idx];
+        if (!att || !attModal) return;
+        if (attNameInput) attNameInput.value = att.nom_fichier || '';
+        if (attCommentInput) attCommentInput.value = att.commentaire_image || '';
+        if (attFileInput) attFileInput.value = '';
+        attModal.show();
+      };
+
       const refreshAttachments = () => {
         if (!attachmentsGrid) return;
         attachmentsGrid.innerHTML = '';
@@ -223,12 +319,12 @@
           return matchTerm && matchSrc && matchKind;
         });
 
-        filtered.forEach(att => {
+        filtered.forEach((att, idx) => {
           const col = document.createElement('div');
           col.className = 'col-12 col-sm-6 col-lg-4';
           const card = document.createElement('div');
           card.className = 'attachment-card';
-          card.onclick = () => window.open(att.url, '_blank');
+          card.onclick = () => openEditModal(idx);
           const prev = document.createElement('div');
           prev.className = 'attachment-preview' + (att.kind === 'doc' ? ' doc-preview' : '');
           prev.innerHTML = att.kind === 'image' ? `<img src="${att.url}" alt="${att.nom_fichier}">` : '<i class="bi bi-file-earmark-text"></i>';
