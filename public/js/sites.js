@@ -65,8 +65,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
           col.innerHTML = `
             <div class="border rounded p-3 h-100 d-flex flex-column shadow-sm">
-              <div class="fw-semibold mb-1">${site.nom_site||('Site #'+site.id)}</div>
-              <div class="text-muted small mb-2">ID: ${site.id}</div>
+              <div class="fw-semibold mb-1">${site.nom_site||'Site'}</div>
               <div class="mb-2"><span class="text-uppercase text-muted small">Adresse</span><br>${addressLink}</div>
               <div class="mb-2"><span class="text-uppercase text-muted small">Responsable</span><br>${site.responsable_matricule? getAgentName(site.responsable_matricule): 'Non assigné'}</div>
               <div class="mb-2 d-flex gap-2 flex-wrap">
