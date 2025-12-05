@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', async function() {
               <div class="fw-semibold mb-1">${site.nom_site||'Site'}</div>
               <div class="mb-2">
                 <span class="text-uppercase text-muted small">Adresse</span><br>
-                <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="text-dark" style="text-decoration: none;">
+                <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="link-primary">
                   ${displayAddress}
                 </a>
               </div>
