@@ -20,7 +20,7 @@ const SEED_SQL_PATH = process.env.SEED_SQL || pathSeedDefault;
 
 // Middleware
 app.use(cors());
-app.use(express.json()); // For parsing application/json
+app.use(express.json({ limit: '50mb' })); // For parsing application/json, with increased limit
 // Security headers
 app.use((req, res, next) => { res.set('X-Content-Type-Options','nosniff'); next(); });
 // Silence missing favicon errors to avoid noisy 404s in console
