@@ -164,6 +164,12 @@
         const files = attachmentsInput.files;
         
         if (!body && files.length === 0) return;
+
+        // Ensure sender and receiver are defined before proceeding
+        if (!userId) {
+            alert("L'expéditeur n'est pas défini. Veuillez vous reconnecter.");
+            return;
+        }
         if (!receiver_id) {
             alert("Le destinataire n'est pas défini. Impossible d'envoyer le message.");
             return;
@@ -171,8 +177,8 @@
 
         const formData = new FormData();
         formData.append('body', body);
-        formData.append('sender_id', userId);
-        formData.append('receiver_id', receiver_id);
+        formData.append('sender_id', String(userId)); // Explicitly cast to string
+        formData.append('receiver_id', String(receiver_id)); // Explicitly cast to string
         formData.append('demande_id', demandeId);
 
         for (let i = 0; i < files.length; i++) {
