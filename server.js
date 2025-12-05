@@ -3720,17 +3720,38 @@ app.get('/api/client/profile', authenticateToken, async (req, res) => {
   try {
     const email = req.user && req.user.email;
     if (!email) return res.status(401).json({ error: 'Unauthorized' });
+    // Direct match on client
     const c = (await pool.query('SELECT * FROM client WHERE representant_email=$1 OR user_id=$2 LIMIT 1', [email, req.user.id || null])).rows[0];
-    if (!c) return res.status(404).json({ error: 'Client record not found for this user' });
-    return res.json(c);
+    if (c) return res.json(c);
+    // Fallback via client_representant
+    const rep = (await pool.query(
+      `SELECT c.* FROM client c
+       JOIN client_representant cr ON cr.client_id = c.id
+       LEFT JOIN users u ON u.id = cr.user_id
+       WHERE cr.user_id=$1 OR LOWER(cr.email)=LOWER($2) OR LOWER(u.email)=LOWER($2)
+       LIMIT 1`,
+      [req.user.id || null, email]
+    )).rows[0];
+    if (!rep) return res.status(404).json({ error: 'Client record not found for this user' });
+    return res.json(rep);
   } catch (e) { console.error('client profile fetch:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
 });
 
 // --- Client-owned sites ---
 const getClientIdFromUser = async (pool, user) => {
     if (!user) return null;
-    const clientRes = await pool.query('SELECT id FROM client WHERE user_id=$1 OR LOWER(representant_email)=LOWER($2) LIMIT 1', [user.id || null, user.email || null]);
-    return clientRes.rows[0] ? clientRes.rows[0].id : null;
+    // 1) direct link on client
+    const byClient = await pool.query('SELECT id FROM client WHERE user_id=$1 OR LOWER(representant_email)=LOWER($2) LIMIT 1', [user.id || null, user.email || null]);
+    if (byClient.rows[0]) return byClient.rows[0].id;
+    // 2) link via client_representant (user_id or email match)
+    const byRep = await pool.query(
+        `SELECT client_id FROM client_representant cr
+         LEFT JOIN users u ON u.id = cr.user_id
+         WHERE cr.user_id = $1 OR LOWER(cr.email) = LOWER($2) OR LOWER(u.email) = LOWER($2)
+         LIMIT 1`,
+        [user.id || null, user.email || null]
+    );
+    return byRep.rows[0] ? byRep.rows[0].client_id : null;
 };
 
 app.get('/api/client/sites', authenticateToken, async (req, res) => {
