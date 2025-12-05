@@ -595,7 +595,6 @@
         // Carte Site associé
         const siteData = data.site || {};
         const siteNom = siteData.nom_site || `Site #${siteData.id || t.site_id || ''}` || 'N/A';
-        const siteAdresse = siteData.adresse_libelle || siteData.adresse || 'N/A';
         const siteClient = siteData.client_nom || data.client?.nom_client || 'N/A';
         const siteStatut = siteData.status || siteData.statut || 'N/A';
         const siteLink = document.getElementById('site-view-link');
@@ -604,14 +603,69 @@
           siteLink.href = `site-view.html?id=${siteData.id}`;
         }
         document.getElementById('site-name').textContent = siteNom;
-        document.getElementById('view_adresse').textContent = siteAdresse;
         document.getElementById('view_client').textContent = siteClient;
         document.getElementById('site-statut').textContent = siteStatut;
         const contactStr = `${siteData.representant_nom || ''} ${siteData.representant_tel || ''}`.trim();
         const contactEl = document.getElementById('view_contact');
         if (contactEl) contactEl.textContent = contactStr || 'Non spécifié';
-        const commEl = document.getElementById('view_commentaire');
-        if (commEl) commEl.textContent = siteData.commentaire || 'Aucun commentaire';
+
+        // Chargement complet des infos du site (adresse + représentants), comme dans site-view
+        const fillSiteDetails = (rel) => {
+          const adresse = rel?.adresse;
+          if (adresse) {
+            const adrHtml = [
+              adresse.ligne1,
+              adresse.ligne2,
+              `${adresse.code_postal || ''} ${adresse.ville || ''}`.trim(),
+              adresse.pays
+            ].filter(Boolean).join('<br>');
+            document.getElementById('view_adresse').innerHTML = adrHtml || '—';
+          } else {
+            document.getElementById('view_adresse').textContent = siteData.adresse_libelle || siteData.adresse || 'N/A';
+          }
+          const commEl = document.getElementById('view_commentaire');
+          if (commEl) commEl.textContent = rel?.site?.commentaire || siteData.commentaire || 'Aucun commentaire';
+
+          const repsList = document.getElementById('representants-list');
+          if (repsList) {
+            repsList.innerHTML = '';
+            const reps = rel?.representants || [];
+            if (!reps.length) {
+              repsList.innerHTML = '<div class="text-muted">Aucun représentant.</div>';
+            } else {
+              reps.forEach(rep => {
+                const badge = (rep.nom || rep.email || 'N')[0].toUpperCase();
+                repsList.innerHTML += `
+                  <div class="d-flex align-items-start mb-2">
+                    <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;">
+                      ${badge}
+                    </div>
+                    <div class="ms-3">
+                      <div class="fw-semibold">${rep.nom || 'Inconnu'}</div>
+                      <div class="small text-muted">${rep.fonction || ''}</div>
+                      <div class="small text-muted"><i class="bi bi-envelope me-1"></i>${rep.email || 'N/A'} ${rep.tel ? `<span class="ms-2"><i class="bi bi-phone me-1"></i>${rep.tel}</span>` : ''}</div>
+                    </div>
+                  </div>`;
+              });
+            }
+          }
+        };
+
+        if (siteData.id) {
+          try {
+            const relRes = await fetch(`/api/sites/${siteData.id}/relations`, { headers, credentials: 'same-origin' });
+            if (relRes.ok) {
+              const rel = await relRes.json();
+              fillSiteDetails(rel);
+            } else {
+              fillSiteDetails({ site: siteData });
+            }
+          } catch {
+            fillSiteDetails({ site: siteData });
+          }
+        } else {
+          fillSiteDetails({ site: siteData });
+        }
         set('view_responsable', t.responsable || 'Non assigné');
 
         const list = document.getElementById('ticket-interventions-list'); list.innerHTML = '';
