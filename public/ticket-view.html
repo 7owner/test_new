@@ -308,6 +308,11 @@
           <div id="representants-list">
             <div class="text-muted">Chargement...</div>
           </div>
+          <div class="mt-3 d-flex justify-content-end">
+            <button class="btn btn-outline-primary btn-sm d-none" id="view-messages-btn">
+              <i class="bi bi-chat-dots me-1"></i> Voir messages
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -534,6 +539,23 @@
     </div>
   </div>
 
+  <!-- Modale messages demande -->
+  <div class="modal fade" id="messagesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-chat-dots me-2"></i>Messages de la demande</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="messages-container">
+            <div class="text-muted">Chargement...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <!-- Modals et JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -576,6 +598,7 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data && data.error || `HTTP ${res.status}`);
         const t = data.ticket; if (!t) throw new Error('Not found');
+        let demandeId = t.demande_id || null;
         // Si au moins une intervention, forcer état affiché à En cours
         if (Array.isArray(data.interventions) && data.interventions.length > 0 && t.etat !== 'Termine') {
           t.etat = 'En_cours';
@@ -704,6 +727,42 @@
             const modalEl = document.getElementById('clientModal');
             if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
           });
+        }
+
+        // Messages demande (si demande_id lié au ticket)
+        const messagesBtn = document.getElementById('view-messages-btn');
+        const messagesModalEl = document.getElementById('messagesModal');
+        const messagesContainer = document.getElementById('messages-container');
+        if (!demandeId && Array.isArray(data.demandes) && data.demandes.length === 1) {
+          demandeId = data.demandes[0].id;
+        }
+        if (demandeId && messagesBtn) {
+          messagesBtn.classList.remove('d-none');
+          messagesBtn.addEventListener('click', async () => {
+            if (messagesContainer) messagesContainer.innerHTML = '<div class="text-muted">Chargement...</div>';
+            try {
+              const conv = await fetchJSON(`/api/conversations/demande-${demandeId}`);
+              if (!Array.isArray(conv) || !conv.length) {
+                messagesContainer.innerHTML = '<div class="text-muted">Aucun message pour cette demande.</div>';
+              } else {
+                messagesContainer.innerHTML = '';
+                conv.forEach(msg => {
+                  messagesContainer.innerHTML += `
+                    <div class="border rounded p-2 mb-2">
+                      <div class="d-flex justify-content-between small text-muted">
+                        <span>${msg.author_name || msg.author_email || 'Utilisateur'}</span>
+                        <span>${msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}</span>
+                      </div>
+                      <div>${msg.content || ''}</div>
+                    </div>`;
+                });
+              }
+            } catch (e) {
+              console.error('Messages demande', e);
+              if (messagesContainer) messagesContainer.innerHTML = '<div class="text-danger">Impossible de charger les messages.</div>';
+            }
+            if (messagesModalEl) bootstrap.Modal.getOrCreateInstance(messagesModalEl).show();
+          }, { once: true });
         }
         set('view_responsable', t.responsable || 'Non assigné');
 
