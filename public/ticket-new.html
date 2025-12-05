@@ -36,31 +36,32 @@
 
     <h1 class="mb-4">Créer un nouveau ticket</h1>
 
-    <!-- Site associé (prévisualisation) -->
+    <!-- Site associé (prévisualisation style site-view, sans tickets associés) -->
     <div class="card mb-4 d-none" id="site-card">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            <div class="text-muted small">Site associé</div>
-            <h4 class="mb-0" id="site-name">—</h4>
-            <div class="text-secondary small">Client : <span id="site-client">—</span> · Contact : <span id="site-contact">—</span></div>
+      <div class="card-body p-0">
+        <div class="p-3 text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-top-left-radius: 12px; border-top-right-radius: 12px;">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h5 class="mb-1" id="site-name">Site</h5>
+              <div class="small opacity-75">Client : <span id="site-client">—</span> · Contact : <span id="site-contact">—</span></div>
+            </div>
+            <a id="site-view-link" class="btn btn-light btn-sm" href="#" target="_blank"><i class="bi bi-eye"></i> Voir le site</a>
           </div>
-          <a id="site-view-link" class="btn btn-outline-primary btn-sm" href="#" target="_blank">Voir le site</a>
         </div>
-        <div class="row g-3">
-          <div class="col-md-6">
+        <div class="p-3">
+          <div class="mb-3">
             <div class="fw-semibold text-secondary">Adresse</div>
-            <div id="site-adresse">—</div>
+            <div id="site-adresse" class="text-body">—</div>
           </div>
-          <div class="col-md-6">
+          <div class="mb-3">
             <div class="fw-semibold text-secondary">Commentaire</div>
-            <div id="site-commentaire">—</div>
+            <div id="site-commentaire" class="text-body">—</div>
           </div>
-        </div>
-        <div class="mt-3">
-          <div class="fw-semibold text-secondary mb-2">Représentants client</div>
-          <div id="site-representants" class="d-flex flex-column gap-2">
-            <div class="text-muted small">Chargement...</div>
+          <div class="mb-2">
+            <div class="fw-semibold text-secondary mb-2">Représentants client</div>
+            <div id="site-representants" class="d-flex flex-column gap-2">
+              <div class="text-muted small">Chargement...</div>
+            </div>
           </div>
         </div>
       </div>
