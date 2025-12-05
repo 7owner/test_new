@@ -759,6 +759,32 @@
         }
       });
 
+      // Gestion ouverture des modales via data-modal
+      document.body.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-modal]");
+        if (!btn) return;
+        const modalId = btn.getAttribute("data-modal");
+        const itemId = btn.getAttribute("data-id");
+        const modalEl = document.getElementById(modalId);
+        if (!modalEl) return;
+
+        const frameMap = {
+          viewSiteModal: { frame: "viewSiteFrame", src: (id) => `/client-site-view.html?id=${id}` },
+          editSiteModal: { frame: "editSiteFrame", src: (id) => `/client-site-edit.html?id=${id}` },
+          viewDemandeModal: { frame: "viewDemandeFrame", src: (id) => `/client-demand-view.html?id=${id}` },
+          editDemandeModal: { frame: "editDemandeFrame", src: (id) => `/client-demand-edit.html?id=${id}` },
+          createDemandeModal: { frame: "createDemandeFrame", src: () => `/client-new-demand.html` },
+          filesDemandeModal: { frame: "filesDemandeFrame", src: (id) => `/client-demand-files.html?id=${id}` }
+        };
+        const cfg = frameMap[modalId];
+        if (cfg) {
+          const frame = document.getElementById(cfg.frame);
+          if (frame) frame.src = cfg.src(itemId || "");
+        }
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+      });
+
       // Initial load
       loadProfile();
       loadSites();
