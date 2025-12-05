@@ -273,12 +273,18 @@
               });
               conversationsList.appendChild(convoElement);
             });
-  
+
             if (preselectConversationId) {
               const target = conversationsList.querySelector(`[data-conversation-id="${preselectConversationId}"]`);
               if (target) {
                 target.click();
+              } else {
+                const first = conversationsList.querySelector('[data-conversation-id]');
+                if (first) first.click();
               }
+            } else {
+              const first = conversationsList.querySelector('[data-conversation-id]');
+              if (first) first.click();
             }
           } catch (error) {
             console.error('Error loading conversations:', error);
