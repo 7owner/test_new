@@ -60,16 +60,11 @@ async function buildHeaders(json=false){
             new Chart(ctx, { type: 'bar', data: { labels: ['Jan','Fev','Mar','Avr','Mai','Juin','Juil','Aout','Sep','Oct','Nov','Dec'], datasets: [{ label:'Tickets par mois', data: byMonth, backgroundColor:'rgba(13,110,253,0.6)', borderColor:'rgba(13,110,253,1)', borderWidth:1 }] }, options:{ responsive:true, scales:{ y:{ beginAtZero:true }}} });
           }
 
-          const dctx = document.getElementById('openClosedChart');
-          if (dctx && window.Chart) {
-            const existingPie = Chart.getChart('openClosedChart'); if (existingPie) existingPie.destroy();
-            new Chart(dctx, { type:'doughnut', data: { labels:['Ouverts','Fermes'], datasets:[{ data:[openCount, totalCount-openCount], backgroundColor:['rgba(25,135,84,0.7)','rgba(220,53,69,0.7)'], borderColor:['rgba(25,135,84,1)','rgba(220,53,69,1)'], borderWidth:1 }] }, options:{ responsive:true, cutout:'60%' } });
-          }
+
         } catch {}
       })();
 
       // Compteurs
-      (async () => { try { const r = await fetch('/api/agents', { headers: await buildHeaders(false), credentials:'same-origin' }); const rows = r.ok? await r.json(): []; document.getElementById('activeAgents').textContent = Array.isArray(rows)? rows.length: 0; } catch {} })();
       (async () => {
         try {
           const r = await fetch('/api/sites', { headers: await buildHeaders(false), credentials:'same-origin' });
@@ -86,19 +81,6 @@ async function buildHeaders(json=false){
           const elBreakdown = document.getElementById('sitesUnderContractBreakdown');
           if (elCount) elCount.textContent = '-';
           if (elBreakdown) elBreakdown.textContent = 'Actifs / non actifs';
-        }
-      })();
-      (async () => {
-        const el = document.getElementById('contratsCount');
-        if (!el) return;
-        try {
-          const r = await fetch('/api/contrats', { headers: await buildHeaders(false), credentials:'same-origin' });
-          const rows = r.ok ? await r.json() : [];
-          const contrats = Array.isArray(rows) ? rows : [];
-          const actifs = contrats.filter(c => !c.date_fin || new Date(c.date_fin) >= new Date()).length;
-          el.textContent = `${actifs} / ${contrats.length}`;
-        } catch {
-          el.textContent = '-';
         }
       })();
       (async () => {

@@ -196,38 +196,6 @@
       <div class="col">
         <div class="metric-card">
           <div class="d-flex align-items-center gap-3">
-            <div class="metric-icon icon-green"><i class="bi bi-inbox"></i></div>
-            <div>
-              <div class="metric-label">Demandes client</div>
-              <div class="metric-value" id="demandesPending">-</div>
-              <div class="metric-sub text-success" id="demandesBreakdown">En file · converties</div>
-            </div>
-          </div>
-          <div class="mt-auto">
-            <a href="/demandes-client-admin.html" class="btn btn-outline-success btn-sm">Voir les demandes</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="col">
-        <div class="metric-card">
-          <div class="d-flex align-items-center gap-3">
-            <div class="metric-icon icon-orange"><i class="bi bi-people-fill"></i></div>
-            <div>
-              <div class="metric-label">Agents actifs</div>
-              <div class="metric-value" id="activeAgents">-</div>
-              <div class="metric-sub text-warning-emphasis">Disponibles</div>
-            </div>
-          </div>
-          <div class="mt-auto">
-            <a href="/agents.html" class="btn btn-outline-warning btn-sm text-dark">Voir les agents</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="col">
-        <div class="metric-card">
-          <div class="d-flex align-items-center gap-3">
             <div class="metric-icon icon-purple"><i class="bi bi-building"></i></div>
             <div>
               <div class="metric-label">Sites sous contrat</div>
@@ -256,6 +224,38 @@
           </div>
         </div>
       </div>
+
+      <div class="col">
+        <div class="metric-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="metric-icon icon-green"><i class="bi bi-gear-wide-connected"></i></div>
+            <div>
+              <div class="metric-label">Administration</div>
+              <div class="metric-value">Accès</div>
+              <div class="metric-sub text-success">Clients · Contrats · Agents</div>
+            </div>
+          </div>
+          <div class="mt-auto">
+            <a href="/administration.html" class="btn btn-outline-success btn-sm">Ouvrir</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="metric-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="metric-icon icon-green"><i class="bi bi-inbox"></i></div>
+            <div>
+              <div class="metric-label">Demandes client</div>
+              <div class="metric-value" id="demandesPending">-</div>
+              <div class="metric-sub text-success" id="demandesBreakdown">En file · converties</div>
+            </div>
+          </div>
+          <div class="mt-auto">
+            <a href="/demandes-client-admin.html" class="btn btn-outline-success btn-sm">Voir les demandes</a>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="row g-4 mb-4">
@@ -263,9 +263,7 @@
         <div class="card h-100">
           <div class="card-body">
             <canvas id="monthlyMaintenanceChart"></canvas>
-            <div class="mt-4">
-              <canvas id="openClosedChart" height="160"></canvas>
-            </div>
+
           </div>
         </div>
       </div>
