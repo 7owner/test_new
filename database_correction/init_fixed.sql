@@ -433,9 +433,12 @@ ALTER TABLE demande_client ADD COLUMN IF NOT EXISTS commentaire TEXT;
 -- Messagerie
 CREATE TABLE IF NOT EXISTS messagerie (
     id SERIAL PRIMARY KEY,
-    conversation_id VARCHAR(255) NOT NULL, -- Could be based on ticket_id or demande_id
+    conversation_id VARCHAR(255) NOT NULL,
     sender_id INTEGER NOT NULL REFERENCES users(id),
     receiver_id INTEGER NOT NULL REFERENCES users(id),
+    ticket_id BIGINT REFERENCES ticket(id) ON DELETE SET NULL,
+    demande_id BIGINT REFERENCES demande_client(id) ON DELETE SET NULL,
+    client_id BIGINT REFERENCES client(id) ON DELETE SET NULL,
     body TEXT,
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

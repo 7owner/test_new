@@ -4595,35 +4595,20 @@ app.get('/api/conversations', authenticateToken, async (req, res) => {
 
 // Get messages for a conversation
 app.get('/api/conversations/:conversation_id', authenticateToken, async (req, res) => {
+    const { conversation_id } = req.params;
     try {
-        const { conversation_id } = req.params;
-        const userId = req.user.id;
-
-    // Check if user is part of the conversation, or allowed for demande-*
-    const participationCheck = await pool.query(
-      'SELECT 1 FROM messagerie WHERE conversation_id = $1 AND (sender_id = $2 OR receiver_id = $2) LIMIT 1',
-      [conversation_id, userId]
-    );
-    if (participationCheck.rows.length === 0) {
-        const allowedDemand = await canAccessDemandConversation(conversation_id, req.user);
-        if (!allowedDemand) {
-          return res.status(403).json({ error: 'Forbidden' });
-        }
-    }
-
-        const messages = await pool.query(
-            'SELECT * FROM messagerie WHERE conversation_id = $1 ORDER BY created_at ASC',
+        const result = await pool.query(
+            `SELECT m.id, m.conversation_id, m.sender_id, m.receiver_id, m.ticket_id, m.demande_id, m.client_id, m.body, m.is_read, m.created_at,
+                    (SELECT json_agg(json_build_object('id', ma.id, 'file_name', ma.file_name, 'file_type', ma.file_type, 'file_size', ma.file_size))
+                     FROM messagerie_attachment ma WHERE ma.message_id = m.id) as attachments
+             FROM messagerie m
+             WHERE m.conversation_id = $1
+             ORDER BY m.created_at ASC`,
             [conversation_id]
         );
-
-        const messagesWithAttachments = await Promise.all(messages.rows.map(async (message) => {
-            const attachments = await pool.query('SELECT id, file_name, file_type, file_size FROM messagerie_attachment WHERE message_id = $1', [message.id]);
-            return { ...message, attachments: attachments.rows };
-        }));
-
-        res.json(messagesWithAttachments);
+        res.json(result.rows);
     } catch (err) {
-        console.error('Error fetching messages:', err);
+        console.error('Error fetching conversation:', err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
@@ -4631,61 +4616,82 @@ app.get('/api/conversations/:conversation_id', authenticateToken, async (req, re
 // Send a message
 app.post('/api/conversations/:conversation_id/messages', authenticateToken, upload.array('attachments'), async (req, res) => {
     const { conversation_id } = req.params;
-    const { body, receiver_id } = req.body;
-    const sender_id = req.user.id;
+    const { sender_id, receiver_id, body } = req.body;
+    const files = req.files;
 
-    if (!body && (!req.files || req.files.length === 0)) {
-        return res.status(400).json({ error: 'Message body or attachment is required' });
+    if (!sender_id || !receiver_id || (!body && (!files || files.length === 0))) {
+        return res.status(400).json({ error: 'Sender, receiver, and message body or attachments are required.' });
     }
+
+    let ticketId = null;
+    let demandeId = null;
+    let clientId = null;
+
+    // Parse conversation_id to extract relevant IDs
+    const parts = conversation_id.split('-');
+    if (parts.length === 2) {
+        const type = parts[0];
+        const id = parseInt(parts[1], 10);
+        if (!isNaN(id)) {
+            if (type === 'ticket') {
+                ticketId = id;
+                // Try to get client_id from ticket
+                try {
+                    const ticketResult = await pool.query('SELECT site_id, demande_id FROM ticket WHERE id = $1', [ticketId]);
+                    if (ticketResult.rows.length > 0) {
+                        demandeId = ticketResult.rows[0].demande_id;
+                        const siteId = ticketResult.rows[0].site_id;
+                        if (siteId) {
+                            const siteResult = await pool.query('SELECT client_id FROM site WHERE id = $1', [siteId]);
+                            if (siteResult.rows.length > 0) {
+                                clientId = siteResult.rows[0].client_id;
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`Could not derive client_id/demande_id from ticket ${ticketId}:`, err.message);
+                }
+            } else if (type === 'demande') {
+                demandeId = id;
+                // Try to get client_id from demande_client
+                try {
+                    const demandeResult = await pool.query('SELECT client_id FROM demande_client WHERE id = $1', [demandeId]);
+                    if (demandeResult.rows.length > 0) {
+                        clientId = demandeResult.rows[0].client_id;
+                    }
+                } catch (err) {
+                    console.warn(`Could not derive client_id from demande_client ${demandeId}:`, err.message);
+                }
+            } else if (type === 'client') {
+                clientId = id;
+            }
+        }
+    }
+
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        
-        if (Number(receiver_id) === sender_id) {
-          await client.query('ROLLBACK');
-          return res.status(400).json({ error: 'Cannot send a message to yourself' });
-        }
 
-        // Forbid posting in conversations where the user is not a participant
-        const convoCheck = await client.query(
-          'SELECT 1 FROM messagerie WHERE conversation_id=$1 AND (sender_id=$2 OR receiver_id=$2) LIMIT 1',
-          [conversation_id, sender_id]
-        );
-        if (convoCheck.rows.length === 0) {
-          const allowedDemand = await canAccessDemandConversation(conversation_id, req.user);
-          if (!allowedDemand) {
-            await client.query('ROLLBACK');
-            return res.status(403).json({ error: 'Forbidden' });
-          }
-        }
-        
-        // Ensure receiver exists
-        const receiverExists = await client.query('SELECT id FROM users WHERE id = $1', [receiver_id]);
-        if(receiverExists.rows.length === 0) {
-            await client.query('ROLLBACK');
-            return res.status(404).json({error: 'Receiver not found'});
-        }
-
+        // Insert message with new FKs
         const messageResult = await client.query(
-            'INSERT INTO messagerie (conversation_id, sender_id, receiver_id, body) VALUES ($1, $2, $3, $4) RETURNING *',
-            [conversation_id, sender_id, receiver_id, body]
+            'INSERT INTO messagerie (conversation_id, sender_id, receiver_id, ticket_id, demande_id, client_id, body) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+            [conversation_id, sender_id, receiver_id, ticketId, demandeId, clientId, body || null]
         );
-        const newMessage = messageResult.rows[0];
+        const messageId = messageResult.rows[0].id;
 
-        if (req.files) {
-            for (const file of req.files) {
+        // Handle attachments if any
+        if (files && files.length > 0) {
+            for (const file of files) {
                 await client.query(
-                    'INSERT INTO messagerie_attachment (message_id, file_name, file_type, file_size, file_blob) VALUES ($1, $2, $3, $4, $5)',
-                    [newMessage.id, file.originalname, file.mimetype, file.size, file.buffer]
+                    'INSERT INTO messagerie_attachment (message_id, file_blob, file_name, file_type, file_size) VALUES ($1, $2, $3, $4, $5)',
+                    [messageId, file.buffer, file.originalname, file.mimetype, file.size]
                 );
             }
         }
 
         await client.query('COMMIT');
-        
-        const attachments = await client.query('SELECT * FROM messagerie_attachment WHERE message_id = $1', [newMessage.id]);
-        res.status(201).json({ ...newMessage, attachments: attachments.rows });
+        res.status(201).json({ message: 'Message sent', messageId });
 
     } catch (err) {
         await client.query('ROLLBACK');
