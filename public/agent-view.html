@@ -4,167 +4,131 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Profil Agent</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link href="/custom.css?v=1" rel="stylesheet">
-  <script src="/nav.js?v=1"></script>
+
   <style>
-    body { background: #f4f6fb; }
-    .profile-card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.08); }
+    body { background: #f4f6fb; font-family: system-ui; }
+    .profile-card { border: none; border-radius: 18px; box-shadow: 0 6px 28px rgba(0,0,0,0.06);}
     .avatar {
-      width: 72px; height: 72px; border-radius: 50%;
-      background: linear-gradient(135deg,#7bc6ff,#a9e0ff);
-      display: inline-flex; align-items: center; justify-content: center;
-      font-weight: 700; color: #0d2f5a; font-size: 22px;
+      width:75px;height:75px;border-radius:50%;
+      background:linear-gradient(135deg,#667eea,#764ba2);
+      display:flex;align-items:center;justify-content:center;
+      color:white;font-size:26px;font-weight:700;
     }
-    .link-mini { font-size: 0.95rem; }
-    .section-title { font-size: 1rem; font-weight: 700; margin-bottom: .4rem; }
-    .list-unstyled li { margin-bottom: .35rem; }
-    .badge-soft { background: #eef2ff; color: #1f2937; }
+    .section-title { font-weight:700;margin-bottom:.4rem;font-size:.95rem; }
+    .small-title { font-size: .85rem; color:#6c757d; }
+    .border-bottom { border-color:#e3e6ef!important; }
   </style>
 </head>
 <body>
-  <main class="container my-4">
-    <div class="card profile-card">
-      <div class="card-body">
-        <div class="d-flex align-items-start gap-3 mb-3">
-          <div class="avatar" id="avatar-initials">AG</div>
-          <div class="flex-grow-1">
-            <div class="d-flex align-items-start justify-content-between">
-              <div>
-                <div class="text-muted small">Profil</div>
-                <h2 class="h4 mb-1" id="agent-fullname">—</h2>
-                <div class="small text-muted" id="agent-role">—</div>
-              </div>
-              <button type="button" class="btn btn-sm btn-outline-secondary" id="close-btn">
-                <i class="bi bi-x-lg"></i>
-              </button>
-            </div>
-          </div>
-        </div>
 
-        <div class="mb-3">
-          <div class="section-title">Informations générales</div>
-          <ul class="list-unstyled mb-0">
-            <li><strong>Matricule :</strong> <span id="view_matricule">—</span></li>
-            <li><strong>Fonction :</strong> <span id="view_fonction">—</span></li>
-            <li><strong>Téléphone :</strong> <span id="view_tel">—</span></li>
-            <li><strong>E-mail :</strong> <span id="view_email">—</span></li>
-            <li><strong>Agence :</strong> <span id="view_agence">—</span></li>
-            <li><strong>Actif :</strong> <span id="view_actif">—</span></li>
-            <li><strong>Administrateur :</strong> <span id="view_admin">—</span></li>
-          </ul>
-        </div>
+<main class="container my-4">
 
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <div class="section-title mb-0">Passeport</div>
-          <a href="agent-passport-view.html" class="link-mini text-primary fw-semibold">Voir le passeport</a>
-        </div>
+  <div class="card profile-card">
+    <div class="card-body p-4">
 
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <div class="section-title mb-0">Formations</div>
-          <a href="agent-formation-view.html" class="link-mini text-primary fw-semibold">Voir les formations</a>
-        </div>
-
-        <div class="mb-3">
-          <div class="section-title">Dernières interventions</div>
-          <div id="interventions-list" class="list-unstyled small mb-0 text-body"></div>
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <div class="section-title mb-0">Heures</div>
-          <a href="agent-heures.html" class="link-mini text-primary fw-semibold" id="heures-link">Voir les heures</a>
-        </div>
-
-        <div class="d-flex gap-2 mt-3">
-          <button type="button" class="btn btn-outline-secondary" id="back-btn">Annuler</button>
-          <a href="#" class="btn btn-primary" id="edit-agent-btn">Enregistrer</a>
+      <!-- HEADER -->
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <div id="avatar-initials" class="avatar">AG</div>
+        <div>
+          <div class="small-title">Agent</div>
+          <h4 id="agent-fullname" class="mb-1">—</h4>
+          <div id="agent-role" class="text-muted small">—</div>
         </div>
       </div>
+
+      <!-- CONTACTS -->
+      <div class="mb-4">
+        <div class="section-title">Contacts</div>
+        <div class="d-flex flex-column gap-1 small">
+          <span><i class="bi bi-envelope me-2"></i><span id="view_email">—</span></span>
+          <span><i class="bi bi-phone me-2"></i><span id="view_tel">—</span></span>
+        </div>
+      </div>
+
+      <!-- DERNIÈRES INTERVENTIONS -->
+      <div class="mb-4">
+        <div class="section-title">📌 Dernières interventions</div>
+        <div id="interventions-list" class="small"></div>
+      </div>
+
+      <!-- NAVIGATION AGENT -->
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <a id="formation-link" class="btn btn-outline-primary btn-sm" href="#">Formations</a>
+        <a id="heures-link" class="btn btn-outline-secondary btn-sm" href="#">Heures</a>
+        <a id="edit-agent-btn" class="btn btn-primary btn-sm" href="#">Modifier</a>
+      </div>
+
+      <!-- Bouton retour -->
+      <div class="mt-3">
+        <button type="button" class="btn btn-light btn-sm" id="back-btn">
+          <i class="bi bi-arrow-left"></i> Retour
+        </button>
+      </div>
+
     </div>
-  </main>
+  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', async function() {
-      const params = new URLSearchParams(location.search);
-      const matricule = params.get('matricule');
-      if (!matricule) {
-        alert('Matricule manquant');
-        return;
-      }
+</main>
 
-      const setInitials = (nom, prenom) => {
-        const n1 = (nom || '').trim()[0] || '';
-        const p1 = (prenom || '').trim()[0] || '';
-        const initials = (p1 + n1).toUpperCase() || 'AG';
-        const avatar = document.getElementById('avatar-initials');
-        if (avatar) avatar.textContent = initials;
-      };
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
 
-      const renderInterventions = (list = []) => {
-        const wrap = document.getElementById('interventions-list');
-        if (!wrap) return;
-        if (!list.length) {
-          wrap.innerHTML = '<div class="text-muted">Aucune intervention trouvée.</div>';
-          return;
-        }
-        const fmtRange = (deb, fin) => {
-          const d1 = deb ? new Date(deb).toLocaleDateString() : '';
-          const d2 = fin ? new Date(fin).toLocaleDateString() : '';
-          return d1 && d2 ? `${d1} — ${d2}` : (d1 || d2 || '');
-        };
-        wrap.innerHTML = list.slice(0,4).map(i => `
-          <div class="d-flex justify-content-between align-items-center border-bottom py-1">
-            <div>
-              <div class="fw-semibold">Intervention #${i.id || ''} – ${i.site_nom || 'Site'}</div>
-              <div class="text-muted">${i.description || ''}</div>
-            </div>
-            <div class="text-end text-muted small">${fmtRange(i.date_debut, i.date_fin)}</div>
-          </div>
-        `).join('');
-      };
+  const params = new URLSearchParams(location.search);
+  const matricule = params.get('matricule');
+  if (!matricule) return alert("Matricule manquant");
 
-      try {
-        const token = localStorage.getItem('token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch(`/api/agents/${encodeURIComponent(matricule)}/relations`, { headers, credentials: 'same-origin' });
-        const rel = await res.json();
-        if (!res.ok) throw new Error((rel && rel.error) || `HTTP ${res.status}`);
-        const agent = rel.agent || {};
+  const token = localStorage.getItem('token');
+  const headers = token ? { "Authorization": "Bearer "+ token } : {};
 
-        const fullName = `${agent.nom || ''} ${agent.prenom || ''}`.trim() || agent.email || agent.matricule || 'Agent';
-        document.getElementById('agent-fullname').textContent = fullName;
-        document.getElementById('agent-role').textContent = agent.titre || agent.fonction || '—';
-        document.getElementById('view_matricule').textContent = agent.matricule || '—';
-        document.getElementById('view_fonction').textContent = agent.fonction || agent.titre || '—';
-        document.getElementById('view_tel').textContent = agent.tel || '—';
-        document.getElementById('view_email').textContent = agent.email || '—';
-        document.getElementById('view_agence').textContent = (rel.agence && rel.agence.nom) || (rel.sites && rel.sites[0] && rel.sites[0].nom_site) || '—';
-        document.getElementById('view_actif').textContent = agent.actif ? 'Oui' : 'Non';
-        document.getElementById('view_admin').textContent = agent.admin ? 'Oui' : 'Non';
+  const setInitials = (nom, prenom) => {
+    const i1 = (prenom||'')[0] || '';
+    const i2 = (nom||'')[0] || '';
+    document.getElementById("avatar-initials").textContent = (i1+i2).toUpperCase() || "AG";
+  };
 
-        const editBtn = document.getElementById('edit-agent-btn');
-        if (editBtn) editBtn.href = `agent-edit.html?matricule=${encodeURIComponent(matricule)}`;
+  const renderInterventions = (arr=[]) => {
+    const wrap = document.getElementById("interventions-list");
+    wrap.innerHTML = arr.length ?
+      arr.slice(0,5).map(i => `
+        <div class="border-bottom py-2">
+          <div class="fw-semibold small">${i.site_nom || "Site"} </div>
+          <div class="text-muted small">${i.description || "—"}</div>
+        </div>
+      `).join("")
+      : `<div class="text-muted small">Aucune intervention récente.</div>`;
+  };
 
-        setInitials(agent.nom, agent.prenom);
-        renderInterventions(rel.interventions || []);
+  try {
+    const r = await fetch(`/api/agents/${encodeURIComponent(matricule)}/relations`, {headers});
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
 
-        const heuresLink = document.getElementById('heures-link');
-        if (heuresLink) heuresLink.href = `agent-heures.html?matricule=${encodeURIComponent(matricule)}`;
-      } catch(e) {
-        console.error('Erreur chargement agent:', e);
-        document.getElementById('agent-fullname').textContent = 'Agent introuvable';
-      }
+    const a = data.agent || {};
+    document.getElementById("agent-fullname").textContent =
+      `${a.nom||''} ${a.prenom||''}`.trim() || "—";
+    document.getElementById("agent-role").textContent = a.fonction || "—";
+    document.getElementById("view_email").textContent = a.email || "—";
+    document.getElementById("view_tel").textContent = a.tel || "—";
 
-      const goBack = () => {
-        if (document.referrer) history.back(); else location.href = 'agents.html';
-      };
-      const backBtn = document.getElementById('back-btn');
-      const closeBtn = document.getElementById('close-btn');
-      if (backBtn) backBtn.addEventListener('click', goBack);
-      if (closeBtn) closeBtn.addEventListener('click', goBack);
-    });
-  </script>
+    setInitials(a.nom, a.prenom);
+    renderInterventions(data.interventions || []);
+
+    document.getElementById("formation-link").href = `agent-formation-view.html?matricule=${matricule}`;
+    document.getElementById("heures-link").href = `agent-heures.html?matricule=${matricule}`;
+    document.getElementById("edit-agent-btn").href = `agent-edit.html?matricule=${matricule}`;
+  }
+  catch(e) {
+    console.error(e);
+  }
+
+  const back = () => document.referrer ? history.back() : location.href="agents.html";
+  document.getElementById("back-btn").addEventListener("click", back);
+});
+</script>
+
 </body>
 </html>

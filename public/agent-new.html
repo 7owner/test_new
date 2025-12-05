@@ -80,16 +80,15 @@
             <input type="tel" class="form-control" id="telephone" placeholder="Ex: 0612345678">
           </div>
           <div class="mb-3">
-            <label for="agence" class="form-label">Agence</label>
-            <div class="input-group">
-              <select class="form-select" id="agence" required>
-                <option value="">Sélectionner une agence</option>
-              </select>
-              <button class="btn btn-outline-secondary" type="button" id="refresh-agences" title="Rafraîchir la liste">
-                <i class="bi bi-arrow-repeat"></i>
+            <label class="form-label">Agence</label>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span id="agence_label" class="fw-semibold text-primary">Aucune agence sélectionnée</span>
+              <input type="hidden" id="agence_id">
+              <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#agenceModal" title="Créer/Gérer les agences">
+                <i class="bi bi-building-add me-1"></i>Choisir / créer
               </button>
-              <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#agenceModal" title="Créer/Gérer les agences">
-                <i class="bi bi-building-add"></i>
+              <button class="btn btn-sm btn-outline-secondary" type="button" id="clear-agence">
+                <i class="bi bi-x-lg"></i>
               </button>
             </div>
           </div>
@@ -130,7 +129,8 @@
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const form = document.getElementById('agent-form');
-      const agenceSelect = document.getElementById('agence');
+      const agenceHidden = document.getElementById('agence_id');
+      const agenceLabel = document.getElementById('agence_label');
       const token = localStorage.getItem('token');
       const isAdmin = (() => { try { const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
 
@@ -150,25 +150,6 @@
         form.querySelectorAll('input, select, textarea, button[type=submit]').forEach(el => el.setAttribute('disabled','true'));
       }
 
-      async function loadAgences() {
-        try {
-          const res = await fetch('/api/agences', { headers: await buildHeaders(false), credentials: 'same-origin' });
-          if (!res.ok) return;
-          const agences = await res.json();
-          agenceSelect.innerHTML = '<option value="">Sélectionner une agence</option>';
-          if (Array.isArray(agences)) {
-            agences.forEach(a => {
-              const opt = document.createElement('option');
-              opt.value = a.id;
-              opt.textContent = a.titre || `Agence #${a.id}`;
-              agenceSelect.appendChild(opt);
-            });
-          }
-        } catch(e) { console.warn('Erreur chargement /api/agences:', e); }
-      }
-
-      loadAgences();
-
       const isValidEmail = (em) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(em||'').trim());
 
       if (form) form.addEventListener('submit', async (ev) => {
@@ -180,7 +161,7 @@
           prenom: document.getElementById('prenom').value.trim(),
           email: document.getElementById('email').value.trim(),
           tel: document.getElementById('telephone').value.trim(),
-          agence_id: Number(agenceSelect.value),
+          agence_id: Number(agenceHidden.value),
           actif: document.getElementById('actif').checked,
           admin: document.getElementById('admin').checked
         };
@@ -214,16 +195,12 @@
         }
       });
 
-      const refreshBtn = document.getElementById('refresh-agences');
-      if (refreshBtn) refreshBtn.addEventListener('click', loadAgences);
-
       const agenceModal = document.getElementById('agenceModal');
       if (agenceModal) {
         agenceModal.addEventListener('show.bs.modal', () => {
           const frame = document.getElementById('agenceFrame');
           if (frame) frame.src = '/agences.html';
         });
-        agenceModal.addEventListener('hidden.bs.modal', loadAgences);
       }
 
       // Réception sélection d'agence depuis la modale
@@ -231,18 +208,17 @@
         if (!event?.data || event.data.type !== 'agence-select' || !event.data.agence) return;
         const a = event.data.agence;
         if (!a.id) return;
-        // Injecter l'option si elle n'existe pas
-        let opt = Array.from(agenceSelect.options).find(o => String(o.value) === String(a.id));
-        if (!opt) {
-          opt = document.createElement('option');
-          opt.value = a.id;
-          opt.textContent = a.titre || `Agence #${a.id}`;
-          agenceSelect.appendChild(opt);
-        }
-        agenceSelect.value = a.id;
+        agenceHidden.value = a.id;
+        agenceLabel.textContent = a.titre || `Agence #${a.id}`;
         // Fermer le modal si ouvert
         const modalInstance = bootstrap.Modal.getInstance(document.getElementById('agenceModal'));
         if (modalInstance) modalInstance.hide();
+      });
+
+      const clearBtn = document.getElementById('clear-agence');
+      if (clearBtn) clearBtn.addEventListener('click', () => {
+        agenceHidden.value = '';
+        agenceLabel.textContent = 'Aucune agence sélectionnée';
       });
     });
   </script>

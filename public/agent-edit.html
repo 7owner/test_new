@@ -62,16 +62,15 @@
             </div>
           </div>
           <div class="mb-3">
-            <label for="agence" class="form-label">Agence</label>
-            <div class="input-group">
-              <select class="form-select" id="agence" required>
-                <option value="">Sélectionner une agence</option>
-              </select>
-              <button class="btn btn-outline-secondary" type="button" id="refresh-agences" title="Rafraîchir la liste">
-                <i class="bi bi-arrow-repeat"></i>
+            <label class="form-label">Agence</label>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span id="agence_label" class="fw-semibold text-primary">Aucune agence sélectionnée</span>
+              <input type="hidden" id="agence">
+              <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#agenceModal" title="Créer/Gérer les agences">
+                <i class="bi bi-building-add me-1"></i>Choisir / créer
               </button>
-              <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#agenceModal" title="Créer/Gérer les agences">
-                <i class="bi bi-building-add"></i>
+              <button class="btn btn-sm btn-outline-secondary" type="button" id="clear-agence">
+                <i class="bi bi-x-lg"></i>
               </button>
             </div>
           </div>
@@ -155,27 +154,8 @@
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       };
 
-      const agenceSelect = document.getElementById('agence');
-      async function loadAgences() {
-        try {
-          const res = await fetch('/api/agences', { headers, credentials: 'same-origin' });
-          if (!res.ok) return;
-          const agences = await res.json();
-          agenceSelect.innerHTML = '<option value=\"\">Sélectionner une agence</option>';
-          if (Array.isArray(agences)) {
-            agences.forEach(a => {
-              const opt = document.createElement('option');
-              opt.value = a.id;
-              opt.textContent = a.titre || `Agence #${a.id}`;
-              agenceSelect.appendChild(opt);
-            });
-          }
-        } catch (e) {
-          console.warn('Could not load agences', e);
-        }
-      }
-
-      await loadAgences();
+      const agenceHidden = document.getElementById('agence');
+      const agenceLabel = document.getElementById('agence_label');
 
       try {
         const res = await fetch(`/api/agents/${matricule}/relations`, { headers, credentials: 'same-origin' });
@@ -191,7 +171,8 @@
         document.getElementById('prenom').value = agent.prenom || '';
         document.getElementById('email').value = agent.email || '';
         document.getElementById('telephone').value = agent.tel || '';
-        document.getElementById('agence').value = agent.agence_id;
+        agenceHidden.value = agent.agence_id || '';
+        agenceLabel.textContent = (data.agence && data.agence.titre) || `Agence #${agent.agence_id || ''}` || 'Aucune agence sélectionnée';
         document.getElementById('actif').checked = agent.actif;
         document.getElementById('admin').checked = agent.admin;
 
@@ -214,7 +195,7 @@
           prenom: document.getElementById('prenom').value.trim(),
           email: document.getElementById('email').value.trim(),
           tel: document.getElementById('telephone').value.trim(),
-          agence_id: Number(document.getElementById('agence').value),
+          agence_id: Number(agenceHidden.value),
           actif: document.getElementById('actif').checked,
           admin: document.getElementById('admin').checked
         };
@@ -243,16 +224,12 @@
         }
       });
 
-      const refreshBtn = document.getElementById('refresh-agences');
-      if (refreshBtn) refreshBtn.addEventListener('click', loadAgences);
-
       const agenceModal = document.getElementById('agenceModal');
       if (agenceModal) {
         agenceModal.addEventListener('show.bs.modal', () => {
           const frame = document.getElementById('agenceFrame');
           if (frame) frame.src = '/agences.html';
         });
-        agenceModal.addEventListener('hidden.bs.modal', loadAgences);
       }
 
       // Réception sélection d'agence depuis la modale
@@ -260,14 +237,8 @@
         if (!event?.data || event.data.type !== 'agence-select' || !event.data.agence) return;
         const a = event.data.agence;
         if (!a.id) return;
-        let opt = Array.from(agenceSelect.options).find(o => String(o.value) === String(a.id));
-        if (!opt) {
-          opt = document.createElement('option');
-          opt.value = a.id;
-          opt.textContent = a.titre || `Agence #${a.id}`;
-          agenceSelect.appendChild(opt);
-        }
-        agenceSelect.value = a.id;
+        agenceHidden.value = a.id;
+        agenceLabel.textContent = a.titre || `Agence #${a.id}`;
         const modalInstance = bootstrap.Modal.getInstance(document.getElementById('agenceModal'));
         if (modalInstance) modalInstance.hide();
       });
