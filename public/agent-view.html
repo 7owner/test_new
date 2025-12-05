@@ -69,6 +69,18 @@
       <div class="section-title">📞 Contacts</div>
       <div class="info-line"><i class="bi bi-envelope me-2"></i><span id="view_email">—</span></div>
       <div class="info-line"><i class="bi bi-phone me-2"></i><span id="view_tel">—</span></div>
+      <div class="info-line"><i class="bi bi-building me-2"></i><span id="view_agence">—</span></div>
+    </div>
+
+    <!-- PASSEPORT -->
+    <div class="mb-4">
+      <div class="section-title">🛂 Passeport</div>
+      <div class="info-line"><strong>Permis :</strong> <span id="passport-permis">—</span></div>
+      <div class="info-line"><strong>Habilitations :</strong> <span id="passport-hab">—</span></div>
+      <div class="info-line"><strong>Certifications :</strong> <span id="passport-cert">—</span></div>
+      <div class="mt-2">
+        <a id="passport-link" class="btn btn-sm btn-outline-primary" href="#"><i class="bi bi-journal-text me-1"></i>Voir le passeport</a>
+      </div>
     </div>
 
     <!-- INTERVENTIONS -->
@@ -128,12 +140,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!r.ok) throw new Error(data.error);
 
     const a = data.agent || {};
+    const p = data.passeport || {};
     document.getElementById("agent-fullname").textContent =
       `${a.nom||''} ${a.prenom||''}`.trim() || "—";
     document.getElementById("agent-role").textContent =
       a.fonction || "—";
     document.getElementById("view_email").textContent = a.email || "—";
     document.getElementById("view_tel").textContent = a.tel || "—";
+    document.getElementById("view_agence").textContent = data.agence?.titre || "—";
+    document.getElementById("passport-permis").textContent = p.permis || "—";
+    document.getElementById("passport-hab").textContent = p.habilitations || "—";
+    document.getElementById("passport-cert").textContent = p.certifications || "—";
 
     setInitials(a.nom, a.prenom);
     renderInterventions(data.interventions || []);
@@ -142,6 +159,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       `agent-formation-view.html?matricule=${encodeURIComponent(matricule)}`;
     document.getElementById("heures-link").href =
       `agent-heures.html?matricule=${encodeURIComponent(matricule)}`;
+    document.getElementById("passport-link").href =
+      `agent-passport-view.html?matricule=${encodeURIComponent(matricule)}`;
 
   } catch(e){
     console.error(e);

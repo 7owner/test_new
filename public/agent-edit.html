@@ -34,7 +34,7 @@
 
 <div class="main-card">
 
-  <h2 class="fw-bold mb-4"><i class="bi bi-pencil-square me-2"></i>Modifier l’agent</h2>
+  <h2 class="fw-bold mb-4"><i class="bi bi-pencil-square me-2"></i></h2>
 
   <form id="agent-edit-form">
 
@@ -162,11 +162,14 @@ document.addEventListener("DOMContentLoaded",async()=>{
   window.addEventListener("message",(ev)=>{
     if(ev.data?.type!=="agence-select")return;
     const g=ev.data.agence;
+    if(!g?.id)return;
     aH.value=g.id;
-    aL.textContent=g.titre;
-    bootstrap.Modal.getInstance(document.getElementById("agenceModal")).hide();
+    aL.textContent=g.titre || g.designation || `Agence #${g.id}`;
+    const modalInst = bootstrap.Modal.getInstance(document.getElementById("agenceModal"));
+    if (modalInst) modalInst.hide();
   });
-  document.getElementById("cancel-btn").addEventListener("click",()=>history.back());
+  const cancelBtn = document.getElementById("cancel-btn");
+  if (cancelBtn) cancelBtn.addEventListener("click",()=>history.back());
   document.getElementById("clear-agence").addEventListener("click",()=>{
     aH.value="";
     aL.textContent="Aucune sélection";
