@@ -254,6 +254,23 @@
         });
         agenceModal.addEventListener('hidden.bs.modal', loadAgences);
       }
+
+      // Réception sélection d'agence depuis la modale
+      window.addEventListener('message', (event) => {
+        if (!event?.data || event.data.type !== 'agence-select' || !event.data.agence) return;
+        const a = event.data.agence;
+        if (!a.id) return;
+        let opt = Array.from(agenceSelect.options).find(o => String(o.value) === String(a.id));
+        if (!opt) {
+          opt = document.createElement('option');
+          opt.value = a.id;
+          opt.textContent = a.titre || `Agence #${a.id}`;
+          agenceSelect.appendChild(opt);
+        }
+        agenceSelect.value = a.id;
+        const modalInstance = bootstrap.Modal.getInstance(document.getElementById('agenceModal'));
+        if (modalInstance) modalInstance.hide();
+      });
     });
   </script>
 </body>
