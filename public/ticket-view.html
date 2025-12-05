@@ -764,7 +764,7 @@
               return;
             }
             // Redirige vers la messagerie filtrée sur la conversation de la demande
-            window.location.href = `/messagerie.html?conversation=demande-${demandeId}`;
+            window.location.href = `/messagerie.html?conversation_id=demande-${demandeId}`;
           }, { once: true });
         }
         set('view_responsable', t.responsable || 'Non assigné');
