@@ -3,236 +3,115 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Détails du ticket</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <title>Détails du Ticket</title>
+
+  <!-- Styles externes -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link href="/custom.css?v=1" rel="stylesheet">
-  <script src="/nav.js?v=1"></script>
+  <link rel="stylesheet" href="/assets/css/ticket-view.css">
+
 </head>
 <body>
+<div class="container-fluid" style="max-width: 1400px;">
 
-
-  <main class="container mt-5">
-
-    
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <!--<h1 class="mb-4">Détails du ticket: <span id="ticket-title"></span></h1>-->
-     <!-- <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>-->
-    </div>
-
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Informations générales</h2>
-        <p><strong>ID:</strong> <span id="view_id"></span></p>
-        <p><strong>Titre:</strong> <span id="view_titre"></span></p>
-        <p><strong>Description:</strong> <span id="view_description"></span></p>
-        <p><strong>État:</strong> <span id="view_etat"></span></p>
-        <p><strong>Date de début:</strong> <span id="view_date_debut"></span></p>
-        <p><strong>Date de fin:</strong> <span id="view_date_fin"></span></p>
-        <p><strong>Temps écoulé:</strong> <span id="view_elapsed"></span></p>
-        <p><strong>Durée:</strong> <span id="view_duree"></span></p>
-        <p><strong>DOE:</strong> <span id="view_doe"></span></p>
-        <p><strong>Affaire:</strong> <span id="view_affaire"></span></p>
-        <p><strong>Site:</strong> <span id="view_site"></span></p>
-        <p><strong>Responsable principal:</strong> <span id="view_responsable"></span></p>
+  <!-- ✅ HEADER -->
+  <div class="main-card">
+   <!-- <div class="card-header-gradient d-flex justify-content-between align-items-center">
+      <div>
+        <h4 class="mb-1"><i class="bi bi-ticket-detailed me-2"></i>Détails du Ticket</h4>
+        <small class="opacity-75" id="ticket-title">Chargement...</small>
       </div>
-    </div>
-
-    <div class="card mb-4">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Interventions associées</h2>
-        <div id="ticket-interventions-list"></div>
-        <button class="btn btn-primary mt-3 d-none" id="add-intervention-btn" data-bs-toggle="modal" data-bs-target="#createInterventionModal"><i class="bi bi-plus-circle me-2"></i>Ajouter une intervention</button>
+      <div class="d-flex gap-2">
+        <a href="tickets.html" class="btn btn-light btn-sm">
+          <i class="bi bi-arrow-left me-1"></i>Retour
+        </a>
+        <a id="edit-ticket-btn" href="#" class="btn btn-light btn-sm d-none">
+          <i class="bi bi-pencil-square me-1"></i>Modifier
+        </a>
       </div>
-    </div>
+    </div>-->
 
-    <!-- Responsables Section -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <h2 class="card-title mb-4">Responsables</h2>
-            <ul id="responsables-list" class="list-group mb-3">
-                <!-- Responsables will be loaded here -->
-            </ul>
-            <button id="add-responsable-btn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addResponsableModal">Ajouter un responsable</button>
-        </div>
-    </div>
-
-    <!-- Agents Section -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <h2 class="card-title mb-4">Agents Assignés</h2>
-            <ul id="agents-list" class="list-group mb-3">
-                <!-- Agents will be loaded here -->
-            </ul>
-            <button id="add-agent-btn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAgentModal">Ajouter un agent</button>
-        </div>
-    </div>
-
-    <div class="card mb-4 d-none" id="admin-actions-card">
-      <div class="card-body">
-        <h2 class="card-title mb-3">Actions Administrateur</h2>
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#createAffaireModal">Créer une Affaire</button>
-          <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#createDoeModal">Créer un DOE</button>
-        </div>
+    <!-- ✅ Ticket Infos -->
+    <div class="card-body p-4">
+      <div class="info-grid">
+        <div class="info-item"><label>ID</label><div class="value" id="view_id">-</div></div>
+        <div class="info-item"><label>Titre</label><div class="value" id="view_titre">-</div></div>
+        <div class="info-item"><label>État</label><div class="value" id="view_etat">-</div></div>
+        <div class="info-item"><label>Temps écoulé</label><div class="value timer-display" id="view_elapsed">-</div></div>
+        <div class="info-item"><label>Début</label><div class="value" id="view_date_debut">-</div></div>
+        <div class="info-item"><label>Fin</label><div class="value" id="view_date_fin">-</div></div>
+        <div class="info-item"><label>Durée totale</label><div class="value" id="view_duree">-</div></div>
+        <div class="info-item"><label>Affaire</label><div class="value" id="view_affaire">-</div></div>
+        <div class="info-item"><label>DOE</label><div class="value" id="view_doe">-</div></div>
+        <div class="info-item"><label>Site</label><div class="value" id="view_site">-</div></div>
+        <div class="info-item"><label>Responsable principal</label><div class="value" id="view_responsable">-</div></div>
       </div>
-    </div>
 
-    <div class="d-flex gap-2">
-      <a href="tickets.html" class="btn btn-secondary">Retour à la liste des tickets</a>
-      <a href="ticket-edit.html" class="btn btn-primary d-none" id="edit-ticket-btn"><i class="bi bi-pencil me-2"></i>Modifier le ticket</a>
-    </div>
-  </main>
-
-  <!-- Modal: Create Intervention -->
-  <div class="modal fade" id="createInterventionModal" tabindex="-1" aria-labelledby="createInterventionModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="createInterventionModalLabel">Créer une nouvelle intervention</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="create-intervention-form">
-            <div class="mb-3">
-              <label for="intervention-titre" class="form-label">Titre</label>
-              <input type="text" class="form-control" id="intervention-titre" required>
-            </div>
-            <div class="mb-3">
-              <label for="intervention-description" class="form-label">Description</label>
-              <textarea class="form-control" id="intervention-description" rows="3" required></textarea>
-            </div>
-            <div class="mb-3">
-              <label for="intervention-date-debut" class="form-label">Date Début</label>
-              <input type="date" class="form-control" id="intervention-date-debut" required>
-            </div>
-            <div class="mb-3">
-              <label for="intervention-date-fin" class="form-label">Date Fin</label>
-              <input type="date" class="form-control" id="intervention-date-fin">
-            </div>
-            <div class="mb-3">
-              <label for="intervention-status" class="form-label">Statut</label>
-              <select class="form-select" id="intervention-status" required>
-                <option value="En_attente">En attente</option>
-                <option value="Termine">Terminé</option>
-              </select>
-            </div>
-            <button type="submit" class="btn btn-primary">Créer</button>
-          </form>
-        </div>
+      <div class="mt-4">
+        <label class="text-muted small fw-bold"><i class="bi bi-text-paragraph me-1"></i>Description :</label>
+        <div class="p-3 bg-light rounded" id="view_description">-</div>
       </div>
     </div>
   </div>
 
-  <!-- Add Responsable Modal -->
-  <div class="modal fade" id="addResponsableModal" tabindex="-1" aria-labelledby="addResponsableModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="addResponsableModalLabel">Ajouter un responsable</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <!-- Interventions section -->
+  <div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-wrench-adjustable me-2"></i>Interventions</span>
+      <button id="add-intervention-btn" class="btn btn-light btn-sm d-none" data-bs-toggle="modal" data-bs-target="#createInterventionModal">
+        <i class="bi bi-plus-circle me-1"></i>Ajouter
+      </button>
+    </div>
+    <div class="card-body p-4" id="ticket-interventions-list">
+      <div class="loading-spinner"><div class="spinner-border text-primary"></div></div>
+    </div>
+  </div>
+
+  <!-- Responsables / Agents -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="main-card h-100">
+        <div class="card-header-gradient d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-people me-2"></i>Responsables</span>
+          <button id="add-responsable-btn" class="btn btn-light btn-sm d-none" data-bs-toggle="modal" data-bs-target="#addResponsableModal">
+            <i class="bi bi-plus-circle me-1"></i>Ajouter
+          </button>
         </div>
-        <div class="modal-body">
-          <form id="addResponsableForm">
-            <div class="mb-3">
-              <label for="responsable-select" class="form-label">Sélectionner un agent (doit être admin et "Chef")</label>
-              <select class="form-select" id="responsable-select" required>
-                <!-- Agent options will be loaded here -->
-              </select>
-            </div>
-          </form>
+        <div class="card-body p-4" id="responsables-list"></div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="main-card h-100">
+        <div class="card-header-gradient d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-person-gear me-2"></i>Agents</span>
+          <button id="add-agent-btn" class="btn btn-light btn-sm d-none" data-bs-toggle="modal" data-bs-target="#addAgentModal">
+            <i class="bi bi-plus-circle me-1"></i>Ajouter
+          </button>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="save-responsable-btn">Enregistrer</button>
-        </div>
+        <div class="card-body p-4" id="agents-list"></div>
       </div>
     </div>
   </div>
 
-  <!-- Add Agent Modal -->
-  <div class="modal fade" id="addAgentModal" tabindex="-1" aria-labelledby="addAgentModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="addAgentModalLabel">Ajouter un agent</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="addAgentForm">
-            <div class="mb-3">
-              <label for="agent-select" class="form-label">Sélectionner un agent</label>
-              <select class="form-select" id="agent-select" required>
-                <!-- Agent options will be loaded here -->
-              </select>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="save-agent-btn">Enregistrer</button>
-        </div>
-      </div>
+  <!-- Section Admin -->
+  <div id="admin-actions-card" class="main-card d-none">
+    <div class="card-header-gradient"><i class="bi bi-shield-lock me-2"></i>Actions Admin</div>
+    <div class="card-body p-4 admin-section">
+      <button class="btn btn-outline-gradient" data-bs-toggle="modal" data-bs-target="#createAffaireModal">
+        Créer Affaire
+      </button>
+      <button class="btn btn-outline-gradient" data-bs-toggle="modal" data-bs-target="#createDoeModal">
+        Créer DOE
+      </button>
     </div>
   </div>
 
-  <!-- Modal: Create Affaire -->
-  <div class="modal fade" id="createAffaireModal" tabindex="-1" aria-labelledby="createAffaireModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="createAffaireModalLabel">Créer une nouvelle affaire</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="create-affaire-form">
-            <div class="mb-3">
-              <label for="affaire-nom" class="form-label">Nom de l'affaire</label>
-              <input type="text" class="form-control" id="affaire-nom" required>
-            </div>
-            <div class="mb-3">
-              <label for="affaire-numero" class="form-label">Numéro de l'affaire</label>
-              <input type="text" class="form-control" id="affaire-numero">
-            </div>
-            <div class="mb-3">
-              <label for="affaire-description" class="form-label">Description</label>
-              <textarea class="form-control" id="affaire-description" rows="3"></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Créer et Lier</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
+</div>
 
-  <!-- Modal: Create DOE -->
-  <div class="modal fade" id="createDoeModal" tabindex="-1" aria-labelledby="createDoeModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="createDoeModalLabel">Créer un nouveau DOE</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="create-doe-form">
-            <div class="mb-3">
-              <label for="doe-titre" class="form-label">Titre du DOE</label>
-              <input type="text" class="form-control" id="doe-titre" required>
-            </div>
-            <div class="mb-3">
-              <label for="doe-description" class="form-label">Description</label>
-              <textarea class="form-control" id="doe-description" rows="3"></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Créer et Lier</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-  <script>
+<!-- Modals et JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
     document.addEventListener('DOMContentLoaded', async function() {
       const qp = new URLSearchParams(location.search);
       const ticketId = qp.get('id');
@@ -276,7 +155,7 @@
         if (Array.isArray(data.interventions) && data.interventions.length > 0 && t.etat !== 'Termine') {
           t.etat = 'En_cours';
         }
-        document.getElementById('ticket-title').textContent = t.titre || '(Sans titre)';
+        set('ticket-title', t.titre || '(Sans titre)');
         set('view_id', t.id); set('view_titre', t.titre||''); set('view_description', t.description||''); set('view_etat', t.etat||'');
         set('view_date_debut', fmt(t.date_debut)); set('view_date_fin', t.date_fin? fmt(t.date_fin) : 'En cours');
         const endIso = (t.etat === 'Termine')
@@ -311,16 +190,22 @@
         items.forEach(inter => {
           const el = document.createElement('div'); el.className='card card-body mb-2';
           const interElapsed = inter.date_debut ? formatElapsed((inter.date_fin ? new Date(inter.date_fin).getTime() : Date.now()) - new Date(inter.date_debut).getTime()) : '';
-          el.innerHTML = `<div class=\"d-flex justify-content-between align-items-center\">`
-            + `<div><h6 class=\"mb-1\">${inter.titre || '(Sans titre)'}</h6>`
-            + `<div class=\"text-muted small\">${inter.description || ''}</div>`
-            + `<small class=\"text-muted\">Du ${fmt(inter.date_debut)||''} au ${fmt(inter.date_fin)||'N/A'}</small></div>`
-            + `<div class="text-end"><div class="small text-muted mb-1">Temps écoulé: ${interElapsed || '—'}</div><a href=\"intervention-view.html?id=${inter.id}\" class=\"btn btn-sm btn-info me-1\"><i class=\"bi bi-eye\"></i> Voir</a></div>`
-            + `</div>`;
+          el.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-1">${inter.titre || '(Sans titre)'}</h6>
+                <div class="text-muted small">${inter.description || ''}</div>
+                <small class="text-muted">Du ${fmt(inter.date_debut)||''} au ${fmt(inter.date_fin)||'N/A'}</small>
+              </div>
+              <div class="text-end">
+                <div class="small text-muted mb-1">Temps écoulé: ${interElapsed || '—'}</div>
+                <a href="intervention-view.html?id=${inter.id}" class="btn btn-sm btn-info me-1"><i class="bi bi-eye"></i> Voir</a>
+              </div>
+            </div>`;
           list.appendChild(el);
         });
 
-// Responsables et agents assignés
+        // Responsables et agents assignés
         const responsablesList = document.getElementById('responsables-list');
         const agentsList = document.getElementById('agents-list');
 
@@ -396,8 +281,7 @@
 
           // Responsable : admin + Chef
           populateSelect(responsableSelect, a =>
-            Array.isArray(a.roles) && a.roles.includes('ROLE_ADMIN') //&&
-           // (a.fonction === 'Chef' || a.fonction === 'CHEF')
+            Array.isArray(a.roles) && a.roles.includes('ROLE_ADMIN')
           );
           // Agents : tous
           populateSelect(agentSelect);
@@ -413,8 +297,8 @@
                   headers: { 'Content-Type': 'application/json', ...headers },
                   credentials: 'same-origin',
                   body:  JSON.stringify({
-                          agent_matricule: matricule, // ce que l’API demande
-                          matricule        : matricule // optionnel, pour compatibilité
+                          agent_matricule: matricule,
+                          matricule        : matricule
                         })
                 });
                 const body = await resPost.json().catch(() => ({}));
@@ -438,8 +322,8 @@
                   headers: { 'Content-Type': 'application/json', ...headers },
                   credentials: 'same-origin',
                   body:  JSON.stringify({
-                          agent_matricule: matricule, // ce que l’API demande
-                          matricule        : matricule // optionnel, pour compatibilité
+                          agent_matricule: matricule,
+                          matricule        : matricule
                         })
                 });
                 const body = await resPost.json().catch(() => ({}));
@@ -466,7 +350,6 @@
               if (!clientId) return alert('Impossible de trouver le client associé à ce ticket pour créer une affaire.');
 
               try {
-                // 1. Create the affaire
                 const affaireRes = await fetch('/api/affaires', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', ...headers },
@@ -475,7 +358,6 @@
                 const newAffaire = await affaireRes.json();
                 if (!affaireRes.ok) throw new Error(newAffaire.error || 'Erreur lors de la création de l\'affaire');
 
-                // 2. Link to the ticket
                 const ticketUpdateRes = await fetch(`/api/tickets/${ticketId}`, {
                   method: 'PUT',
                   headers: { 'Content-Type': 'application/json', ...headers },
@@ -494,8 +376,6 @@
           // Logic for creating Intervention
           const interventionForm = document.getElementById('create-intervention-form');
           if (interventionForm) {
-            // Removed: code that populated precedenteSelect
-
             interventionForm.addEventListener('submit', async (e) => {
               e.preventDefault();
               const payload = {
@@ -505,7 +385,6 @@
                 date_fin: document.getElementById('intervention-date-fin').value || null,
                 ticket_id: ticketId,
                 status: document.getElementById('intervention-status').value
-                // Removed: intervention_precedente_id
               };
 
               try {
@@ -540,7 +419,6 @@
               if (!siteId || !affaireId) return alert('Le site et l\'affaire doivent être liés au ticket pour créer un DOE.');
 
               try {
-                // 1. Create the DOE
                 const doeRes = await fetch('/api/does', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', ...headers },
@@ -549,7 +427,6 @@
                 const newDoe = await doeRes.json();
                 if (!doeRes.ok) throw new Error(newDoe.error || 'Erreur lors de la création du DOE');
 
-                // 2. Link to the ticket
                 const ticketUpdateRes = await fetch(`/api/tickets/${ticketId}`, {
                   method: 'PUT',
                   headers: { 'Content-Type': 'application/json', ...headers },
@@ -566,10 +443,10 @@
           }
         }
       } catch(e) {
-        document.getElementById('ticket-title').textContent = 'Ticket introuvable';
+        set('ticket-title', 'Ticket introuvable');
       }
     });
   </script>
+
 </body>
 </html>
-
