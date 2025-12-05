@@ -63,7 +63,17 @@
           </div>
           <div class="mb-3">
             <label for="agence" class="form-label">Agence</label>
-            <select class="form-select" id="agence" required></select>
+            <div class="input-group">
+              <select class="form-select" id="agence" required>
+                <option value="">Sélectionner une agence</option>
+              </select>
+              <button class="btn btn-outline-secondary" type="button" id="refresh-agences" title="Rafraîchir la liste">
+                <i class="bi bi-arrow-repeat"></i>
+              </button>
+              <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#agenceModal" title="Créer/Gérer les agences">
+                <i class="bi bi-building-add"></i>
+              </button>
+            </div>
           </div>
           <div class="mb-3 form-check form-switch">
             <input type="checkbox" class="form-check-input" id="actif">
@@ -112,6 +122,21 @@
     </div>
   </main>
 
+  <!-- Modal gestion agences -->
+  <div class="modal fade" id="agenceModal" tabindex="-1" aria-labelledby="agenceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="agenceModalLabel">Gérer les agences</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body p-0">
+          <iframe id="agenceFrame" src="about:blank" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async function() {
@@ -131,20 +156,26 @@
       };
 
       const agenceSelect = document.getElementById('agence');
-      try {
-        const res = await fetch('/api/agences', { headers, credentials: 'same-origin' });
-        const agences = await res.json();
-        if (Array.isArray(agences)) {
-          agences.forEach(a => {
-            const opt = document.createElement('option');
-            opt.value = a.id;
-            opt.textContent = a.titre || `Agence #${a.id}`;
-            agenceSelect.appendChild(opt);
-          });
+      async function loadAgences() {
+        try {
+          const res = await fetch('/api/agences', { headers, credentials: 'same-origin' });
+          if (!res.ok) return;
+          const agences = await res.json();
+          agenceSelect.innerHTML = '<option value=\"\">Sélectionner une agence</option>';
+          if (Array.isArray(agences)) {
+            agences.forEach(a => {
+              const opt = document.createElement('option');
+              opt.value = a.id;
+              opt.textContent = a.titre || `Agence #${a.id}`;
+              agenceSelect.appendChild(opt);
+            });
+          }
+        } catch (e) {
+          console.warn('Could not load agences', e);
         }
-      } catch (e) {
-        console.warn('Could not load agences', e);
       }
+
+      await loadAgences();
 
       try {
         const res = await fetch(`/api/agents/${matricule}/relations`, { headers, credentials: 'same-origin' });
@@ -211,6 +242,18 @@
           alert('Erreur lors de la mise à jour: ' + e.message);
         }
       });
+
+      const refreshBtn = document.getElementById('refresh-agences');
+      if (refreshBtn) refreshBtn.addEventListener('click', loadAgences);
+
+      const agenceModal = document.getElementById('agenceModal');
+      if (agenceModal) {
+        agenceModal.addEventListener('show.bs.modal', () => {
+          const frame = document.getElementById('agenceFrame');
+          if (frame) frame.src = '/agences.html';
+        });
+        agenceModal.addEventListener('hidden.bs.modal', loadAgences);
+      }
     });
   </script>
 </body>
