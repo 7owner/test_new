@@ -300,18 +300,21 @@
     <div class="row g-4 mb-4">
       <div class="col-md-4">
         <div class="stats-card">
-          <div class="stats-number" id="stats-interventions" style="color: #e9ecef;">0</div>
-          <div class="stats-label" style="color: #f8f9fa;">Interventions</div>
+          <div class="stats-number" id="stats-interventions">0</div>
+          <div class="stats-label">Interventions</div>
         </div>
       </div>
     </div>-->
     <!-- Recent Interventions -->
     <div class="main-card">
-      <div class="section-header">
-        <div class="section-icon">
-          <i class="bi bi-wrench-adjustable"></i>
+      <div class="section-header d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center">
+          <div class="section-icon">
+            <i class="bi bi-wrench-adjustable"></i>
+          </div>
+          <h3 class="section-title mb-0">Interventions Récentes</h3>
         </div>
-        <h3 class="section-title">Interventions Récentes</h3>
+        <span class="badge bg-primary" id="interventions-count">0</span>
       </div>
       <div id="interventions-list">
         <div class="empty-state">
@@ -407,6 +410,8 @@
       // Render interventions
       const renderInterventions = (arr = []) => {
         const el = document.getElementById("interventions-list");
+        const countBadge = document.getElementById("interventions-count");
+        if (countBadge) countBadge.textContent = arr.length || 0;
         
         if (!arr.length) {
           el.innerHTML = `
