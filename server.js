@@ -1398,7 +1398,7 @@ app.get('/api/rendezvous/:id/relations', authenticateToken, async (req, res) => 
 // -------------------- Clients API --------------------
 app.get('/api/clients', authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query('SELECT c.*, a.libelle as adresse_libelle FROM client c LEFT JOIN adresse a ON c.adresse_id = a.id ORDER BY c.nom_client ASC');
+    const result = await pool.query('SELECT c.*, a.libelle as adresse_libelle, a.ligne1, a.ligne2, a.code_postal, a.ville, a.pays FROM client c LEFT JOIN adresse a ON c.adresse_id = a.id ORDER BY c.nom_client ASC');
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching clients:', err);
@@ -2435,16 +2435,7 @@ app.delete('/api/adresses/:id', authenticateToken, authorizeAdmin, async (req, r
 });
 
 // API Routes for Clients (CRUD)
-app.get('/api/clients', authenticateToken, async (req, res) => {
-    try {
-        const result = await pool.query('SELECT client.*, adresse.libelle as adresse_libelle FROM client LEFT JOIN adresse ON client.adresse_id = adresse.id ORDER BY client.nom_client ASC');
-        res.json(result.rows);
-    } catch (err) {
-        console.error('Error fetching clients:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
-
+// Admin: Create a new client
 app.post('/api/clients', authenticateToken, authorizeAdmin, async (req, res) => {
     const { nom_client, representant_nom, representant_email, representant_tel, commentaire, adresse_ligne1, adresse_ligne2, adresse_code_postal, adresse_ville, adresse_pays } = req.body;
     const client = await pool.connect();
@@ -3480,15 +3471,7 @@ app.delete('/api/agences/:id', async (req, res) => {
 });
 
 // API Routes for Clients
-app.get('/api/clients', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT * FROM client ORDER BY id ASC');
-        res.json(result.rows);
-    } catch (err) {
-        console.error('Error fetching clients:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
+// -------------------- Clients API (Client-side access) --------------------
 
 app.get('/api/clients/:id', async (req, res) => {
     const { id } = req.params;
