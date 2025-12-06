@@ -4,47 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestion des Clients</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- Custom CSS -->
   <link rel="stylesheet" href="/custom.css?v=1">
-  <script src="/nav.js?v=2"></script>
+
   <style>
     .dashboard-bg { 
-      background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); 
-      min-height: 100vh; 
+      background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%);
+      min-height: 100vh;
       padding-bottom: 2rem;
     }
-    .card { 
-      border: none; 
-      border-radius: 16px; 
+    .card, .filters-card {
+      border: none;
+      border-radius: 16px;
       box-shadow: 0 10px 24px rgba(0,0,0,0.06);
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 28px rgba(0,0,0,0.1);
-    }
-    .filters-card { 
-      background: #fff; 
-      border-radius: 16px; 
-      box-shadow: 0 10px 24px rgba(0,0,0,0.06); 
-    }
-    .modal-full-iframe { 
-      width: 100%; 
-      height: 70vh; 
-      border: none; 
-      border-radius: 8px;
-    }
-    .header {
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      background: #fff !important;
-    }
-    .badge-custom {
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      font-weight: 500;
     }
     .spinner-container {
       display: flex;
@@ -52,20 +31,38 @@
       align-items: center;
       min-height: 200px;
     }
-    .card-footer {
-      background: rgba(0,0,0,0.02) !important;
+    .modal-full-iframe {
+      width: 100%;
+      height: 75vh;
+      border: none;
+      border-radius: 8px;
+    }
+    .header {
+      background: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 1rem 1.5rem;
+      border-radius: 0 0 12px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
     }
   </style>
 </head>
+
 <body class="dashboard-bg">
+
+  <!-- HEADER (chargé par nav.js) -->
   <div id="navbar-placeholder"></div>
 
-  <!-- Main Content -->
+  <!-- CONTENU PRINCIPAL -->
   <main class="container mt-5">
+
+    <!-- TITRE & ACTIONS -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
       <h1 class="m-0"><i class="bi bi-person-badge-fill me-2 text-primary"></i>Clients</h1>
+
       <div class="d-flex gap-2 flex-wrap">
-        <button class="btn btn-sm btn-outline-primary" id="toggle-filters-btn">
+        <button class="btn btn-outline-primary btn-sm" id="toggle-filters-btn">
           <i class="bi bi-funnel-fill me-1"></i>Masquer les filtres
         </button>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createClientModal">
@@ -74,85 +71,95 @@
       </div>
     </div>
 
-    <!-- Filters Section -->
+    <!-- FILTRES -->
     <div class="filters-card p-3 mb-4" id="filters-row">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Filtres</h5>
-      </div>
       <div class="row g-3">
         <div class="col-lg-6 col-md-8 col-12">
-          <label for="client-search" class="form-label">Recherche</label>
+          <label for="client-search" class="form-label fw-bold">Recherche</label>
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input type="text" id="client-search" class="form-control" placeholder="Rechercher par nom, représentant ou email...">
+            <input type="text" id="client-search" class="form-control"
+                   placeholder="Recherche par nom, représentant ou email...">
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Client List -->
+    <!-- LISTE CLIENTS -->
     <div id="clientList">
       <div class="spinner-container">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Chargement...</span>
-        </div>
+        <div class="spinner-border text-primary"></div>
       </div>
     </div>
+
   </main>
 
-  <!-- Modal: Create Client -->
-  <div class="modal fade" id="createClientModal" tabindex="-1" aria-labelledby="createClientModalLabel" aria-hidden="true">
+  <!-- MODAL : Nouveau client -->
+  <div class="modal fade" id="createClientModal">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="createClientModalLabel">
-            <i class="bi bi-person-plus me-2"></i>Nouveau client
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Créer un nouveau client</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-0">
-          <iframe src="/client-new.html" class="modal-full-iframe" title="Nouveau client"></iframe>
+          <iframe src="/client-new.html" class="modal-full-iframe"></iframe>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal: View Client -->
-  <div class="modal fade" id="viewClientModal" tabindex="-1" aria-labelledby="viewClientModalLabel" aria-hidden="true">
+  <!-- MODAL : Voir client -->
+  <div class="modal fade" id="viewClientModal">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="viewClientModalLabel">
-            <i class="bi bi-eye me-2"></i>Voir client
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title"><i class="bi bi-eye me-2"></i>Voir le client</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-0">
-          <iframe id="viewClientFrame" class="modal-full-iframe" title="Voir client"></iframe>
+          <iframe id="viewClientFrame" class="modal-full-iframe"></iframe>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Edit Client -->
-  <div class="modal fade" id="editClientModal" tabindex="-1" aria-labelledby="editClientModalLabel" aria-hidden="true">
+  <!-- MODAL : Modifier client -->
+  <div class="modal fade" id="editClientModal">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="editClientModalLabel">
-            <i class="bi bi-pencil-square me-2"></i>Modifier client
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Modifier le client</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-0">
-          <iframe id="editClientFrame" class="modal-full-iframe" title="Modifier client"></iframe>
+          <iframe id="editClientFrame" class="modal-full-iframe"></iframe>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <!-- BOOTSTRAP JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- NAVBAR JS (à la fin pour éviter erreurs DOM) -->
+  <script src="/nav.js?v=2"></script>
+
+  <!-- SCRIPT DYNAMIQUE POUR LISTE CLIENTS -->
   <script src="/js/clients.js"></script>
+
+  <script>
+    // Activer / Masquer les filtres
+    document.getElementById("toggle-filters-btn").addEventListener("click", () => {
+      const filters = document.getElementById("filters-row");
+      const isHidden = filters.classList.toggle("d-none");
+
+      document.getElementById("toggle-filters-btn").innerHTML =
+        isHidden
+        ? '<i class="bi bi-funnel me-1"></i>Afficher les filtres'
+        : '<i class="bi bi-funnel-fill me-1"></i>Masquer les filtres';
+    });
+  </script>
+
 </body>
 </html>
