@@ -598,6 +598,9 @@
                 <button class="btn btn-sm btn-secondary btn-action" data-modal="filesDemandeModal" data-id="${d.id}">
                   <i class="bi bi-paperclip me-1"></i>Fichiers
                 </button>
+                <button class="btn btn-sm btn-outline-primary btn-action btn-message" data-demande-id="${d.id}">
+                  <i class="bi bi-chat-dots me-1"></i>Messages
+                </button>
               </div>
             </div>
           `).join("");
@@ -785,7 +788,19 @@
 
       document.body.addEventListener("click", e => {
         const btn = e.target.closest("[data-modal]");
-        if (!btn) return;
+        if (!btn) {
+          const msgBtn = e.target.closest(".btn-message");
+          if (msgBtn) {
+            const did = msgBtn.getAttribute("data-demande-id");
+            if (did) {
+              const qs = new URLSearchParams();
+              qs.set("conversation", `demande-${did}`);
+              qs.set("embed", "1");
+              window.location.href = `/messagerie.html?${qs.toString()}`;
+            }
+          }
+          return;
+        }
 
         const modalId = btn.dataset.modal;
         const itemId = btn.dataset.id;
