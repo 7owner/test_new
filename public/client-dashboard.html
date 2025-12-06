@@ -649,6 +649,24 @@
             } catch {}
           }
 
+          // Enrichir avec satisfaction si absente
+          async function enrichSatisfaction(arr) {
+            const finished = arr.filter(t => (t.etat || "").toLowerCase() === "termine");
+            await Promise.all(finished.map(async t => {
+              if (t.satisfaction_note != null || t.note_satisfaction != null || (t.satisfaction && t.satisfaction.note != null)) return;
+              try {
+                const rel = await api(`/api/tickets/${t.id}/relations`);
+                const sat = rel.satisfaction || rel.ticket_satisfaction || rel.satisfaction_ticket || {};
+                if (sat.note != null) t.satisfaction_note = sat.note;
+                if (sat.commentaire != null) t.satisfaction_comment = sat.commentaire;
+              } catch (e) {
+                console.warn(`Impossible de charger la satisfaction du ticket ${t.id}`, e);
+              }
+            }));
+          }
+
+          await enrichSatisfaction(tickets);
+
           if (!tickets.length) {
             el.innerHTML = `
               <div class="empty-state">
