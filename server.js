@@ -1184,7 +1184,10 @@ app.get('/api/tickets/:id/relations', authenticateToken, async (req, res) => {
       ORDER BY COALESCE(ta.date_debut, CURRENT_TIMESTAMP) DESC, ta.id DESC
     `, [id])).rows;
 
-    res.json({ ticket, doe, affaire, site, demande, interventions, documents, images, responsables, agents_assignes });
+    // Fetch satisfaction data
+    const satisfaction = (await pool.query('SELECT rating, comment FROM ticket_satisfaction WHERE ticket_id=$1', [id])).rows[0] || null;
+
+    res.json({ ticket, doe, affaire, site, demande, interventions, documents, images, responsables, agents_assignes, satisfaction });
   } catch (err) {
     console.error('Error fetching ticket relations:', err);
     res.status(500).json({ error: 'Internal Server Error', details: err.message });

@@ -30,6 +30,7 @@
         const payload = JSON.parse(atob(token.split('.')[1]));
         const email = payload.email || 'Utilisateur';
         const matricule = payload.matricule || payload.sub;
+        const userId = payload.id;
         
         const userIconLink = document.getElementById('user-icon-link');
         const userInfoContainer = document.querySelector('#user-info-container .text-secondary');
@@ -72,6 +73,9 @@
             }
           });
         }
+
+        // Notifications (cloche) comme sur le dashboard
+        initNotifications(userId);
       }
     } catch (e) {
       console.error('Error setting up user-specific navbar elements:', e);
@@ -97,6 +101,110 @@
     if (offcanvasElement) {
       new bootstrap.Offcanvas(offcanvasElement);
     }
+  }
+
+  /**
+   * Notifications via cloche (mêmes règles que dashboard : compte les nouveaux messages des demandes)
+   */
+  function initNotifications(userId) {
+    const notifBadge = document.getElementById('notif-badge');
+    const notifList = document.getElementById('notif-list');
+    if (!notifBadge || !notifList || !userId) return;
+
+    const token = localStorage.getItem('token') || '';
+
+    const readKey = 'notifReads';
+    const getReadMap = () => {
+      try { return JSON.parse(localStorage.getItem(readKey) || '{}'); } catch (_) { return {}; }
+    };
+    const setRead = (convId, ts) => {
+      const map = getReadMap();
+      map[convId] = ts;
+      localStorage.setItem(readKey, JSON.stringify(map));
+    };
+
+    async function fetchDemandes() {
+      try {
+        const r = await fetch('/api/demandes_client?sort=id&direction=desc', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+          credentials: 'same-origin'
+        });
+        if (!r.ok) return [];
+        const data = await r.json().catch(() => []);
+        return Array.isArray(data) ? data : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    async function updateNotifications() {
+      const demandes = await fetchDemandes();
+      const readMap = getReadMap();
+      let total = 0;
+      const items = [];
+
+      for (const d of demandes) {
+        const convId = `demande-${d.id}`;
+        try {
+          const res = await fetch(`/api/conversations/${convId}`, {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+            credentials: 'same-origin'
+          });
+          if (!res.ok) continue;
+          const msgs = await res.json().catch(() => []);
+          const incoming = (Array.isArray(msgs) ? msgs : []).filter(m => m.sender_id !== userId);
+          if (!incoming.length) continue;
+          const last = incoming[incoming.length - 1];
+          const lastTs = last && last.created_at ? new Date(last.created_at).getTime() : 0;
+          const lastRead = readMap[convId] ? Number(readMap[convId]) : 0;
+          if (lastTs && lastTs <= lastRead) continue;
+
+          total += 1;
+          items.push(`
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between">
+                <strong>Demande #${d.id}${d.titre ? ' - ' + d.titre : ''}</strong>
+                <small>${last.created_at ? new Date(last.created_at).toLocaleString() : ''}</small>
+              </div>
+              <div class="text-truncate">${last.body || '(Pièce jointe)'}</div>
+              <button class="btn btn-sm btn-primary mt-2 open-conv-btn" data-id="${d.id}" data-ts="${lastTs}">Ouvrir</button>
+            </div>
+          `);
+        } catch (_) {}
+      }
+
+      notifBadge.textContent = total;
+      notifBadge.style.display = total ? 'inline-block' : 'none';
+      notifList.innerHTML = items.length ? items.join('') : '<div class="list-group-item text-muted">Aucun nouveau message.</div>';
+
+      notifList.querySelectorAll('.open-conv-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          const ts = Number(e.currentTarget.dataset.ts || 0);
+          const dropdown = bootstrap.Dropdown.getInstance(document.getElementById('notif-toggle'));
+          if (dropdown) dropdown.hide();
+
+          const modalEl = document.getElementById('notifConversationModal');
+          const frame = document.getElementById('notifConversationFrame');
+          if (modalEl && frame) {
+            frame.src = `/messagerie.html?conversation=demande-${id}`;
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+          }
+
+          setRead(`demande-${id}`, ts || Date.now());
+          const item = e.currentTarget.closest('.list-group-item');
+          if (item) item.remove();
+          const remaining = notifList.querySelectorAll('.open-conv-btn').length;
+          notifBadge.textContent = remaining;
+          notifBadge.style.display = remaining ? 'inline-block' : 'none';
+          if (!remaining) {
+            notifList.innerHTML = '<div class="list-group-item text-muted">Aucun nouveau message.</div>';
+          }
+        });
+      });
+    }
+
+    updateNotifications();
   }
 
   async function ensureSessionAndCsrf() {
