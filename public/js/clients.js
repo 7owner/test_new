@@ -21,11 +21,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const ct = res.headers.get('content-type') || '';
     const body = ct.includes('application/json') ? await res.json() : null;
-    if (res.status === 401 || res.status === 403) {
+    if (res.status === 401) {
       try { window.location.replace('/login.html'); } catch { window.location.href = '/login.html'; }
       throw new Error('Unauthorized');
     }
-    if (!res.ok) throw new Error((body && body.error) || res.statusText);
+    if (!res.ok) {
+      const err = new Error((body && body.error) || res.statusText);
+      err.status = res.status;
+      throw err;
+    }
     return body;
   }
 
@@ -78,7 +82,18 @@ document.addEventListener('DOMContentLoaded', () => {
       allClients = await fetchJSON('/api/clients');
       applyFilters();
     } catch (e) {
-      console.error('clients load:', e);
+      console.warn('clients load (fallback):', e);
+      try {
+        const res = await fetch('/api/clients/mine', {
+          headers: { 'Content-Type': 'application/json', 'Authorization': token ? ('Bearer ' + token) : undefined },
+          credentials: 'same-origin'
+        });
+        if (res.ok) {
+          allClients = await res.json();
+          applyFilters();
+          return;
+        }
+      } catch (_) {}
       list.innerHTML = '<div class="alert alert-danger">Impossible de charger les clients.</div>';
     }
   }
