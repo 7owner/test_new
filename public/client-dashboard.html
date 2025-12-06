@@ -670,41 +670,61 @@
 
           el.innerHTML = tickets.map(t => {
             const isTermine = (t.etat || "").toLowerCase() === "termine";
+            const savedNote = t.satisfaction_note ?? t.note_satisfaction ?? (t.satisfaction && t.satisfaction.note);
+            const savedComment = t.satisfaction_comment ?? t.commentaire_satisfaction ?? (t.satisfaction && t.satisfaction.commentaire) || "";
             let feedbackSection = '';
             if (isTermine) {
-              feedbackSection = `
-              <div class="feedback-section" data-ticket="${t.id}">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <strong><i class="bi bi-star me-2"></i>Donnez votre avis</strong>
-                  <span class="badge bg-info">Visible par le support</span>
-                </div>
-                <div class="row g-3">
-                  <div class="col-md-4">
-                    <label class="form-label small fw-bold">Note</label>
-                    <select class="form-select feedback-note" data-ticket="${t.id}">
-                      <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
-                      <option value="4">⭐⭐⭐⭐ Très bien</option>
-                      <option value="3">⭐⭐⭐ Bien</option>
-                      <option value="2">⭐⭐ Moyen</option>
-                      <option value="1">⭐ Mauvais</option>
-                    </select>
+              if (savedNote != null) {
+                const stars = "★★★★★".slice(0, Math.min(5, Math.max(1, Number(savedNote))));
+                const empty = "☆☆☆☆☆".slice(0, 5 - stars.length);
+                feedbackSection = `
+                  <div class="feedback-section feedback-block" data-ticket="${t.id}">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <strong><i class="bi bi-star-fill text-warning me-2"></i>Votre satisfaction</strong>
+                      <span class="badge bg-success">Enregistrée</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <span class="text-warning" style="font-size:1.2rem;">${stars}${empty}</span>
+                      <span class="small text-muted">${Number(savedNote)}/5</span>
+                    </div>
+                    <div class="text-muted small mb-0">${savedComment ? savedComment.replace(/\n/g,'<br>') : 'Aucun commentaire.'}</div>
                   </div>
-                  <div class="col-md-8">
-                    <label class="form-label small fw-bold">Commentaire</label>
-                    <textarea class="form-control feedback-comment" data-ticket="${t.id}" rows="2" placeholder="Partagez votre expérience..."></textarea>
+                `;
+              } else {
+                feedbackSection = `
+                <div class="feedback-section" data-ticket="${t.id}">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <strong><i class="bi bi-star me-2"></i>Donnez votre avis</strong>
+                    <span class="badge bg-info">Visible par le support</span>
                   </div>
-                </div>
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label small fw-bold">Note</label>
+                      <select class="form-select feedback-note" data-ticket="${t.id}">
+                        <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                        <option value="4">⭐⭐⭐⭐ Très bien</option>
+                        <option value="3">⭐⭐⭐ Bien</option>
+                        <option value="2">⭐⭐ Moyen</option>
+                        <option value="1">⭐ Mauvais</option>
+                      </select>
+                    </div>
+                    <div class="col-md-8">
+                      <label class="form-label small fw-bold">Commentaire</label>
+                      <textarea class="form-control feedback-comment" data-ticket="${t.id}" rows="2" placeholder="Partagez votre expérience..."></textarea>
+                    </div>
+                  </div>
 
-                <div class="d-flex justify-content-end gap-2 mt-3">
-                  <button class="btn btn-sm btn-outline-secondary clear-feedback" data-ticket="${t.id}">
-                    <i class="bi bi-x-circle me-1"></i>Effacer
-                  </button>
-                  <button class="btn btn-sm btn-gradient send-feedback" data-ticket="${t.id}">
-                    <i class="bi bi-send me-1"></i>Envoyer
-                  </button>
+                  <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button class="btn btn-sm btn-outline-secondary clear-feedback" data-ticket="${t.id}">
+                      <i class="bi bi-x-circle me-1"></i>Effacer
+                    </button>
+                    <button class="btn btn-sm btn-gradient send-feedback" data-ticket="${t.id}">
+                      <i class="bi bi-send me-1"></i>Envoyer
+                    </button>
+                  </div>
                 </div>
-              </div>
-            `;
+              `;
+              }
             }
 
             return `
