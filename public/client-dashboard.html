@@ -670,8 +670,8 @@
 
           el.innerHTML = tickets.map(t => {
             const isTermine = (t.etat || "").toLowerCase() === "termine";
-            const savedNote = t.satisfaction_note ?? t.note_satisfaction ?? (t.satisfaction && t.satisfaction.note);
-            const savedComment = t.satisfaction_comment ?? t.commentaire_satisfaction ?? (t.satisfaction && t.satisfaction.commentaire) || "";
+            const savedNote = (t.satisfaction_note ?? t.note_satisfaction ?? (t.satisfaction && t.satisfaction.note));
+            const savedComment = (t.satisfaction_comment ?? t.commentaire_satisfaction ?? (t.satisfaction && t.satisfaction.commentaire)) || "";
             let feedbackSection = '';
             if (isTermine) {
               if (savedNote != null) {
@@ -767,6 +767,7 @@
         const ticketId = sendBtn?.dataset.ticket || clearBtn.dataset.ticket;
         const noteEl = document.querySelector(`.feedback-note[data-ticket="${ticketId}"]`);
         const commentEl = document.querySelector(`.feedback-comment[data-ticket="${ticketId}"]`);
+        if (!noteEl || !commentEl) return;
 
         if (clearBtn) {
           noteEl.value = "5";
