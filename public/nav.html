@@ -1,14 +1,31 @@
 <!-- HEADER -->
-<header class="header d-flex justify-content-between align-items-center mb-4 p-3 bg-white shadow-sm rounded">
-  <h1 class="m-0">
-    <a href="/dashboard.html" class="text-decoration-none text-dark">
+<style>
+  .nav-header {
+    padding: 12px 16px;
+    border-radius: 12px;
+  }
+  .nav-logo-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #2f323a;
+    line-height: 1.1;
+    letter-spacing: 0.2px;
+  }
+  .nav-welcome-pill {
+    font-size: 0.95rem;
+    color: #4a5568;
+  }
+</style>
+<header class="header nav-header d-flex justify-content-between align-items-center mb-4 p-3 bg-white shadow-sm rounded">
+  <h1 class="m-0" style="font-size: 1rem;">
+    <a href="/dashboard.html" class="text-decoration-none text-dark d-inline-flex align-items-center">
       <img src="/logo_logicielle.png" alt="Logo" style="height: 30px; vertical-align: middle; margin-right: 10px;">
-      <span class="fw-bold">FAUCHÉ Digital &amp; Smart Solutions</span>
+      <span class="nav-logo-title">FAUCHÉ Digital &amp; Smart Solutions</span>
     </a>
   </h1>
 
   <div id="user-info-container" class="d-flex align-items-center gap-3">
-    <div class="d-flex align-items-center bg-light border rounded-pill px-3 py-1 shadow-sm">
+    <div class="d-flex align-items-center bg-light border rounded-pill px-3 py-1 shadow-sm nav-welcome-pill">
       <a id="user-icon-link" class="text-decoration-none" href="#" data-bs-toggle="tooltip" title="">
         <i class="bi bi-person-circle text-primary fs-4 me-2"></i>
       </a>
