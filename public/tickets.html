@@ -84,6 +84,7 @@
                 <th>Etat</th>
                 <th>Site</th>
                 <th>Responsable</th>
+                <th>Satisfaction</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -332,6 +333,7 @@
               <td><span class="badge ${statusBadgeClass}">${displayStatus(ticket.etat)}</span></td>
               <td>${siteLink(ticket.site_id)}</td>
               <td>${responsableName}</td>
+              <td class="satisfaction-cell" data-id="${ticket.id}"><span class="text-muted small">—</span></td>
               <td>
                 <button class="btn btn-sm btn-info me-1" data-bs-toggle="modal" data-bs-target="#viewTicketModal" data-id="${ticket.id}"><i class="bi bi-eye"></i> Voir</button>
                 ${state.isAdmin ? `
@@ -345,6 +347,8 @@
               const btn = row.querySelector('button[data-action="delete"]');
               if (btn) btn.addEventListener('click', () => deleteTicket(ticket.id));
             }
+            const satCell = row.querySelector('.satisfaction-cell');
+            populateSatisfaction(satCell, ticket.id);
           });
         } else {
           closedTicketsTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Aucun ticket Terminé trouvé.</td></tr>';
@@ -398,6 +402,39 @@
             : '<i class="bi bi-funnel-fill me-1"></i> Masquer les filtres';
           applyFilters();
         });
+      }
+
+      const satisfactionCache = new Map();
+
+      async function getSatisfaction(ticketId) {
+        if (satisfactionCache.has(ticketId)) return satisfactionCache.get(ticketId);
+        try {
+          const res = await fetch(`/api/tickets/${ticketId}/relations`, { headers: buildHeaders(false), credentials: 'same-origin' });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          const sat = data.satisfaction || data.ticket_satisfaction || data.satisfaction_note || data.satisfaction_comment ? {
+            rating: data.satisfaction?.rating ?? data.satisfaction_note ?? data.satisfaction?.note ?? null,
+            comment: data.satisfaction?.comment ?? data.satisfaction_comment ?? data.commentaire_satisfaction ?? data.satisfaction?.commentaire ?? null
+          } : null;
+          satisfactionCache.set(ticketId, sat);
+          return sat;
+        } catch (_) {
+          satisfactionCache.set(ticketId, null);
+          return null;
+        }
+      }
+
+      async function populateSatisfaction(cell, ticketId) {
+        if (!cell) return;
+        cell.textContent = 'Chargement…';
+        const sat = await getSatisfaction(ticketId);
+        if (!sat || (!sat.rating && !sat.comment)) {
+          cell.innerHTML = '<span class="text-muted small">Aucune</span>';
+          return;
+        }
+        const rating = sat.rating != null ? `${sat.rating}/5` : '—';
+        const comment = sat.comment ? sat.comment : 'Sans commentaire';
+        cell.innerHTML = `<div><strong>${rating}</strong></div><div class="text-muted small">${comment}</div>`;
       }
 
       async function fetchTickets() {
