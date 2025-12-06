@@ -84,6 +84,7 @@
       const qp = new URLSearchParams(location.search);
       const demandeId = qp.get('id');
       const section = qp.get('section');
+      const isModal = qp.get('modal') === '1' || qp.get('embed') === '1';
       const token = localStorage.getItem('token');
       if (!token) { window.location.href = '/login.html'; return; }
       let userId = null;
@@ -224,24 +225,30 @@
         console.log('DEBUG: Destructured data. demande:', demande, 'ticket:', ticket);
 
         // Populate Demand Info
-        set('demande-id', demande.id);
-        console.log('DEBUG: demande-id set.');
-        set('demande-date', fmt(demande.created_at));
-        set('demande-site', demande.nom_site || 'Non spécifié');
-        set('demande-description', demande.description);
-        set('demande-status', demande.status);
-        console.log('DEBUG: Demand info populated.');
+        if (!isModal) {
+          set('demande-id', demande.id);
+          console.log('DEBUG: demande-id set.');
+          set('demande-date', fmt(demande.created_at));
+          set('demande-site', demande.nom_site || 'Non spécifié');
+          set('demande-description', demande.description);
+          set('demande-status', demande.status);
+          console.log('DEBUG: Demand info populated.');
 
 
-        if (ticket) {
-          document.getElementById('ticket-section').classList.remove('d-none');
-          set('ticket-titre', ticket.titre);
-          set('ticket-status', ticket.etat);
-          set('ticket-date-debut', fmt(ticket.date_debut));
-          set('ticket-date-fin', ticket.date_fin ? fmt(ticket.date_fin) : 'En cours');
-          console.log('DEBUG: Ticket info populated.');
+          if (ticket) {
+            document.getElementById('ticket-section').classList.remove('d-none');
+            set('ticket-titre', ticket.titre);
+            set('ticket-status', ticket.etat);
+            set('ticket-date-debut', fmt(ticket.date_debut));
+            set('ticket-date-fin', ticket.date_fin ? fmt(ticket.date_fin) : 'En cours');
+            console.log('DEBUG: Ticket info populated.');
+          } else {
+            console.log('DEBUG: No ticket found.');
+          }
         } else {
-          console.log('DEBUG: No ticket found.');
+          // Masquer les sections non nécessaires dans la modale de messages
+          document.getElementById('demande-details')?.classList.add('d-none');
+          document.getElementById('ticket-section')?.classList.add('d-none');
         }
 
         if (responsable) {
@@ -255,23 +262,27 @@
           console.log('DEBUG: No responsable found.');
         }
 
-        if (interventions && interventions.length > 0) {
-          document.getElementById('interventions-section').classList.remove('d-none');
-          const listEl = document.getElementById('interventions-list');
-          listEl.innerHTML = ''; // Clear placeholder
-          interventions.forEach(inter => {
-            const item = document.createElement('div');
-            item.className = 'card card-body mb-2';
-            item.innerHTML = `
-              <p class="mb-1"><strong>Description:</strong> ${inter.description || 'Pas de description'}</p>
-              <small class="text-muted">Du ${fmt(inter.date_debut)} au ${inter.date_fin ? fmt(inter.date_fin) : 'en cours'}</small>
-              <small class="text-muted">Statut: ${inter.status || 'Non défini'}</small>
-            `;
-            listEl.appendChild(item);
-          });
-          console.log('DEBUG: Interventions populated.');
+        if (!isModal) {
+          if (interventions && interventions.length > 0) {
+            document.getElementById('interventions-section').classList.remove('d-none');
+            const listEl = document.getElementById('interventions-list');
+            listEl.innerHTML = ''; // Clear placeholder
+            interventions.forEach(inter => {
+              const item = document.createElement('div');
+              item.className = 'card card-body mb-2';
+              item.innerHTML = `
+                <p class="mb-1"><strong>Description:</strong> ${inter.description || 'Pas de description'}</p>
+                <small class="text-muted">Du ${fmt(inter.date_debut)} au ${inter.date_fin ? fmt(inter.date_fin) : 'en cours'}</small>
+                <small class="text-muted">Statut: ${inter.status || 'Non défini'}</small>
+              `;
+              listEl.appendChild(item);
+            });
+            console.log('DEBUG: Interventions populated.');
+          } else {
+            console.log('DEBUG: No interventions found.');
+          }
         } else {
-          console.log('DEBUG: No interventions found.');
+          document.getElementById('interventions-section')?.classList.add('d-none');
         }
 
         // Load messages for the demand
