@@ -1,5 +1,4 @@
-
-    document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
       const token = localStorage.getItem("token");
       if (!token) return location.href = "/login.html";
 
@@ -135,7 +134,16 @@
             return;
           }
 
-          el.innerHTML = demands.map(d => `
+          el.innerHTML = demands.map(d => {
+            const editButton = !d.ticket_id 
+              ? `<button class="btn btn-sm btn-warning btn-action" data-modal="editDemandeModal" data-id="${d.id}">
+                  <i class="bi bi-pencil me-1"></i>Modifier
+                </button>`
+              : `<button class="btn btn-sm btn-warning btn-action" disabled title="Convertie en ticket">
+                  <i class="bi bi-lock me-1"></i>Verrouillée
+                </button>`;
+
+            return `
             <div class="item-card">
               <div class="d-flex justify-content-between align-items-start mb-2">
                 <div class="flex-grow-1">
@@ -152,24 +160,20 @@
                 <button class="btn btn-sm btn-primary btn-action" data-modal="viewDemandeModal" data-id="${d.id}">
                   <i class="bi bi-eye me-1"></i>Suivre
                 </button>
-                ${!d.ticket_id 
-                  ? `<button class="btn btn-sm btn-warning btn-action" data-modal="editDemandeModal" data-id="${d.id}">
-                      <i class="bi bi-pencil me-1"></i>Modifier
-                    </button>`
-                  : `<button class="btn btn-sm btn-warning btn-action" disabled title="Convertie en ticket">
-                      <i class="bi bi-lock me-1"></i>Verrouillée
-                    </button>`
-                }
+                ${editButton}
                 <button class="btn btn-sm btn-secondary btn-action" data-modal="filesDemandeModal" data-id="${d.id}">
                   <i class="bi bi-paperclip me-1"></i>Fichiers
                 </button>
+                <button class="btn btn-sm btn-outline-primary btn-action" data-modal="messagesModal" data-conversation="demande-${d.id}">
+                  <i class="bi bi-chat-dots me-1"></i>Messages / Suivi
+                </button>
               </div>
-            </div>
-          `).join("");
+            </div>`;
+          }).join("");
         } catch (e) {
           el.innerHTML = `
             <div class="alert alert-danger">
-              <i class="bi-exclamation-triangle me-2"></i>
+              <i class="bi bi-exclamation-triangle me-2"></i>
               Erreur de chargement des demandes
             </div>
           `;
@@ -216,7 +220,9 @@
 
           el.innerHTML = tickets.map(t => {
             const isTermine = (t.etat || "").toLowerCase() === "termine";
-            const feedbackSection = isTermine ? `
+            let feedbackSection = '';
+            if (isTermine) {
+              feedbackSection = `
               <div class="feedback-section" data-ticket="${t.id}">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <strong><i class="bi bi-star me-2"></i>Donnez votre avis</strong>
@@ -248,7 +254,8 @@
                   </button>
                 </div>
               </div>
-            ` : '';
+            `;
+            }
 
             return `
               <div class="item-card">
@@ -382,4 +389,3 @@
       loadHistory();
 
     });
-  

@@ -688,8 +688,18 @@
 
           el.innerHTML = tickets.map(t => {
             const isTermine = (t.etat || "").toLowerCase() === "termine";
-            const savedNote = (t.satisfaction_note ?? t.note_satisfaction ?? (t.satisfaction && t.satisfaction.note));
-            const savedComment = (t.satisfaction_comment ?? t.commentaire_satisfaction ?? (t.satisfaction && t.satisfaction.commentaire)) || "";
+            const savedNote = (
+              t.satisfaction_note ??
+              t.note_satisfaction ??
+              t.rating ??
+              (t.satisfaction && (t.satisfaction.note ?? t.satisfaction.rating))
+            );
+            const savedComment = (
+              t.satisfaction_comment ??
+              t.commentaire_satisfaction ??
+              t.comment ??
+              (t.satisfaction && (t.satisfaction.commentaire ?? t.satisfaction.comment))
+            ) || "";
             let feedbackSection = '';
             if (isTermine) {
               if (savedNote != null) {
