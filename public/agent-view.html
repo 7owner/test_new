@@ -474,14 +474,13 @@
         document.getElementById("passport-hab").textContent = p.habilitations || "Aucune";
         document.getElementById("passport-cert").textContent = p.certifications || "Aucune";
 
-        // Stats - approximate from data
+        // Stats - approximate from data (si présents dans le DOM)
+        const setIf = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
         const tickets = data.tickets || [];
         const heures = data.heures || [];
-        document.getElementById("stats-tickets").textContent = tickets.length;
-        
-        // Calculate total hours
+        setIf("stats-tickets", tickets.length);
         const totalHeures = heures.reduce((sum, h) => sum + (parseFloat(h.heures_travaillees) || 0), 0);
-        document.getElementById("stats-heures").textContent = totalHeures.toFixed(1) + "h";
+        setIf("stats-heures", totalHeures.toFixed(1) + "h");
 
         setInitials(a.nom, a.prenom);
         renderInterventions(data.interventions || []);
