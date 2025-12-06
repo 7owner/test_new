@@ -35,7 +35,7 @@
         const userInfoContainer = document.querySelector('#user-info-container .text-secondary');
         
         if (userIconLink) userIconLink.setAttribute('title', email);
-        if (userInfoContainer) userInfoContainer.textContent = `Bienvenue, ${email}`;
+        if (userInfoContainer) userInfoContainer.textContent = `Bienvenue`;
         
         if (matricule) {
           userIconLink.href = `/agent-view.html?matricule=${encodeURIComponent(matricule)}`;
