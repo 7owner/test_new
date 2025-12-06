@@ -418,6 +418,20 @@
     </div>
   </div>
 
+  <div class="modal fade" id="messagesModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title"><i class="bi bi-chat-dots me-2"></i>Messages</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0">
+          <iframe id="messagesFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="filesDemandeModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
@@ -570,7 +584,16 @@
             return;
           }
 
-          el.innerHTML = demands.map(d => `
+          el.innerHTML = demands.map(d => {
+            const editButton = !d.ticket_id 
+              ? `<button class="btn btn-sm btn-warning btn-action" data-modal="editDemandeModal" data-id="${d.id}">
+                  <i class="bi bi-pencil me-1"></i>Modifier
+                </button>`
+              : `<button class="btn btn-sm btn-warning btn-action" disabled title="Convertie en ticket">
+                  <i class="bi bi-lock me-1"></i>Verrouillée
+                </button>`;
+
+            return `
             <div class="item-card">
               <div class="d-flex justify-content-between align-items-start mb-2">
                 <div class="flex-grow-1">
@@ -587,23 +610,16 @@
                 <button class="btn btn-sm btn-primary btn-action" data-modal="viewDemandeModal" data-id="${d.id}">
                   <i class="bi bi-eye me-1"></i>Suivre
                 </button>
-                ${!d.ticket_id 
-                  ? `<button class="btn btn-sm btn-warning btn-action" data-modal="editDemandeModal" data-id="${d.id}">
-                      <i class="bi bi-pencil me-1"></i>Modifier
-                    </button>`
-                  : `<button class="btn btn-sm btn-warning btn-action" disabled title="Convertie en ticket">
-                      <i class="bi bi-lock me-1"></i>Verrouillée
-                    </button>`
-                }
+                ${editButton}
                 <button class="btn btn-sm btn-secondary btn-action" data-modal="filesDemandeModal" data-id="${d.id}">
                   <i class="bi bi-paperclip me-1"></i>Fichiers
                 </button>
-                <a class="btn btn-sm btn-outline-primary btn-action" href="/client-demand-view.html?id=${d.id}">
+                <button class="btn btn-sm btn-outline-primary btn-action" data-modal="messagesModal" data-conversation="demande-${d.id}">
                   <i class="bi bi-chat-dots me-1"></i>Messages / Suivi
-                </a>
+                </button>
               </div>
-            </div>
-          `).join("");
+            </div>`;
+          }).join("");
         } catch (e) {
           el.innerHTML = `
             <div class="alert alert-danger">
@@ -654,7 +670,9 @@
 
           el.innerHTML = tickets.map(t => {
             const isTermine = (t.etat || "").toLowerCase() === "termine";
-            const feedbackSection = isTermine ? `
+            let feedbackSection = '';
+            if (isTermine) {
+              feedbackSection = `
               <div class="feedback-section" data-ticket="${t.id}">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <strong><i class="bi bi-star me-2"></i>Donnez votre avis</strong>
@@ -686,7 +704,8 @@
                   </button>
                 </div>
               </div>
-            ` : ''; // Corrected empty string to ensure proper template literal closing
+            `;
+            }
 
             return `
               <div class="item-card">
@@ -773,7 +792,8 @@
         createDemandeModal: "createDemandeFrame",
         viewDemandeModal: "viewDemandeFrame",
         editDemandeModal: "editDemandeFrame",
-        filesDemandeModal: "filesDemandeFrame"
+        filesDemandeModal: "filesDemandeFrame",
+        messagesModal: "messagesFrame"
       };
 
       const modalUrlMap = {
@@ -783,7 +803,8 @@
         createDemandeModal: () => `/client-new-demand.html`,
         viewDemandeModal: (id) => `/client-demand-view.html?id=${id}`,
         editDemandeModal: (id) => `/client-demand-edit.html?id=${id}`,
-        filesDemandeModal: (id) => `/client-demand-files.html?id=${id}`
+        filesDemandeModal: (id) => `/client-demand-files.html?id=${id}`,
+        messagesModal: (_id, convo) => `/messagerie.html?conversation=${encodeURIComponent(convo || '')}&embed=1&modal=1`
       };
 
       document.body.addEventListener("click", e => {
@@ -804,6 +825,7 @@
 
         const modalId = btn.dataset.modal;
         const itemId = btn.dataset.id;
+        const conversation = btn.dataset.conversation;
         const urlBuilder = modalUrlMap[modalId];
 
         if (!urlBuilder) {
@@ -815,7 +837,9 @@
         const frame = document.getElementById(frameMap[modalId]);
 
         if (modalEl && frame) {
-          const url = urlBuilder(itemId || '');
+          const url = modalId === "messagesModal"
+            ? urlBuilder(itemId, conversation || `demande-${itemId||''}`)
+            : urlBuilder(itemId || '');
           if (frame.getAttribute('src') !== url) {
             frame.src = url;
           }

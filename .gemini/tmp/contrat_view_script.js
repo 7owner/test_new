@@ -1,5 +1,4 @@
-
-    document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async () => {
       const params = new URLSearchParams(location.search);
       const id = params.get('id');
       const feedback = document.getElementById('feedback');
@@ -85,4 +84,3 @@
         });
       }
     });
-  

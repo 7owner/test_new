@@ -1,5 +1,4 @@
-
-    document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async function() {
       const qp = new URLSearchParams(location.search);
       const siteId = qp.get('id');
       const token = localStorage.getItem('token');
@@ -145,4 +144,3 @@
         document.querySelector('main').innerHTML = `<div class="alert alert-danger">Impossible de charger les informations du site. ${e.message}</div>`;
       }
     });
-  
