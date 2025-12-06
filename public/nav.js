@@ -40,7 +40,7 @@
         if (matricule) {
           userIconLink.href = `/agent-view.html?matricule=${encodeURIComponent(matricule)}`;
         }
-        
+
         const roles = payload.roles || [];
         const navList = document.querySelector('.offcanvas-body ul.navbar-nav');
         if (navList) {
@@ -62,6 +62,15 @@
               navList.prepend(li);
             }
           }
+
+          // Active link
+          const currentPath = window.location.pathname;
+          navList.querySelectorAll('a.nav-link').forEach(a => {
+            a.classList.remove('active');
+            if (a.getAttribute('href') === currentPath) {
+              a.classList.add('active');
+            }
+          });
         }
       }
     } catch (e) {
