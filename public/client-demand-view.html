@@ -83,6 +83,7 @@
     document.addEventListener('DOMContentLoaded', async function() {
       const qp = new URLSearchParams(location.search);
       const demandeId = qp.get('id');
+      const section = qp.get('section');
       const token = localStorage.getItem('token');
       if (!token) { window.location.href = '/login.html'; return; }
       let userId = null;
@@ -280,6 +281,12 @@
       } catch (err) {
         document.querySelector('main').innerHTML = `<div class="alert alert-danger">Erreur: ${err.message}</div>`;
         console.error('DEBUG: Error in main try-catch block:', err);
+      }
+
+      if (section === 'messages') {
+        const msgSection = document.getElementById('messagerie-section');
+        if (msgSection) msgSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (messageBodyInput) messageBodyInput.focus();
       }
     });
   </script>
