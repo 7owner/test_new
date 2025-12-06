@@ -1,4 +1,6 @@
-﻿(() => {
+﻿import { loadNavbarIntoPlaceholder } from './partials/navbar.js';
+
+(() => {
   async function ensureSessionAndCsrf() {
     const unprotected = ['/', '/login.html', '/register.html', '/forgot-password.html', '/reset-password.html'];
     const path = location.pathname;
@@ -36,6 +38,8 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    loadNavbarIntoPlaceholder(); // Inject the navbar HTML
+
     ensureSessionAndCsrf().then(async () => {
       // Populate logged-in email into header via session
       try {

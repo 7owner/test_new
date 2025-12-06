@@ -804,7 +804,7 @@
         viewDemandeModal: (id) => `/client-demand-view.html?id=${id}`,
         editDemandeModal: (id) => `/client-demand-edit.html?id=${id}`,
         filesDemandeModal: (id) => `/client-demand-files.html?id=${id}`,
-        messagesModal: (_id, convo) => `/messagerie.html?conversation=${encodeURIComponent(convo || '')}&embed=1&modal=1`
+        messagesModal: (id) => `/client-demand-view.html?id=${encodeURIComponent(id || '')}&embed=1&modal=1`
       };
 
       document.body.addEventListener("click", e => {
@@ -837,9 +837,7 @@
         const frame = document.getElementById(frameMap[modalId]);
 
         if (modalEl && frame) {
-          const url = modalId === "messagesModal"
-            ? urlBuilder(itemId, conversation || `demande-${itemId||''}`)
-            : urlBuilder(itemId || '');
+          const url = urlBuilder(itemId || '');
           if (frame.getAttribute('src') !== url) {
             frame.src = url;
           }

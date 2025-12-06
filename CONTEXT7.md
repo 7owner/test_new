@@ -76,7 +76,7 @@ Transition du stockage des pièces jointes des messages du système de fichiers 
 *   Correction des erreurs `404 Not Found` pour les endpoints `GET /api/interventions/:id` et `GET /api/tickets/:id`.
 *   Correction de l'erreur `403 Forbidden` sur `PATCH /api/rendus/:id` en implémentant une autorisation granulaire (Admin ou client propriétaire).
 *   Correction de l'erreur `500 Internal Server Error` (colonne "valeur" manquante) sur `POST /api/interventions/:id/rendus` en ajoutant la colonne `valeur` à la table `rendu_intervention` et en exécutant l'ALTER TABLE sur Heroku.
-*   Correction de l'erreur `409 Conflict` (doublons) sur `POST /api/clients/:id/representants` en affichant l'état des utilisateurs déjà liés.
+*   Correction de `409 Conflict` (doublons) sur `POST /api/clients/:id/representants` en affichant l'état des utilisateurs déjà liés.
 *   Correction de `TypeError: Cannot set properties of null` dans `site-edit.html` en rendant la case à cocher "Ticket Ouvert" visible.
 *   Correction de `TypeError: Cannot set properties of null` dans `client-edit.html` en résolvant l'incohérence entre HTML et JS.
 *   Correction d'erreur `invalid input value for enum site_status` lors de la migration du type `statut` de `site`.
@@ -88,3 +88,40 @@ Cette mise à jour a significativement enrichi les fonctionnalités et stabilis�
 * `ticket-view.html` : bloc Site associé enrichi via `/api/sites/{id}/relations` (nom client, statut, adresse, contact, représentants), lien client en modal, bouton "Voir messages" redirige vers `messagerie.html?conversation_id=demande-{id}`. Représentants admin CRUD, bouton visible en admin.
 * `intervention-view.html` : ajout d'une carte Site associé (mêmes infos et lien client modal) alimentée par `/api/sites/{id}/relations`.
 * `client-demand-view.html` : l'envoi de message inclut désormais `demande_id` dans le FormData pour associer la conversation à la demande.
+
+## Mises à jour effectuées par l'agent (Current Session)
+
+*   **`public/client-demand-view.html`**:
+    *   Fixed `400 Bad Request` error for message sending: ensured `sender_id` is always sent with `FormData` by explicitly casting `userId` and `receiver_id` to `String()` and adding robust client-side checks for their presence.
+
+*   **`public/ticket-view.html`**:
+    *   Modified "Voir messages" button to open a modal (`#messagesModal`) displaying the demand's conversation.
+    *   Logic for displaying messages in the modal: prioritizes `demande_id` conversation, falls back to `ticket_id` conversation.
+    *   Ensured the "Voir messages" button is always visible if a `ticketId` is present.
+    *   Added `userId` extraction at the top of the `DOMContentLoaded` listener for message styling.
+
+*   **`server.js`**:
+    *   Increased JSON payload size limit to `50mb` to resolve `PayloadTooLargeError` on `POST /api/documents`.
+    *   Corrected `GET /api/sites` endpoint to return detailed address fields (`ligne1`, `ligne2`, `code_postal`, `ville`, `pays`) from the `adresse` table.
+    *   Removed duplicate `GET /api/sites` endpoint definition.
+    *   Fixed `invalid input value for enum doc_nature` error for `POST /api/documents` by mapping MIME types (`image/png`, etc.) to valid `doc_nature` ENUM values (`Document`, `Video`, `Audio`, `Autre`) in the application logic.
+
+*   **`public/contrat-view.html`**:
+    *   Implemented a modal (`#siteModal`) to view site details (`site-view.html`) when clicking "Voir le site" from the associated sites list.
+
+*   **`public/site-view.html`**:
+    *   Added display of associated contract titles next to the site name.
+    *   Made contract titles clickable to open `contrat-view.html` in a modal (`#contractModal`).
+    *   Ensured contract titles are white in color.
+
+*   **`public/js/sites.js`**:
+    *   Made addresses in the site list clickable, opening a Google Maps search in a new tab.
+    *   Simplified address parsing logic to directly use fields returned by the corrected `/api/sites` endpoint.
+    *   Improved link styling for Google Maps links (using Bootstrap's `link-primary` class).
+
+*   **`public/client-dashboard.html`**:
+    *   Fixed `loadHistory` function to use the client-specific endpoint `/api/client/sites/${s.id}/relations` to resolve `403 Forbidden` errors.
+    *   Refactored template literal generation in `loadDemands` and `loadHistory` functions for clarity and to avoid syntax errors, by extracting conditional HTML into separate variables.
+    *   Added a "Messages / Suivi" button in the demands list for each demand, opening a `messagesModal` with the demand's conversation.
+    *   Added `messagesModal` and `messagesFrame` to `client-dashboard.html` for displaying conversations.
+    *   Updated `frameMap` and `modalUrlMap` to include the new `messagesModal`.
