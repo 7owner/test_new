@@ -436,8 +436,9 @@
           </div>
         `).join("");
 
-        // Update stats
-        document.getElementById("stats-interventions").textContent = arr.length;
+        // Update stats (si présent dans le DOM)
+        const statsEl = document.getElementById("stats-interventions");
+        if (statsEl) statsEl.textContent = arr.length;
       };
 
       try {
