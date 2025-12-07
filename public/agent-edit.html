@@ -157,8 +157,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
       prenom:prenom.value.trim(),
       email:email.value.trim(),
       tel:telephone.value.trim(),
-      fonction:fonctionVal || undefined,
-      titre: fonctionVal || undefined,
+      fonction:fonctionVal === '' ? null : fonctionVal, // Send null if empty, otherwise value
       actif:actif.checked,
       admin:admin.checked,
       agence_id:agenceId ?? undefined
