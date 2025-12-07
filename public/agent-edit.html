@@ -64,6 +64,19 @@
       </div>
     </div>
 
+    <!-- Fonction -->
+    <div class="section-title">Fonction</div>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Fonction</label>
+        <input type="text" id="fonction" class="form-control" placeholder="Ex: Chef de projet">
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Agence (libellé)</label>
+        <input type="text" id="agence_libelle" class="form-control" placeholder="Ex: Agence Lyon">
+      </div>
+    </div>
+
     <!-- Agence -->
     <div class="section-title">Agence</div>
     <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
@@ -131,6 +144,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
     document.getElementById("prenom").value = a.prenom||"";
     document.getElementById("email").value = a.email||"";
     document.getElementById("telephone").value = a.tel||"";
+    document.getElementById("fonction").value = a.fonction || "";
+    document.getElementById("agence_libelle").value = a.agence || d.agence?.titre || "";
     document.getElementById("actif").checked = !!a.actif;
     document.getElementById("admin").checked = !!a.admin;
     aH.value = a.agence_id || "";
@@ -145,6 +160,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
       prenom:prenom.value.trim(),
       email:email.value.trim(),
       tel:telephone.value.trim(),
+      fonction:fonction.value.trim(),
+      agence:agence_libelle.value.trim(),
       actif:actif.checked,
       admin:admin.checked,
       agence_id:Number(aH.value)
