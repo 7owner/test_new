@@ -172,7 +172,8 @@ CREATE TABLE IF NOT EXISTS agent (
     admin BOOLEAN DEFAULT FALSE,
     actif BOOLEAN DEFAULT TRUE,
     date_entree DATE,
-    commentaire TEXT
+    commentaire TEXT,
+    fonction VARCHAR(255) DEFAULT 'Non spécifié'
 );
 ALTER TABLE agent ADD COLUMN IF NOT EXISTS tel VARCHAR(50);
 
