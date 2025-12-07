@@ -151,16 +151,16 @@ document.addEventListener("DOMContentLoaded",async()=>{
   document.getElementById("agent-edit-form").addEventListener("submit",async(ev)=>{
     ev.preventDefault();
     const agenceId = aH.value ? Number(aH.value) : null;
+    const fonctionVal = fonction.value.trim();
     const body={
       nom:nom.value.trim(),
       prenom:prenom.value.trim(),
       email:email.value.trim(),
       tel:telephone.value.trim(),
-      fonction:fonction.value.trim(),
-      titre:fonction.value.trim(),
+      fonction:fonctionVal || undefined,
       actif:actif.checked,
       admin:admin.checked,
-      agence_id:agenceId
+      agence_id:agenceId ?? undefined
     };
     const res=await fetch(`/api/agents/${matricule}`,{
       method:"PUT",
