@@ -659,6 +659,9 @@
                 const sat = rel.satisfaction || rel.ticket_satisfaction || rel.satisfaction_ticket || {};
                 if (sat.note != null) t.satisfaction_note = sat.note;
                 if (sat.commentaire != null) t.satisfaction_comment = sat.commentaire;
+                if (sat.envoieok != null) t.envoieok = sat.envoieok;
+                else if (sat.envoye != null) t.envoieok = sat.envoye;
+                else if (sat.envoie_ok != null) t.envoieok = sat.envoie_ok;
               } catch (e) {
                 console.warn(`Impossible de charger la satisfaction du ticket ${t.id}`, e);
               }
@@ -700,9 +703,10 @@
               t.comment ??
               (t.satisfaction && (t.satisfaction.commentaire ?? t.satisfaction.comment))
             ) || "";
+            const feedbackSent = (t.envoieok === true) || (savedNote != null) || !!savedComment;
             let feedbackSection = '';
             if (isTermine) {
-              if (t.satisfaction?.envoieok === true) {
+              if (feedbackSent) {
                 const stars = "★★★★★".slice(0, Math.min(5, Math.max(1, Number(savedNote))));
                 const empty = "☆☆☆☆☆".slice(0, 5 - stars.length);
                 feedbackSection = `
