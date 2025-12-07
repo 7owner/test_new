@@ -702,7 +702,7 @@
             ) || "";
             let feedbackSection = '';
             if (isTermine) {
-              if (savedNote != null) {
+              if (t.satisfaction?.envoieok === true) {
                 const stars = "★★★★★".slice(0, Math.min(5, Math.max(1, Number(savedNote))));
                 const empty = "☆☆☆☆☆".slice(0, 5 - stars.length);
                 feedbackSection = `

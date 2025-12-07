@@ -1185,7 +1185,7 @@ app.get('/api/tickets/:id/relations', authenticateToken, async (req, res) => {
     `, [id])).rows;
 
     // Fetch satisfaction data
-    const satisfaction = (await pool.query('SELECT rating, comment FROM ticket_satisfaction WHERE ticket_id=$1', [id])).rows[0] || null;
+    const satisfaction = (await pool.query('SELECT rating, comment, envoieok FROM ticket_satisfaction WHERE ticket_id=$1', [id])).rows[0] || null;
 
     res.json({ ticket, doe, affaire, site, demande, interventions, documents, images, responsables, agents_assignes, satisfaction });
   } catch (err) {
@@ -2707,7 +2707,7 @@ app.post('/api/tickets/:id/satisfaction', authenticateToken, async (req, res) =>
         }
         
         const result = await pool.query(
-            'INSERT INTO ticket_satisfaction (ticket_id, user_id, rating, comment) VALUES ($1, $2, $3, $4) ON CONFLICT (ticket_id) DO UPDATE SET rating = EXCLUDED.rating, comment = EXCLUDED.comment, created_at = CURRENT_TIMESTAMP RETURNING *',
+            'INSERT INTO ticket_satisfaction (ticket_id, user_id, rating, comment, envoieok) VALUES ($1, $2, $3, $4, TRUE) ON CONFLICT (ticket_id) DO UPDATE SET rating = EXCLUDED.rating, comment = EXCLUDED.comment, envoieok = TRUE, created_at = CURRENT_TIMESTAMP RETURNING *',
             [ticketId, userId, rating, commentaire]
         );
 
