@@ -658,7 +658,9 @@
                 const rel = await api(`/api/tickets/${t.id}/relations`);
                 const sat = rel.satisfaction || rel.ticket_satisfaction || rel.satisfaction_ticket || {};
                 if (sat.note != null) t.satisfaction_note = sat.note;
+                if (sat.rating != null) t.satisfaction_note = sat.rating;
                 if (sat.commentaire != null) t.satisfaction_comment = sat.commentaire;
+                if (sat.comment != null) t.satisfaction_comment = sat.comment;
                 if (sat.envoieok != null) t.envoieok = sat.envoieok;
                 else if (sat.envoye != null) t.envoieok = sat.envoye;
                 else if (sat.envoie_ok != null) t.envoieok = sat.envoie_ok;
@@ -734,7 +736,7 @@
                     </div>
                     <div class="d-flex align-items-center gap-2 mb-2">
                       <span class="text-warning" style="font-size:1.2rem;">${stars}${empty}</span>
-                      <span class="small text-muted">${validNote !== null ? validNote : 'N/A'}/5</span>
+                      <span class="small text-muted">${validNote !== null ? validNote : '—'}/5</span>
                     </div>
                     <div class="text-muted small mb-0">${savedComment ? savedComment.replace(/\n/g,'<br>') : 'Aucun commentaire.'}</div>
                   </div>
