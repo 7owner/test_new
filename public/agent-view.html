@@ -467,7 +467,18 @@
         // Contact info
         document.getElementById("view_email").textContent = a.email || "Non renseigné";
         document.getElementById("view_tel").textContent = a.tel || "Non renseigné";
-        document.getElementById("view_agence").textContent = data.agence?.titre || data.agence?.nom || a.agence || "Non assigné";
+        // Agence (nom lisible). Si absent dans les relations, tenter un fetch direct par id.
+        let agenceLabel = data.agence?.titre || data.agence?.nom || a.agence || "";
+        if (!agenceLabel && a.agence_id) {
+          try {
+            const ra = await fetch(`/api/agences/${a.agence_id}`, { headers, credentials: 'same-origin' });
+            if (ra.ok) {
+              const ga = await ra.json();
+              agenceLabel = ga.titre || ga.nom || ga.designation || `Agence #${a.agence_id}`;
+            }
+          } catch (_) {}
+        }
+        document.getElementById("view_agence").textContent = agenceLabel || "Non assigné";
 
         // Passport info
         document.getElementById("passport-permis").textContent = p.permis || "Aucun";
