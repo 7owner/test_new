@@ -173,7 +173,8 @@ CREATE TABLE IF NOT EXISTS agent (
     actif BOOLEAN DEFAULT TRUE,
     date_entree DATE,
     commentaire TEXT,
-    fonction VARCHAR(255) DEFAULT 'Non spécifié'
+    fonction VARCHAR(255) DEFAULT 'Non spécifié',
+    agence VARCHAR(255)
 );
 ALTER TABLE agent ADD COLUMN IF NOT EXISTS tel VARCHAR(50);
 

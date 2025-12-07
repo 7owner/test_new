@@ -2161,11 +2161,11 @@ app.post('/api/agents', authenticateToken, authorizeAdmin, async (req, res) => {
 app.put('/api/agents/:matricule', authenticateToken, authorizeAdmin, async (req, res) => {
     const { matricule } = req.params;
     console.log('Received body for agent update:', req.body);
-    const { nom, prenom, email, tel, agence_id, actif, admin } = req.body;
+    const { nom, prenom, email, tel, agence_id, actif, admin, fonction, agence } = req.body;
     try {
         const result = await pool.query(
-            'UPDATE agent SET nom = $1, prenom = $2, email = $3, tel = $4, agence_id = $5, actif = $6, admin = $7 WHERE matricule = $8 RETURNING *',
-            [nom, prenom, email, tel, agence_id, actif, admin, matricule]
+            'UPDATE agent SET nom = $1, prenom = $2, email = $3, tel = $4, agence_id = $5, actif = $6, admin = $7, fonction = $8, agence = $9 WHERE matricule = $10 RETURNING *',
+            [nom, prenom, email, tel, agence_id, actif, admin, fonction, agence, matricule]
         );
         if (result.rows.length > 0) {
             res.json(result.rows[0]);
