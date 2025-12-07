@@ -682,12 +682,27 @@
 
           tickets.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
           const finishedTickets = tickets.filter(t => (t.etat || "").toLowerCase() === "termine");
-          pendingCount = finishedTickets.length;
 
-          if (pendingCount > 0) {
-            notifBadge.textContent = pendingCount;
-            notifBadge.style.display = "inline-block";
-          }
+          const hasFeedback = (t) => {
+            const numericNote = Number(
+              t.satisfaction_note ??
+              t.note_satisfaction ??
+              t.rating ??
+              (t.satisfaction && (t.satisfaction.note ?? t.satisfaction.rating))
+            );
+            const validNote = Number.isFinite(numericNote) ? Math.max(1, Math.min(5, Math.round(numericNote))) : null;
+            const savedComment = (
+              t.satisfaction_comment ??
+              t.commentaire_satisfaction ??
+              t.comment ??
+              (t.satisfaction && (t.satisfaction.commentaire ?? t.satisfaction.comment))
+            );
+            return (t.envoieok === true) || (validNote !== null) || !!savedComment;
+          };
+
+          pendingCount = finishedTickets.filter(t => !hasFeedback(t)).length;
+          notifBadge.textContent = pendingCount;
+          notifBadge.style.display = pendingCount > 0 ? "inline-block" : "none";
 
           el.innerHTML = tickets.map(t => {
             const isTermine = (t.etat || "").toLowerCase() === "termine";
