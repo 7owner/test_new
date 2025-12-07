@@ -150,6 +150,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
   // Submit update
   document.getElementById("agent-edit-form").addEventListener("submit",async(ev)=>{
     ev.preventDefault();
+    const agenceId = aH.value ? Number(aH.value) : null;
     const body={
       nom:nom.value.trim(),
       prenom:prenom.value.trim(),
@@ -158,7 +159,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
       fonction:fonction.value.trim(),
       actif:actif.checked,
       admin:admin.checked,
-      agence_id:Number(aH.value)
+      agence_id:agenceId
     };
     const res=await fetch(`/api/agents/${matricule}`,{
       method:"PUT",
