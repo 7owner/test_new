@@ -462,12 +462,12 @@
         const fullName = `${a.prenom || ''} ${a.nom || ''}`.trim() || "Agent inconnu";
         document.getElementById("agent-fullname").textContent = fullName;
         document.getElementById("agent-matricule").textContent = matricule;
-        document.getElementById("agent-role").textContent = a.fonction || "Non spécifié";
+        document.getElementById("agent-role").textContent = a.fonction || a.titre || "Non spécifié";
 
         // Contact info
         document.getElementById("view_email").textContent = a.email || "Non renseigné";
         document.getElementById("view_tel").textContent = a.tel || "Non renseigné";
-        document.getElementById("view_agence").textContent = data.agence?.titre || "Non assigné";
+        document.getElementById("view_agence").textContent = data.agence?.titre || data.agence?.nom || a.agence || "Non assigné";
 
         // Passport info
         document.getElementById("passport-permis").textContent = p.permis || "Aucun";
