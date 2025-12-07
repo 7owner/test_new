@@ -140,7 +140,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
     document.getElementById("prenom").value = a.prenom||"";
     document.getElementById("email").value = a.email||"";
     document.getElementById("telephone").value = a.tel||"";
-    document.getElementById("fonction").value = a.fonction || "";
+    document.getElementById("fonction").value = a.fonction || a.titre || "";
     document.getElementById("actif").checked = !!a.actif;
     document.getElementById("admin").checked = !!a.admin;
     aH.value = a.agence_id || "";
@@ -158,6 +158,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
       email:email.value.trim(),
       tel:telephone.value.trim(),
       fonction:fonctionVal || undefined,
+      titre: fonctionVal || undefined,
       actif:actif.checked,
       admin:admin.checked,
       agence_id:agenceId ?? undefined
