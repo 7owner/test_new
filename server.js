@@ -1264,60 +1264,25 @@ app.get('/api/materiels/:id', authenticateToken, async (req, res) => {
 
 // Create materiel (admin)
 app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) => {
-  const { reference, designation, categorie, fabricant, prix_achat, commentaire, intervention_id, quantite } = req.body;
+  const { reference, designation, categorie, fabricant, prix_achat, commentaire } = req.body;
   try {
-    let validInterventionId = null;
-    if (Number.isFinite(intervention_id)) {
-      const chk = await pool.query('SELECT id FROM intervention WHERE id=$1', [intervention_id]);
-      if (chk.rowCount === 0) {
-        return res.status(400).json({ error: 'Intervention inexistante' });
-      }
-      validInterventionId = intervention_id;
-    }
-
     const r = await pool.query(
-      'INSERT INTO materiel (reference, designation, categorie, fabricant, prix_achat, commentaire, intervention_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
-      [reference || null, designation || null, categorie || null, fabricant || null, prix_achat || null, commentaire || null, validInterventionId]
+      'INSERT INTO materiel (reference, designation, categorie, fabricant, prix_achat, commentaire) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
+      [reference || null, designation || null, categorie || null, fabricant || null, prix_achat || null, commentaire || null]
     );
-    // si intervention_id fourni, on crée aussi le lien dans intervention_materiel
-    if (validInterventionId) {
-      await pool.query(
-        'INSERT INTO intervention_materiel (intervention_id, materiel_id, quantite, commentaire) VALUES ($1,$2,COALESCE($3,1),$4)',
-        [validInterventionId, r.rows[0].id, Number.isFinite(quantite) ? quantite : null, commentaire || null]
-      );
-    }
     res.status(201).json(r.rows[0]);
   } catch (e) { console.error('Error creating materiel:', e); res.status(500).json({ error: 'Internal Server Error' }); }
 });
 
 // Update materiel (admin)
 app.put('/api/materiels/:id', authenticateToken, authorizeAdmin, async (req, res) => {
-  const { reference, designation, categorie, fabricant, prix_achat, commentaire, intervention_id, quantite } = req.body;
+  const { reference, designation, categorie, fabricant, prix_achat, commentaire } = req.body;
   try {
-    let validInterventionId = null;
-    if (Number.isFinite(intervention_id)) {
-      const chk = await pool.query('SELECT id FROM intervention WHERE id=$1', [intervention_id]);
-      if (chk.rowCount === 0) {
-        return res.status(400).json({ error: 'Intervention inexistante' });
-      }
-      validInterventionId = intervention_id;
-    }
-
     const r = await pool.query(
-      'UPDATE materiel SET reference=$1, designation=$2, categorie=$3, fabricant=$4, prix_achat=$5, commentaire=$6, intervention_id=$7 WHERE id=$8 RETURNING *',
-      [reference || null, designation || null, categorie || null, fabricant || null, prix_achat || null, commentaire || null, validInterventionId, req.params.id]
+      'UPDATE materiel SET reference=$1, designation=$2, categorie=$3, fabricant=$4, prix_achat=$5, commentaire=$6 WHERE id=$7 RETURNING *',
+      [reference || null, designation || null, categorie || null, fabricant || null, prix_achat || null, commentaire || null, req.params.id]
     );
     if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
-
-    // si intervention fournie, on rafraîchit le lien intervention_materiel
-    if (validInterventionId) {
-      await pool.query('DELETE FROM intervention_materiel WHERE materiel_id=$1', [req.params.id]);
-      await pool.query(
-        'INSERT INTO intervention_materiel (intervention_id, materiel_id, quantite, commentaire) VALUES ($1,$2,COALESCE($3,1),$4)',
-        [validInterventionId, req.params.id, Number.isFinite(quantite) ? quantite : null, commentaire || null]
-      );
-    }
-
     res.json(r.rows[0]);
   } catch (e) { console.error('Error updating materiel:', e); res.status(500).json({ error: 'Internal Server Error' }); }
 });

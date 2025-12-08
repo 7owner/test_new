@@ -261,8 +261,7 @@ CREATE TABLE IF NOT EXISTS materiel (
     fabricant TEXT,
     prix_achat NUMERIC(12,2),
     commentaire TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    intervention_id INTEGER REFERENCES intervention(id) ON DELETE SET NULL
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS intervention_materiel (
