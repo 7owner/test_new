@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           ]);
           if (sRes.status===401||sRes.status===403){ try{ location.replace('/login.html'); }catch{ location.href='/login.html'; } return; }
           apiSites = sRes.ok ? await sRes.json() : [];
-          apiAgents = aRes.ok ? await aRes.json() : [];
+          apiAgents = aRes && aRes.ok ? await aRes.json() : [];
           openDemandSites = new Set();
           if (dRes && dRes.ok) {
             const demands = await dRes.json();
@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           }
           applyFilters();
         } catch (e) {
+          console.error(e);
           grid.innerHTML = '<div class="col-12 text-danger">Erreur de chargement.</div>';
         }
       }

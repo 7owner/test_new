@@ -108,71 +108,7 @@
 </head>
 
 <body class="dashboard-bg">
-  <!-- HEADER avec barre utilisateur -->
-  <header class="header d-flex justify-content-between align-items-center mb-4 p-3 bg-white shadow-sm rounded">
-    <h1 class="m-0">
-      <a href="/dashboard.html" class="text-decoration-none text-dark">
-        <img src="/logo_logicielle.png" alt="Logo" style="height: 30px; vertical-align: middle; margin-right: 10px;">
-        <span class="fw-bold"></span>
-      </a>
-    </h1>
-
-    <div id="user-info-container" class="d-flex align-items-center gap-3">
-      <div class="d-flex align-items-center bg-light border rounded-pill px-3 py-1 shadow-sm">
-        <a id="user-icon-link" class="text-decoration-none" href="#" data-bs-toggle="tooltip" title="">
-          <i class="bi bi-person-circle text-primary fs-4 me-2"></i>
-        </a>
-        <div class="text-nowrap fw-medium text-secondary">Bienvenue</div>
-      </div>
-      <div class="d-flex align-items-center gap-2">
-      <!--  <select id="demande-filter" class="form-select form-select-sm" style="max-width:220px">
-          <option value="">Toutes les demandes</option>
-        </select>-->
-          <div class="dropdown">
-            <button class="btn btn-outline-primary btn-sm position-relative" id="notif-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="bi bi-bell"></i>
-              <span class="badge rounded-pill bg-danger" id="notif-badge" style="display:none;">0</span>
-            </button>
-          <div class="dropdown-menu dropdown-menu-end p-0 shadow" aria-labelledby="notif-toggle" style="min-width:320px;">
-            <div class="p-3 border-bottom fw-semibold">Messages récents</div>
-            <div id="notif-list" class="list-group list-group-flush" style="max-height:320px; overflow-y:auto;">
-              <div class="list-group-item text-muted">Aucune notification.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-     <!-- <button id="logout-btn" class="btn btn-outline-danger btn-sm rounded-pill">
-        <i class="bi bi-box-arrow-right me-1"></i> Déconnexion
-      </button>-->
-      <button type="button" class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-        <i class="bi bi-list"></i>
-      </button>
-    </div>
-  </header>
-
-  <!-- MENU LATERAL -->
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-    <div class="offcanvas-header">
-      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
-    </div>
-    <div class="offcanvas-body">
-      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item"><a class="nav-link active" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
-        <li class="nav-item"><a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a></li>
-        <li class="nav-item"><a class="nav-link" href="/clients.html"><i class="bi bi-person-badge me-2"></i>Clients</a></li>
-        <li class="nav-item"><a class="nav-link" href="/factures.html"><i class="bi bi-person-plus-fill me-2"></i>Nouveau Client</a></li>
-      <!--  <li class="nav-item"><a class="nav-link" href="/demandes-client-admin.html"><i class="bi bi-inbox me-2"></i>Demandes client (Admin)</a></li>-->
-        <li class="nav-item"><a class="nav-link" href="/tickets.html"><i class="bi bi-tools me-2"></i>Tickets</a></li>
-        <li class="nav-item"><a class="nav-link" href="/contrats.html"><i class="bi bi-calendar-event-fill me-2"></i>Contrats</a></li>
-        <li class="nav-item"><a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a></li>
-        <li class="nav-item"><a class="nav-link" href="/materiel-gestion.html"><i class="bi bi-receipt-cutoff me-2"></i>Catalogue_materiel</a></li>
-      <!--  <li class="nav-item"><a class="nav-link" href="/client-dashboard.html"><i class="bi bi-person-workspace me-2"></i>Espace Client</a></li>-->
-        <li class="nav-item"><a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
-      </ul>
-    </div>
-  </div>
+  <div id="navbar-placeholder"></div>
 
   <!-- CONTENU PRINCIPAL -->
   <main class="container mt-4 mb-5">
@@ -337,246 +273,85 @@
     });
   </script>
 
-  <!-- Script du message de bienvenue -->
+  <!-- Script du graphique mensuel -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const userIconLink = document.getElementById('user-icon-link');
-    const logoutBtn = document.getElementById('logout-btn');
-    const notifBadge = document.getElementById('notif-badge');
-    const notifList = document.getElementById('notif-list');
-    const demandeFilter = document.getElementById('demande-filter');
-    let userId = null;
-    let demandesCache = [];
+  (function () {
+    const CANVAS_ID = 'monthlyMaintenanceChart';
 
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        if (userIconLink) userIconLink.setAttribute('title', 'Invité');
+    document.addEventListener('DOMContentLoaded', initMonthlyChart);
+
+    async function initMonthlyChart() {
+      if (!window.Chart) {
+        console.error('Chart.js non chargÃ©.');
+        return;
+      }
+      const canvas = document.getElementById(CANVAS_ID);
+      if (!canvas) {
+        console.error(`Canvas #${CANVAS_ID} introuvable.`);
         return;
       }
 
-      // 🔍 Décodage du token
-      const payload = JSON.parse(atob(token.split('.')[1] || ''));
-      const email = payload?.email || 'Utilisateur';
-      const matricule = payload?.matricule || payload?.sub || null;
-      userId = payload?.id || null;
-
-      if (userIconLink) {
-        userIconLink.setAttribute('title', email);
-        if (matricule) userIconLink.href = `/agent-view.html?matricule=${encodeURIComponent(matricule)}`;
-        try { new bootstrap.Tooltip(userIconLink); } catch {}
+      if (canvas._chartInstance) {
+        try { canvas._chartInstance.destroy(); } catch {}
+        canvas._chartInstance = null;
       }
 
-      logoutBtn.addEventListener('click', () => {
-        if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
-          localStorage.removeItem('token');
-          window.location.href = '/login.html';
-        }
-      });
-    } catch (err) {
-      console.error('Erreur lors du décodage du token JWT:', err);
-      if (userIconLink) userIconLink.setAttribute('title', 'Utilisateur');
-    }
+      let labels = ['Jan', 'FÃ©v', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'AoÃ»t', 'Sept', 'Oct', 'Nov', 'DÃ©c'];
+      let values = null;
 
-    async function fetchDemandes() {
       try {
-        const r = await fetch('/api/demandes_client?sort=id&direction=desc', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')||''}` }, credentials:'same-origin' });
-        const data = r.ok ? await r.json() : [];
-        demandesCache = Array.isArray(data) ? data : [];
-        if (demandeFilter) {
-          demandeFilter.innerHTML = '<option value="">Toutes les demandes</option>';
-          demandesCache.forEach(d => {
-            const opt = document.createElement('option');
-            opt.value = d.id;
-            opt.textContent = `Demande #${d.id} - ${d.nom_site || 'N/A'}`;
-            demandeFilter.appendChild(opt);
-          });
+        const token = localStorage.getItem('token') || '';
+        const res = await fetch('/api/stats/tickets/monthly', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data?.values)) {
+            values = data.values.map(v => Number(v) || 0);
+            if (Array.isArray(data.labels)) labels = data.labels;
+          }
         }
-      } catch (_) {}
-    }
+      } catch (e) {
+        console.warn('Erreur API, fallback.');
+      }
 
-    function getReadMap() {
+      if (!Array.isArray(values) || values.every(v => isNaN(v))) {
+        values = [3, 4, 6, 2, 5, 7, 8, 6, 4, 3, 5, 7];
+      }
+
       try {
-        return JSON.parse(localStorage.getItem('notifReads') || '{}');
-      } catch (_) {
-        return {};
-      }
-    }
-    function setRead(conversationId, ts) {
-      const map = getReadMap();
-      map[conversationId] = ts;
-      localStorage.setItem('notifReads', JSON.stringify(map));
-    }
-
-    async function updateNotifications() {
-      if (!notifList || !notifBadge || !userId) return;
-      const readMap = getReadMap();
-      const selectedId = demandeFilter && demandeFilter.value ? demandeFilter.value : null;
-      const demands = selectedId ? demandesCache.filter(d => String(d.id)===String(selectedId)) : demandesCache;
-      if (!demands.length) { notifBadge.style.display='none'; notifList.innerHTML='<div class="list-group-item text-muted">Aucune demande</div>'; return; }
-      notifList.innerHTML = '<div class="list-group-item text-muted">Chargement…</div>';
-      let totalThreads = 0;
-      const items = [];
-      for (const d of demands) {
-        try {
-          const convId = `demande-${d.id}`;
-          const res = await fetch(`/api/conversations/${convId}`, { headers:{ 'Authorization': `Bearer ${localStorage.getItem('token')||''}` }, credentials:'same-origin' });
-          if (!res.ok) continue;
-          const msgs = await res.json();
-          const incoming = (Array.isArray(msgs)? msgs:[]).filter(m => m.sender_id !== userId);
-          if (incoming.length) {
-            const last = incoming[incoming.length-1];
-            const lastTs = last && last.created_at ? new Date(last.created_at).getTime() : 0;
-            const lastRead = readMap[convId] ? Number(readMap[convId]) : 0;
-            if (lastTs && lastTs <= lastRead) {
-              continue; // already read
-            }
-            totalThreads += 1;
-            items.push(`
-              <div class="list-group-item">
-                <div class="d-flex justify-content-between">
-                  <strong>Demande #${d.id}${d.titre ? ' - ' + d.titre : ''}</strong>
-                  <small>${last.created_at ? new Date(last.created_at).toLocaleString() : ''}</small>
-                </div>
-                <div class="text-truncate">${last.body || '(Pièce jointe)'}</div>
-                <button class="btn btn-sm btn-primary mt-2 open-conv-btn" data-id="${d.id}" data-ts="${lastTs}">Ouvrir</button>
-              </div>
-            `);
-          }
-        } catch(_){}
-      }
-      notifBadge.textContent = totalThreads;
-      notifBadge.style.display = totalThreads ? 'inline-block' : 'none';
-      notifList.innerHTML = items.length ? items.join('') : '<div class="list-group-item text-muted">Aucun nouveau message.</div>';
-      notifList.querySelectorAll('.open-conv-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const id = e.currentTarget.dataset.id;
-          const ts = Number(e.currentTarget.dataset.ts || 0);
-          const dd = bootstrap.Dropdown.getInstance(document.getElementById('notif-toggle'));
-          if (dd) dd.hide();
-
-          // Ouvre le fil de messages dans le modal intégré
-          const modalEl = document.getElementById('notifConversationModal');
-          const frame = document.getElementById('notifConversationFrame');
-          if (modalEl && frame) {
-            frame.src = `/messagerie.html?conversation=demande-${id}`;
-            const m = new bootstrap.Modal(modalEl);
-            m.show();
-          }
-
-          // Retire la notification de la liste pour marquer comme lue
-          setRead(`demande-${id}`, ts || Date.now());
-          const item = e.currentTarget.closest('.list-group-item');
-          if (item) item.remove();
-          const remaining = notifList.querySelectorAll('.open-conv-btn').length;
-          notifBadge.textContent = remaining;
-          notifBadge.style.display = remaining ? 'inline-block' : 'none';
-          if (!remaining) {
-            notifList.innerHTML = '<div class="list-group-item text-muted">Aucun nouveau message.</div>';
+        const ctx = canvas.getContext('2d');
+        const chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Tickets crÃ©Ã©s',
+              data: values,
+              borderColor: '#0d6efd',
+              backgroundColor: 'rgba(13,110,253,0.2)',
+              tension: 0.3,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
           }
         });
-      });
-    }
 
-    if (demandeFilter) demandeFilter.addEventListener('change', updateNotifications);
-    fetchDemandes().then(updateNotifications);
-  });
-  </script>
-
-
-  <!-- Script du graphique mensuel -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-(function () {
-  const CANVAS_ID = 'monthlyMaintenanceChart';
-
-  document.addEventListener('DOMContentLoaded', initMonthlyChart);
-
-  async function initMonthlyChart() {
-    if (!window.Chart) {
-      console.error('Chart.js non chargÃ©.');
-      return;
-    }
-    const canvas = document.getElementById(CANVAS_ID);
-    if (!canvas) {
-      console.error(`Canvas #${CANVAS_ID} introuvable.`);
-      return;
-    }
-
-    if (canvas._chartInstance) {
-      try { canvas._chartInstance.destroy(); } catch {}
-      canvas._chartInstance = null;
-    }
-
-    let labels = ['Jan', 'FÃ©v', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'AoÃ»t', 'Sept', 'Oct', 'Nov', 'DÃ©c'];
-    let values = null;
-
-    try {
-      const token = localStorage.getItem('token') || '';
-      const res = await fetch('/api/stats/tickets/monthly', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data?.values)) {
-          values = data.values.map(v => Number(v) || 0);
-          if (Array.isArray(data.labels)) labels = data.labels;
-        }
+        canvas._chartInstance = chart;
+        requestAnimationFrame(() => chart.resize());
+      } catch (e) {
+        console.error('Erreur Chart.js:', e);
       }
-    } catch (e) {
-      console.warn('Erreur API, fallback.');
     }
-
-    if (!Array.isArray(values) || values.every(v => isNaN(v))) {
-      values = [3, 4, 6, 2, 5, 7, 8, 6, 4, 3, 5, 7];
-    }
-
-    try {
-      const ctx = canvas.getContext('2d');
-      const chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            label: 'Tickets crÃ©Ã©s',
-            data: values,
-            borderColor: '#0d6efd',
-            backgroundColor: 'rgba(13,110,253,0.2)',
-            tension: 0.3,
-            fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true } }
-        }
-      });
-
-      canvas._chartInstance = chart;
-      requestAnimationFrame(() => chart.resize());
-    } catch (e) {
-      console.error('Erreur Chart.js:', e);
-    }
-  }
-})();
-</script>
+  })();
+  </script>
 
 </body>
 </html>
-
-  <div class="modal fade" id="notifConversationModal" tabindex="-1" aria-labelledby="notifConversationModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="notifConversationModalLabel">Conversation</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <iframe id="notifConversationFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
-        </div>
-      </div>
-    </div>
-  </div>
