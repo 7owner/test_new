@@ -21,23 +21,27 @@ DROP TABLE IF EXISTS intervention_materiel CASCADE;
 DROP TABLE IF EXISTS materiel CASCADE;
 DROP TABLE IF EXISTS intervention CASCADE;
 DROP TABLE IF EXISTS rapport_ticket CASCADE;
+DROP TABLE IF EXISTS ticket_historique_responsable CASCADE;
+DROP TABLE IF EXISTS ticket_responsable CASCADE;
+DROP TABLE IF EXISTS ticket_agent CASCADE;
 DROP TABLE IF EXISTS ticket CASCADE;
+DROP TABLE IF EXISTS demande_client CASCADE;
 DROP TABLE IF EXISTS site_affaire CASCADE;
 DROP TABLE IF EXISTS doe CASCADE;
 DROP TABLE IF EXISTS affaire CASCADE;
+DROP TABLE IF EXISTS client_representant CASCADE;
 DROP TABLE IF EXISTS client CASCADE;
+DROP TABLE IF EXISTS site_responsable CASCADE;
+DROP TABLE IF EXISTS site_agent CASCADE;
 DROP TABLE IF EXISTS site CASCADE;
 DROP TABLE IF EXISTS agence CASCADE;
 DROP TABLE IF EXISTS adresse CASCADE;
+DROP TABLE IF EXISTS passeport CASCADE;
+DROP TABLE IF EXISTS formation CASCADE;
 DROP TABLE IF EXISTS agent CASCADE;
 DROP TABLE IF EXISTS password_reset_tokens CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS audit_log CASCADE;
-DROP TABLE IF EXISTS ticket_responsable CASCADE;
-DROP TABLE IF EXISTS site_responsable CASCADE;
-DROP TABLE IF EXISTS site_agent CASCADE;
-DROP TABLE IF EXISTS ticket_agent CASCADE;
-DROP TABLE IF EXISTS demande_client CASCADE;
 
 -- --------------------------------------------------
 -- Enum types
@@ -53,6 +57,7 @@ DROP TYPE IF EXISTS statut_facture CASCADE;
 DROP TYPE IF EXISTS mode_reglement CASCADE;
 DROP TYPE IF EXISTS role_agence CASCADE;
 DROP TYPE IF EXISTS type_formation CASCADE;
+DROP TYPE IF EXISTS site_status CASCADE;
 
 CREATE TYPE statut_intervention AS ENUM ('En_attente','Termine');
 CREATE TYPE etat_rapport        AS ENUM ('Pas_commence','En_cours','Termine');
@@ -70,26 +75,10 @@ CREATE TYPE role_agence         AS ENUM ('Admin','Manager','Membre');
 CREATE TYPE type_formation      AS ENUM ('Habilitation','Certification','Permis');
 CREATE TYPE site_status AS ENUM ('Actif', 'Inactif');
 
--- Add new Contrat table and its association with sites
-CREATE TABLE IF NOT EXISTS contrat (
-    id SERIAL PRIMARY KEY,
-    titre VARCHAR(255) NOT NULL,
-    date_debut DATE NOT NULL,
-    date_fin DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS contrat_site_association (
-    id SERIAL PRIMARY KEY,
-    contrat_id BIGINT NOT NULL REFERENCES contrat(id) ON DELETE CASCADE,
-    site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
-    UNIQUE (contrat_id, site_id)
-);
-
 -- --------------------------------------------------
--- CORE ENTITIES (Order fixed)
+-- CORE ENTITIES
 -- --------------------------------------------------
-DROP TABLE IF EXISTS users;
+
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(180) UNIQUE NOT NULL,
@@ -122,7 +111,7 @@ CREATE TABLE IF NOT EXISTS agence (
     id SERIAL PRIMARY KEY,
     titre VARCHAR(255) NOT NULL,
     designation VARCHAR(255),
-    adresse_id BIGINT,
+    adresse_id BIGINT REFERENCES adresse(id) ON DELETE SET NULL,
     telephone VARCHAR(50),
     email VARCHAR(255),
     date_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -131,11 +120,11 @@ CREATE TABLE IF NOT EXISTS agence (
 
 CREATE TABLE IF NOT EXISTS client (
     id SERIAL PRIMARY KEY,
-    nom_client VARCHAR(255) NOT NULL,
+    nom_client VARCHAR(255) NOT NULL UNIQUE,
     representant_nom VARCHAR(255),
     representant_email VARCHAR(255),
     representant_tel VARCHAR(50),
-    adresse_id BIGINT,
+    adresse_id BIGINT REFERENCES adresse(id) ON DELETE SET NULL,
     user_id INTEGER,
     commentaire TEXT
 );
@@ -143,22 +132,19 @@ CREATE TABLE IF NOT EXISTS client (
 CREATE TABLE IF NOT EXISTS site (
     id SERIAL PRIMARY KEY,
     nom_site VARCHAR(255) NOT NULL,
-    adresse_id BIGINT,
-    client_id BIGINT,
+    adresse_id BIGINT REFERENCES adresse(id) ON DELETE SET NULL,
+    client_id BIGINT REFERENCES client(id) ON DELETE SET NULL,
     commentaire TEXT,
     ticket BOOLEAN DEFAULT FALSE NOT NULL,
     responsable_matricule VARCHAR(20),
     statut site_status DEFAULT 'Actif' NOT NULL
 );
 
-
-ALTER TABLE site ADD FOREIGN KEY (client_id) REFERENCES client(id) ON DELETE SET NULL;
-
 CREATE TABLE IF NOT EXISTS affaire (
     id SERIAL PRIMARY KEY,
     nom_affaire VARCHAR(255) NOT NULL,
     numero_affaire VARCHAR(255) UNIQUE,
-    client_id BIGINT,
+    client_id BIGINT REFERENCES client(id) ON DELETE SET NULL,
     description TEXT
 );
 
@@ -167,16 +153,16 @@ CREATE TABLE IF NOT EXISTS agent (
     nom VARCHAR(255) NOT NULL,
     prenom VARCHAR(255),
     email VARCHAR(255) UNIQUE NOT NULL,
-    agence_id BIGINT,
-    user_id INTEGER UNIQUE,
+    agence_id BIGINT REFERENCES agence(id) ON DELETE SET NULL,
+    user_id INTEGER UNIQUE REFERENCES users(id) ON DELETE SET NULL,
     admin BOOLEAN DEFAULT FALSE,
     actif BOOLEAN DEFAULT TRUE,
     date_entree DATE,
     commentaire TEXT,
     fonction VARCHAR(255) DEFAULT 'Non spécifié',
-    agence VARCHAR(255)
+    agence VARCHAR(255),
+    tel VARCHAR(50)
 );
-ALTER TABLE agent ADD COLUMN IF NOT EXISTS tel VARCHAR(50);
 
 CREATE TABLE IF NOT EXISTS passeport (
     id SERIAL PRIMARY KEY,
@@ -186,7 +172,6 @@ CREATE TABLE IF NOT EXISTS passeport (
     date_expiration DATE
 );
 
-DROP TABLE IF EXISTS formation CASCADE;
 CREATE TABLE IF NOT EXISTS formation (
     id SERIAL PRIMARY KEY,
     agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
@@ -196,18 +181,58 @@ CREATE TABLE IF NOT EXISTS formation (
     date_validite DATE
 );
 
+CREATE TABLE IF NOT EXISTS contrat (
+    id SERIAL PRIMARY KEY,
+    titre VARCHAR(255) NOT NULL UNIQUE,
+    date_debut DATE NOT NULL,
+    date_fin DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS contrat_site_association (
+    id SERIAL PRIMARY KEY,
+    contrat_id BIGINT NOT NULL REFERENCES contrat(id) ON DELETE CASCADE,
+    site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
+    UNIQUE (contrat_id, site_id)
+);
+
 CREATE TABLE IF NOT EXISTS site_affaire (
     id SERIAL PRIMARY KEY,
-    site_id BIGINT NOT NULL,
-    affaire_id BIGINT
+    site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
+    affaire_id BIGINT REFERENCES affaire(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS doe (
     id SERIAL PRIMARY KEY,
-    site_id BIGINT NOT NULL,
-    affaire_id BIGINT,
+    site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
+    affaire_id BIGINT REFERENCES affaire(id) ON DELETE CASCADE,
     titre VARCHAR(255) NOT NULL,
     description TEXT
+);
+
+CREATE TABLE IF NOT EXISTS demande_client (
+    id SERIAL PRIMARY KEY,
+    client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'En cours de traitement',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ticket_id INTEGER,
+    commentaire TEXT
+);
+
+CREATE TABLE IF NOT EXISTS demande_client (
+    id SERIAL PRIMARY KEY,
+    client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'En cours de traitement',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ticket_id INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS ticket (
@@ -226,32 +251,22 @@ CREATE TABLE IF NOT EXISTS ticket (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS ticket_historique_responsable (
-    id SERIAL PRIMARY KEY,
-    ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
-    ancien_responsable_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
-    nouveau_responsable_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
-    modifie_par_matricule VARCHAR(20),
-    date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+ALTER TABLE demande_client ADD FOREIGN KEY (ticket_id) REFERENCES ticket(id) ON DELETE SET NULL;
 
+ALTER TABLE demande_client ADD FOREIGN KEY (ticket_id) REFERENCES ticket(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS intervention (
     id SERIAL PRIMARY KEY,
-    ticket_id BIGINT NOT NULL,
+    ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
     site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
     demande_id BIGINT REFERENCES demande_client(id) ON DELETE SET NULL,
     titre VARCHAR(255),
     description TEXT,
     date_debut DATE NOT NULL,
     date_fin DATE,
-    intervention_precedente_id BIGINT,
-    status statut_intervention DEFAULT 'Pas_commence' NOT NULL
+    intervention_precedente_id BIGINT REFERENCES intervention(id) ON DELETE SET NULL,
+    status statut_intervention DEFAULT 'En_attente' NOT NULL
 );
-
--- --------------------------------------------------
--- MATÉRIEL ET LIAISONS (déplacé après intervention)
--- --------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS materiel (
     id SERIAL PRIMARY KEY,
@@ -276,17 +291,6 @@ CREATE TABLE IF NOT EXISTS intervention_materiel (
     commentaire TEXT
 );
 
-CREATE TABLE IF NOT EXISTS materiel_image (
-    id SERIAL PRIMARY KEY,
-    materiel_id INTEGER NOT NULL REFERENCES materiel(id) ON DELETE CASCADE,
-    nom_fichier TEXT,
-    type_mime TEXT
-);
-
--- --------------------------------------------------
--- AUTRES ENTITÉS
--- --------------------------------------------------
-
 CREATE TABLE IF NOT EXISTS rendezvous (
     id SERIAL PRIMARY KEY,
     titre VARCHAR(255),
@@ -295,14 +299,14 @@ CREATE TABLE IF NOT EXISTS rendezvous (
     date_fin TIMESTAMP,
     statut statut_rdv DEFAULT 'Planifie',
     sujet sujet_type DEFAULT 'intervention',
-    intervention_id BIGINT,
-    site_id BIGINT
+    intervention_id BIGINT REFERENCES intervention(id) ON DELETE SET NULL,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS rapport_ticket (
     id SERIAL PRIMARY KEY,
-    ticket_id BIGINT NOT NULL,
-    matricule VARCHAR(20),
+    ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
+    matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
     commentaire_interne TEXT,
     etat etat_rapport DEFAULT 'Pas_commence'
 );
@@ -327,7 +331,15 @@ CREATE TABLE IF NOT EXISTS ticket_responsable (
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Agent assignments for tickets
+CREATE TABLE IF NOT EXISTS ticket_historique_responsable (
+    id SERIAL PRIMARY KEY,
+    ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
+    ancien_responsable_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
+    nouveau_responsable_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
+    modifie_par_matricule VARCHAR(20),
+    date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS ticket_agent (
     id SERIAL PRIMARY KEY,
     ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
@@ -336,7 +348,6 @@ CREATE TABLE IF NOT EXISTS ticket_agent (
     date_fin TIMESTAMP WITHOUT TIME ZONE NULL
 );
 
--- Site agent assignments
 CREATE TABLE IF NOT EXISTS site_agent (
     id SERIAL PRIMARY KEY,
     site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
@@ -345,7 +356,6 @@ CREATE TABLE IF NOT EXISTS site_agent (
     date_fin TIMESTAMP WITHOUT TIME ZONE NULL
 );
 
--- Site responsables
 CREATE TABLE IF NOT EXISTS site_responsable (
     id SERIAL PRIMARY KEY,
     site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
@@ -364,48 +374,48 @@ CREATE TABLE IF NOT EXISTS fonction (
 
 CREATE TABLE IF NOT EXISTS agent_fonction (
     id SERIAL PRIMARY KEY,
-    agent_matricule VARCHAR(20) NOT NULL,
-    fonction_id BIGINT NOT NULL,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    fonction_id BIGINT NOT NULL REFERENCES fonction(id) ON DELETE CASCADE,
     principal BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS equipe (
     id SERIAL PRIMARY KEY,
-    agence_id BIGINT NOT NULL,
+    agence_id BIGINT NOT NULL REFERENCES agence(id) ON DELETE CASCADE,
     nom VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS agent_equipe (
     id SERIAL PRIMARY KEY,
-    equipe_id BIGINT NOT NULL,
-    agent_matricule VARCHAR(20) NOT NULL
+    equipe_id BIGINT NOT NULL REFERENCES equipe(id) ON DELETE CASCADE,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS agence_membre (
     id SERIAL PRIMARY KEY,
-    agence_id BIGINT NOT NULL,
-    agent_matricule VARCHAR(20) NOT NULL,
+    agence_id BIGINT NOT NULL REFERENCES agence(id) ON DELETE CASCADE,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
     role role_agence DEFAULT 'Membre'
 );
 
 CREATE TABLE IF NOT EXISTS achat (
     id SERIAL PRIMARY KEY,
     reference VARCHAR(100),
-    affaire_id BIGINT,
-    site_id BIGINT,
+    affaire_id BIGINT REFERENCES affaire(id) ON DELETE SET NULL,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
     statut statut_achat DEFAULT 'Brouillon'
 );
 
 CREATE TABLE IF NOT EXISTS facture (
     id SERIAL PRIMARY KEY,
-    client_id BIGINT,
-    affaire_id BIGINT,
+    client_id BIGINT REFERENCES client(id) ON DELETE SET NULL,
+    affaire_id BIGINT REFERENCES affaire(id) ON DELETE SET NULL,
     statut statut_facture DEFAULT 'Brouillon'
 );
 
 CREATE TABLE IF NOT EXISTS reglement (
     id SERIAL PRIMARY KEY,
-    facture_id BIGINT NOT NULL,
+    facture_id BIGINT NOT NULL REFERENCES facture(id) ON DELETE CASCADE,
     montant NUMERIC(12,2)
 );
 
@@ -416,26 +426,18 @@ CREATE TABLE IF NOT EXISTS images (
     taille_octets BIGINT,
     image_blob BYTEA,
     commentaire_image TEXT,
-    auteur_matricule VARCHAR(20),
+    auteur_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
     cible_type doc_cible_type,
     cible_id BIGINT
 );
 
-CREATE TABLE IF NOT EXISTS demande_client (
+CREATE TABLE IF NOT EXISTS materiel_image (
     id SERIAL PRIMARY KEY,
-    client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
-    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
-    titre VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    status VARCHAR(50) DEFAULT 'En cours de traitement',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ticket_id INTEGER REFERENCES ticket(id) ON DELETE SET NULL
+    materiel_id INTEGER NOT NULL REFERENCES materiel(id) ON DELETE CASCADE,
+    nom_fichier TEXT,
+    type_mime TEXT
 );
 
-ALTER TABLE demande_client ADD COLUMN IF NOT EXISTS commentaire TEXT;
-
--- Messagerie
 CREATE TABLE IF NOT EXISTS messagerie (
     id SERIAL PRIMARY KEY,
     conversation_id VARCHAR(255) NOT NULL,
@@ -449,10 +451,6 @@ CREATE TABLE IF NOT EXISTS messagerie (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_messagerie_conversation_id ON messagerie(conversation_id);
-CREATE INDEX IF NOT EXISTS idx_messagerie_sender_id ON messagerie(sender_id);
-CREATE INDEX IF NOT EXISTS idx_messagerie_receiver_id ON messagerie(receiver_id);
-
 CREATE TABLE IF NOT EXISTS messagerie_attachment (
     id SERIAL PRIMARY KEY,
     message_id INTEGER NOT NULL REFERENCES messagerie(id) ON DELETE CASCADE,
@@ -463,22 +461,19 @@ CREATE TABLE IF NOT EXISTS messagerie_attachment (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_messagerie_attachment_message_id ON messagerie_attachment(message_id);
-
 CREATE TABLE IF NOT EXISTS rendu_intervention (
     id SERIAL PRIMARY KEY,
-    intervention_id BIGINT NOT NULL,
+    intervention_id BIGINT NOT NULL REFERENCES intervention(id) ON DELETE CASCADE,
     resume TEXT,
     valeur TEXT
 );
 
 CREATE TABLE IF NOT EXISTS rendu_intervention_image (
     id SERIAL PRIMARY KEY,
-    rendu_intervention_id BIGINT NOT NULL,
-    image_id BIGINT NOT NULL
+    rendu_intervention_id BIGINT NOT NULL REFERENCES rendu_intervention(id) ON DELETE CASCADE,
+    image_id BIGINT NOT NULL REFERENCES images(id) ON DELETE CASCADE
 );
 
-DROP TABLE IF EXISTS documents_repertoire CASCADE;
 CREATE TABLE IF NOT EXISTS documents_repertoire (
     id SERIAL PRIMARY KEY,
     cible_type doc_cible_type,
@@ -488,18 +483,17 @@ CREATE TABLE IF NOT EXISTS documents_repertoire (
     type_mime VARCHAR(100),
     taille_octets BIGINT,
     chemin_fichier VARCHAR(255),
-    checksum_sha256 VARCHAR(255)
+    checksum_sha256 VARCHAR(255),
+    auteur_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL
 );
-
-ALTER TABLE documents_repertoire ADD COLUMN IF NOT EXISTS auteur_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS client_representant (
     id SERIAL PRIMARY KEY,
     client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    nom VARCHAR(255),  -- NEW
-    email VARCHAR(255), -- NEW
-    tel VARCHAR(50),    -- NEW
+    nom VARCHAR(255),
+    email VARCHAR(255),
+    tel VARCHAR(50),
     fonction VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (client_id, user_id)
@@ -514,58 +508,3 @@ CREATE TABLE IF NOT EXISTS ticket_satisfaction (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     envoieok BOOLEAN DEFAULT FALSE
 );
-
--- --------------------------------------------------
--- FOREIGN KEYS
--- --------------------------------------------------
-
-ALTER TABLE client_representant ADD FOREIGN KEY (client_id) REFERENCES client(id) ON DELETE CASCADE;
-ALTER TABLE client_representant ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-
-ALTER TABLE agence ADD FOREIGN KEY (adresse_id) REFERENCES adresse(id) ON DELETE SET NULL;
-ALTER TABLE client ADD FOREIGN KEY (adresse_id) REFERENCES adresse(id) ON DELETE SET NULL;
-ALTER TABLE site ADD FOREIGN KEY (adresse_id) REFERENCES adresse(id) ON DELETE SET NULL;
-ALTER TABLE agent ADD FOREIGN KEY (agence_id) REFERENCES agence(id) ON DELETE SET NULL;
-ALTER TABLE agent ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
-
-ALTER TABLE affaire ADD FOREIGN KEY (client_id) REFERENCES client(id) ON DELETE SET NULL;
-ALTER TABLE site_affaire ADD FOREIGN KEY (site_id) REFERENCES site(id) ON DELETE CASCADE;
-ALTER TABLE site_affaire ADD FOREIGN KEY (affaire_id) REFERENCES affaire(id) ON DELETE CASCADE;
-
-ALTER TABLE doe ADD FOREIGN KEY (site_id) REFERENCES site(id) ON DELETE CASCADE;
-ALTER TABLE doe ADD FOREIGN KEY (affaire_id) REFERENCES affaire(id) ON DELETE CASCADE;
-
-ALTER TABLE ticket ADD FOREIGN KEY (doe_id) REFERENCES doe(id) ON DELETE CASCADE;
-ALTER TABLE ticket ADD FOREIGN KEY (affaire_id) REFERENCES affaire(id) ON DELETE SET NULL;
-ALTER TABLE ticket ADD FOREIGN KEY (site_id) REFERENCES site(id) ON DELETE SET NULL;
-
-ALTER TABLE intervention ADD FOREIGN KEY (ticket_id) REFERENCES ticket(id) ON DELETE CASCADE;
-ALTER TABLE intervention ADD FOREIGN KEY (intervention_precedente_id) REFERENCES intervention(id) ON DELETE SET NULL;
-
-ALTER TABLE rendezvous ADD FOREIGN KEY (intervention_id) REFERENCES intervention(id) ON DELETE SET NULL;
-ALTER TABLE rendezvous ADD FOREIGN KEY (site_id) REFERENCES site(id) ON DELETE SET NULL;
-
-ALTER TABLE rapport_ticket ADD FOREIGN KEY (ticket_id) REFERENCES ticket(id) ON DELETE CASCADE;
-ALTER TABLE rapport_ticket ADD FOREIGN KEY (matricule) REFERENCES agent(matricule) ON DELETE SET NULL;
-
-ALTER TABLE agent_fonction ADD FOREIGN KEY (agent_matricule) REFERENCES agent(matricule) ON DELETE CASCADE;
-ALTER TABLE agent_fonction ADD FOREIGN KEY (fonction_id) REFERENCES fonction(id) ON DELETE CASCADE;
-
-ALTER TABLE agent_equipe ADD FOREIGN KEY (agent_matricule) REFERENCES agent(matricule) ON DELETE CASCADE;
-ALTER TABLE agent_equipe ADD FOREIGN KEY (equipe_id) REFERENCES equipe(id) ON DELETE CASCADE;
-
-ALTER TABLE agence_membre ADD FOREIGN KEY (agence_id) REFERENCES agence(id) ON DELETE CASCADE;
-ALTER TABLE agence_membre ADD FOREIGN KEY (agent_matricule) REFERENCES agent(matricule) ON DELETE CASCADE;
-
-ALTER TABLE achat ADD FOREIGN KEY (affaire_id) REFERENCES affaire(id) ON DELETE SET NULL;
-ALTER TABLE achat ADD FOREIGN KEY (site_id) REFERENCES site(id) ON DELETE SET NULL;
-
-ALTER TABLE facture ADD FOREIGN KEY (client_id) REFERENCES client(id) ON DELETE SET NULL;
-ALTER TABLE facture ADD FOREIGN KEY (affaire_id) REFERENCES affaire(id) ON DELETE SET NULL;
-
-ALTER TABLE reglement ADD FOREIGN KEY (facture_id) REFERENCES facture(id) ON DELETE CASCADE;
-
-ALTER TABLE images ADD FOREIGN KEY (auteur_matricule) REFERENCES agent(matricule) ON DELETE SET NULL;
-ALTER TABLE rendu_intervention ADD FOREIGN KEY (intervention_id) REFERENCES intervention(id) ON DELETE CASCADE;
-ALTER TABLE rendu_intervention_image ADD FOREIGN KEY (rendu_intervention_id) REFERENCES rendu_intervention(id) ON DELETE CASCADE;
-ALTER TABLE rendu_intervention_image ADD FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE;
