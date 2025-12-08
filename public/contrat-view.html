@@ -31,6 +31,35 @@
         <span class="badge bg-primary" id="sites-count">0 site(s)</span>
       </div>
       <div id="sites-grid" class="row g-3"></div>
+      <hr class="my-4">
+      <div class="row g-2 align-items-end mb-3">
+        <div class="col-md-8">
+          <label class="form-label fw-semibold">Associer un site existant</label>
+          <select id="site-select" class="form-select">
+            <option value="">Sélectionner un site...</option>
+          </select>
+        </div>
+        <div class="col-md-4 d-grid">
+          <button class="btn btn-outline-primary" id="add-site-btn"><i class="bi bi-link-45deg me-1"></i>Associer</button>
+        </div>
+      </div>
+      <div id="sites-feedback" class="small mb-3"></div>
+
+      <h6 class="fw-bold mt-3">Créer et associer un site</h6>
+      <form id="create-site-form" class="row g-2">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Nom du site</label>
+          <input class="form-control" id="new-site-nom" placeholder="Ex: Site principal" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Commentaire (optionnel)</label>
+          <input class="form-control" id="new-site-commentaire" placeholder="Notes...">
+        </div>
+        <div class="col-12 d-grid d-md-block">
+          <button type="submit" class="btn btn-outline-success"><i class="bi bi-plus-circle me-1"></i>Créer et associer</button>
+        </div>
+      </form>
+      <div id="create-site-feedback" class="small mt-2"></div>
     </div>
   </div>
 
@@ -96,6 +125,10 @@
       const params = new URLSearchParams(location.search);
       const id = params.get('id');
       const feedback = document.getElementById('feedback');
+      const sitesFeedback = document.getElementById('sites-feedback');
+      const createSiteFeedback = document.getElementById('create-site-feedback');
+      const siteSelect = document.getElementById('site-select');
+      const createSiteForm = document.getElementById('create-site-form');
       if (!id) { feedback.className='text-danger'; feedback.textContent='ID manquant'; return; }
       const token = localStorage.getItem('token');
       const headers = { 'Authorization': token? `Bearer ${token}` : '' };
@@ -110,6 +143,7 @@
       const contratModal = contratModalEl ? new bootstrap.Modal(contratModalEl) : null;
       const contratFeedback = document.getElementById('contrat-feedback');
       const saveContratBtn = document.getElementById('save-contrat-btn');
+      let agentMap = new Map();
 
       try {
         const contrat = await api(`/api/contrats/${id}`);
@@ -117,56 +151,17 @@
         const agents = await api('/api/agents').catch(() => []);
 
         // cache agents par matricule pour éviter les undefined
-        const agentMap = new Map();
+        agentMap = new Map();
         (Array.isArray(agents) ? agents : []).forEach(a => {
           const full = `${a.nom || ''} ${a.prenom || ''}`.trim();
           agentMap.set(String(a.matricule), full || a.matricule || 'Non assigné');
         });
-        const agentName = (matricule) => agentMap.get(String(matricule)) || 'Non assigné';
         document.getElementById('titre').textContent = contrat.titre || 'Contrat';
         document.getElementById('date-debut').textContent = contrat.date_debut ? new Date(contrat.date_debut).toLocaleDateString() : '—';
         document.getElementById('date-fin').textContent = contrat.date_fin ? new Date(contrat.date_fin).toLocaleDateString() : '—';
 
-        const grid = document.getElementById('sites-grid');
-        const count = document.getElementById('sites-count');
-        grid.innerHTML = '';
-        count.textContent = `${sites.length} site(s)`;
-        if (!sites.length) {
-          grid.innerHTML = '<div class="col-12 text-muted small">Aucun site lié.</div>';
-        } else {
-          sites.forEach(s => {
-            const col = document.createElement('div');
-            col.className = 'col-12 col-md-6';
-            const line1 = s.adresse_ligne1 || s.ligne1 || (s.adresse && (s.adresse.ligne1 || s.adresse.ligne_1)) || s.adresse_libelle || s.adresse_id || '';
-            const lineFull = [
-              line1,
-              s.adresse_ligne2 || '',
-              [s.adresse_code_postal || '', s.adresse_ville || ''].filter(Boolean).join(' '),
-              s.adresse_pays || ''
-            ].filter(Boolean).join(' ');
-            const query = encodeURIComponent(lineFull || line1 || '');
-            const addressLink = query ? `<a href="https://www.google.com/maps/search/?api=1&query=${query}" target="_blank" rel="noopener noreferrer">${lineFull || 'Adresse non renseignée'}</a>` : (lineFull || 'Adresse non renseignée');
-            col.innerHTML = `
-              <div class="border rounded p-3 h-100 d-flex flex-column shadow-sm">
-                <div class="fw-semibold mb-1">${s.nom_site || 'Site'}</div>
-                <div class="mb-2">
-                  <div class="text-uppercase text-muted small">Adresse</div>
-                  <div>${addressLink}</div>
-                </div>
-                <div class="mb-2">
-                  <div class="text-uppercase text-muted small">Responsable</div>
-                  <div>${s.responsable_matricule ? `${agentName(s.responsable_matricule)} (${s.responsable_matricule})` : 'Non assigné'}</div>
-                </div>
-                <div class="mt-auto d-flex justify-content-between align-items-center">
-                  <span class="badge bg-light text-dark">${s.statut || 'N/A'}</span>
-                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#siteModal" data-site-id="${s.site_id}">
-                    Voir le site
-                  </button>
-                </div>
-              </div>`;
-            grid.appendChild(col);
-          });
-        }
+        renderSitesGrid(sites);
+        await loadAllSites();
       } catch (err) {
         feedback.className = 'text-danger';
         feedback.textContent = err.message || 'Erreur de chargement';
@@ -228,6 +223,128 @@
       if (saveContratBtn && contratModal) {
         saveContratBtn.addEventListener('click', createContrat);
       }
+
+      // --- Gestion des sites (associer / créer) ---
+      function renderSitesGrid(sites) {
+        const grid = document.getElementById('sites-grid');
+        const count = document.getElementById('sites-count');
+        if (count) count.textContent = `${(sites || []).length} site(s)`;
+        grid.innerHTML = '';
+        if (!sites || !sites.length) {
+          grid.innerHTML = '<div class="col-12 text-muted small">Aucun site lié.</div>';
+          return;
+        }
+        sites.forEach(s => {
+          const col = document.createElement('div');
+          col.className = 'col-12 col-md-6';
+          const line1 = s.adresse_ligne1 || s.ligne1 || (s.adresse && (s.adresse.ligne1 || s.adresse.ligne_1)) || s.adresse_libelle || s.adresse_id || '';
+          const lineFull = [
+            line1,
+            s.adresse_ligne2 || '',
+            [s.adresse_code_postal || '', s.adresse_ville || ''].filter(Boolean).join(' '),
+            s.adresse_pays || ''
+          ].filter(Boolean).join(' ');
+          const query = encodeURIComponent(lineFull || line1 || '');
+          const addressLink = query ? `<a href="https://www.google.com/maps/search/?api=1&query=${query}" target="_blank" rel="noopener noreferrer">${lineFull || 'Adresse non renseignée'}</a>` : (lineFull || 'Adresse non renseignée');
+          col.innerHTML = `
+            <div class="border rounded p-3 h-100 d-flex flex-column shadow-sm">
+              <div class="fw-semibold mb-1">${s.nom_site || 'Site'}</div>
+              <div class="mb-2">
+                <div class="text-uppercase text-muted small">Adresse</div>
+                <div>${addressLink}</div>
+              </div>
+              <div class="mb-2">
+                <div class="text-uppercase text-muted small">Responsable</div>
+                <div>${s.responsable_matricule ? `${agentMap.get(String(s.responsable_matricule)) || 'Non assigné'} (${s.responsable_matricule})` : 'Non assigné'}</div>
+              </div>
+              <div class="mt-auto d-flex justify-content-between align-items-center">
+                <span class="badge bg-light text-dark">${s.statut || 'N/A'}</span>
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#siteModal" data-site-id="${s.site_id}">
+                  Voir le site
+                </button>
+              </div>
+            </div>`;
+          grid.appendChild(col);
+        });
+      }
+
+      async function loadAllSites() {
+        if (!siteSelect) return;
+        sitesFeedback.textContent = '';
+        try {
+          const all = await api('/api/sites');
+          siteSelect.innerHTML = '<option value="">Sélectionner un site...</option>';
+          (all || []).forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.nom_site || `Site #${s.id}`;
+            siteSelect.appendChild(opt);
+          });
+        } catch (e) {
+          sitesFeedback.className = 'small text-danger';
+          sitesFeedback.textContent = 'Impossible de charger la liste des sites.';
+        }
+      }
+
+      async function reloadLinkedSites() {
+        try {
+          const linked = await api(`/api/contrats/${id}/sites`);
+          renderSitesGrid(linked);
+        } catch (e) {
+          sitesFeedback.className = 'small text-danger';
+          sitesFeedback.textContent = 'Erreur lors du rafraîchissement des sites.';
+        }
+      }
+
+      const addSiteBtn = document.getElementById('add-site-btn');
+      if (addSiteBtn && siteSelect) {
+        addSiteBtn.addEventListener('click', async () => {
+          sitesFeedback.textContent = '';
+          const siteId = siteSelect.value;
+          if (!siteId) {
+            sitesFeedback.className = 'small text-danger';
+            sitesFeedback.textContent = 'Sélectionnez un site.';
+            return;
+          }
+          try {
+            await api(`/api/contrats/${id}/sites`, { method:'POST', body: JSON.stringify({ site_id: siteId }) });
+            sitesFeedback.className = 'small text-success';
+            sitesFeedback.textContent = 'Site associé au contrat.';
+            await reloadLinkedSites();
+          } catch (err) {
+            sitesFeedback.className = 'small text-danger';
+            sitesFeedback.textContent = err.message || 'Association impossible.';
+          }
+        });
+      }
+
+      if (createSiteForm) {
+        createSiteForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          createSiteFeedback.textContent = '';
+          const nom_site = document.getElementById('new-site-nom').value.trim();
+          const commentaire = document.getElementById('new-site-commentaire').value.trim() || null;
+          if (!nom_site) {
+            createSiteFeedback.className = 'small text-danger';
+            createSiteFeedback.textContent = 'Le nom du site est requis.';
+            return;
+          }
+          try {
+            const site = await api('/api/sites', { method:'POST', body: JSON.stringify({ nom_site, commentaire }) });
+            await api(`/api/contrats/${id}/sites`, { method:'POST', body: JSON.stringify({ site_id: site.id }) });
+            createSiteFeedback.className = 'small text-success';
+            createSiteFeedback.textContent = 'Site créé et associé.';
+            createSiteForm.reset();
+            await reloadLinkedSites();
+            await loadAllSites();
+          } catch (err) {
+            createSiteFeedback.className = 'small text-danger';
+            createSiteFeedback.textContent = err.message || 'Erreur lors de la création/association.';
+          }
+        });
+      }
+
+      await loadAllSites();
     });
   </script>
 </body>
