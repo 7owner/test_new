@@ -83,6 +83,10 @@
                 <label class="form-label">Commentaire</label>
                 <input type="text" id="mat-commentaire" class="form-control" placeholder="Optionnel">
               </div>
+              <div class="col-md-3">
+                <label class="form-label">Intervention ID (optionnel)</label>
+                <input type="number" id="mat-intervention" class="form-control" min="0" step="1" placeholder="Ex: 42">
+              </div>
             </div>
           </form>
           <div id="form-feedback" class="text-danger small mt-2"></div>
@@ -114,7 +118,8 @@
         designation: document.getElementById('mat-designation'),
         categorie: document.getElementById('mat-categorie'),
         quantite: document.getElementById('mat-quantite'),
-        commentaire: document.getElementById('mat-commentaire')
+        commentaire: document.getElementById('mat-commentaire'),
+        intervention: document.getElementById('mat-intervention')
       };
 
       let materiels = [];
@@ -155,6 +160,7 @@
                   <span class="badge bg-light text-dark">${m.categorie || '—'}</span>
                 </div>
                 <div class="text-muted small mb-2">Qté: ${m.quantite ?? '—'}</div>
+                ${m.intervention_id ? `<div class="small mb-1"><i class="bi bi-wrench-adjustable me-1"></i>Intervention #${m.intervention_id} <a href="intervention-view.html?id=${m.intervention_id}" class="ms-1">Voir</a></div>` : ''}
                 <div class="small">${m.commentaire || ''}</div>
               </div>
               <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
@@ -200,6 +206,7 @@
         fields.categorie.value = mat?.categorie || '';
         fields.quantite.value = mat?.quantite != null ? mat.quantite : 1;
         fields.commentaire.value = mat?.commentaire || '';
+        fields.intervention.value = mat?.intervention_id || '';
         titleEl.textContent = mat ? 'Modifier le matériel' : 'Nouveau matériel';
         if (modal) modal.show();
       }
@@ -213,6 +220,8 @@
           quantite: Number(fields.quantite.value) || 0,
           commentaire: fields.commentaire.value.trim()
         };
+        const intv = Number(fields.intervention.value);
+        if (Number.isFinite(intv) && intv > 0) payload.intervention_id = intv;
         if (!payload.reference || !payload.designation) {
           formFeedback.textContent = 'Référence et désignation sont obligatoires.';
           return;
