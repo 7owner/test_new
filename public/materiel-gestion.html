@@ -194,7 +194,6 @@
         fields.ref.value = mat?.reference || '';
         fields.designation.value = mat?.designation || '';
         fields.categorie.value = mat?.categorie || '';
-        fields.quantite.value = mat?.quantite != null ? mat.quantite : 1;
         fields.commentaire.value = mat?.commentaire || '';
         titleEl.textContent = mat ? 'Modifier le matériel' : 'Nouveau matériel';
         if (modal) modal.show();
