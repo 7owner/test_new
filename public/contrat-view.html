@@ -12,10 +12,15 @@
 <body class="app-bg p-3">
   <div class="card mb-3 shadow-sm">
     <div class="card-body">
-      <h4 class="mb-1" id="titre">Contrat</h4>
-      <div class="text-muted small">Période</div>
-      <div class="fw-semibold mb-2"><span id="date-debut">-</span> &rarr; <span id="date-fin">-</span></div>
-      <div id="feedback" class="small"></div>
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <h4 class="mb-1" id="titre">Contrat</h4>
+          <div class="text-muted small">Période</div>
+          <div class="fw-semibold mb-2"><span id="date-debut">-</span> &rarr; <span id="date-fin">-</span></div>
+          <div id="feedback" class="small"></div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="open-new-contrat"><i class="bi bi-plus-circle me-1"></i>Créer un contrat</button>
+      </div>
     </div>
   </div>
 
@@ -44,6 +49,47 @@
     </div>
   </div>
 
+  <!-- Nouveau Contrat Modal -->
+  <div class="modal fade" id="contratModal" tabindex="-1" aria-labelledby="contratModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="contratModalLabel">Nouveau contrat</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="contrat-titre" class="form-label fw-semibold">Titre</label>
+            <input type="text" class="form-control" id="contrat-titre" placeholder="Ex: Contrat maintenance 2025">
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="contrat-debut" class="form-label fw-semibold">Début</label>
+              <input type="date" class="form-control" id="contrat-debut">
+            </div>
+            <div class="col-md-6">
+              <label for="contrat-fin" class="form-label fw-semibold">Fin (optionnel)</label>
+              <input type="date" class="form-control" id="contrat-fin">
+            </div>
+          </div>
+          <div class="mt-3">
+            <label for="contrat-comment" class="form-label fw-semibold">Commentaire (optionnel)</label>
+            <textarea id="contrat-comment" class="form-control" rows="3" placeholder="Notes..."></textarea>
+          </div>
+          <div class="mt-3">
+            <label for="contrat-client" class="form-label fw-semibold">Client ID (optionnel)</label>
+            <input type="number" class="form-control" id="contrat-client" placeholder="Laisser vide pour lier manuellement plus tard">
+          </div>
+          <div class="alert d-none mt-3" id="contrat-feedback"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-contrat-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
@@ -59,6 +105,12 @@
         if (!r.ok) throw new Error(b.error || r.statusText);
         return b;
       }
+      const openContratBtn = document.getElementById('open-new-contrat');
+      const contratModalEl = document.getElementById('contratModal');
+      const contratModal = contratModalEl ? new bootstrap.Modal(contratModalEl) : null;
+      const contratFeedback = document.getElementById('contrat-feedback');
+      const saveContratBtn = document.getElementById('save-contrat-btn');
+
       try {
         const contrat = await api(`/api/contrats/${id}`);
         const sites = await api(`/api/contrats/${id}/sites`);
@@ -130,6 +182,51 @@
             iframe.src = `site-view.html?id=${siteId}`;
           }
         });
+      }
+
+      if (openContratBtn && contratModal) {
+        openContratBtn.addEventListener('click', () => {
+          contratFeedback.classList.add('d-none');
+          contratFeedback.textContent = '';
+          document.getElementById('contrat-titre').value = '';
+          document.getElementById('contrat-debut').value = '';
+          document.getElementById('contrat-fin').value = '';
+          document.getElementById('contrat-comment').value = '';
+          document.getElementById('contrat-client').value = '';
+          contratModal.show();
+        });
+      }
+
+      async function createContrat() {
+        const titre = document.getElementById('contrat-titre').value.trim();
+        const date_debut = document.getElementById('contrat-debut').value || null;
+        const date_fin = document.getElementById('contrat-fin').value || null;
+        const commentaire = document.getElementById('contrat-comment').value.trim();
+        const client_id = document.getElementById('contrat-client').value ? Number(document.getElementById('contrat-client').value) : undefined;
+        if (!titre) {
+          contratFeedback.className = 'alert alert-warning';
+          contratFeedback.textContent = 'Le titre est requis.';
+          contratFeedback.classList.remove('d-none');
+          return;
+        }
+        try {
+          await api('/api/contrats', {
+            method: 'POST',
+            body: JSON.stringify({ titre, date_debut, date_fin, commentaire, client_id })
+          });
+          contratFeedback.className = 'alert alert-success';
+          contratFeedback.textContent = 'Contrat créé.';
+          contratFeedback.classList.remove('d-none');
+          setTimeout(() => contratModal.hide(), 700);
+        } catch (e) {
+          contratFeedback.className = 'alert alert-danger';
+          contratFeedback.textContent = e.message || 'Erreur lors de la création';
+          contratFeedback.classList.remove('d-none');
+        }
+      }
+
+      if (saveContratBtn && contratModal) {
+        saveContratBtn.addEventListener('click', createContrat);
       }
     });
   </script>
