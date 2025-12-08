@@ -75,6 +75,24 @@
                 <label class="form-label">Catégorie</label>
                 <input type="text" id="mat-categorie" class="form-control" placeholder="Ex: Consommable, Outil..." required>
               </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Fournisseur</label>
+                  <input type="text" id="mat-fournisseur" class="form-control">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Documentation</label>
+                  <input type="text" id="mat-documentation" class="form-control" placeholder="URL du document">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Remise Fournisseur (%)</label>
+                  <input type="number" id="mat-remise" class="form-control" min="0" max="100" step="0.01">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Classe Matériel</label>
+                  <input type="text" id="mat-classe" class="form-control">
+                </div>
+              </div>
 
               <div class="col-md-3">
                 <label class="form-label">Commentaire</label>
@@ -111,7 +129,11 @@
         ref: document.getElementById('mat-ref'),
         designation: document.getElementById('mat-designation'),
         categorie: document.getElementById('mat-categorie'),
-        commentaire: document.getElementById('mat-commentaire')
+        commentaire: document.getElementById('mat-commentaire'),
+        fournisseur: document.getElementById('mat-fournisseur'),
+        documentation: document.getElementById('mat-documentation'),
+        remise: document.getElementById('mat-remise'),
+        classe: document.getElementById('mat-classe')
       };
 
       let materiels = [];
@@ -152,6 +174,12 @@
                   <span class="badge bg-light text-dark">${m.categorie || '—'}</span>
                 </div>
                 <div class="small">${m.commentaire || ''}</div>
+                <div class="mt-2">
+                  <small class="text-muted">Fournisseur: ${m.fournisseur || '—'}</small><br>
+                  <small class="text-muted">Classe: ${m.classe_materiel || '—'}</small><br>
+                  ${m.documentation ? `<small class="text-muted">Documentation: <a href="${m.documentation}" target="_blank">Voir</a></small><br>` : ''}
+                  ${m.remise_fournisseur ? `<small class="text-muted">Remise: ${m.remise_fournisseur}%</small>` : ''}
+                </div>
               </div>
               <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
                 <button class="btn btn-sm btn-outline-secondary" data-action="edit" data-id="${m.id}"><i class="bi bi-pencil"></i></button>
@@ -195,6 +223,10 @@
         fields.designation.value = mat?.designation || '';
         fields.categorie.value = mat?.categorie || '';
         fields.commentaire.value = mat?.commentaire || '';
+        fields.fournisseur.value = mat?.fournisseur || '';
+        fields.documentation.value = mat?.documentation || '';
+        fields.remise.value = mat?.remise_fournisseur || '';
+        fields.classe.value = mat?.classe_materiel || '';
         titleEl.textContent = mat ? 'Modifier le matériel' : 'Nouveau matériel';
         if (modal) modal.show();
       }
@@ -205,7 +237,11 @@
           reference: fields.ref.value.trim(),
           designation: fields.designation.value.trim(),
           categorie: fields.categorie.value.trim(),
-          commentaire: fields.commentaire.value.trim()
+          commentaire: fields.commentaire.value.trim(),
+          fournisseur: fields.fournisseur.value.trim(),
+          documentation: fields.documentation.value.trim(),
+          remise_fournisseur: Number(fields.remise.value) || null,
+          classe_materiel: fields.classe.value.trim()
         };
         if (!payload.reference || !payload.designation) {
           formFeedback.textContent = 'Référence et désignation sont obligatoires.';

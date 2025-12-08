@@ -259,6 +259,10 @@ CREATE TABLE IF NOT EXISTS materiel (
     designation TEXT,
     categorie TEXT,
     fabricant TEXT,
+    fournisseur TEXT,
+    documentation TEXT,
+    remise_fournisseur NUMERIC(5, 2),
+    classe_materiel TEXT,
     prix_achat NUMERIC(12,2),
     commentaire TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
