@@ -1641,14 +1641,14 @@ app.get('/api/contrats/:id', authenticateToken, async (req, res) => {
 
 // Create a contract
 app.post('/api/contrats', authenticateToken, authorizeAdmin, async (req, res) => {
-    const { titre, date_debut, date_fin } = req.body;
+    const { titre, date_debut, date_fin, client_id, site_id } = req.body;
     if (!titre || !date_debut) {
         return res.status(400).json({ error: 'Title and start date are required' });
     }
     try {
         const result = await pool.query(
-            'INSERT INTO contrat (titre, date_debut, date_fin) VALUES ($1, $2, $3) RETURNING *',
-            [titre, date_debut, date_fin || null]
+            'INSERT INTO contrat (titre, date_debut, date_fin, client_id, site_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [titre, date_debut, date_fin || null, client_id || null, site_id || null]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -1660,14 +1660,14 @@ app.post('/api/contrats', authenticateToken, authorizeAdmin, async (req, res) =>
 // Update a contract
 app.put('/api/contrats/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id } = req.params;
-    const { titre, date_debut, date_fin } = req.body;
+    const { titre, date_debut, date_fin, client_id, site_id } = req.body;
     if (!titre || !date_debut) {
         return res.status(400).json({ error: 'Title and start date are required' });
     }
     try {
         const result = await pool.query(
-            'UPDATE contrat SET titre = $1, date_debut = $2, date_fin = $3 WHERE id = $4 RETURNING *',
-            [titre, date_debut, date_fin || null, id]
+            'UPDATE contrat SET titre = $1, date_debut = $2, date_fin = $3, client_id = $4, site_id = $5 WHERE id = $6 RETURNING *',
+            [titre, date_debut, date_fin || null, client_id || null, site_id || null, id]
         );
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Contract not found' });

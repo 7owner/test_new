@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS adresse (
 
 CREATE TABLE IF NOT EXISTS agence (
     id SERIAL PRIMARY KEY,
-    titre VARCHAR(255) NOT NULL,
+    titre VARCHAR(255) NOT NULL UNIQUE,
     designation VARCHAR(255),
     adresse_id BIGINT REFERENCES adresse(id) ON DELETE SET NULL,
     telephone VARCHAR(50),
@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS client (
 
 CREATE TABLE IF NOT EXISTS site (
     id SERIAL PRIMARY KEY,
-    nom_site VARCHAR(255) NOT NULL,
+    nom_site VARCHAR(255) NOT NULL UNIQUE,
     adresse_id BIGINT REFERENCES adresse(id) ON DELETE SET NULL,
     client_id BIGINT REFERENCES client(id) ON DELETE SET NULL,
     commentaire TEXT,
@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS site (
 
 CREATE TABLE IF NOT EXISTS affaire (
     id SERIAL PRIMARY KEY,
-    nom_affaire VARCHAR(255) NOT NULL,
+    nom_affaire VARCHAR(255) NOT NULL UNIQUE,
     numero_affaire VARCHAR(255) UNIQUE,
     client_id BIGINT REFERENCES client(id) ON DELETE SET NULL,
     description TEXT
@@ -184,6 +184,8 @@ CREATE TABLE IF NOT EXISTS formation (
 CREATE TABLE IF NOT EXISTS contrat (
     id SERIAL PRIMARY KEY,
     titre VARCHAR(255) NOT NULL UNIQUE,
+    client_id BIGINT REFERENCES client(id) ON DELETE SET NULL,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
     date_debut DATE NOT NULL,
     date_fin DATE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
