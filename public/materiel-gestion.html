@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion du Matériel</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/custom.css?v=1">
+  <script src="/nav.js?v=2"></script>
+  <style>
+    body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); min-height: 100vh; }
+    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+    .filters-card { background: #fff; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+    .modal-lg { max-width: 900px; }
+  </style>
+</head>
+<body class="dashboard-bg">
+  <div id="navbar-placeholder"></div>
+
+  <main class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <h1 class="m-0"><i class="bi bi-tools me-2 text-primary"></i>Gestion du matériel</h1>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" id="btn-refresh"><i class="bi bi-arrow-clockwise me-1"></i>Rafraîchir</button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#materielModal" id="btn-add"><i class="bi bi-plus-circle me-1"></i>Nouveau</button>
+      </div>
+    </div>
+
+    <div class="filters-card p-3 mb-4">
+      <div class="row g-2">
+        <div class="col-md-6">
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" id="search" class="form-control" placeholder="Rechercher par référence, désignation, catégorie...">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select id="filter-categorie" class="form-select">
+            <option value="">Toutes catégories</option>
+          </select>
+        </div>
+        <div class="col-md-3 text-end">
+          <span class="badge bg-primary" id="count-badge">0 élément(s)</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="list" class="row g-3">
+      <div class="col-12 text-center text-muted">Chargement...</div>
+    </div>
+  </main>
+
+  <!-- Modal add/edit -->
+  <div class="modal fade" id="materielModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">Nouveau matériel</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+          <form id="materiel-form">
+            <input type="hidden" id="mat-id">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Référence</label>
+                <input type="text" id="mat-ref" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Désignation</label>
+                <input type="text" id="mat-designation" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Catégorie</label>
+                <input type="text" id="mat-categorie" class="form-control" placeholder="Ex: Consommable, Outil..." required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Quantité</label>
+                <input type="number" id="mat-quantite" class="form-control" min="0" step="1" value="1">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Commentaire</label>
+                <input type="text" id="mat-commentaire" class="form-control" placeholder="Optionnel">
+              </div>
+            </div>
+          </form>
+          <div id="form-feedback" class="text-danger small mt-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-btn"><i class="bi bi-check-circle me-1"></i>Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const listEl = document.getElementById('list');
+      const searchEl = document.getElementById('search');
+      const filterCat = document.getElementById('filter-categorie');
+      const countBadge = document.getElementById('count-badge');
+      const modalEl = document.getElementById('materielModal');
+      const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
+      const form = document.getElementById('materiel-form');
+      const formFeedback = document.getElementById('form-feedback');
+      const saveBtn = document.getElementById('save-btn');
+      const titleEl = document.getElementById('modalTitle');
+      const fields = {
+        id: document.getElementById('mat-id'),
+        ref: document.getElementById('mat-ref'),
+        designation: document.getElementById('mat-designation'),
+        categorie: document.getElementById('mat-categorie'),
+        quantite: document.getElementById('mat-quantite'),
+        commentaire: document.getElementById('mat-commentaire')
+      };
+
+      let materiels = [];
+      const token = localStorage.getItem('token');
+      const baseHeaders = token ? { 'Authorization': 'Bearer ' + token } : {};
+
+      const api = async (url, opts = {}) => {
+        const res = await fetch(url, { credentials: 'same-origin', headers: { 'Content-Type': 'application/json', ...baseHeaders, ...(opts.headers||{}) }, ...opts });
+        if (res.status === 401) { location.href = '/login.html'; return null; }
+        const ct = res.headers.get('content-type') || '';
+        const body = ct.includes('application/json') ? await res.json() : null;
+        if (!res.ok) throw new Error((body && body.error) || res.statusText);
+        return body;
+      };
+
+      function render() {
+        const term = (searchEl.value || '').toLowerCase();
+        const cat = filterCat.value;
+        const filtered = materiels.filter(m => {
+          const blob = `${m.reference||''} ${m.designation||''} ${m.categorie||''} ${m.commentaire||''}`.toLowerCase();
+          const matchText = !term || blob.includes(term);
+          const matchCat = !cat || m.categorie === cat;
+          return matchText && matchCat;
+        });
+        countBadge.textContent = `${filtered.length} élément(s)`;
+        listEl.innerHTML = filtered.length ? '' : '<div class="col-12 text-center text-muted">Aucun matériel</div>';
+        filtered.forEach(m => {
+          const col = document.createElement('div');
+          col.className = 'col-12 col-md-6 col-lg-4';
+          col.innerHTML = `
+            <div class="card h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div>
+                    <div class="fw-bold">${m.designation || '(Sans nom)'}</div>
+                    <div class="text-muted small">Ref: ${m.reference || '—'}</div>
+                  </div>
+                  <span class="badge bg-light text-dark">${m.categorie || '—'}</span>
+                </div>
+                <div class="text-muted small mb-2">Qté: ${m.quantite ?? '—'}</div>
+                <div class="small">${m.commentaire || ''}</div>
+              </div>
+              <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
+                <button class="btn btn-sm btn-outline-secondary" data-action="edit" data-id="${m.id}"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-sm btn-outline-danger" data-action="delete" data-id="${m.id}"><i class="bi bi-trash"></i></button>
+              </div>
+            </div>
+          `;
+          listEl.appendChild(col);
+        });
+      }
+
+      function populateCategories() {
+        const set = new Set();
+        materiels.forEach(m => { if (m.categorie) set.add(m.categorie); });
+        filterCat.innerHTML = '<option value="">Toutes catégories</option>';
+        set.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          filterCat.appendChild(opt);
+        });
+      }
+
+      async function loadMateriels() {
+        try {
+          listEl.innerHTML = '<div class="col-12 text-center text-muted">Chargement...</div>';
+          materiels = await api('/api/materiels') || [];
+          populateCategories();
+          render();
+        } catch (e) {
+          console.error(e);
+          listEl.innerHTML = '<div class="col-12 text-danger">Erreur de chargement.</div>';
+        }
+      }
+
+      function openModal(mat = null) {
+        form.reset();
+        formFeedback.textContent = '';
+        fields.id.value = mat?.id || '';
+        fields.ref.value = mat?.reference || '';
+        fields.designation.value = mat?.designation || '';
+        fields.categorie.value = mat?.categorie || '';
+        fields.quantite.value = mat?.quantite != null ? mat.quantite : 1;
+        fields.commentaire.value = mat?.commentaire || '';
+        titleEl.textContent = mat ? 'Modifier le matériel' : 'Nouveau matériel';
+        if (modal) modal.show();
+      }
+
+      async function saveMateriel() {
+        formFeedback.textContent = '';
+        const payload = {
+          reference: fields.ref.value.trim(),
+          designation: fields.designation.value.trim(),
+          categorie: fields.categorie.value.trim(),
+          quantite: Number(fields.quantite.value) || 0,
+          commentaire: fields.commentaire.value.trim()
+        };
+        if (!payload.reference || !payload.designation) {
+          formFeedback.textContent = 'Référence et désignation sont obligatoires.';
+          return;
+        }
+        const id = fields.id.value;
+        const opts = {
+          method: id ? 'PUT' : 'POST',
+          body: JSON.stringify(payload)
+        };
+        const url = id ? `/api/materiels/${id}` : '/api/materiels';
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sauvegarde...';
+        try {
+          await api(url, opts);
+          if (modal) modal.hide();
+          await loadMateriels();
+        } catch (e) {
+          formFeedback.textContent = e.message || 'Erreur lors de l’enregistrement.';
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Enregistrer';
+        }
+      }
+
+      async function deleteMateriel(id) {
+        if (!confirm('Supprimer ce matériel ?')) return;
+        try {
+          await api(`/api/materiels/${id}`, { method: 'DELETE' });
+          await loadMateriels();
+        } catch (e) {
+          alert(e.message || 'Suppression impossible');
+        }
+      }
+
+      listEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const id = btn.getAttribute('data-id');
+        const action = btn.getAttribute('data-action');
+        const mat = materiels.find(m => String(m.id) === String(id));
+        if (action === 'edit') openModal(mat);
+        if (action === 'delete') deleteMateriel(id);
+      });
+
+      document.getElementById('btn-add').addEventListener('click', () => openModal(null));
+      document.getElementById('btn-refresh').addEventListener('click', loadMateriels);
+      saveBtn.addEventListener('click', saveMateriel);
+      searchEl.addEventListener('input', render);
+      filterCat.addEventListener('change', render);
+
+      loadMateriels();
+    });
+  </script>
+</body>
+</html>

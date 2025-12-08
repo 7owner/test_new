@@ -91,37 +91,24 @@ Cette mise à jour a significativement enrichi les fonctionnalités et stabilis�
 
 ## Mises à jour effectuées par l'agent (Current Session)
 
-*   **`public/client-demand-view.html`**:
-    *   Fixed `400 Bad Request` error for message sending: ensured `sender_id` is always sent with `FormData` by explicitly casting `userId` and `receiver_id` to `String()` and adding robust client-side checks for their presence.
+## Mises à jour effectuées par l'agent (Current Session)
 
-*   **`public/ticket-view.html`**:
-    *   Modified "Voir messages" button to open a modal (`#messagesModal`) displaying the demand's conversation.
-    *   Logic for displaying messages in the modal: prioritizes `demande_id` conversation, falls back to `ticket_id` conversation.
-    *   Ensured the "Voir messages" button is always visible if a `ticketId` is present.
-    *   Added `userId` extraction at the top of the `DOMContentLoaded` listener for message styling.
+* **Barre de navigation commune**
+  * `public/nav.html` ajusté pour matcher le header du dashboard (logo + cloche + offcanvas) et modal de conversation.
+  * `public/nav.js` charge `nav.html` dans `#navbar-placeholder`, active la cloche (compte les conversations de demandes), ouvre la messagerie en modal, et ajoute l’espace client/messagerie selon les rôles.
+  * Pages mises à jour pour utiliser `nav.js?v=2` + placeholder : `dashboard.html`, `sites.html`, `agents.html`, `contrats.html`, `demandes-client-admin.html`, `administration.html`, `clients.html`, etc. (suppression des headers statiques/dupliqués).
 
-*   **`server.js`**:
-    *   Increased JSON payload size limit to `50mb` to resolve `PayloadTooLargeError` on `POST /api/documents`.
-    *   Corrected `GET /api/sites` endpoint to return detailed address fields (`ligne1`, `ligne2`, `code_postal`, `ville`, `pays`) from the `adresse` table.
-    *   Removed duplicate `GET /api/sites` endpoint definition.
-    *   Fixed `invalid input value for enum doc_nature` error for `POST /api/documents` by mapping MIME types (`image/png`, etc.) to valid `doc_nature` ENUM values (`Document`, `Video`, `Audio`, `Autre`) in the application logic.
+* **Satisfaction (tickets / client-dashboard / tickets.html)**
+  * `client-dashboard.html` : le bloc avis disparaît si un avis existe (`envoieok` ou note/commentaire). Le badge “cloche” compte uniquement les tickets terminés sans avis. Récupération des champs `note/rating/comment/commentaire/envoieok` via `/api/tickets/:id/relations` et affichage corrigé (pas de NaN).
+  * `tickets.html` : dans les tickets terminés, nouvelle colonne “Satisfaction” affichant note/commentaire via `/api/tickets/{id}/relations` (cache côté front).
 
-*   **`public/contrat-view.html`**:
-    *   Implemented a modal (`#siteModal`) to view site details (`site-view.html`) when clicking "Voir le site" from the associated sites list.
+* **Clients**
+  * `clients.html` : navbar injectée, chargement corrigé (fallback `/api/clients/mine` si `/api/clients` échoue), suppression des doublons de scripts/nav.
 
-*   **`public/site-view.html`**:
-    *   Added display of associated contract titles next to the site name.
-    *   Made contract titles clickable to open `contrat-view.html` in a modal (`#contractModal`).
-    *   Ensured contract titles are white in color.
+* **Agents**
+  * `agent-edit.html` : sélection d’agence via modal (postMessage), envoi de `agence_id` seulement si présent. Le champ “Fonction” est envoyé sous `fonction` et `titre` (compat backend). Préremplissage avec `fonction` ou `titre`.
+  * `agent-view.html` : affichage fonction avec fallback (`fonction`/`titre`), affichage agence avec fetch supplémentaire si `agence_id` connu mais pas de label. Compteurs stats protégés si éléments absents.
 
-*   **`public/js/sites.js`**:
-    *   Made addresses in the site list clickable, opening a Google Maps search in a new tab.
-    *   Simplified address parsing logic to directly use fields returned by the corrected `/api/sites` endpoint.
-    *   Improved link styling for Google Maps links (using Bootstrap's `link-primary` class).
-
-*   **`public/client-dashboard.html`**:
-    *   Fixed `loadHistory` function to use the client-specific endpoint `/api/client/sites/${s.id}/relations` to resolve `403 Forbidden` errors.
-    *   Refactored template literal generation in `loadDemands` and `loadHistory` functions for clarity and to avoid syntax errors, by extracting conditional HTML into separate variables.
-    *   Added a "Messages / Suivi" button in the demands list for each demand, opening a `messagesModal` with the demand's conversation.
-    *   Added `messagesModal` and `messagesFrame` to `client-dashboard.html` for displaying conversations.
-    *   Updated `frameMap` and `modalUrlMap` to include the new `messagesModal`.
+* **Autres**
+  * `client-demand-view.html` / `client-dashboard.html` : messages et modals orientés demande, liens messagerie ajustés.
+  * `nav.html`/`nav.js` gèrent le badge de notifications des demandes et ouvrent `messagerie.html?conversation=demande-{id}` en modal.
