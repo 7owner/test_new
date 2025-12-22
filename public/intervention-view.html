@@ -142,6 +142,10 @@
           <div class="value" id="view_status">—</div>
         </div>
         <div class="info-item">
+          <label>Agent de l'intervention</label>
+          <div class="value" id="view_intervention_agent">Non assigné</div>
+        </div>
+        <div class="info-item">
           <label>Temps écoulé</label>
           <div class="value timer-display" id="view_elapsed">—</div>
         </div>
@@ -649,6 +653,16 @@ document.addEventListener('DOMContentLoaded', async function () {
           ticketLinkEl.innerHTML = `<a href="ticket-view.html?id=${ticketId}" class="link-button">Voir le ticket</a>`;
         } else {
           ticketLinkEl.textContent = 'Non lié';
+        }
+      }
+
+      // Display assigned agent for the intervention
+      const interventionAgentEl = document.getElementById('view_intervention_agent');
+      if (interventionAgentEl) {
+        if (rel.assigned_agent) {
+          interventionAgentEl.textContent = `${rel.assigned_agent.prenom || ''} ${rel.assigned_agent.nom || ''} (${rel.assigned_agent.matricule})`.trim();
+        } else {
+          interventionAgentEl.textContent = 'Non assigné';
         }
       }
 
