@@ -91,6 +91,17 @@
       </div>
     </div>
 
+    <!-- Demandes client -->
+    <div class="card mt-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 mb-0">Demandes client</h2>
+          <span class="text-muted small" id="demandes-count"></span>
+        </div>
+        <div id="demandes-list"><div class="text-muted">Chargement...</div></div>
+      </div>
+    </div>
+
     <!-- DOE associés -->
     <div class="card mt-4">
       <div class="card-body">
@@ -172,6 +183,7 @@
       const siteId = qp.get('id');
       const token = localStorage.getItem('token');
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const isAdmin = (() => { try { const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
       
       const set = (id, val, isHtml = false) => { 
         const el = document.getElementById(id); 
@@ -359,16 +371,82 @@
         }
 
         // Contract Modal Handler
-      const contractModal = document.getElementById('contractModal');
-      if (contractModal) {
-        contractModal.addEventListener('show.bs.modal', function (event) {
-          const button = event.relatedTarget; // Button that triggered the modal
+        const contractModal = document.getElementById('contractModal');
+        if (contractModal) {
+          contractModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget; // Button that triggered the modal
           const contractId = button.getAttribute('data-contract-id'); // Extract info from data-* attributes
             const iframe = document.getElementById('contractModalFrame');
             if (contractId && iframe) {
               iframe.src = `contrat-view.html?id=${contractId}`;
             }
           });
+        }
+
+        // --- Demandes client associées au site ---
+        const demandesList = document.getElementById('demandes-list');
+        const demandesCount = document.getElementById('demandes-count');
+        if (demandesList) {
+          demandesList.innerHTML = '<div class="text-muted">Chargement...</div>';
+          try {
+            const r = await fetch(`/api/demandes_client?site_id=${siteId}&include_deleted=false`, { headers, credentials:'same-origin' });
+            const demandes = r.ok ? await r.json() : [];
+            demandesCount.textContent = `${demandes.length} demande(s)`;
+            if (!demandes.length) {
+              demandesList.innerHTML = '<div class="text-muted">Aucune demande liée à ce site.</div>';
+            } else {
+              demandesList.innerHTML = demandes.map(d => {
+                const badgeCls = (d.status || '').toLowerCase().includes('trait') ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning';
+                const convertBtn = isAdmin && !d.ticket_id
+                  ? `<button class="btn btn-sm btn-outline-primary convert-demande" data-id="${d.id}"><i class="bi bi-arrow-right-circle"></i> Convertir en ticket</button>`
+                  : '';
+                return `
+                  <div class="border rounded p-2 mb-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <div class="fw-semibold">Demande #${d.id}</div>
+                        <div class="small text-muted">${d.titre || d.description || 'Sans titre'}</div>
+                        <div class="small text-muted">Créée le ${d.created_at ? new Date(d.created_at).toLocaleDateString() : 'N/A'}</div>
+                        ${d.ticket_id ? `<div class="small">Ticket lié : <a href="ticket-view.html?id=${d.ticket_id}" target="_blank" rel="noopener">#${d.ticket_id}</a></div>` : ''}
+                      </div>
+                      <div class="text-end">
+                        <span class="badge ${badgeCls}">${d.status || 'En cours'}</span><br>
+                        ${convertBtn}
+                        <a class="btn btn-sm btn-outline-secondary mt-1" href="client-demand-view.html?id=${d.id}" target="_blank" rel="noopener"><i class="bi bi-eye"></i> Voir</a>
+                      </div>
+                    </div>
+                  </div>`;
+              }).join('');
+            }
+
+            if (isAdmin) {
+              demandesList.querySelectorAll('.convert-demande').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                  const demandeId = btn.getAttribute('data-id');
+                  if (!demandeId) return;
+                  if (!confirm('Convertir cette demande en ticket ?')) return;
+                  try {
+                    const res = await fetch(`/api/demandes_client/${demandeId}/convert-to-ticket`, {
+                      method: 'POST',
+                      headers,
+                      credentials: 'same-origin'
+                    });
+                    if (!res.ok) {
+                      const body = await res.json().catch(()=>({}));
+                      throw new Error(body.error || 'Conversion impossible');
+                    }
+                    await res.json().catch(()=>({}));
+                    alert('Demande convertie en ticket.');
+                    location.reload();
+                  } catch (err) {
+                    alert(err.message || 'Erreur lors de la conversion');
+                  }
+                });
+              });
+            }
+          } catch (err) {
+            demandesList.innerHTML = '<div class="text-danger">Impossible de charger les demandes.</div>';
+          }
         }
 
       } catch(e) {

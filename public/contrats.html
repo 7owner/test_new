@@ -51,6 +51,7 @@
             <th>Début</th>
             <th>Fin</th>
             <th>Sites liés</th>
+            <th>Associations</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -134,8 +135,8 @@
           contrats = await Promise.all(list.map(async c => {
             try {
               const sites = await api(`/api/contrats/${c.id}/sites`);
-              return { ...c, sites_count: sites.length };
-            } catch { return { ...c, sites_count: 0 }; }
+              return { ...c, sites_count: sites.length, sites_names: sites.map(s => s.nom_site || `Site #${s.site_id||s.id}`) };
+            } catch { return { ...c, sites_count: 0, sites_names: [] }; }
           }));
           applyFilters();
         } catch (e) {
@@ -168,11 +169,15 @@
         }
         rows.forEach(c => {
           const tr = document.createElement('tr');
+          const assoc = (c.sites_names && c.sites_names.length)
+            ? c.sites_names.map(n => `<span class="badge bg-light text-dark me-1 mb-1">${n}</span>`).join(' ')
+            : '<span class="text-muted small">Aucun site associé</span>';
           tr.innerHTML = `
             <td>${c.titre || ''}</td>
             <td>${formatDate(c.date_debut)}</td>
             <td>${formatDate(c.date_fin) || '—'}</td>
             <td><span class="badge bg-info text-dark">${c.sites_count ?? 0}</span></td>
+            <td>${assoc}</td>
             <td>
               <button class="btn btn-sm btn-info me-1 btn-view" data-id="${c.id}"><i class="bi bi-eye"></i> Voir</button>
               <button class="btn btn-sm btn-warning me-1 btn-edit" data-id="${c.id}"><i class="bi bi-pencil"></i> Modifier</button>
