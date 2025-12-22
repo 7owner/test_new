@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           if (startDate && siteEnd && siteEnd < startDate) return false;
           if (endDate && siteStart && siteStart > endDate) return false;
 
-          return m && matchesAssociation && true; // Removed status filter
+          return m && matchesAssociation;
         });
 
         rows.sort((a,b)=>{

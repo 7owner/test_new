@@ -122,7 +122,6 @@
 
       let contrats = [];
       let apiAssociations = []; // To store fetched associations
-      let sitesAssociationsMap = new Map(); // Map siteId to array of association titles
 
       async function api(url, opts={}) {
         const res = await fetch(url, { headers, ...opts });
@@ -144,6 +143,7 @@
             api('/api/contrats'),
             api('/api/associations')
           ]);
+          contrats = contratsList;
           apiAssociations = associationsList;
 
           // Populate association filter
@@ -155,26 +155,6 @@
             associationFilter.appendChild(option);
           });
           
-          // Populate sitesAssociationsMap
-          const allSites = await api('/api/sites'); // Fetch all sites to get their associations
-          allSites.forEach(site => {
-            if (site.associations && site.associations.length > 0) {
-              sitesAssociationsMap.set(site.id, site.associations.map(asso => asso.titre));
-            }
-          });
-
-          contrats = await Promise.all(contratsList.map(async c => {
-            try {
-              const sites = await api(`/api/contrats/${c.id}/sites`);
-              const contractSiteAssociations = [];
-              sites.forEach(site => {
-                const siteTitle = site.nom_site || `Site #${site.site_id||site.id}`;
-                const siteAssoTitles = sitesAssociationsMap.get(site.site_id) || [];
-                contractSiteAssociations.push({ id: site.site_id, titre: siteTitle, associations: siteAssoTitles });
-              });
-              return { ...c, sites_linked: contractSiteAssociations, sites_count: sites.length };
-            } catch { return { ...c, sites_linked: [], sites_count: 0 }; }
-          }));
           applyFilters();
         } catch (e) {
           tableBody.innerHTML = '<tr><td colspan="6" class="text-danger">Erreur de chargement.</td></tr>';
@@ -196,9 +176,7 @@
           if (end && deb && deb > end) return false;
 
           // Filter by association
-          const matchesAssociation = !selectedAssociationId || c.sites_linked.some(site => 
-            site.associations.some(assoTitle => apiAssociations.some(apiAsso => apiAsso.id == selectedAssociationId && apiAsso.titre === assoTitle))
-          );
+          const matchesAssociation = !selectedAssociationId || (c.associations && c.associations.some(asso => String(asso.id) === selectedAssociationId));
           
           return matchTerm && matchesAssociation;
         });
@@ -214,11 +192,11 @@
         rows.forEach(c => {
           const tr = document.createElement('tr');
           const siteNames = (c.sites_linked && c.sites_linked.length)
-            ? c.sites_linked.map(s => `<span class="badge bg-light text-dark me-1 mb-1">${s.titre}</span>`).join(' ')
+            ? c.sites_linked.map(s => `<span class="badge bg-light text-dark me-1 mb-1">${s.nom_site}</span>`).join(' ')
             : '<span class="text-muted small">Aucun site associé</span>';
           
-          const associatedAssociations = (c.sites_linked || []).flatMap(site => site.associations || []).filter((value, index, self) => self.indexOf(value) === index).map(assoTitle => 
-            `<span class="badge bg-secondary me-1 mb-1">${assoTitle}</span>`
+          const associatedAssociations = (c.associations || []).map(asso => 
+            `<span class="badge bg-secondary me-1 mb-1">${asso.titre}</span>`
           ).join(' ');
 
           tr.innerHTML = `

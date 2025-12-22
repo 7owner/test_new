@@ -216,8 +216,9 @@
 
     <!-- Representatives Section -->
     <div class="main-card">
-      <div class="card-header-custom">
-        <i class="bi bi-people me-2"></i>Représentants
+      <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <div><i class="bi bi-people me-2"></i>Représentants</div>
+        <button class="btn btn-light btn-sm d-none" id="add-rep-btn"><i class="bi bi-person-plus me-1"></i>Ajouter</button>
       </div>
       <div class="card-body p-4">
         <div id="representants-list">
@@ -360,6 +361,41 @@
       </div>
     </div>
   </div>
+  <!-- Modal ajout représentant -->
+  <div class="modal fade" id="repModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Ajouter un représentant</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nom</label>
+            <input type="text" class="form-control" id="rep-nom" placeholder="Nom du représentant">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Email</label>
+            <input type="email" class="form-control" id="rep-email" placeholder="email@exemple.com">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Téléphone</label>
+            <input type="text" class="form-control" id="rep-tel" placeholder="Téléphone">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Fonction</label>
+            <input type="text" class="form-control" id="rep-fonction" placeholder="Fonction">
+          </div>
+          <div id="rep-feedback" class="small d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-rep-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       const token = localStorage.getItem('token');
@@ -410,6 +446,11 @@
       const docList = document.getElementById('repo-docs');
       const imgList = document.getElementById('repo-imgs');
       const msgsInfo = document.getElementById('repo-msgs-info');
+      const addRepBtn = document.getElementById('add-rep-btn');
+      const repModalEl = document.getElementById('repModal');
+      const repModal = repModalEl ? new bootstrap.Modal(repModalEl) : null;
+      const repFeedback = document.getElementById('rep-feedback');
+      const saveRepBtn = document.getElementById('save-rep-btn');
       const editRepModalEl = document.getElementById('editRepModal');
       const editRepModal = editRepModalEl ? new bootstrap.Modal(editRepModalEl) : null;
       const editRepFeedback = document.getElementById('edit-rep-feedback');
@@ -506,7 +547,10 @@
               <small>${d.description || '(sans description)'}</small>
             </div>`);
 
-        if (isAdmin) document.getElementById('adminActions').style.display = '';
+        if (isAdmin) {
+          document.getElementById('adminActions').style.display = '';
+          if (addRepBtn && repModal) addRepBtn.classList.remove('d-none');
+        }
 
         // Actions reps (admin)
         if (isAdmin) {
@@ -539,6 +583,47 @@
               editRepModal.show();
             });
           });
+
+          // Ajouter représentant
+          if (addRepBtn && repModal && saveRepBtn && repFeedback) {
+            addRepBtn.addEventListener('click', () => {
+              repFeedback.classList.add('d-none');
+              repFeedback.textContent = '';
+              document.getElementById('rep-nom').value = '';
+              document.getElementById('rep-email').value = '';
+              document.getElementById('rep-tel').value = '';
+              document.getElementById('rep-fonction').value = '';
+              repModal.show();
+            });
+
+            saveRepBtn.addEventListener('click', async () => {
+              repFeedback.classList.add('d-none');
+              const nom = document.getElementById('rep-nom').value.trim();
+              const email = document.getElementById('rep-email').value.trim();
+              const tel = document.getElementById('rep-tel').value.trim();
+              const fonction = document.getElementById('rep-fonction').value.trim();
+              if (!email && !nom) {
+                repFeedback.className = 'small text-danger';
+                repFeedback.textContent = 'Email ou nom requis.';
+                repFeedback.classList.remove('d-none');
+                return;
+              }
+              try {
+                await fetchJSON(`/api/clients/${id}/representants`, {
+                  method:'POST',
+                  body: JSON.stringify({ email, nom, tel, fonction })
+                });
+                repFeedback.className = 'small text-success';
+                repFeedback.textContent = 'Représentant ajouté.';
+                repFeedback.classList.remove('d-none');
+                setTimeout(()=>{ repModal.hide(); location.reload(); }, 600);
+              } catch(err) {
+                repFeedback.className = 'small text-danger';
+                repFeedback.textContent = err.message || 'Ajout impossible';
+                repFeedback.classList.remove('d-none');
+              }
+            });
+          }
         }
 
         if (saveRepBtn) {
