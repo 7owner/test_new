@@ -1678,7 +1678,26 @@ app.delete('/api/client_representant/:id', authenticateToken, authorizeAdmin, as
 // List all contracts
 app.get('/api/contrats', authenticateToken, async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM contrat ORDER BY created_at DESC');
+        const result = await pool.query(`
+            SELECT 
+                c.*,
+                COALESCE(
+                    (SELECT json_agg(json_build_object('id', s.id, 'nom_site', s.nom_site))
+                     FROM contrat_site_association csa JOIN site s ON csa.site_id = s.id
+                     WHERE csa.contrat_id = c.id),
+                    '[]'::json
+                ) AS sites_linked,
+                COALESCE(
+                    (SELECT json_agg(DISTINCT json_build_object('id', asso.id, 'titre', asso.titre))
+                     FROM contrat_site_association csa
+                     JOIN association_site asi ON csa.site_id = asi.site_id
+                     JOIN association asso ON asi.association_id = asso.id
+                     WHERE csa.contrat_id = c.id),
+                    '[]'::json
+                ) AS associations
+            FROM contrat c
+            ORDER BY c.created_at DESC
+        `);
         res.json(result.rows);
     } catch (err) {
         console.error('Error fetching contracts:', err);
@@ -2223,7 +2242,19 @@ app.get('/api/sites', authenticateToken, async (req, res) => {
         ORDER BY s.id DESC`);
       return res.json(result.rows);
     }
-    const result = await pool.query('SELECT s.*, a.libelle as adresse_libelle, a.ligne1, a.ligne2, a.code_postal, a.ville, a.pays FROM site s LEFT JOIN adresse a ON s.adresse_id = a.id ORDER BY s.id DESC');
+    const result = await pool.query(`
+      SELECT 
+        s.*, 
+        ad.libelle as adresse_libelle, ad.ligne1, ad.ligne2, ad.code_postal, ad.ville, ad.pays,
+        COALESCE(
+          (SELECT json_agg(json_build_object('id', asso.id, 'titre', asso.titre))
+           FROM association_site asi JOIN association asso ON asi.association_id = asso.id
+           WHERE asi.site_id = s.id),
+          '[]'
+        ) AS associations
+      FROM site s
+      LEFT JOIN adresse ad ON s.adresse_id = ad.id 
+      ORDER BY s.id DESC`);
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching sites:', err);

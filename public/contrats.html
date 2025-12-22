@@ -40,6 +40,12 @@
         <div class="col-lg-3 col-md-4 col-12">
           <input type="date" id="contrat-date-end" class="form-control" title="Date de début max">
         </div>
+        <div class="col-lg-3 col-md-4 col-12">
+          <select id="association-filter" class="form-select">
+            <option value="">Toutes les associations</option>
+            <!-- Options loaded by JS -->
+          </select>
+        </div>
       </div>
     </div>
 
@@ -104,6 +110,7 @@
       const searchInput = document.getElementById('contrat-search');
       const dateStart = document.getElementById('contrat-date-start');
       const dateEnd = document.getElementById('contrat-date-end');
+      const associationFilter = document.getElementById('association-filter'); // New filter
       const toggleFiltersBtn = document.getElementById('toggle-filters-btn');
       const filtersRow = document.getElementById('filters-row');
 
@@ -114,6 +121,8 @@
       const editContratFrame = document.getElementById('editContratFrame');
 
       let contrats = [];
+      let apiAssociations = []; // To store fetched associations
+      let sitesAssociationsMap = new Map(); // Map siteId to array of association titles
 
       async function api(url, opts={}) {
         const res = await fetch(url, { headers, ...opts });
@@ -129,18 +138,46 @@
       }
 
       async function loadContrats() {
-        tableBody.innerHTML = '<tr><td colspan="5" class="text-muted">Chargement...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-muted">Chargement...</td></tr>';
         try {
-          const list = await api('/api/contrats');
-          contrats = await Promise.all(list.map(async c => {
+          const [contratsList, associationsList] = await Promise.all([
+            api('/api/contrats'),
+            api('/api/associations')
+          ]);
+          apiAssociations = associationsList;
+
+          // Populate association filter
+          associationFilter.innerHTML = '<option value="">Toutes les associations</option>';
+          apiAssociations.forEach(asso => {
+            const option = document.createElement('option');
+            option.value = asso.id;
+            option.textContent = asso.titre;
+            associationFilter.appendChild(option);
+          });
+          
+          // Populate sitesAssociationsMap
+          const allSites = await api('/api/sites'); // Fetch all sites to get their associations
+          allSites.forEach(site => {
+            if (site.associations && site.associations.length > 0) {
+              sitesAssociationsMap.set(site.id, site.associations.map(asso => asso.titre));
+            }
+          });
+
+          contrats = await Promise.all(contratsList.map(async c => {
             try {
               const sites = await api(`/api/contrats/${c.id}/sites`);
-              return { ...c, sites_count: sites.length, sites_names: sites.map(s => s.nom_site || `Site #${s.site_id||s.id}`) };
-            } catch { return { ...c, sites_count: 0, sites_names: [] }; }
+              const contractSiteAssociations = [];
+              sites.forEach(site => {
+                const siteTitle = site.nom_site || `Site #${site.site_id||site.id}`;
+                const siteAssoTitles = sitesAssociationsMap.get(site.site_id) || [];
+                contractSiteAssociations.push({ id: site.site_id, titre: siteTitle, associations: siteAssoTitles });
+              });
+              return { ...c, sites_linked: contractSiteAssociations, sites_count: sites.length };
+            } catch { return { ...c, sites_linked: [], sites_count: 0 }; }
           }));
           applyFilters();
         } catch (e) {
-          tableBody.innerHTML = '<tr><td colspan="5" class="text-danger">Erreur de chargement.</td></tr>';
+          tableBody.innerHTML = '<tr><td colspan="6" class="text-danger">Erreur de chargement.</td></tr>';
         }
       }
 
@@ -148,6 +185,7 @@
         const term = (searchInput.value || '').toLowerCase();
         const start = dateStart.value ? new Date(dateStart.value) : null;
         const end = dateEnd.value ? new Date(dateEnd.value) : null;
+        const selectedAssociationId = associationFilter.value;
         if (start) start.setHours(0,0,0,0);
         if (end) end.setHours(23,59,59,999);
 
@@ -156,7 +194,13 @@
           const deb = c.date_debut ? new Date(c.date_debut) : null;
           if (start && deb && deb < start) return false;
           if (end && deb && deb > end) return false;
-          return matchTerm;
+
+          // Filter by association
+          const matchesAssociation = !selectedAssociationId || c.sites_linked.some(site => 
+            site.associations.some(assoTitle => apiAssociations.some(apiAsso => apiAsso.id == selectedAssociationId && apiAsso.titre === assoTitle))
+          );
+          
+          return matchTerm && matchesAssociation;
         });
         render(rows);
       }
@@ -164,20 +208,25 @@
       function render(rows) {
         tableBody.innerHTML = '';
         if (!rows.length) {
-          tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Aucun contrat trouvé.</td></tr>';
+          tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Aucun contrat trouvé.</td></tr>';
           return;
         }
         rows.forEach(c => {
           const tr = document.createElement('tr');
-          const assoc = (c.sites_names && c.sites_names.length)
-            ? c.sites_names.map(n => `<span class="badge bg-light text-dark me-1 mb-1">${n}</span>`).join(' ')
+          const siteNames = (c.sites_linked && c.sites_linked.length)
+            ? c.sites_linked.map(s => `<span class="badge bg-light text-dark me-1 mb-1">${s.titre}</span>`).join(' ')
             : '<span class="text-muted small">Aucun site associé</span>';
+          
+          const associatedAssociations = (c.sites_linked || []).flatMap(site => site.associations || []).filter((value, index, self) => self.indexOf(value) === index).map(assoTitle => 
+            `<span class="badge bg-secondary me-1 mb-1">${assoTitle}</span>`
+          ).join(' ');
+
           tr.innerHTML = `
             <td>${c.titre || ''}</td>
             <td>${formatDate(c.date_debut)}</td>
             <td>${formatDate(c.date_fin) || '—'}</td>
-            <td><span class="badge bg-info text-dark">${c.sites_count ?? 0}</span></td>
-            <td>${assoc}</td>
+            <td>${siteNames}</td>
+            <td>${associatedAssociations || '<span class="text-muted">—</span>'}</td>
             <td>
               <button class="btn btn-sm btn-info me-1 btn-view" data-id="${c.id}"><i class="bi bi-eye"></i> Voir</button>
               <button class="btn btn-sm btn-warning me-1 btn-edit" data-id="${c.id}"><i class="bi bi-pencil"></i> Modifier</button>
@@ -215,6 +264,7 @@
       searchInput.addEventListener('input', applyFilters);
       dateStart.addEventListener('change', applyFilters);
       dateEnd.addEventListener('change', applyFilters);
+      associationFilter.addEventListener('change', applyFilters); // New event listener
 
       if (toggleFiltersBtn && filtersRow) {
         toggleFiltersBtn.addEventListener('click', () => {

@@ -35,13 +35,9 @@
             <input type="text" class="form-control" id="site-search" placeholder="Rechercher par nom ou ID...">
         </div>
         <div class="col-lg-3 col-md-6">
-            <select class="form-select" id="site-status-filter">
-              <option value="">Tous les statuts</option>
-              <option value="en attente">En attente</option>
-              <option value="prise en charge">Prise en charge</option>
-              <option value="en cour">En cour</option>
-              <option value="fini">Fini</option>
-              <option value="sous devis">Sous devis</option>
+            <select class="form-select" id="association-filter">
+              <option value="">Toutes les associations</option>
+              <!-- Options will be loaded by JavaScript -->
             </select>
         </div>
         <div class="col-lg-2 col-md-6">
@@ -65,6 +61,7 @@
               <th>Nom du Site</th>
               <th>Adresse</th>
               <th>Statut</th>
+              <th>Association(s)</th>
               <th>Ticket Ouvert</th>
               <th>Responsable</th>
               <th>Dates</th>
@@ -72,7 +69,7 @@
             </tr>
           </thead>
           <tbody id="sites-tbody">
-            <tr><td colspan="7" class="text-muted text-center py-4">Chargement...</td></tr>
+            <tr><td colspan="8" class="text-muted text-center py-4">Chargement...</td></tr>
           </tbody>
         </table>
       </div>

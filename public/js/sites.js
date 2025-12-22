@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   const tableBody = document.getElementById('sites-tbody');
   const countBadge = document.getElementById('sites-count');
   const searchInput = document.getElementById('site-search');
-  const statusFilter = document.getElementById('site-status-filter');
+  const associationFilter = document.getElementById('association-filter'); // New filter
   const dateStartInput = document.getElementById('site-date-start');
   const dateEndInput = document.getElementById('site-date-end');
   const filtersRow = document.getElementById('filters-row');
@@ -12,24 +12,27 @@ document.addEventListener('DOMContentLoaded', async function() {
   const isAdmin = (() => { try { const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
   let apiSites = [];
   let apiAgents = [];
-  let openDemandSites = new Set(); // sites avec au moins une demande non convertie
+  let apiAssociations = []; // To store associations
+  let openDemandSites = new Set();
   let sortAsc = true;
 
   function fmt(iso) { if (!iso) return ''; const d = new Date(iso); return isNaN(d)?'':d.toLocaleDateString(); }
   function getAgentName(m) { const a=(apiAgents||[]).find(x=> String(x.matricule)===String(m)); return a? `${a.nom||''} ${a.prenom||''}`.trim() : 'Non assigné'; }
 
   async function load() {
-    tableBody.innerHTML = '<tr><td colspan="7" class="text-muted text-center py-3">Chargement...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-3">Chargement...</td></tr>';
     const headers = token? { 'Authorization': `Bearer ${token}` } : {};
     try {
-      const [sRes, aRes, dRes] = await Promise.all([
+      const [sRes, aRes, dRes, assoRes] = await Promise.all([
         fetch('/api/sites', { headers, credentials:'same-origin' }),
         fetch('/api/agents', { headers, credentials:'same-origin' }),
-        fetch('/api/demandes_client?include_deleted=false', { headers, credentials:'same-origin' })
+        fetch('/api/demandes_client?include_deleted=false', { headers, credentials:'same-origin' }),
+        fetch('/api/associations', { headers, credentials:'same-origin' }) // Fetch associations
       ]);
       if (sRes.status===401||sRes.status===403){ try{ location.replace('/login.html'); }catch{ location.href='/login.html'; } return; }
       apiSites = sRes.ok ? await sRes.json() : [];
       apiAgents = aRes && aRes.ok ? await aRes.json() : [];
+      apiAssociations = assoRes && assoRes.ok ? await assoRes.json() : []; // Store associations
       openDemandSites = new Set();
       if (dRes && dRes.ok) {
         const demands = await dRes.json();
@@ -37,38 +40,44 @@ document.addEventListener('DOMContentLoaded', async function() {
           if (!d.ticket_id && d.site_id) openDemandSites.add(String(d.site_id));
         });
       }
+
+      // Populate association filter
+      associationFilter.innerHTML = '<option value="">Toutes les associations</option>';
+      apiAssociations.forEach(asso => {
+        const option = document.createElement('option');
+        option.value = asso.id;
+        option.textContent = asso.titre;
+        associationFilter.appendChild(option);
+      });
+
       applyFilters();
     } catch (e) {
       console.error(e);
-      tableBody.innerHTML = '<tr><td colspan="7" class="text-danger text-center py-3">Erreur de chargement.</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="8" class="text-danger text-center py-3">Erreur de chargement.</td></tr>';
     }
   }
 
   function render(rows) {
     tableBody.innerHTML = '';
     if (countBadge) countBadge.textContent = `${rows.length} site(s)`;
-    if (!rows.length) { tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Aucun site trouvé.</td></tr>'; return; }
+    if (!rows.length) { tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Aucun site trouvé.</td></tr>'; return; }
     rows.forEach(site => {
       const tr = document.createElement('tr');
       const debut = fmt(site.date_debut); const fin = site.date_fin? fmt(site.date_fin) : 'En cours';
       const hasTicket = !!site.ticket || openDemandSites.has(String(site.id));
 
-      // Address parts for display and for Google Maps URL
-      const ligne1 = site.ligne1 || site.adresse_ligne1 || (site.adresse && site.adresse.ligne1) || '';
-      const code_postal = site.code_postal || site.adresse_code_postal || (site.adresse && site.adresse.code_postal) || '';
-      const ville = site.ville || site.adresse_ville || (site.adresse && site.adresse.ville) || '';
-      const pays = site.pays || site.adresse_pays || (site.adresse && site.adresse.pays) || '';
-
-      const displayAddressParts = [ligne1, `${code_postal} ${ville}`.trim(), pays].filter(Boolean);
+      const displayAddressParts = [site.ligne1, `${site.code_postal} ${site.ville}`.trim(), site.pays].filter(Boolean);
       const displayAddress = displayAddressParts.length ? displayAddressParts.join('<br>') : 'Adresse non renseignée';
-
-      const searchQuery = [ligne1, code_postal, ville, pays].filter(Boolean).join(', ');
+      const searchQuery = [site.ligne1, site.code_postal, site.ville, site.pays].filter(Boolean).join(', ');
       const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`;
+
+      const associatedAssociations = (site.associations || []).map(asso => `<span class="badge bg-secondary me-1">${asso.titre}</span>`).join('');
 
       tr.innerHTML = `
         <td><strong>${site.nom_site||'Site'}</strong><br><small class="text-muted">ID: ${site.id}</small></td>
         <td><a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="link-primary">${displayAddress}</a></td>
         <td><span class="badge ${site.statut==='Actif'?'bg-success-subtle text-success':'bg-light text-dark'}">${site.statut || '—'}</span></td>
+        <td>${associatedAssociations || '<span class="text-muted">—</span>'}</td> <!-- New column for associations -->
         <td><span class="badge ${hasTicket? 'bg-danger':'bg-success'}">${hasTicket? 'Oui':'Non'}</span></td>
         <td>${site.responsable_matricule? getAgentName(site.responsable_matricule): 'Non assigné'}</td>
         <td><small>Début: ${debut||''}<br>Fin: ${fin||''}</small></td>
@@ -82,7 +91,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       function applyFilters(){
         const term = (searchInput.value||'').toLowerCase();
-        const status = statusFilter.value;
+        const selectedAssociationId = associationFilter.value; // Get selected association
         const startDate = dateStartInput.value ? new Date(dateStartInput.value) : null;
         const endDate = dateEndInput.value ? new Date(dateEndInput.value) : null;
 
@@ -90,23 +99,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (endDate) endDate.setHours(23, 59, 59, 999);
 
         let rows = (apiSites||[]).filter(s => {
-          const l1 = s.adresse_ligne1 || s.ligne1 || (s.adresse && (s.adresse.ligne1 || s.adresse.ligne_1)) || '';
-          const l2 = s.adresse_ligne2 || s.ligne2 || (s.adresse && (s.adresse.ligne2 || s.adresse.ligne_2)) || '';
-          const cpv = [s.adresse_code_postal || (s.adresse && s.adresse.code_postal) || '', s.adresse_ville || (s.adresse && s.adresse.ville) || ''].filter(Boolean).join(' ');
-          const pays = s.adresse_pays || (s.adresse && s.adresse.pays) || '';
+          const l1 = s.ligne1 || s.adresse_ligne1 || (s.adresse && (s.adresse.ligne1 || s.adresse.ligne_1)) || '';
+          const l2 = s.ligne2 || s.adresse_ligne2 || (s.adresse && (s.adresse.ligne2 || s.adresse.ligne_2)) || '';
+          const cpv = [s.code_postal || s.adresse_code_postal || (s.adresse && s.adresse.code_postal) || '', s.ville || s.adresse_ville || (s.adresse && s.adresse.ville) || ''].filter(Boolean).join(' ');
+          const pays = s.pays || s.adresse_pays || (s.adresse && s.adresse.pays) || '';
           const addressText = `${l1} ${l2} ${cpv} ${pays}`.toLowerCase();
           const m = String(s.nom_site||'').toLowerCase().includes(term)
             || String(s.id||'').toLowerCase().includes(term)
             || addressText.includes(term);
-          const st = status ? s.statut === status : true;
-
+          
+          // Filter by association
+          const matchesAssociation = !selectedAssociationId || (s.associations && s.associations.some(asso => String(asso.id) === selectedAssociationId));
+          
           const siteStart = s.date_debut ? new Date(s.date_debut) : null;
           const siteEnd = s.date_fin ? new Date(s.date_fin) : null;
 
           if (startDate && siteEnd && siteEnd < startDate) return false;
           if (endDate && siteStart && siteStart > endDate) return false;
 
-          return m && st;
+          return m && matchesAssociation && true; // Removed status filter
         });
 
         rows.sort((a,b)=>{
@@ -118,10 +129,10 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
 
       searchInput.addEventListener('input', applyFilters);
-      statusFilter.addEventListener('change', applyFilters);
+      associationFilter.addEventListener('change', applyFilters); // New event listener for association filter
       dateStartInput.addEventListener('change', applyFilters);
       dateEndInput.addEventListener('change', applyFilters);
-      // tri par date désactivé (table remplacée par cartes), on garde l'ordre par date_debut croissante
+      
       tableBody.addEventListener('click', (e) => {
         const viewBtn = e.target.closest('.view-site');
         const editBtn = e.target.closest('.edit-site');
@@ -147,7 +158,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
       });
 
-      // NEW Toggle filters button logic
       if (toggleFiltersBtn && filtersRow) {
         toggleFiltersBtn.innerHTML = '<i class="bi bi-funnel-fill me-1"></i> Masquer les filtres';
         toggleFiltersBtn.addEventListener('click', () => {

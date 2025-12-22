@@ -5,8 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Liste des Interventions</title>
   <link href="/style.css" rel="stylesheet">
+  <script src="/nav.js?v=2"></script>
+  <style>
+    .embed header, .embed #navbar-placeholder { display:none !important; }
+  </style>
 </head>
 <body class="min-h-screen app-bg">
+  <div id="navbar-placeholder"></div>
   <header></header>
   <main class="container mx-auto px-6 py-8 max-w-7xl">
     <div class="card">
@@ -40,9 +45,12 @@
       </div>
     </div>
   </main>
-  <script src="/nav.js"></script>
   <script>
     (function(){
+      const params = new URLSearchParams(window.location.search);
+      const isEmbed = window.self !== window.top || params.get('embed') === '1' || params.get('modal') === '1';
+      if (isEmbed) document.body.classList.add('embed');
+
       async function loadList(){
         const token = localStorage.getItem('token');
         const tbody = document.getElementById('interTbody');

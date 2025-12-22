@@ -41,6 +41,7 @@
     .status-termine { background:#ffe0e0; color:#b91c1c; }
     .link-button { color:#667eea; font-weight:600; cursor:pointer; text-decoration:none; }
     .link-button:hover { text-decoration:underline; color:#764ba2; }
+    .embed #navbar-placeholder { display:none !important; }
   </style>
 </head>
 <body>
@@ -240,10 +241,7 @@
             <label class="form-label fw-semibold">Titre</label>
             <input class="form-control" id="doe-titre" placeholder="Ex: DOE Installation">
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Affaire ID</label>
-            <input class="form-control" id="doe-affaire-id" placeholder="ID de l'affaire liée">
-          </div>
+          <input type="hidden" id="doe-affaire-id">
           <div class="mb-3">
             <label class="form-label fw-semibold">Description</label>
             <textarea class="form-control" id="doe-description" rows="3"></textarea>
@@ -258,11 +256,28 @@
     </div>
   </div>
 
+  <!-- Modal générique viewer -->
+  <div class="modal fade" id="viewerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Aperçu</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0" style="height:80vh;">
+          <iframe id="viewerFrame" src="about:blank" style="width:100%;height:100%;border:0;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async function() {
       const qp = new URLSearchParams(location.search);
       const siteId = qp.get('id');
+      const isEmbed = window.self !== window.top || qp.get('embed') === '1' || qp.get('modal') === '1';
+      if (isEmbed) document.body.classList.add('embed');
       const token = localStorage.getItem('token');
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
       const isAdmin = (() => { try { const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
@@ -323,34 +338,36 @@
         set('tickets-count', `${tickets.length} ticket(s)`);
         const ticketsList = document.getElementById('tickets-list');
         ticketsList.innerHTML = '';
+        const renderTicketCard = (t) => {
+          const el = document.createElement('div');
+          const dateStr = t.date_debut ? new Date(t.date_debut).toLocaleDateString() : '';
+          const etat = (t.etat || '').toLowerCase();
+          const badgeClass = etat.includes('termin') ? 'status-termine' : etat.includes('cours') ? 'status-cours' : 'status-attente';
+          
+          el.className = 'ticket-item';
+          el.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <a class="fw-semibold text-decoration-none open-modal-link" data-url="ticket-view.html?id=${t.id}" href="#">#${t.id} — ${t.titre || 'Sans titre'}</a>
+                ${t.demande_titre ? `<div class="small text-info fst-italic">Lié à la demande : ${t.demande_titre}</div>` : ''}
+                <div class="small text-muted">${t.description || 'Pas de description.'}</div>
+              </div>
+              <div class="text-end" style="min-width: 100px;">
+                <div class="status-pill ${badgeClass}">${(t.etat||'').replace('_',' ')}</div>
+                <div class="small text-muted mt-1">${dateStr}</div>
+              </div>
+            </div>
+            <div class="mt-2 d-flex gap-2 flex-wrap">
+              <button class="btn btn-sm btn-outline-secondary open-modal-link" data-url="ticket-view.html?id=${t.id}"><i class="bi bi-eye"></i> Voir</button>
+              <button class="btn btn-sm btn-outline-primary open-modal-link" data-url="interventions.html?ticket_id=${t.id}"><i class="bi bi-clock-history"></i> Historique interventions</button>
+            </div>`;
+          return el;
+        };
+
         if (tickets.length === 0) {
             ticketsList.innerHTML = '<div class="text-muted">Aucun ticket associé à ce site.</div>';
         } else {
-            tickets.forEach(t => {
-                const el = document.createElement('div');
-                const dateStr = t.date_debut ? new Date(t.date_debut).toLocaleDateString() : '';
-                const etat = (t.etat || '').toLowerCase();
-                const badgeClass = etat.includes('termin') ? 'status-termine' : etat.includes('cours') ? 'status-cours' : 'status-attente';
-                
-                el.className = 'ticket-item';
-                el.innerHTML = `
-                  <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                      <a class="fw-semibold text-decoration-none" href="ticket-view.html?id=${t.id}">#${t.id} — ${t.titre || 'Sans titre'}</a>
-                      ${t.demande_titre ? `<div class="small text-info fst-italic">Lié à la demande : ${t.demande_titre}</div>` : ''}
-                      <div class="small text-muted">${t.description || 'Pas de description.'}</div>
-                    </div>
-                    <div class="text-end" style="min-width: 100px;">
-                      <div class="status-pill ${badgeClass}">${(t.etat||'').replace('_',' ')}</div>
-                      <div class="small text-muted mt-1">${dateStr}</div>
-                    </div>
-                  </div>
-                  <div class="mt-2 d-flex gap-2 flex-wrap">
-                    <a class="btn btn-sm btn-outline-secondary" href="ticket-view.html?id=${t.id}" target="_blank" rel="noopener"><i class="bi bi-eye"></i> Voir</a>
-                    <a class="btn btn-sm btn-outline-primary" href="interventions.html?ticket_id=${t.id}" target="_blank" rel="noopener"><i class="bi bi-clock-history"></i> Historique interventions</a>
-                  </div>`;
-                ticketsList.appendChild(el);
-            });
+            tickets.forEach(t => ticketsList.appendChild(renderTicketCard(t)));
         }
 
         // --- DOE associés ---
@@ -376,7 +393,7 @@
         }
 
         // --- Messages associés (modal) ---
-        const msgBtn = document.getElementById('open-messages');
+      const msgBtn = document.getElementById('open-messages');
         const msgBtnHero = document.getElementById('open-messages-btn');
         const openMessages = () => {
           const frame = document.getElementById('messagesFrame');
@@ -388,7 +405,7 @@
         if (msgBtnHero) msgBtnHero.addEventListener('click', openMessages);
 
         // --- Affaire / DOE (admin) ---
-        if (isAdmin) {
+      if (isAdmin) {
           const openAffaire = document.getElementById('open-affaire-btn');
           const openDoe = document.getElementById('open-doe-btn');
           if (openAffaire) openAffaire.classList.remove('d-none');
@@ -454,9 +471,15 @@
             saveDoeBtn.addEventListener('click', async () => {
               const titre = document.getElementById('doe-titre').value.trim();
               const description = document.getElementById('doe-description').value.trim();
-              const affaireId = document.getElementById('doe-affaire-id').value.trim();
+              // Essaye de trouver une affaire liée au site (via tickets/demandes) sinon utilise le premier contrat
+              let affaireId = null;
+              if (Array.isArray(contrats) && contrats.length) {
+                affaireId = contrats[0].affaire_id || contrats[0].id;
+              }
+              const demandeAff = (tickets.find(t => t.affaire_id)?.affaire_id) || null;
+              affaireId = demandeAff || affaireId;
               if (!titre) { showDoeFb('Le titre est requis','alert alert-warning'); return; }
-              if (!affaireId) { showDoeFb('Affaire ID requis','alert alert-warning'); return; }
+              if (!affaireId) { showDoeFb('Aucune affaire trouvée pour ce site','alert alert-warning'); return; }
               try {
                 await fetch('/api/does', {
                   method:'POST',
@@ -471,6 +494,21 @@
             });
           }
         }
+
+        // Ouverture des liens internes en modal (tickets / demandes / historiques)
+        const viewerModalEl = document.getElementById('viewerModal');
+        const viewerFrame = document.getElementById('viewerFrame');
+        const openInternalModal = (url) => {
+          if (viewerFrame) viewerFrame.src = url;
+          if (viewerModalEl) bootstrap.Modal.getOrCreateInstance(viewerModalEl).show();
+        };
+        document.body.addEventListener('click', (e) => {
+          const target = e.target.closest('.open-modal-link');
+          if (target && target.dataset.url) {
+            e.preventDefault();
+            openInternalModal(target.dataset.url);
+          }
+        });
 
         // --- Matériels associés ---
         const materielsList = document.getElementById('materiels-list');
@@ -580,12 +618,12 @@
                         <div class="fw-semibold">Demande #${d.id}</div>
                         <div class="small text-muted">${d.titre || d.description || 'Sans titre'}</div>
                         <div class="small text-muted">Créée le ${d.created_at ? new Date(d.created_at).toLocaleDateString() : 'N/A'}</div>
-                        ${d.ticket_id ? `<div class="small">Ticket lié : <a href="ticket-view.html?id=${d.ticket_id}" target="_blank" rel="noopener">#${d.ticket_id}</a></div>` : ''}
+                        ${d.ticket_id ? `<div class="small">Ticket lié : <a class="open-modal-link" data-url="ticket-view.html?id=${d.ticket_id}" href="#">#${d.ticket_id}</a></div>` : ''}
                       </div>
                       <div class="text-end">
                         <span class="badge ${badgeCls}">${d.status || 'En cours'}</span><br>
                         ${convertBtn}
-                        <a class="btn btn-sm btn-outline-secondary mt-1" href="client-demand-view.html?id=${d.id}" target="_blank" rel="noopener"><i class="bi bi-eye"></i> Voir</a>
+                        <button class="btn btn-sm btn-outline-secondary mt-1 open-modal-link" data-url="client-demand-view.html?id=${d.id}"><i class="bi bi-eye"></i> Voir</button>
                       </div>
                     </div>
                   </div>`;
@@ -621,6 +659,30 @@
             demandesList.innerHTML = '<div class="text-danger">Impossible de charger les demandes.</div>';
           }
         }
+
+        // Si certaines demandes ont un ticket lié non présent dans la liste, on tente de le charger et l'afficher
+        try {
+          const knownTicketIds = new Set(tickets.map(t => String(t.id)));
+          const demandesListEl = document.getElementById('demandes-list');
+          if (demandesListEl) {
+            const demandeLinks = demandesListEl.querySelectorAll('[data-url^=\"ticket-view.html?id=\"]');
+            demandeLinks.forEach(async link => {
+              const url = new URL(link.dataset.url, location.href);
+              const tid = url.searchParams.get('id');
+              if (tid && !knownTicketIds.has(tid)) {
+                try {
+                  const tr = await fetch(`/api/tickets/${tid}`, { headers, credentials:'same-origin' });
+                  if (tr.ok) {
+                    const t = await tr.json();
+                    knownTicketIds.add(tid);
+                    ticketsList.appendChild(renderTicketCard(t));
+                    set('tickets-count', `${knownTicketIds.size} ticket(s)`);
+                  }
+                } catch(_){}
+              }
+            });
+          }
+        } catch(_){}
 
       } catch(e) {
         console.error('Erreur chargement des détails du site:', e);
