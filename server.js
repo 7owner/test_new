@@ -2810,9 +2810,16 @@ app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, re
         return res.status(400).json({ error: 'Description, date de début et ticket ID sont requis' });
     }
     try {
+        let agentToUse = agent_matricule || null;
+        if (!agentToUse) {
+          try {
+            const a = await pool.query('SELECT agent_matricule FROM ticket_agent WHERE ticket_id=$1 ORDER BY date_debut NULLS FIRST, created_at ASC LIMIT 1', [ticket_id]);
+            if (a.rows[0]) agentToUse = a.rows[0].agent_matricule;
+          } catch (_) {}
+        }
         const result = await pool.query(
             'INSERT INTO intervention (titre, description, date_debut, date_fin, ticket_id, site_id, demande_id, status, agent_matricule) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
-            [titre || null, description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status || 'En_attente', agent_matricule || null]
+            [titre || null, description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status || 'En_attente', agentToUse]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -2825,9 +2832,16 @@ app.put('/api/interventions/:id', authenticateToken, authorizeAdmin, async (req,
     const { id } = req.params;
     const { description, date_debut, date_fin = null, ticket_id, site_id, demande_id, status, agent_matricule } = req.body;
     try {
+        let agentToUse = agent_matricule || null;
+        if (!agentToUse && ticket_id) {
+          try {
+            const a = await pool.query('SELECT agent_matricule FROM ticket_agent WHERE ticket_id=$1 ORDER BY date_debut NULLS FIRST, created_at ASC LIMIT 1', [ticket_id]);
+            if (a.rows[0]) agentToUse = a.rows[0].agent_matricule;
+          } catch (_) {}
+        }
         const result = await pool.query(
             'UPDATE intervention SET description = $1, date_debut = $2, date_fin = $3, ticket_id = $4, site_id = $5, demande_id = $6, status = COALESCE($7::statut_intervention, status), agent_matricule = $8 WHERE id = $9 RETURNING *',
-            [description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status, agent_matricule || null, id]
+            [description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status, agentToUse, id]
         );
         if (result.rows.length === 0) {
             return res.status(404).json({ error: `Intervention with id ${id} not found` });
