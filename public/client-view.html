@@ -450,7 +450,7 @@
       const repModalEl = document.getElementById('repModal');
       const repModal = repModalEl ? new bootstrap.Modal(repModalEl) : null;
       const repFeedback = document.getElementById('rep-feedback');
-      const saveRepBtn = document.getElementById('save-rep-btn');
+      const saveNewRepBtn = document.getElementById('save-rep-btn');
       const editRepModalEl = document.getElementById('editRepModal');
       const editRepModal = editRepModalEl ? new bootstrap.Modal(editRepModalEl) : null;
       const editRepFeedback = document.getElementById('edit-rep-feedback');
@@ -459,7 +459,7 @@
       const contratModal = contratModalEl ? new bootstrap.Modal(contratModalEl) : null;
       const contratFeedback = document.getElementById('contrat-feedback');
       const saveContratBtn = document.getElementById('save-contrat-btn');
-      const saveRepBtn = document.getElementById('save-rep-btn');
+      const saveEditRepBtn = document.getElementById('save-rep-btn');
       let currentRepEditing = null;
 
       try {
@@ -585,7 +585,7 @@
           });
 
           // Ajouter représentant
-          if (addRepBtn && repModal && saveRepBtn && repFeedback) {
+          if (addRepBtn && repModal && saveNewRepBtn && repFeedback) {
             addRepBtn.addEventListener('click', () => {
               repFeedback.classList.add('d-none');
               repFeedback.textContent = '';
@@ -596,7 +596,7 @@
               repModal.show();
             });
 
-            saveRepBtn.addEventListener('click', async () => {
+            saveNewRepBtn.addEventListener('click', async () => {
               repFeedback.classList.add('d-none');
               const nom = document.getElementById('rep-nom').value.trim();
               const email = document.getElementById('rep-email').value.trim();
@@ -626,8 +626,8 @@
           }
         }
 
-        if (saveRepBtn) {
-          saveRepBtn.addEventListener('click', async () => {
+        if (saveEditRepBtn) {
+          saveEditRepBtn.addEventListener('click', async () => {
             if (!currentRepEditing) return;
             editRepFeedback.textContent = '';
             const payload = {
