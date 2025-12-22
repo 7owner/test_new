@@ -3121,8 +3121,22 @@ app.post('/api/tickets/:id/satisfaction', authenticateToken, async (req, res) =>
 // API Routes for Interventions (CRUD)
 app.get('/api/interventions', authenticateToken, async (req, res) => {
     try {
+        const { ticket_id } = req.query;
+        const params = [];
+        let where = '';
+        if (ticket_id) {
+          params.push(ticket_id);
+          where = `WHERE i.ticket_id = $${params.length}`;
+        }
         const result = await pool.query(
-            'SELECT i.*, t.titre as ticket_titre, s.nom_site as site_nom, dc.titre as demande_titre FROM intervention i JOIN ticket t ON i.ticket_id = t.id LEFT JOIN site s ON i.site_id = s.id LEFT JOIN demande_client dc ON i.demande_id = dc.id ORDER BY i.id ASC'
+            `SELECT i.*, t.titre as ticket_titre, s.nom_site as site_nom, dc.titre as demande_titre
+             FROM intervention i
+             JOIN ticket t ON i.ticket_id = t.id
+             LEFT JOIN site s ON i.site_id = s.id
+             LEFT JOIN demande_client dc ON i.demande_id = dc.id
+             ${where}
+             ORDER BY COALESCE(i.date_debut, i.id) DESC`
+             , params
         );
         res.json(result.rows);
     } catch (err) {
