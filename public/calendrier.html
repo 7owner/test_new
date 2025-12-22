@@ -1,68 +1,72 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendrier des Interventions</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css' rel='stylesheet' />
-    <link rel="stylesheet" href="custom.css">
-    <style>
-      .fc-event { border: none; border-radius: 10px; padding: 4px 6px; }
-      .fc-daygrid-event-harness { margin: 2px 0; }
-      .fc .fc-toolbar.fc-header-toolbar { margin-bottom: 1rem; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendrier des interventions</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css" rel="stylesheet">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=2"></script>
+  <style>
+    body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); min-height: 100vh; }
+    .calendar-shell { max-width: 1400px; margin: 24px auto; padding: 0 16px; }
+    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+    .fc .fc-toolbar.fc-header-toolbar { margin-bottom: 1rem; }
+    .fc-event { border: none; border-radius: 10px; padding: 4px 6px; }
+    .fc-daygrid-event-harness { margin: 2px 0; }
+    .filter-chip { background: #f1f5f9; border-radius: 12px; padding: 6px 10px; font-weight: 600; color: #475569; display: inline-flex; align-items: center; gap: 6px; }
+  </style>
 </head>
-<body class="dashboard-bg">
-    <div id="navbar-placeholder"></div>
+<body>
+  <div id="navbar-placeholder"></div>
 
-    <div class="container-fluid mt-4">
-        <div class="card shadow-sm">
-            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <div>
-                  <h2 class="card-title mb-0">Calendrier des Interventions</h2>
-                  <small class="text-muted">Vue globale type Google Agenda, avec filtres et détails</small>
-                </div>
-                <div class="row g-2">
-                  <div class="col-auto">
-                    <label for="agent-filter" class="form-label mb-1">Filtrer par agent</label>
-                    <select id="agent-filter" class="form-select form-select-sm" multiple></select>
-                  </div>
-                </div>
-            </div>
-            <div class="card-body">
-                <div id="calendar"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal détail intervention -->
-    <div class="modal fade" id="interventionModal" tabindex="-1" aria-labelledby="interventionModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="interventionModalLabel">Détail intervention</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <div class="calendar-shell">
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+          <div>
+            <h2 class="mb-0">Calendrier des interventions</h2>
+            <small class="text-muted">Vue type agenda avec filtres par agents</small>
           </div>
-          <div class="modal-body">
-            <div id="iv-feedback" class="alert alert-info py-2 mb-3">Chargement...</div>
-            <div id="iv-content" class="d-none">
-              <h5 id="iv-title" class="fw-bold mb-1"></h5>
-              <div class="text-muted mb-2" id="iv-dates"></div>
-              <div class="mb-2"><strong>Site :</strong> <span id="iv-site"></span></div>
-              <div class="mb-2"><strong>Client :</strong> <span id="iv-client"></span></div>
-              <div class="mb-2"><strong>Agent(s) :</strong> <span id="iv-agents"></span></div>
-              <div class="mb-2"><strong>Description :</strong><br><span id="iv-desc"></span></div>
-              <a class="btn btn-outline-primary mt-2" id="iv-link" target="_blank" rel="noopener">Ouvrir la fiche intervention</a>
+          <div class="d-flex flex-wrap align-items-end gap-3">
+            <div>
+              <label for="agent-filter" class="form-label mb-1 fw-semibold">Filtrer par agent</label>
+              <select id="agent-filter" class="form-select form-select-sm" multiple style="min-width:220px"></select>
             </div>
+          </div>
+        </div>
+        <div id="calendar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal détail intervention -->
+  <div class="modal fade" id="interventionModal" tabindex="-1" aria-labelledby="interventionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="interventionModalLabel">Détail intervention</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="iv-feedback" class="alert alert-info py-2 mb-3">Chargement...</div>
+          <div id="iv-content" class="d-none">
+            <h5 id="iv-title" class="fw-bold mb-1"></h5>
+            <div class="text-muted mb-2" id="iv-dates"></div>
+            <div class="mb-2"><strong>Site :</strong> <span id="iv-site"></span></div>
+            <div class="mb-2"><strong>Client :</strong> <span id="iv-client"></span></div>
+            <div class="mb-2"><strong>Agent(s) :</strong> <span id="iv-agents"></span></div>
+            <div class="mb-2"><strong>Description :</strong><br><span id="iv-desc"></span></div>
+            <a class="btn btn-outline-primary mt-2" id="iv-link" target="_blank" rel="noopener">Ouvrir la fiche intervention</a>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.js'></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/calendrier.js"></script>
-    <script src="nav.js?v=2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.js"></script>
+  <script src="/js/calendrier.js"></script>
 </body>
 </html>

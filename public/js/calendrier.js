@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async function () {
   const agentFilter = document.getElementById('agent-filter');
   const modalEl = document.getElementById('interventionModal');
   const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
@@ -13,36 +13,28 @@ document.addEventListener('DOMContentLoaded', async function() {
   const ivLink = document.getElementById('iv-link');
   let calendar;
 
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.href = '/login.html';
+    return;
+  }
+
   async function fetchJSON(url) {
-    const token = localStorage.getItem('token');
-    const res = await fetch(url, { headers: token ? { 'Authorization': 'Bearer ' + token } : {} });
+    const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
     const body = res.headers.get('content-type')?.includes('json') ? await res.json() : null;
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('token');
+      window.location.href = '/login.html';
+      throw new Error('Unauthorized');
+    }
     if (!res.ok) throw new Error(body?.error || res.statusText);
     return body;
   }
 
-  async function fetchAgents() {
-    try {
-      const agents = await fetchJSON('/api/agents');
-      const allOption = document.createElement('option');
-      allOption.value = 'all';
-      allOption.textContent = 'Tous les agents';
-      agentFilter.appendChild(allOption);
-      agents.forEach(agent => {
-        const option = document.createElement('option');
-        option.value = agent.matricule;
-        option.textContent = `${agent.nom} ${agent.prenom}`;
-        agentFilter.appendChild(option);
-      });
-    } catch (error) {
-      console.error('Erreur lors de la récupération des agents:', error);
-      agentFilter.innerHTML = '<option>Erreur de chargement</option>';
-    }
-  }
-
-  function statusColors(status) {
+  function statusColor(status) {
     const map = {
-      'En_attente': '#facc15',
+      'En_attente': '#f59e0b',
+      'En cours de traitement': '#3b82f6',
       'En_cours': '#3b82f6',
       'Termine': '#10b981',
       'Terminé': '#10b981'
@@ -50,32 +42,76 @@ document.addEventListener('DOMContentLoaded', async function() {
     return map[status] || '#6366f1';
   }
 
-  function buildEventSourceUrl(range) {
-    const selectedAgents = Array.from(agentFilter.selectedOptions).map(option => option.value);
-    const params = new URLSearchParams();
-    if (range?.start) params.set('start', range.start.toISOString());
-    if (range?.end) params.set('end', range.end.toISOString());
-    if (selectedAgents.length && !selectedAgents.includes('all')) {
-      params.set('agent_ids', selectedAgents.join(','));
+  async function loadAgents() {
+    try {
+      const agents = await fetchJSON('/api/agents');
+      const allOption = document.createElement('option');
+      allOption.value = 'all';
+      allOption.textContent = 'Tous les agents';
+      agentFilter.appendChild(allOption);
+      (agents || []).forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.matricule;
+        opt.textContent = `${a.nom || ''} ${a.prenom || ''}`.trim() || a.matricule;
+        agentFilter.appendChild(opt);
+      });
+    } catch (e) {
+      agentFilter.innerHTML = '<option>Erreur chargement agents</option>';
     }
+  }
+
+  function buildEventSource(fetchInfo) {
+    const selectedAgents = Array.from(agentFilter.selectedOptions).map(o => o.value);
+    const params = new URLSearchParams();
+    if (fetchInfo?.start) params.set('start', fetchInfo.start.toISOString());
+    if (fetchInfo?.end) params.set('end', fetchInfo.end.toISOString());
+    if (selectedAgents.length && !selectedAgents.includes('all')) params.set('agent_ids', selectedAgents.join(','));
     return `/api/interventions/calendar?${params.toString()}`;
   }
 
   function renderEventContent(info) {
-    const title = info.event.title || 'Intervention';
-    const site = info.event.extendedProps.site || '';
-    const client = info.event.extendedProps.client || '';
-    const status = info.event.extendedProps.status || '';
-    const color = statusColors(status);
-    return { html: `
-      <div style="display:flex;flex-direction:column;gap:2px;color:#111;">
-        <div style="font-weight:700;color:${color};">${title}</div>
-        <div style="font-size:11px;color:#374151;">${site}</div>
-        <div style="font-size:11px;color:#6b7280;">${client}</div>
-      </div>` };
+    const ext = info.event.extendedProps || {};
+    const color = statusColor(ext.status || ext.statut);
+    return {
+      html: `
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <div style="font-weight:700;color:${color};">${info.event.title || 'Intervention'}</div>
+          <div style="font-size:11px;color:#374151;">${ext.site || ''}</div>
+          <div style="font-size:11px;color:#6b7280;">${ext.client || ''}</div>
+        </div>
+      `
+    };
   }
 
-  function initializeCalendar() {
+  async function showInterventionDetail(id, fallback) {
+    if (!modal) return;
+    ivFeedback.className = 'alert alert-info py-2 mb-3';
+    ivFeedback.textContent = 'Chargement...';
+    ivFeedback.classList.remove('d-none');
+    ivContent.classList.add('d-none');
+    modal.show();
+    try {
+      const rel = await fetchJSON(`/api/interventions/${id}/relations`);
+      const iv = rel.intervention || {};
+      ivTitle.textContent = iv.titre || fallback?.title || 'Intervention';
+      const deb = iv.date_debut ? new Date(iv.date_debut).toLocaleString() : '';
+      const fin = iv.date_fin ? new Date(iv.date_fin).toLocaleString() : '';
+      ivDates.textContent = deb ? (fin ? `${deb} → ${fin}` : deb) : 'Dates non renseignées';
+      ivSite.textContent = rel.site?.nom_site || fallback?.site || 'Non spécifié';
+      ivClient.textContent = rel.client?.nom_client || fallback?.client || 'Non spécifié';
+      const agents = (rel.agents_assignes || []).map(a => `${a.prenom || ''} ${a.nom || ''}`.trim()).filter(Boolean);
+      ivAgents.textContent = agents.join(', ') || 'Non assigné';
+      ivDesc.textContent = iv.description || fallback?.desc || 'Aucune description.';
+      ivLink.href = `intervention-view.html?id=${id}`;
+      ivFeedback.classList.add('d-none');
+      ivContent.classList.remove('d-none');
+    } catch (e) {
+      ivFeedback.className = 'alert alert-danger py-2 mb-3';
+      ivFeedback.textContent = e.message || 'Impossible de charger le détail.';
+    }
+  }
+
+  function initCalendar() {
     const calendarEl = document.getElementById('calendar');
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
@@ -85,17 +121,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         right: 'dayGridMonth,timeGridWeek,timeGridDay'
       },
       eventSources: [{
-        events: async (fetchInfo, successCallback, failureCallback) => {
+        events: async (fetchInfo, success, failure) => {
           try {
-            const url = buildEventSourceUrl(fetchInfo);
+            const url = buildEventSource(fetchInfo);
             const data = await fetchJSON(url);
             const events = (data || []).map(ev => ({
               id: ev.id,
               title: ev.titre || ev.title || `Intervention #${ev.id}`,
               start: ev.date_debut || ev.start,
               end: ev.date_fin || ev.end,
-              backgroundColor: statusColors(ev.status || ev.statut),
-              borderColor: statusColors(ev.status || ev.statut),
+              backgroundColor: statusColor(ev.status || ev.statut),
+              borderColor: statusColor(ev.status || ev.statut),
               extendedProps: {
                 description: ev.description,
                 site: ev.nom_site || ev.site_nom,
@@ -104,47 +140,26 @@ document.addEventListener('DOMContentLoaded', async function() {
                 intervention_id: ev.id
               }
             }));
-            successCallback(events);
+            success(events);
           } catch (e) {
-            console.error('Erreur chargement calendrier:', e);
-            failureCallback(e);
+            console.error('Erreur calendrier', e);
+            failure(e);
           }
         }
       }],
       eventContent: renderEventContent,
-      eventClick: async (info) => {
-        if (!modal) return;
-        ivFeedback.className = 'alert alert-info py-2 mb-3';
-        ivFeedback.textContent = 'Chargement...';
-        ivFeedback.classList.remove('d-none');
-        ivContent.classList.add('d-none');
-        modal.show();
-
+      eventClick: (info) => {
         const ext = info.event.extendedProps || {};
         const id = ext.intervention_id || info.event.id;
-        try {
-          const rel = await fetchJSON(`/api/interventions/${id}/relations`);
-          const iv = rel.intervention || {};
-          ivTitle.textContent = iv.titre || info.event.title || 'Intervention';
-          const deb = iv.date_debut ? new Date(iv.date_debut).toLocaleString() : '';
-          const fin = iv.date_fin ? new Date(iv.date_fin).toLocaleString() : '';
-          ivDates.textContent = deb ? (fin ? `${deb} → ${fin}` : deb) : 'Dates non renseignées';
-          ivSite.textContent = rel.site?.nom_site || ext.site || 'Non spécifié';
-          ivClient.textContent = rel.client?.nom_client || ext.client || 'Non spécifié';
-          const agents = (rel.agents_assignes || []).map(a => `${a.prenom || ''} ${a.nom || ''}`.trim()).filter(Boolean);
-          ivAgents.textContent = agents.join(', ') || 'Non assigné';
-          ivDesc.textContent = iv.description || 'Aucune description.';
-          ivLink.href = `intervention-view.html?id=${id}`;
-
-          ivFeedback.classList.add('d-none');
-          ivContent.classList.remove('d-none');
-        } catch (e) {
-          ivFeedback.className = 'alert alert-danger py-2 mb-3';
-          ivFeedback.textContent = e.message || 'Impossible de charger le détail.';
-        }
+        showInterventionDetail(id, {
+          title: info.event.title,
+          site: ext.site,
+          client: ext.client,
+          desc: ext.description
+        });
       },
-      eventDidMount: function(info) {
-        const desc = info.event.extendedProps.description || '';
+      eventDidMount: (info) => {
+        const desc = info.event.extendedProps?.description;
         if (desc) {
           new bootstrap.Tooltip(info.el, {
             title: desc,
@@ -158,12 +173,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     calendar.render();
   }
 
-  await fetchAgents();
-  initializeCalendar();
+  await loadAgents();
+  initCalendar();
 
-  agentFilter.addEventListener('change', function() {
-    calendar.getEventSources().forEach(source => source.remove());
-    calendar.addEventSource({ events: calendar.getOption('eventSources')[0].events });
+  agentFilter.addEventListener('change', () => {
     calendar.refetchEvents();
   });
 });
