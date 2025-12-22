@@ -50,13 +50,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     return map[status] || '#6366f1';
   }
 
-  function buildEventSourceUrl() {
+  function buildEventSourceUrl(range) {
     const selectedAgents = Array.from(agentFilter.selectedOptions).map(option => option.value);
-    let url = '/api/interventions/calendar';
-    if (selectedAgents.length > 0 && !selectedAgents.includes('all')) {
-      url += `?agent_ids=${selectedAgents.join(',')}`;
+    const params = new URLSearchParams();
+    if (range?.start) params.set('start', range.start.toISOString());
+    if (range?.end) params.set('end', range.end.toISOString());
+    if (selectedAgents.length && !selectedAgents.includes('all')) {
+      params.set('agent_ids', selectedAgents.join(','));
     }
-    return url;
+    return `/api/interventions/calendar?${params.toString()}`;
   }
 
   function renderEventContent(info) {
@@ -82,7 +84,33 @@ document.addEventListener('DOMContentLoaded', async function() {
         center: 'title',
         right: 'dayGridMonth,timeGridWeek,timeGridDay'
       },
-      eventSources: [buildEventSourceUrl()],
+      eventSources: [{
+        events: async (fetchInfo, successCallback, failureCallback) => {
+          try {
+            const url = buildEventSourceUrl(fetchInfo);
+            const data = await fetchJSON(url);
+            const events = (data || []).map(ev => ({
+              id: ev.id,
+              title: ev.titre || ev.title || `Intervention #${ev.id}`,
+              start: ev.date_debut || ev.start,
+              end: ev.date_fin || ev.end,
+              backgroundColor: statusColors(ev.status || ev.statut),
+              borderColor: statusColors(ev.status || ev.statut),
+              extendedProps: {
+                description: ev.description,
+                site: ev.nom_site || ev.site_nom,
+                client: ev.nom_client || ev.client_nom,
+                status: ev.status || ev.statut,
+                intervention_id: ev.id
+              }
+            }));
+            successCallback(events);
+          } catch (e) {
+            console.error('Erreur chargement calendrier:', e);
+            failureCallback(e);
+          }
+        }
+      }],
       eventContent: renderEventContent,
       eventClick: async (info) => {
         if (!modal) return;
@@ -134,9 +162,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   initializeCalendar();
 
   agentFilter.addEventListener('change', function() {
-    const url = buildEventSourceUrl();
     calendar.getEventSources().forEach(source => source.remove());
-    calendar.addEventSource(url);
+    calendar.addEventSource({ events: calendar.getOption('eventSources')[0].events });
     calendar.refetchEvents();
   });
 });
