@@ -96,32 +96,41 @@ async function main() {
         const baseDate = new Date('2025-12-22T10:00:00Z');
         
         // Demande 1 (Dec) -> Ticket -> 2 Interventions
-        const dem1Res = await client.query(`INSERT INTO demande_client (client_id, site_id, titre, description, created_at) VALUES ($1, $2, 'GTB en panne sur Terminal 1', 'Le système de chauffage ne répond plus.', $3) ON CONFLICT DO NOTHING RETURNING id;`, [client1Id, site1Id, new Date(baseDate.getTime() - 30 * 24 * 3600 * 1000)]);
+        const dem1Title = 'GTB en panne sur Terminal 1';
+        const dem1Res = await client.query(`INSERT INTO demande_client (client_id, site_id, titre, description, created_at) VALUES ($1, $2, $3, 'Le système de chauffage ne répond plus.', $4) ON CONFLICT (titre, client_id) DO NOTHING RETURNING id;`, [client1Id, site1Id, dem1Title, new Date(baseDate.getTime() - 30 * 24 * 3600 * 1000)]);
         const dem1Id = dem1Res.rows[0]?.id;
         if (dem1Id) {
-            const ticket1Res = await client.query(`UPDATE demande_client SET ticket_id = (INSERT INTO ticket (titre, description, doe_id, affaire_id, site_id, demande_id, etat, responsable, date_debut) VALUES ($1, $2, null, null, $3, $4, 'En_cours', 'AGT001', $5) RETURNING id) WHERE id = $4 RETURNING ticket_id;`, [`Demande: GTB en panne`, 'Le système de chauffage ne répond plus.', site1Id, dem1Id, new Date(baseDate.getTime() - 28 * 24 * 3600 * 1000)]);
-            const ticket1Id = ticket1Res.rows[0]?.ticket_id;
+            const ticket1Title = `Demande: ${dem1Title}`;
+            const ticket1Res = await client.query(`INSERT INTO ticket (titre, description, site_id, demande_id, etat, responsable, date_debut) VALUES ($1, $2, $3, $4, 'En_cours', 'AGT001', $5) ON CONFLICT (titre, demande_id) DO UPDATE SET titre=EXCLUDED.titre RETURNING id;`, [ticket1Title, 'Le système de chauffage ne répond plus.', site1Id, dem1Id, new Date(baseDate.getTime() - 28 * 24 * 3600 * 1000)]);
+            const ticket1Id = ticket1Res.rows[0]?.id;
             if (ticket1Id) {
+                 await client.query(`UPDATE demande_client SET ticket_id = $1 WHERE id = $2;`, [ticket1Id, dem1Id]);
+
                 const ta1Res = await client.query(`INSERT INTO ticket_agent (ticket_id, agent_matricule) VALUES ($1, 'AGT001') ON CONFLICT DO NOTHING RETURNING id;`, [ticket1Id]);
                 const ta1Id = ta1Res.rows[0]?.id;
-                await client.query(`INSERT INTO intervention (ticket_id, site_id, titre, description, date_debut, status, ticket_agent_id) VALUES ($1, $2, 'Diagnostic initial', 'Vérification des automates.', $3, 'Termine', $4);`, [ticket1Id, site1Id, new Date(baseDate.getTime() - 27 * 24 * 3600 * 1000), ta1Id]);
-                await client.query(`INSERT INTO intervention (ticket_id, site_id, titre, description, date_debut, status, ticket_agent_id) VALUES ($1, $2, 'Remplacement automate', 'Automate A-45 remplacé.', $3, 'En_cours', $4);`, [ticket1Id, site1Id, new Date(baseDate.getTime() - 5 * 24 * 3600 * 1000), ta1Id]);
+                
+                await client.query(`INSERT INTO intervention (ticket_id, site_id, titre, description, date_debut, status, ticket_agent_id) VALUES ($1, $2, 'Diagnostic initial', 'Vérification des automates.', $3, 'Termine', $4) ON CONFLICT (ticket_id, titre) DO NOTHING;`, [ticket1Id, site1Id, new Date(baseDate.getTime() - 27 * 24 * 3600 * 1000), 'Termine', ta1Id]);
+                await client.query(`INSERT INTO intervention (ticket_id, site_id, titre, description, date_debut, status, ticket_agent_id) VALUES ($1, $2, 'Remplacement automate', 'Automate A-45 remplacé.', $3, 'En_cours', $4) ON CONFLICT (ticket_id, titre) DO NOTHING;`, [ticket1Id, site1Id, new Date(baseDate.getTime() - 5 * 24 * 3600 * 1000), 'En_cours', ta1Id]);
             }
         }
 
         // Demande 2 (Jan) -> Ticket terminé
-        const dem2Res = await client.query(`INSERT INTO demande_client (client_id, site_id, titre, description, created_at) VALUES ($1, $2, 'Caméra HS Hangar J1', 'Une caméra de surveillance ne transmet plus.', $3) ON CONFLICT DO NOTHING RETURNING id;`, [client1Id, site2Id, new Date(baseDate.getTime() + 15 * 24 * 3600 * 1000)]);
+        const dem2Title = 'Caméra HS Hangar J1';
+        const dem2Res = await client.query(`INSERT INTO demande_client (client_id, site_id, titre, description, created_at) VALUES ($1, $2, $3, 'Une caméra de surveillance ne transmet plus.', $4) ON CONFLICT (titre, client_id) DO NOTHING RETURNING id;`, [client1Id, site2Id, dem2Title, new Date(baseDate.getTime() + 15 * 24 * 3600 * 1000)]);
         const dem2Id = dem2Res.rows[0]?.id;
         if(dem2Id) {
-            const ticket2Res = await client.query(`UPDATE demande_client SET ticket_id = (INSERT INTO ticket (titre, description, doe_id, affaire_id, site_id, demande_id, etat, responsable, date_debut, date_fin) VALUES ($1, $2, null, null, $3, $4, 'Termine', 'AGT003', $5, $6) RETURNING id) WHERE id = $4 RETURNING ticket_id;`, [`Demande: Caméra HS`, 'Une caméra de surveillance ne transmet plus.', site2Id, dem2Id, new Date(baseDate.getTime() + 16 * 24 * 3600 * 1000), new Date(baseDate.getTime() + 20 * 24 * 3600 * 1000)]);
-            const ticket2Id = ticket2Res.rows[0]?.ticket_id;
+            const ticket2Title = `Demande: ${dem2Title}`;
+            const ticket2Res = await client.query(`INSERT INTO ticket (titre, description, site_id, demande_id, etat, responsable, date_debut, date_fin) VALUES ($1, $2, $3, $4, 'Termine', 'AGT003', $5, $6) ON CONFLICT (titre, demande_id) DO UPDATE SET titre=EXCLUDED.titre RETURNING id;`, [ticket2Title, 'Une caméra de surveillance ne transmet plus.', site2Id, dem2Id, new Date(baseDate.getTime() + 16 * 24 * 3600 * 1000), new Date(baseDate.getTime() + 20 * 24 * 3600 * 1000)]);
+            const ticket2Id = ticket2Res.rows[0]?.id;
             if(ticket2Id) {
-                 await client.query(`INSERT INTO intervention (ticket_id, site_id, titre, description, date_debut, date_fin, status) VALUES ($1, $2, 'Changement caméra', 'Caméra modèle X remplacée par modèle Y.', $3, $4, 'Termine');`, [ticket2Id, site2Id, new Date(baseDate.getTime() + 17 * 24 * 3600 * 1000), new Date(baseDate.getTime() + 18 * 24 * 3600 * 1000)]);
+                await client.query(`UPDATE demande_client SET ticket_id = $1 WHERE id = $2;`, [ticket2Id, dem2Id]);
+                await client.query(`INSERT INTO intervention (ticket_id, site_id, titre, description, date_debut, date_fin, status) VALUES ($1, $2, 'Changement caméra', 'Caméra modèle X remplacée par modèle Y.', $3, $4, 'Termine') ON CONFLICT (ticket_id, titre) DO NOTHING;`, [ticket2Id, site2Id, new Date(baseDate.getTime() + 17 * 24 * 3600 * 1000), new Date(baseDate.getTime() + 18 * 24 * 3600 * 1000), 'Termine']);
             }
         }
 
         // Demande 3 (Feb) - Non convertie
-        await client.query(`INSERT INTO demande_client (client_id, site_id, titre, description, created_at) VALUES ($1, $2, 'Badge ne fonctionne pas - T2', 'Un employé ne peut pas accéder au Hall A.', $3) ON CONFLICT DO NOTHING;`, [client2Id, site3Id, new Date(baseDate.getTime() + 50 * 24 * 3600 * 1000)]);
+        const dem3Title = 'Badge ne fonctionne pas - T2';
+        await client.query(`INSERT INTO demande_client (client_id, site_id, titre, description, created_at) VALUES ($1, $2, $3, 'Un employé ne peut pas accéder au Hall A.', $4) ON CONFLICT (titre, client_id) DO NOTHING;`, [client2Id, site3Id, dem3Title, new Date(baseDate.getTime() + 50 * 24 * 3600 * 1000)]);
         
         log('Workflow data seeded.');
         
