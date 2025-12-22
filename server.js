@@ -1688,11 +1688,14 @@ app.get('/api/contrats', authenticateToken, async (req, res) => {
                     '[]'::json
                 ) AS sites_linked,
                 COALESCE(
-                    (SELECT json_agg(DISTINCT json_build_object('id', asso.id, 'titre', asso.titre))
-                     FROM contrat_site_association csa
-                     JOIN association_site asi ON csa.site_id = asi.site_id
-                     JOIN association asso ON asi.association_id = asso.id
-                     WHERE csa.contrat_id = c.id),
+                    (SELECT json_agg(json_build_object('id', unique_asso.id, 'titre', unique_asso.titre))
+                     FROM (
+                        SELECT DISTINCT asso.id, asso.titre
+                        FROM contrat_site_association csa
+                        JOIN association_site asi ON csa.site_id = asi.site_id
+                        JOIN association asso ON asi.association_id = asso.id
+                        WHERE csa.contrat_id = c.id
+                     ) AS unique_asso),
                     '[]'::json
                 ) AS associations
             FROM contrat c
