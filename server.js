@@ -4176,8 +4176,6 @@ app.post('/api/tickets/:id/agents', authenticateToken, authorizeAdmin, async (re
     const t = (await pool.query('SELECT id FROM ticket WHERE id=$1', [id])).rows[0]; if (!t) return res.status(404).json({ error: 'Ticket not found' });
     const a = (await pool.query('SELECT matricule FROM agent WHERE matricule=$1', [agent_matricule])).rows[0]; if (!a) return res.status(404).json({ error: 'Agent not found' });
     const r = await pool.query('INSERT INTO ticket_agent (ticket_id, agent_matricule, date_debut, date_fin) VALUES ($1,$2,$3,$4) RETURNING *', [id, agent_matricule, date_debut, date_fin]);
-    // Propagation: affecter aussi l'agent aux interventions liées à ce ticket (colonne agent_matricule)
-    await pool.query('UPDATE intervention SET agent_matricule=$1 WHERE ticket_id=$2', [agent_matricule, id]);
     res.status(201).json(r.rows[0]);
   } catch (e) { console.error('ticket add agent:', e); res.status(500).json({ error: 'Internal Server Error' }); }
 });
@@ -4186,8 +4184,7 @@ app.delete('/api/tickets/:id/agents/:matricule', authenticateToken, authorizeAdm
     const { id, matricule } = req.params;
     const r = await pool.query('DELETE FROM ticket_agent WHERE ticket_id=$1 AND agent_matricule=$2 RETURNING id', [id, matricule]);
     if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
-    // Si l'agent était associé via la colonne intervention.agent_matricule, on la remet à NULL
-    await pool.query('UPDATE intervention SET agent_matricule=NULL WHERE ticket_id=$1 AND agent_matricule=$2', [id, matricule]);
+    // This part of the propagation logic is removed as agent_matricule no longer exists on intervention
     res.json({ ok: true });
   }
   catch (e) { console.error('ticket remove agent:', e); res.status(500).json({ error: 'Internal Server Error' }); }
