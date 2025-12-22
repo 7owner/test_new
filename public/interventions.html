@@ -1,36 +1,36 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Liste des Interventions</title>
-  <link href="/style.css" rel="stylesheet">
+  <title>Interventions</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=2"></script>
   <style>
-    .embed header, .embed #navbar-placeholder { display:none !important; }
+    body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); }
+    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+    .embed #navbar-placeholder { display:none !important; }
+    .table thead th { background: #f7f8ff; }
   </style>
 </head>
-<body class="min-h-screen app-bg">
+<body class="dashboard-bg">
   <div id="navbar-placeholder"></div>
-  <header></header>
-  <main class="container mx-auto px-6 py-8 max-w-7xl">
+  <main class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <h1>Interventions</h1>
+      <a href="/intervention-new.html" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-2"></i>Nouvelle intervention</a>
+    </div>
+
     <div class="card">
-      <div class="card-header primary">
-        <h3 style="margin:0; display:flex; align-items:center; gap:.5rem">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a5 5 0 0 1-6.4 6.4L3 18l3 3 5.3-5.3a5 5 0 0 0 6.4-6.4l-3-3Z"/></svg>
-          Liste des Interventions
-        </h3>
-        <a href="/intervention-new.html" class="btn btn-light btn-sm" title="Nouvelle intervention">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-        </a>
-      </div>
       <div class="card-body">
-        <div class="table-wrap">
-          <table class="table" id="interTable">
-            <thead>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
               <tr>
                 <th>ID</th>
-                <th>Maintenance</th>
+                <th>Ticket</th>
                 <th>Description</th>
                 <th>Début</th>
                 <th>Fin</th>
@@ -38,46 +38,54 @@
                 <th class="text-center">Actions</th>
               </tr>
             </thead>
-            <tbody id="interTbody"></tbody>
+            <tbody id="interTbody">
+              <tr><td colspan="7" class="text-muted text-center py-4">Chargement...</td></tr>
+            </tbody>
           </table>
         </div>
-        <div id="interEmpty" class="hidden">Aucune intervention trouvée.</div>
+        <div id="interEmpty" class="text-muted text-center py-3 d-none">Aucune intervention trouvée.</div>
       </div>
     </div>
   </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
-    (function(){
-      const params = new URLSearchParams(window.location.search);
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(location.search);
       const isEmbed = window.self !== window.top || params.get('embed') === '1' || params.get('modal') === '1';
       if (isEmbed) document.body.classList.add('embed');
 
-      async function loadList(){
-        const token = localStorage.getItem('token');
-        const tbody = document.getElementById('interTbody');
-        const empty = document.getElementById('interEmpty');
+      const token = localStorage.getItem('token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const tbody = document.getElementById('interTbody');
+      const empty = document.getElementById('interEmpty');
+
+      const fmtElapsed = (startStr, endStr, status) => {
+        if (!startStr) return '—';
+        const start = new Date(startStr).getTime();
+        if (Number.isNaN(start)) return '—';
+        const isClosed = ['Termine','Terminé','Fermé'].includes(status);
+        const end = endStr ? new Date(endStr).getTime() : Date.now();
+        const diff = Math.max(0, end - start);
+        const totalMin = Math.floor(diff / 60000);
+        const days = Math.floor(totalMin / (60 * 24));
+        const hours = Math.floor((totalMin % (60 * 24)) / 60);
+        const mins = totalMin % 60;
+        const parts = [];
+        if (days) parts.push(`${days} j`);
+        parts.push(`${String(hours).padStart(2,'0')} h ${String(mins).padStart(2,'0')} min`);
+        return parts.join(' ');
+      };
+
+      async function loadList() {
         if (!tbody) return;
-        tbody.innerHTML = '';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-muted text-center py-4">Chargement...</td></tr>';
         try {
-          const r = await fetch('/api/interventions', { headers: { 'Authorization': `Bearer ${token}` }});
+          const r = await fetch('/api/interventions', { headers, credentials:'same-origin' });
           const arr = r.ok ? await r.json() : [];
-          if (!arr.length) { if (empty) empty.classList.remove('hidden'); return; }
-          if (empty) empty.classList.add('hidden');
-          const fmtElapsed = (startStr, endStr, status) => {
-            if (!startStr) return '—';
-            const start = new Date(startStr).getTime();
-            if (Number.isNaN(start)) return '—';
-            const isClosed = status === 'Termine' || status === 'Terminé' || status === 'Fermé';
-            const end = endStr ? new Date(endStr).getTime() : Date.now();
-            const diff = Math.max(0, end - start);
-            const totalMin = Math.floor(diff / 60000);
-            const days = Math.floor(totalMin / (60 * 24));
-            const hours = Math.floor((totalMin % (60 * 24)) / 60);
-            const mins = totalMin % 60;
-            const parts = [];
-            if (days) parts.push(`${days} j`);
-            parts.push(`${String(hours).padStart(2,'0')} h ${String(mins).padStart(2,'0')} min`);
-            return parts.join(' ');
-          };
+          tbody.innerHTML = '';
+          if (!arr.length) { if (empty) empty.classList.remove('d-none'); return; }
+          if (empty) empty.classList.add('d-none');
 
           arr.forEach(it => {
             const dDeb = it.date_debut ? new Date(it.date_debut).toLocaleString() : '';
@@ -86,41 +94,65 @@
             const tr = document.createElement('tr');
             tr.innerHTML = `
               <td class="fw-bold text-primary">#${it.id||''}</td>
-              <td><span class="fw-semibold">${it.maintenance_titre||''}</span><br><small class="text-slate-500">ID: ${it.maintenance_id||''}</small></td>
+              <td><span class="fw-semibold">${it.ticket_id ? '#'+it.ticket_id : '—'}</span></td>
               <td>${it.description||''}</td>
               <td>${dDeb||'-'}</td>
               <td>${dFin||'-'}</td>
               <td>${elapsed||'-'}</td>
               <td class="text-center">
-                <a href="/intervention.html#${it.id}" class="btn btn-outline-info btn-sm" title="Voir">
-                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                </a>
-                <a href="/intervention-edit.html#${it.id}" class="btn btn-outline-warning btn-sm" title="Modifier">
-                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z"/></svg>
-                </a>
-                <button data-id="${it.id}" class="btn btn-outline-danger btn-sm inter-del-btn" title="Supprimer">
-                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                </button>
+                <a href="/intervention-view.html?id=${it.id}" class="btn btn-outline-info btn-sm open-modal-link" data-url="/intervention-view.html?id=${it.id}"><i class="bi bi-eye"></i></a>
+                <a href="/intervention-edit.html?id=${it.id}" class="btn btn-outline-warning btn-sm open-modal-link" data-url="/intervention-edit.html?id=${it.id}"><i class="bi bi-pencil"></i></a>
+                <button data-id="${it.id}" class="btn btn-outline-danger btn-sm inter-del-btn"><i class="bi bi-trash"></i></button>
               </td>`;
             tbody.appendChild(tr);
           });
-        } catch(_) {}
+        } catch(err) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-danger text-center py-4">Erreur de chargement.</td></tr>';
+        }
       }
-      document.addEventListener('DOMContentLoaded', () => {
-        loadList();
-        const tbody = document.getElementById('interTbody');
-        if (tbody) tbody.addEventListener('click', async (e) => {
-          const btn = e.target.closest('.inter-del-btn');
-          if (!btn) return;
-          const id = btn.getAttribute('data-id');
-          if (!id) return;
-          if (!confirm('Êtes-vous sûr de vouloir supprimer cette intervention ?')) return;
-          const token = localStorage.getItem('token');
-          try { await fetch(`/api/interventions/${id}`, { method:'DELETE', headers:{ 'Authorization': `Bearer ${token}` }}); loadList(); } catch(_){ }
-        });
+
+      loadList();
+
+      // suppression
+      if (tbody) tbody.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.inter-del-btn');
+        if (!btn) return;
+        const id = btn.getAttribute('data-id');
+        if (!id) return;
+        if (!confirm('Supprimer cette intervention ?')) return;
+        try { await fetch(`/api/interventions/${id}`, { method:'DELETE', headers, credentials:'same-origin' }); loadList(); } catch(_){ }
       });
-    })();
+
+      // ouverture en modal si besoin
+      const viewerModalEl = document.getElementById('viewerModal');
+      const viewerFrame = document.getElementById('viewerFrame');
+      const openInternalModal = (url) => {
+        if (viewerFrame) viewerFrame.src = url + (url.includes('?') ? '&' : '?') + 'embed=1&modal=1';
+        if (viewerModalEl) bootstrap.Modal.getOrCreateInstance(viewerModalEl).show();
+      };
+      document.body.addEventListener('click', (e) => {
+        const link = e.target.closest('.open-modal-link');
+        if (link && link.dataset.url) {
+          e.preventDefault();
+          openInternalModal(link.dataset.url);
+        }
+      });
+    });
   </script>
-  <script src="/script.js"></script>
+
+  <!-- Modal viewer -->
+  <div class="modal fade" id="viewerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Aperçu</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0" style="height:80vh;">
+          <iframe id="viewerFrame" src="about:blank" style="width:100%;height:100%;border:0;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
