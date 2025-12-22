@@ -81,7 +81,9 @@
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="7" class="text-muted text-center py-4">Chargement...</td></tr>';
         try {
-          const r = await fetch('/api/interventions', { headers, credentials:'same-origin' });
+          const ticketId = params.get('ticket_id');
+          const url = ticketId ? `/api/interventions?ticket_id=${encodeURIComponent(ticketId)}` : '/api/interventions';
+          const r = await fetch(url, { headers, credentials:'same-origin' });
           const arr = r.ok ? await r.json() : [];
           tbody.innerHTML = '';
           if (!arr.length) { if (empty) empty.classList.remove('d-none'); return; }
