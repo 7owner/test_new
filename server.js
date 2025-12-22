@@ -1912,7 +1912,8 @@ app.get('/api/associations/:id/relations', authenticateToken, async (req, res) =
         const responsables = (await pool.query("SELECT a.* FROM agent a JOIN association_responsable ar ON a.matricule = ar.agent_matricule WHERE ar.association_id = $1", [id])).rows;
         const agents = (await pool.query("SELECT a.* FROM agent a JOIN association_agent aa ON a.matricule = aa.agent_matricule WHERE aa.association_id = $1", [id])).rows;
         const sites = (await pool.query("SELECT s.* FROM site s JOIN association_site asi ON s.id = asi.site_id WHERE asi.association_id = $1", [id])).rows;
-        const factures = (await pool.query("SELECT * FROM facture WHERE association_id = $1 ORDER BY date_emission DESC", [id])).rows;
+        // Certaines bases n'ont pas la colonne date_emission : fallback sur created_at/id
+        const factures = (await pool.query("SELECT * FROM facture WHERE association_id = $1 ORDER BY COALESCE(date_emission, created_at, NOW()) DESC", [id])).rows;
         const devis = (await pool.query("SELECT * FROM devis WHERE association_id = $1 ORDER BY created_at DESC", [id])).rows;
 
         res.json({ association, address, responsables, agents, sites, factures, devis });
