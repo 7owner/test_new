@@ -181,7 +181,7 @@ async function main() {
                     'intervention',
                     { ticket_id: ticket1Id, titre: 'Remplacement automate' },
                     ['ticket_id', 'site_id', 'titre', 'description', 'date_debut', 'status', 'ticket_agent_id'],
-                    [ticket1Id, site1Id, 'Remplacement automate', 'Automate A-45 remplacé.', new Date(baseDate.getTime() - 5 * 24 * 3600 * 1000), 'En_cours', ta1Id]
+                    [ticket1Id, site1Id, 'Remplacement automate', 'Automate A-45 remplacé.', new Date(baseDate.getTime() - 5 * 24 * 3600 * 1000), 'En_attente', ta1Id]
                 );
             }
         }
