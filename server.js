@@ -1196,6 +1196,57 @@ app.get('/api/tickets/:id/relations', authenticateToken, async (req, res) => {
 
 
 // -------------------- Relations: Intervention --------------------
+
+// Endpoint for calendar
+app.get('/api/interventions/calendar', authenticateToken, async (req, res) => {
+    try {
+        const { agent_ids } = req.query;
+
+        let query = `
+            SELECT 
+                i.id,
+                i.titre,
+                i.description,
+                i.date_debut,
+                i.date_fin,
+                a.nom as agent_nom,
+                a.prenom as agent_prenom,
+                a.matricule as agent_matricule,
+                s.nom_site
+            FROM intervention i
+            LEFT JOIN ticket t ON i.ticket_id = t.id
+            LEFT JOIN agent a ON t.responsable = a.matricule
+            LEFT JOIN site s ON i.site_id = s.id
+        `;
+
+        const params = [];
+        if (agent_ids) {
+            const agentIdsList = agent_ids.split(',');
+            query += ` WHERE a.matricule = ANY($1)`;
+            params.push(agentIdsList);
+        }
+
+        const result = await pool.query(query, params);
+
+        const events = result.rows.map(row => ({
+            title: row.titre || 'Intervention #' + row.id,
+            start: row.date_debut,
+            end: row.date_fin,
+            extendedProps: {
+                description: `${row.description || ''}<br><b>Agent:</b> ${row.agent_prenom} ${row.agent_nom}<br><b>Site:</b> ${row.nom_site || 'Non spécifié'}`,
+                agent: `${row.agent_prenom} ${row.agent_nom}`,
+                site: row.nom_site
+            },
+            // You can add more properties like 'color' based on agent, etc.
+        }));
+
+        res.json(events);
+    } catch (err) {
+        console.error('Error fetching interventions for calendar:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 app.get('/api/interventions/:id/relations', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
