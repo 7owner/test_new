@@ -91,24 +91,41 @@ Cette mise à jour a significativement enrichi les fonctionnalités et stabilis�
 
 ## Mises à jour effectuées par l'agent (Current Session)
 
-## Mises à jour effectuées par l'agent (Current Session)
+*   **Implémentation de la fonctionnalité Calendrier**:
+    *   Création de `public/calendrier.html` (page principale).
+    *   Création de `public/js/calendrier.js` (logique client, intégration FullCalendar, filtrage par agent, intégration modale).
+    *   Ajout de l'endpoint `GET /api/interventions/calendar` à `server.js` (backend pour les événements du calendrier).
+    *   Intégration de `intervention-view.html` dans `calendrier.html` via des modales (conformément à l'architecture).
+    *   Mise à jour de `public/nav.html` pour ajouter le lien "Calendrier".
 
-* **Barre de navigation commune**
-  * `public/nav.html` ajusté pour matcher le header du dashboard (logo + cloche + offcanvas) et modal de conversation.
-  * `public/nav.js` charge `nav.html` dans `#navbar-placeholder`, active la cloche (compte les conversations de demandes), ouvre la messagerie en modal, et ajoute l’espace client/messagerie selon les rôles.
-  * Pages mises à jour pour utiliser `nav.js?v=2` + placeholder : `dashboard.html`, `sites.html`, `agents.html`, `contrats.html`, `demandes-client-admin.html`, `administration.html`, `clients.html`, etc. (suppression des headers statiques/dupliqués).
+*   **Refactorisation `agent_matricule` vers `ticket_agent_id` sur `intervention`**:
+    *   **Base de données**: Modification de la table `intervention` (`database_correction/init_fixed.sql` et BDD Heroku) pour remplacer `agent_matricule` par `ticket_agent_id` (référence à `ticket_agent`).
+    *   **Backend (`server.js`)**: Mise à jour des endpoints `POST` et `PUT` pour `/api/interventions` pour utiliser `ticket_agent_id`.
+    *   **Backend (`server.js`)**: Mise à jour de `GET /api/interventions/:id/relations` pour récupérer et retourner les détails de l'agent assigné via `ticket_agent_id`.
+    *   **Frontend (`intervention-view.html`)**: Modification pour afficher l'agent assigné (`assigned_agent`) récupéré via l'endpoint de relations.
 
-* **Satisfaction (tickets / client-dashboard / tickets.html)**
-  * `client-dashboard.html` : le bloc avis disparaît si un avis existe (`envoieok` ou note/commentaire). Le badge “cloche” compte uniquement les tickets terminés sans avis. Récupération des champs `note/rating/comment/commentaire/envoieok` via `/api/tickets/:id/relations` et affichage corrigé (pas de NaN).
-  * `tickets.html` : dans les tickets terminés, nouvelle colonne “Satisfaction” affichant note/commentaire via `/api/tickets/{id}/relations` (cache côté front).
+*   **Implémentation de la fonctionnalité "Association"**:
+    *   **Schema BDD**:
+        *   Création de la table `association` (`titre`, `email_comptabilite`, `adresse_id`).
+        *   Création des tables de jonction : `association_responsable`, `association_agent`, `association_site`.
+        *   Création de la table `devis` (`titre`, `description`, `montant`, `status`, `association_id`) avec l'ENUM `devis_status`.
+        *   Ajout de la clé étrangère `association_id` à la table `facture`.
+        *   Application de ces modifications de schema à `database_correction/init_fixed.sql` et à la BDD Heroku.
+    *   **API Backend (`server.js`)**:
+        *   Implémentation des endpoints CRUD complets pour `/api/associations`.
+        *   Implémentation des endpoints CRUD complets pour `/api/devis`.
+        *   Implémentation des endpoints CRUD pour les relations d'association : `/api/associations/:id/responsables`, `/api/associations/:id/agents`, `/api/associations/:id/sites`.
+        *   Mise à jour des endpoints `POST` et `PUT` pour `/api/factures` pour inclure `association_id`.
+        *   Création de l'endpoint `GET /api/associations/:id/relations` (relations complètes pour une association).
+    *   **Pages Frontend**:
+        *   Création de `public/associations.html` (page de liste avec filtrage, modales pour CRUD).
+        *   Création de `public/association-new.html` (formulaire de création, incluant la création d'adresse inline).
+        *   Création de `public/association-edit.html` (formulaire d'édition pour les données de base, gestion des listes de responsables/agents).
+        *   Création de `public/association-view.html` (page de détails avec liens vers les entités associées).
+        *   Mise à jour de `public/nav.html` pour ajouter le lien "Associations".
 
-* **Clients**
-  * `clients.html` : navbar injectée, chargement corrigé (fallback `/api/clients/mine` si `/api/clients` échoue), suppression des doublons de scripts/nav.
-
-* **Agents**
-  * `agent-edit.html` : sélection d’agence via modal (postMessage), envoi de `agence_id` seulement si présent. Le champ “Fonction” est envoyé sous `fonction` et `titre` (compat backend). Préremplissage avec `fonction` ou `titre`.
-  * `agent-view.html` : affichage fonction avec fallback (`fonction`/`titre`), affichage agence avec fetch supplémentaire si `agence_id` connu mais pas de label. Compteurs stats protégés si éléments absents.
-
-* **Autres**
-  * `client-demand-view.html` / `client-dashboard.html` : messages et modals orientés demande, liens messagerie ajustés.
-  * `nav.html`/`nav.js` gèrent le badge de notifications des demandes et ouvrent `messagerie.html?conversation=demande-{id}` en modal.
+*   **Script de Seeding Complet (`scripts/seed_comprehensive.js`)**:
+    *   Création d'un script pour peupler la base de données avec des données de test exhaustives (clients, sites, associations, contrats, demandes, tickets, interventions) sur une période de 4 mois, localisées à Marseille, et représentant divers types de contrats.
+    *   Implémentation d'une stratégie d'idempotence "SELECT avant INSERT" pour la robustesse.
+    *   Correction de divers problèmes de syntaxe SQL et JavaScript.
+    *   Gestion des défis de déploiement vers Heroku (dus à la non-inclusion de fichiers).

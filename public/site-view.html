@@ -7,7 +7,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
-  <script src="/nav.js?v=1"></script>
+  <script src="/nav.js?v=2"></script>
   <style>
     body { background: linear-gradient(135deg, #e9eeff 0%, #f8fbff 100%); }
     .card { border: none; border-radius: 18px; box-shadow: 0 12px 28px rgba(58,87,232,0.08); }
@@ -44,7 +44,7 @@
   </style>
 </head>
 <body>
-
+  <div id="navbar-placeholder"></div>
 
   <main class="container my-4">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -66,6 +66,11 @@
               Client : <span id="view_client" class="link-button" style="color: #e0e7ff;">—</span>
               <span class="ms-3">Contact : <span id="view_contact">—</span></span>
             </div>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-light btn-sm" id="open-messages-btn"><i class="bi bi-chat-dots me-1"></i>Messages</button>
+            <button class="btn btn-outline-light btn-sm d-none" id="open-affaire-btn"><i class="bi bi-briefcase me-1"></i>Créer Affaire</button>
+            <button class="btn btn-outline-light btn-sm d-none" id="open-doe-btn"><i class="bi bi-file-earmark-plus me-1"></i>Créer DOE</button>
           </div>
         </div>
       </div>
@@ -117,7 +122,7 @@
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h2 class="h5 mb-0">Messages associés</h2>
-          <a class="btn btn-outline-primary btn-sm" id="open-messages" target="_blank" rel="noopener"><i class="bi bi-chat-dots me-1"></i>Ouvrir la messagerie</a>
+          <button class="btn btn-outline-primary btn-sm" id="open-messages"><i class="bi bi-chat-dots me-1"></i>Voir messages</button>
         </div>
         <div class="text-muted small">Ouvre la messagerie filtrée sur ce site.</div>
       </div>
@@ -171,6 +176,83 @@
         </div>
         <div class="modal-body p-0">
           <iframe id="contractModalFrame" src="about:blank" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal messages -->
+  <div class="modal fade" id="messagesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Messagerie du site</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0" style="height:80vh;">
+          <iframe id="messagesFrame" src="about:blank" style="width:100%;height:100%;border:0;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Affaire -->
+  <div class="modal fade" id="affaireModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Créer une affaire</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nom de l'affaire</label>
+            <input class="form-control" id="affaire-nom" placeholder="Ex: Projet X">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Numéro (optionnel)</label>
+            <input class="form-control" id="affaire-numero" placeholder="Ex: AFF-2025-001">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea class="form-control" id="affaire-description" rows="3" placeholder="Notes..."></textarea>
+          </div>
+          <div id="affaire-feedback" class="small d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-affaire-btn"><i class="bi bi-save me-1"></i>Créer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal DOE -->
+  <div class="modal fade" id="doeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Créer un DOE</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Titre</label>
+            <input class="form-control" id="doe-titre" placeholder="Ex: DOE Installation">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Affaire ID</label>
+            <input class="form-control" id="doe-affaire-id" placeholder="ID de l'affaire liée">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea class="form-control" id="doe-description" rows="3"></textarea>
+          </div>
+          <div id="doe-feedback" class="small d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-doe-btn"><i class="bi bi-save me-1"></i>Créer</button>
         </div>
       </div>
     </div>
@@ -293,10 +375,101 @@
           }
         }
 
-        // --- Messages associés (lien messagerie) ---
+        // --- Messages associés (modal) ---
         const msgBtn = document.getElementById('open-messages');
-        if (msgBtn) {
-          msgBtn.href = `messagerie.html?site_id=${siteId}`;
+        const msgBtnHero = document.getElementById('open-messages-btn');
+        const openMessages = () => {
+          const frame = document.getElementById('messagesFrame');
+          if (frame) frame.src = `messagerie.html?site_id=${siteId}&embed=1&modal=1`;
+          const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('messagesModal'));
+          modal.show();
+        };
+        if (msgBtn) msgBtn.addEventListener('click', openMessages);
+        if (msgBtnHero) msgBtnHero.addEventListener('click', openMessages);
+
+        // --- Affaire / DOE (admin) ---
+        if (isAdmin) {
+          const openAffaire = document.getElementById('open-affaire-btn');
+          const openDoe = document.getElementById('open-doe-btn');
+          if (openAffaire) openAffaire.classList.remove('d-none');
+          if (openDoe) openDoe.classList.remove('d-none');
+          const affaireModal = document.getElementById('affaireModal');
+          const doeModal = document.getElementById('doeModal');
+          const affaireFb = document.getElementById('affaire-feedback');
+          const doeFb = document.getElementById('doe-feedback');
+
+          const showAffaireFb = (msg, cls='alert alert-info') => {
+            affaireFb.className = `small ${cls}`;
+            affaireFb.textContent = msg;
+            affaireFb.classList.remove('d-none');
+          };
+          const showDoeFb = (msg, cls='alert alert-info') => {
+            doeFb.className = `small ${cls}`;
+            doeFb.textContent = msg;
+            doeFb.classList.remove('d-none');
+          };
+
+          if (openAffaire && affaireModal) {
+            openAffaire.addEventListener('click', () => {
+              affaireFb.classList.add('d-none');
+              document.getElementById('affaire-nom').value = '';
+              document.getElementById('affaire-numero').value = '';
+              document.getElementById('affaire-description').value = '';
+              bootstrap.Modal.getOrCreateInstance(affaireModal).show();
+            });
+          }
+          if (openDoe && doeModal) {
+            openDoe.addEventListener('click', () => {
+              doeFb.classList.add('d-none');
+              document.getElementById('doe-titre').value = '';
+              document.getElementById('doe-description').value = '';
+              document.getElementById('doe-affaire-id').value = '';
+              bootstrap.Modal.getOrCreateInstance(doeModal).show();
+            });
+          }
+
+          const saveAffaireBtn = document.getElementById('save-affaire-btn');
+          if (saveAffaireBtn) {
+            saveAffaireBtn.addEventListener('click', async () => {
+              const nom = document.getElementById('affaire-nom').value.trim();
+              const numero = document.getElementById('affaire-numero').value.trim();
+              const desc = document.getElementById('affaire-description').value.trim();
+              if (!nom) { showAffaireFb('Le nom est requis','alert alert-warning'); return; }
+              try {
+                await fetch('/api/affaires', {
+                  method:'POST',
+                  headers:{ 'Content-Type':'application/json', ...headers },
+                  body: JSON.stringify({ nom_affaire: nom, numero_affaire: numero || null, description: desc, client_id: site.client_id, site_id: siteId })
+                }).then(r=>r.ok?r:r.json().then(b=>Promise.reject(b)));
+                showAffaireFb('Affaire créée','alert alert-success');
+                setTimeout(()=>bootstrap.Modal.getInstance(affaireModal)?.hide(),600);
+              } catch(e) {
+                showAffaireFb(e.error || 'Erreur lors de la création','alert alert-danger');
+              }
+            });
+          }
+
+          const saveDoeBtn = document.getElementById('save-doe-btn');
+          if (saveDoeBtn) {
+            saveDoeBtn.addEventListener('click', async () => {
+              const titre = document.getElementById('doe-titre').value.trim();
+              const description = document.getElementById('doe-description').value.trim();
+              const affaireId = document.getElementById('doe-affaire-id').value.trim();
+              if (!titre) { showDoeFb('Le titre est requis','alert alert-warning'); return; }
+              if (!affaireId) { showDoeFb('Affaire ID requis','alert alert-warning'); return; }
+              try {
+                await fetch('/api/does', {
+                  method:'POST',
+                  headers:{ 'Content-Type':'application/json', ...headers },
+                  body: JSON.stringify({ titre, description, site_id: siteId, affaire_id: Number(affaireId) })
+                }).then(r=>r.ok?r:r.json().then(b=>Promise.reject(b)));
+                showDoeFb('DOE créé','alert alert-success');
+                setTimeout(()=>bootstrap.Modal.getInstance(doeModal)?.hide(),600);
+              } catch(e) {
+                showDoeFb(e.error || 'Erreur lors de la création','alert alert-danger');
+              }
+            });
+          }
         }
 
         // --- Matériels associés ---
