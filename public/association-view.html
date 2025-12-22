@@ -6,44 +6,89 @@
   <title>Détails de l'Association</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=2"></script>
+  <style>
+    body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); }
+    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+    .hero { background: linear-gradient(120deg, #5c7cfa, #7c3aed); color: #fff; border-radius: 16px; padding: 16px 18px; box-shadow: 0 12px 30px rgba(92,124,250,0.18); }
+    .hero h1 { font-size: 1.4rem; margin: 0; }
+    .pill { background:#e0e7ff; border-radius:12px; padding:6px 12px; font-weight:700; color:#1e293b; }
+    .list-group-item { border: none; border-bottom: 1px solid #f0f4ff; }
+  </style>
 </head>
-<body>
+<body class="dashboard-bg">
+  <div id="navbar-placeholder"></div>
   <div class="container p-4">
-    <div id="loading" class="text-center"><div class="spinner-border"></div></div>
+    <div id="loading" class="text-center py-5"><div class="spinner-border text-primary"></div></div>
     
     <div id="main-content" class="d-none">
-      <h1 id="titre"></h1>
-      <p class="lead" id="email_comptabilite"></p>
-      
-      <div class="card mb-4">
-        <div class="card-header">Adresse</div>
-        <div class="card-body">
-          <p id="adresse"></p>
+      <div class="hero mb-3">
+        <h1 id="titre"></h1>
+        <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+          <span class="pill"><i class="bi bi-envelope me-1"></i><span id="email_comptabilite"></span></span>
         </div>
       </div>
 
-      <div class="row">
+      <div class="row g-3 mb-3">
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-body">
+              <div class="fw-semibold text-secondary mb-2">Adresse</div>
+              <div id="adresse" class="text-body">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-body">
+              <div class="fw-semibold text-secondary mb-2">Actions</div>
+              <div class="d-flex flex-wrap gap-2">
+                <a href="#" id="sites-link" class="btn btn-outline-primary btn-sm"><i class="bi bi-building me-1"></i>Sites associés</a>
+                <a href="#" id="factures-link" class="btn btn-outline-secondary btn-sm"><i class="bi bi-receipt me-1"></i>Facturation</a>
+                <a href="#" id="devis-link" class="btn btn-outline-info btn-sm"><i class="bi bi-file-earmark-text me-1"></i>Devis</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
         <div class="col-md-6">
-          <div class="card mb-4">
-            <div class="card-header">Responsables</div>
+          <div class="card h-100">
+            <div class="card-header fw-semibold">Responsables</div>
             <ul id="responsables-list" class="list-group list-group-flush"></ul>
           </div>
         </div>
         <div class="col-md-6">
-          <div class="card mb-4">
-            <div class="card-header">Agents</div>
+          <div class="card h-100">
+            <div class="card-header fw-semibold">Agents</div>
             <ul id="agents-list" class="list-group list-group-flush"></ul>
           </div>
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-header">Actions</div>
-        <div class="card-body">
-          <a href="#" id="sites-link" class="btn btn-primary">Sites Associés</a>
-          <a href="#" id="factures-link" class="btn btn-secondary">Facturation Associée</a>
-          <a href="#" id="devis-link" class="btn btn-info">Devis Associés</a>
+      <div class="row g-3 mt-2">
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+              <span>Sites associés</span>
+              <span class="badge bg-primary" id="sites-count">0</span>
+            </div>
+            <ul id="sites-list" class="list-group list-group-flush"></ul>
+          </div>
         </div>
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header fw-semibold">Factures</div>
+            <ul id="factures-list" class="list-group list-group-flush"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-3">
+        <div class="card-header fw-semibold">Devis</div>
+        <ul id="devis-list" class="list-group list-group-flush"></ul>
       </div>
     </div>
   </div>
@@ -53,7 +98,7 @@
       const qp = new URLSearchParams(window.location.search);
       const associationId = qp.get('id');
       const token = localStorage.getItem('token');
-      const headers = { 'Authorization': `Bearer ${token}` };
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
       const loadingEl = document.getElementById('loading');
       const mainContentEl = document.getElementById('main-content');
@@ -63,7 +108,7 @@
         return;
       }
 
-      function renderList(ulEl, items, nameProp) {
+      function renderList(ulEl, items, nameProp, formatter) {
         ulEl.innerHTML = '';
         if (!items || items.length === 0) {
           ulEl.innerHTML = '<li class="list-group-item text-muted">Aucun.</li>';
@@ -72,23 +117,85 @@
         items.forEach(item => {
           const li = document.createElement('li');
           li.className = 'list-group-item';
-          li.textContent = item[nameProp];
+          li.innerHTML = formatter ? formatter(item) : (item[nameProp] || '—');
           ulEl.appendChild(li);
         });
       }
 
+      function renderSites(sites=[]) {
+        const list = document.getElementById('sites-list');
+        list.innerHTML = '';
+        document.getElementById('sites-count').textContent = `${sites.length}`;
+        if (!sites.length) {
+          list.innerHTML = '<li class="list-group-item text-muted">Aucun site lié.</li>';
+          return;
+        }
+        sites.forEach(s => {
+          const address = [s.ligne1 || s.adresse_ligne1, s.code_postal || s.adresse_code_postal, s.ville || s.adresse_ville].filter(Boolean).join(' ');
+          const status = s.statut || s.status || 'N/A';
+          const li = document.createElement('li');
+          li.className = 'list-group-item d-flex justify-content-between align-items-start flex-wrap';
+          li.innerHTML = `
+            <div>
+              <div class="fw-semibold">${s.nom_site || 'Site #' + s.id}</div>
+              <div class="small text-muted">${address || 'Adresse non renseignée'}</div>
+            </div>
+            <div class="text-end">
+              <span class="badge bg-light text-dark">${status}</span><br>
+              <a class="btn btn-sm btn-outline-primary mt-2" href="/site-view.html?id=${s.id}"><i class="bi bi-eye"></i></a>
+            </div>
+          `;
+          list.appendChild(li);
+        });
+      }
+
+      function renderDocs(listEl, rows, emptyLabel) {
+        listEl.innerHTML = '';
+        if (!rows || !rows.length) {
+          listEl.innerHTML = `<li class="list-group-item text-muted">${emptyLabel}</li>`;
+          return;
+        }
+        rows.forEach(row => {
+          const date = row.date_emission || row.created_at || row.date || '';
+          listEl.innerHTML += `
+            <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap">
+              <div>
+                <div class="fw-semibold">${row.titre || row.numero || ('#'+row.id)}</div>
+                <div class="small text-muted">${date ? new Date(date).toLocaleDateString() : ''}</div>
+              </div>
+              <a class="btn btn-sm btn-outline-primary" href="/${row.numero ? 'devis' : 'facture'}-view.html?id=${row.id}"><i class="bi bi-eye"></i></a>
+            </li>`;
+        });
+      }
+
       try {
-        const data = await fetch(`/api/associations/${associationId}/relations`, { headers }).then(res => res.json());
+        const res = await fetch(`/api/associations/${associationId}/relations`, { headers, credentials:'same-origin' });
+        if (!res.ok) {
+          const body = await res.json().catch(()=>({}));
+          throw new Error(body.error || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
 
         // Populate details
-        document.getElementById('titre').textContent = data.association.titre;
-        document.getElementById('email_comptabilite').textContent = data.association.email_comptabilite;
+        document.getElementById('titre').textContent = data.association?.titre || 'Association';
+        document.getElementById('email_comptabilite').textContent = data.association?.email_comptabilite || '—';
         const address = data.address ? [data.address.ligne1, data.address.code_postal, data.address.ville].filter(Boolean).join(', ') : 'Non spécifiée';
         document.getElementById('adresse').textContent = address;
 
         // Populate lists
-        renderList(document.getElementById('responsables-list'), data.responsables, 'nom');
-        renderList(document.getElementById('agents-list'), data.agents, 'nom');
+        renderList(document.getElementById('responsables-list'), data.responsables || [], 'nom', (r)=>`
+          <div class="fw-semibold">${[r.nom, r.prenom].filter(Boolean).join(' ') || r.matricule || 'Responsable'}</div>
+          <div class="small text-muted">${r.email || ''}</div>
+          <div class="small text-muted">${r.tel || ''}</div>
+        `);
+        renderList(document.getElementById('agents-list'), data.agents || [], 'nom', (a)=>`
+          <div class="fw-semibold">${[a.nom, a.prenom].filter(Boolean).join(' ') || a.matricule || 'Agent'}</div>
+          <div class="small text-muted">${a.email || ''}</div>
+          <div class="small text-muted">${a.tel || ''}</div>
+        `);
+        renderSites(data.sites || []);
+        renderDocs(document.getElementById('factures-list'), data.factures || [], 'Aucune facture');
+        renderDocs(document.getElementById('devis-list'), data.devis || [], 'Aucun devis');
 
         // Set up links
         document.getElementById('sites-link').href = `association-sites.html?association_id=${associationId}`;
