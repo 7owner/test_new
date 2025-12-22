@@ -124,7 +124,7 @@ async function main() {
         const contratGtbId = await getOrCreate('contrat', { titre: 'Contrat de maintenance GTB' }, ['titre', 'date_debut'], ['Contrat de maintenance GTB', '2025-01-01']);
         const contratVideoId = await getOrCreate('contrat', { titre: 'Contrat de maintenance Video' }, ['titre', 'date_debut'], ['Contrat de maintenance Video', '2025-01-01']);
         const contratIntrusionId = await getOrCreate('contrat', { titre: 'Contrat de maintenance Intrusion' }, ['titre', 'date_debut'], ['Contrat de maintenance Intrusion', '2025-01-01']);
-        const contratAccesId = await getOrCreate('contrat', { titre: 'Contrat de maintenance Contrôle d''accès' }, ['titre', 'date_debut'], ['Contrat de maintenance Contrôle d''accès', '2025-01-01']);
+        const contratAccesId = await getOrCreate('contrat', { titre: 'Contrat de maintenance Contrôle d\'accès' }, ['titre', 'date_debut'], ['Contrat de maintenance Contrôle d\'accès', '2025-01-01']);
         log(`Contrats created/found.`);
 
         // Link contrats to sites
