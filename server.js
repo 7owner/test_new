@@ -1229,6 +1229,7 @@ app.get('/api/interventions/calendar', authenticateToken, async (req, res) => {
         const result = await pool.query(query, params);
 
         const events = result.rows.map(row => ({
+            id: row.id,
             title: row.titre || 'Intervention #' + row.id,
             start: row.date_debut,
             end: row.date_fin,
