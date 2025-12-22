@@ -267,7 +267,8 @@ CREATE TABLE IF NOT EXISTS intervention (
     date_debut DATE NOT NULL,
     date_fin DATE,
     intervention_precedente_id BIGINT REFERENCES intervention(id) ON DELETE SET NULL,
-    status statut_intervention DEFAULT 'En_attente' NOT NULL
+    status statut_intervention DEFAULT 'En_attente' NOT NULL,
+    agent_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS materiel (

@@ -2780,7 +2780,7 @@ app.post('/api/tickets/:id/satisfaction', authenticateToken, async (req, res) =>
 app.get('/api/interventions', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT i.*, t.titre as ticket_titre, s.nom_site as site_nom, dc.titre as demande_titre FROM intervention i JOIN ticket t ON i.ticket_id = t.id LEFT JOIN site s ON i.site_id = s.id LEFT JOIN demande_client dc ON i.demande_id = dc.id ORDER BY i.id ASC'
+            'SELECT i.*, t.titre as ticket_titre, s.nom_site as site_nom, dc.titre as demande_titre, i.agent_matricule FROM intervention i JOIN ticket t ON i.ticket_id = t.id LEFT JOIN site s ON i.site_id = s.id LEFT JOIN demande_client dc ON i.demande_id = dc.id ORDER BY i.id ASC'
         );
         res.json(result.rows);
     } catch (err) {
@@ -2805,14 +2805,14 @@ app.get('/api/interventions/:id', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, res) => {
-    const { titre, description, date_debut, date_fin, ticket_id, site_id, demande_id, status } = req.body; // demande_id added
+    const { titre, description, date_debut, date_fin, ticket_id, site_id, demande_id, status, agent_matricule } = req.body;
     if (!description || !date_debut || !ticket_id) {
         return res.status(400).json({ error: 'Description, date de début et ticket ID sont requis' });
     }
     try {
         const result = await pool.query(
-            'INSERT INTO intervention (titre, description, date_debut, date_fin, ticket_id, site_id, demande_id, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *', // demande_id added, $7 becomes $8
-            [titre || null, description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status || 'En_attente'] // demande_id added
+            'INSERT INTO intervention (titre, description, date_debut, date_fin, ticket_id, site_id, demande_id, status, agent_matricule) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+            [titre || null, description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status || 'En_attente', agent_matricule || null]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -2823,11 +2823,11 @@ app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, re
 
 app.put('/api/interventions/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id } = req.params;
-    const { description, date_debut, date_fin = null, ticket_id, site_id, demande_id, status } = req.body; // demande_id added
+    const { description, date_debut, date_fin = null, ticket_id, site_id, demande_id, status, agent_matricule } = req.body;
     try {
         const result = await pool.query(
-            'UPDATE intervention SET description = $1, date_debut = $2, date_fin = $3, ticket_id = $4, site_id = $5, demande_id = $6, status = COALESCE($7::statut_intervention, status) WHERE id = $8 RETURNING *', // demande_id added, parameter indices shifted
-            [description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status, id] // demande_id added
+            'UPDATE intervention SET description = $1, date_debut = $2, date_fin = $3, ticket_id = $4, site_id = $5, demande_id = $6, status = COALESCE($7::statut_intervention, status), agent_matricule = $8 WHERE id = $9 RETURNING *',
+            [description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status, agent_matricule || null, id]
         );
         if (result.rows.length === 0) {
             return res.status(404).json({ error: `Intervention with id ${id} not found` });
@@ -3865,11 +3865,20 @@ app.post('/api/tickets/:id/agents', authenticateToken, authorizeAdmin, async (re
     const t = (await pool.query('SELECT id FROM ticket WHERE id=$1', [id])).rows[0]; if (!t) return res.status(404).json({ error: 'Ticket not found' });
     const a = (await pool.query('SELECT matricule FROM agent WHERE matricule=$1', [agent_matricule])).rows[0]; if (!a) return res.status(404).json({ error: 'Agent not found' });
     const r = await pool.query('INSERT INTO ticket_agent (ticket_id, agent_matricule, date_debut, date_fin) VALUES ($1,$2,$3,$4) RETURNING *', [id, agent_matricule, date_debut, date_fin]);
+    // Propagation: affecter aussi l'agent aux interventions liées à ce ticket (colonne agent_matricule)
+    await pool.query('UPDATE intervention SET agent_matricule=$1 WHERE ticket_id=$2', [agent_matricule, id]);
     res.status(201).json(r.rows[0]);
   } catch (e) { console.error('ticket add agent:', e); res.status(500).json({ error: 'Internal Server Error' }); }
 });
 app.delete('/api/tickets/:id/agents/:matricule', authenticateToken, authorizeAdmin, async (req, res) => {
-  try { const r = await pool.query('DELETE FROM ticket_agent WHERE ticket_id=$1 AND agent_matricule=$2 RETURNING id', [req.params.id, req.params.matricule]); if (!r.rows[0]) return res.status(404).json({ error: 'Not found' }); res.json({ ok: true }); }
+  try {
+    const { id, matricule } = req.params;
+    const r = await pool.query('DELETE FROM ticket_agent WHERE ticket_id=$1 AND agent_matricule=$2 RETURNING id', [id, matricule]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    // Si l'agent était associé via la colonne intervention.agent_matricule, on la remet à NULL
+    await pool.query('UPDATE intervention SET agent_matricule=NULL WHERE ticket_id=$1 AND agent_matricule=$2', [id, matricule]);
+    res.json({ ok: true });
+  }
   catch (e) { console.error('ticket remove agent:', e); res.status(500).json({ error: 'Internal Server Error' }); }
 });
 
