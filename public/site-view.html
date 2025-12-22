@@ -91,6 +91,37 @@
       </div>
     </div>
 
+    <!-- DOE associés -->
+    <div class="card mt-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 mb-0">DOE associés</h2>
+        </div>
+        <div id="does-list"><div class="text-muted">Chargement...</div></div>
+      </div>
+    </div>
+
+    <!-- Messages associés -->
+    <div class="card mt-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 mb-0">Messages associés</h2>
+          <a class="btn btn-outline-primary btn-sm" id="open-messages" target="_blank" rel="noopener"><i class="bi bi-chat-dots me-1"></i>Ouvrir la messagerie</a>
+        </div>
+        <div class="text-muted small">Ouvre la messagerie filtrée sur ce site.</div>
+      </div>
+    </div>
+
+    <!-- Matériels associés -->
+    <div class="card mt-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 mb-0">Matériels associés</h2>
+        </div>
+        <div id="materiels-list"><div class="text-muted">Chargement...</div></div>
+      </div>
+    </div>
+
     <div class="card mt-4">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -163,7 +194,7 @@
             return res.json();
         });
 
-        const { site, adresse, tickets = [], representants = [], client, contrats = [] } = data; // Added contrats
+        const { site, adresse, tickets = [], representants = [], client, contrats = [], does = [] } = data; // Added contrats & doe list
 
         // --- Populate Site & Client Info ---
         set('site-name', site.nom_site);
@@ -219,9 +250,72 @@
                       <div class="status-pill ${badgeClass}">${(t.etat||'').replace('_',' ')}</div>
                       <div class="small text-muted mt-1">${dateStr}</div>
                     </div>
+                  </div>
+                  <div class="mt-2 d-flex gap-2 flex-wrap">
+                    <a class="btn btn-sm btn-outline-secondary" href="ticket-view.html?id=${t.id}" target="_blank" rel="noopener"><i class="bi bi-eye"></i> Voir</a>
+                    <a class="btn btn-sm btn-outline-primary" href="interventions.html?ticket_id=${t.id}" target="_blank" rel="noopener"><i class="bi bi-clock-history"></i> Historique interventions</a>
                   </div>`;
                 ticketsList.appendChild(el);
             });
+        }
+
+        // --- DOE associés ---
+        const doesList = document.getElementById('does-list');
+        if (doesList) {
+          doesList.innerHTML = '';
+          if (!does || !does.length) {
+            doesList.innerHTML = '<div class="text-muted">Aucun DOE associé.</div>';
+          } else {
+            does.forEach(d => {
+              const li = document.createElement('div');
+              li.className = 'd-flex justify-content-between align-items-center border rounded p-2 mb-2';
+              li.innerHTML = `
+                <div>
+                  <div class="fw-semibold">${d.titre || 'DOE #' + d.id}</div>
+                  <div class="small text-muted">${d.description || ''}</div>
+                </div>
+                <a class="btn btn-sm btn-outline-primary" href="doe-view.html?id=${d.id}" target="_blank" rel="noopener"><i class="bi bi-eye"></i> Voir</a>
+              `;
+              doesList.appendChild(li);
+            });
+          }
+        }
+
+        // --- Messages associés (lien messagerie) ---
+        const msgBtn = document.getElementById('open-messages');
+        if (msgBtn) {
+          msgBtn.href = `messagerie.html?site_id=${siteId}`;
+        }
+
+        // --- Matériels associés ---
+        const materielsList = document.getElementById('materiels-list');
+        if (materielsList) {
+          materielsList.innerHTML = '<div class="text-muted">Chargement...</div>';
+          try {
+            const matsRes = await fetch(`/api/materiels?site_id=${siteId}`, { headers, credentials:'same-origin' });
+            if (matsRes.ok) {
+              const mats = await matsRes.json();
+              if (!mats || !mats.length) {
+                materielsList.innerHTML = '<div class="text-muted">Aucun matériel associé.</div>';
+              } else {
+                materielsList.innerHTML = mats.map(m => `
+                  <div class="d-flex justify-content-between align-items-start border rounded p-2 mb-2">
+                    <div>
+                      <div class="fw-semibold">${m.designation || 'Matériel'}</div>
+                      <div class="small text-muted">${m.reference || ''} ${m.categorie ? '• '+m.categorie : ''}</div>
+                      <div class="small">${m.commentaire || ''}</div>
+                    </div>
+                    ${m.intervention_id ? `<a class="btn btn-sm btn-outline-primary" href="intervention-view.html?id=${m.intervention_id}" target="_blank" rel="noopener"><i class="bi bi-eye"></i> Intervention</a>` : ''}
+                  </div>
+                `).join('');
+              }
+            } else {
+              materielsList.innerHTML = '<div class="text-muted">Aucun matériel associé.</div>';
+            }
+          } catch (err) {
+            console.warn('Matériels non chargés', err);
+            materielsList.innerHTML = '<div class="text-muted">Matériels indisponibles.</div>';
+          }
         }
 
         // --- Représentants client ---
@@ -265,11 +359,11 @@
         }
 
         // Contract Modal Handler
-        const contractModal = document.getElementById('contractModal');
-        if (contractModal) {
-          contractModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget; // Button that triggered the modal
-            const contractId = button.getAttribute('data-contract-id'); // Extract info from data-* attributes
+      const contractModal = document.getElementById('contractModal');
+      if (contractModal) {
+        contractModal.addEventListener('show.bs.modal', function (event) {
+          const button = event.relatedTarget; // Button that triggered the modal
+          const contractId = button.getAttribute('data-contract-id'); // Extract info from data-* attributes
             const iframe = document.getElementById('contractModalFrame');
             if (contractId && iframe) {
               iframe.src = `contrat-view.html?id=${contractId}`;

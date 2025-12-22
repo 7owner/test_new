@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modifier Association</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+  <div class="container p-4">
+    <div id="loading" class="text-center"><div class="spinner-border"></div></div>
+    <div id="main-content" class="d-none">
+      <!-- Formulaire principal -->
+      <form id="edit-association-form">
+        <div class="mb-3">
+          <label for="titre" class="form-label">Titre</label>
+          <input type="text" class="form-control" id="titre" required>
+        </div>
+        <div class="mb-3">
+          <label for="email_comptabilite" class="form-label">Email de comptabilité</label>
+          <input type="email" class="form-control" id="email_comptabilite">
+        </div>
+        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+      </form>
+      
+      <hr class="my-4">
+
+      <!-- Section Responsables -->
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5>Responsables</h5>
+          <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addResponsableModal">Ajouter</button>
+        </div>
+        <ul id="responsables-list" class="list-group list-group-flush"></ul>
+      </div>
+
+      <!-- Section Agents -->
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5>Agents</h5>
+          <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addAgentModal">Ajouter</button>
+        </div>
+        <ul id="agents-list" class="list-group list-group-flush"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal fade" id="addResponsableModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Ajouter un responsable</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <select id="responsable-select" class="form-select"></select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-responsable-btn">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="addAgentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Ajouter un agent</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <select id="agent-select" class="form-select"></select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-agent-btn">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const qp = new URLSearchParams(window.location.search);
+      const associationId = qp.get('id');
+      const token = localStorage.getItem('token');
+      const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+      const loadingEl = document.getElementById('loading');
+      const mainContentEl = document.getElementById('main-content');
+      
+      const titreEl = document.getElementById('titre');
+      const emailEl = document.getElementById('email_comptabilite');
+      const respListEl = document.getElementById('responsables-list');
+      const agentListEl = document.getElementById('agents-list');
+      const respSelectEl = document.getElementById('responsable-select');
+      const agentSelectEl = document.getElementById('agent-select');
+
+      let allAgents = [];
+
+      async function fetchJSON(url, options = {}) {
+        const res = await fetch(url, { headers, ...options });
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({ message: res.statusText }));
+          throw new Error(error.message);
+        }
+        return res.status === 204 ? null : res.json();
+      }
+
+      function renderList(ulEl, items, nameProp, valueProp, removeCallback) {
+        ulEl.innerHTML = '';
+        if (!items || items.length === 0) {
+          ulEl.innerHTML = '<li class="list-group-item text-muted">Aucun élément.</li>';
+          return;
+        }
+        items.forEach(item => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item d-flex justify-content-between align-items-center';
+          li.textContent = item[nameProp];
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'btn btn-sm btn-danger';
+          removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
+          removeBtn.onclick = () => removeCallback(item[valueProp]);
+          li.appendChild(removeBtn);
+          ulEl.appendChild(li);
+        });
+      }
+
+      async function loadData() {
+        try {
+          const data = await fetchJSON(`/api/associations/${associationId}/relations`);
+          const agentsData = await fetchJSON('/api/agents');
+          allAgents = agentsData || [];
+
+          // Populate main form
+          titreEl.value = data.association.titre;
+          emailEl.value = data.association.email_comptabilite;
+          
+          // Populate lists
+          renderList(respListEl, data.responsables, 'nom', 'matricule', removeResponsable);
+          renderList(agentListEl, data.agents, 'nom', 'matricule', removeAgent);
+
+          // Populate select dropdowns
+          const optionsHtml = allAgents.map(a => `<option value="${a.matricule}">${a.nom} ${a.prenom || ''}</option>`).join('');
+          respSelectEl.innerHTML = optionsHtml;
+          agentSelectEl.innerHTML = optionsHtml;
+          
+          loadingEl.classList.add('d-none');
+          mainContentEl.classList.remove('d-none');
+        } catch (error) {
+          loadingEl.innerHTML = `<div class="alert alert-danger">Erreur: ${error.message}</div>`;
+        }
+      }
+      
+      // --- Event Listeners for saving ---
+      document.getElementById('edit-association-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+          titre: titreEl.value,
+          email_comptabilite: emailEl.value
+        };
+        try {
+          await fetchJSON(`/api/associations/${associationId}`, { method: 'PUT', body: JSON.stringify(payload) });
+          alert('Modifications enregistrées !');
+        } catch (error) {
+          alert(`Erreur: ${error.message}`);
+        }
+      });
+      
+      document.getElementById('save-responsable-btn').addEventListener('click', async () => {
+        const payload = { agent_matricule: respSelectEl.value };
+        try {
+          await fetchJSON(`/api/associations/${associationId}/responsables`, { method: 'POST', body: JSON.stringify(payload) });
+          bootstrap.Modal.getInstance(document.getElementById('addResponsableModal')).hide();
+          loadData();
+        } catch (error) {
+          alert(`Erreur: ${error.message}`);
+        }
+      });
+
+      document.getElementById('save-agent-btn').addEventListener('click', async () => {
+        const payload = { agent_matricule: agentSelectEl.value };
+        try {
+          await fetchJSON(`/api/associations/${associationId}/agents`, { method: 'POST', body: JSON.stringify(payload) });
+          bootstrap.Modal.getInstance(document.getElementById('addAgentModal')).hide();
+          loadData();
+        } catch (error) {
+          alert(`Erreur: ${error.message}`);
+        }
+      });
+
+      async function removeResponsable(matricule) {
+        if (!confirm('Voulez-vous retirer ce responsable ?')) return;
+        try {
+          await fetchJSON(`/api/associations/${associationId}/responsables/${matricule}`, { method: 'DELETE' });
+          loadData();
+        } catch (error) {
+          alert(`Erreur: ${error.message}`);
+        }
+      }
+
+      async function removeAgent(matricule) {
+        if (!confirm('Voulez-vous retirer cet agent ?')) return;
+        try {
+          await fetchJSON(`/api/associations/${associationId}/agents/${matricule}`, { method: 'DELETE' });
+          loadData();
+        } catch (error) {
+          alert(`Erreur: ${error.message}`);
+        }
+      }
+
+      loadData();
+    });
+  </script>
+</body>
+</html>

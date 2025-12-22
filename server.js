@@ -1816,6 +1816,297 @@ app.delete('/api/contrat_site_association/:id', authenticateToken, authorizeAdmi
     }
 });
 
+// -------------------- Associations API --------------------
+
+// List all associations
+app.get('/api/associations', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT a.*, ad.ligne1, ad.code_postal, ad.ville FROM association a LEFT JOIN adresse ad ON a.adresse_id = ad.id ORDER BY a.created_at DESC');
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching associations:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Get a single association
+app.get('/api/associations/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM association WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Association not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(`Error fetching association ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Create an association
+app.post('/api/associations', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { titre, email_comptabilite, adresse_id } = req.body;
+    if (!titre) {
+        return res.status(400).json({ error: 'Titre is required' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO association (titre, email_comptabilite, adresse_id) VALUES ($1, $2, $3) RETURNING *',
+            [titre, email_comptabilite || null, adresse_id || null]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error('Error creating association:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Update an association
+app.put('/api/associations/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { titre, email_comptabilite, adresse_id } = req.body;
+    if (!titre) {
+        return res.status(400).json({ error: 'Titre is required' });
+    }
+    try {
+        const result = await pool.query(
+            'UPDATE association SET titre = $1, email_comptabilite = $2, adresse_id = $3 WHERE id = $4 RETURNING *',
+            [titre, email_comptabilite || null, adresse_id || null, id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Association not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(`Error updating association ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Delete an association
+app.delete('/api/associations/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('DELETE FROM association WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Association not found' });
+        }
+        res.status(204).send();
+    } catch (err) {
+        console.error(`Error deleting association ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.get('/api/associations/:id/relations', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const associationRes = await pool.query('SELECT * FROM association WHERE id = $1', [id]);
+        const association = associationRes.rows[0];
+        if (!association) {
+            return res.status(404).json({ error: 'Association not found' });
+        }
+
+        const address = association.adresse_id ? (await pool.query('SELECT * FROM adresse WHERE id = $1', [association.adresse_id])).rows[0] : null;
+        const responsables = (await pool.query("SELECT a.* FROM agent a JOIN association_responsable ar ON a.matricule = ar.agent_matricule WHERE ar.association_id = $1", [id])).rows;
+        const agents = (await pool.query("SELECT a.* FROM agent a JOIN association_agent aa ON a.matricule = aa.agent_matricule WHERE aa.association_id = $1", [id])).rows;
+        const sites = (await pool.query("SELECT s.* FROM site s JOIN association_site asi ON s.id = asi.site_id WHERE asi.association_id = $1", [id])).rows;
+        const factures = (await pool.query("SELECT * FROM facture WHERE association_id = $1 ORDER BY date_emission DESC", [id])).rows;
+        const devis = (await pool.query("SELECT * FROM devis WHERE association_id = $1 ORDER BY created_at DESC", [id])).rows;
+
+        res.json({ association, address, responsables, agents, sites, factures, devis });
+
+    } catch (err) {
+        console.error(`Error fetching relations for association ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
+// -------------------- Association Relationships API --------------------
+
+// --- Responsables ---
+app.get('/api/associations/:id/responsables', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query("SELECT a.* FROM agent a JOIN association_responsable ar ON a.matricule = ar.agent_matricule WHERE ar.association_id = $1", [req.params.id]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching association responsables:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+app.post('/api/associations/:id/responsables', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { agent_matricule } = req.body;
+    try {
+        const result = await pool.query('INSERT INTO association_responsable (association_id, agent_matricule) VALUES ($1, $2) RETURNING *', [req.params.id, agent_matricule]);
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        if (err.code === '23505') return res.status(409).json({ error: 'Responsable already assigned' });
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+app.delete('/api/associations/:id/responsables/:matricule', authenticateToken, authorizeAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM association_responsable WHERE association_id = $1 AND agent_matricule = $2', [req.params.id, req.params.matricule]);
+        res.status(204).send();
+    } catch (err) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// --- Agents ---
+app.get('/api/associations/:id/agents', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query("SELECT a.* FROM agent a JOIN association_agent aa ON a.matricule = aa.agent_matricule WHERE aa.association_id = $1", [req.params.id]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching association agents:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+app.post('/api/associations/:id/agents', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { agent_matricule } = req.body;
+    try {
+        const result = await pool.query('INSERT INTO association_agent (association_id, agent_matricule) VALUES ($1, $2) RETURNING *', [req.params.id, agent_matricule]);
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        if (err.code === '23505') return res.status(409).json({ error: 'Agent already assigned' });
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+app.delete('/api/associations/:id/agents/:matricule', authenticateToken, authorizeAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM association_agent WHERE association_id = $1 AND agent_matricule = $2', [req.params.id, req.params.matricule]);
+        res.status(204).send();
+    } catch (err) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// --- Sites ---
+app.get('/api/associations/:id/sites', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query("SELECT s.* FROM site s JOIN association_site asi ON s.id = asi.site_id WHERE asi.association_id = $1", [req.params.id]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching association sites:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+app.post('/api/associations/:id/sites', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { site_id } = req.body;
+    try {
+        const result = await pool.query('INSERT INTO association_site (association_id, site_id) VALUES ($1, $2) RETURNING *', [req.params.id, site_id]);
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        if (err.code === '23505') return res.status(409).json({ error: 'Site already associated' });
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+app.delete('/api/associations/:id/sites/:site_id', authenticateToken, authorizeAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM association_site WHERE association_id = $1 AND site_id = $2', [req.params.id, req.params.site_id]);
+        res.status(204).send();
+    } catch (err) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// -------------------- Devis API --------------------
+
+// List all devis, optionally filtered by association_id
+app.get('/api/devis', authenticateToken, async (req, res) => {
+    const { association_id } = req.query;
+    try {
+        let query = 'SELECT * FROM devis';
+        const params = [];
+        if (association_id) {
+            query += ' WHERE association_id = $1';
+            params.push(association_id);
+        }
+        query += ' ORDER BY created_at DESC';
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching devis:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Get a single devis
+app.get('/api/devis/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM devis WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Devis not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(`Error fetching devis ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Create a devis
+app.post('/api/devis', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { titre, description, montant, status, association_id } = req.body;
+    if (!titre) {
+        return res.status(400).json({ error: 'Titre is required' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO devis (titre, description, montant, status, association_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [titre, description || null, montant || null, status || 'Brouillon', association_id || null]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error('Error creating devis:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Update a devis
+app.put('/api/devis/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { titre, description, montant, status, association_id } = req.body;
+    if (!titre) {
+        return res.status(400).json({ error: 'Titre is required' });
+    }
+    try {
+        const result = await pool.query(
+            'UPDATE devis SET titre = $1, description = $2, montant = $3, status = $4, association_id = $5 WHERE id = $6 RETURNING *',
+            [titre, description || null, montant || null, status || 'Brouillon', association_id || null, id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Devis not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(`Error updating devis ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Delete a devis
+app.delete('/api/devis/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('DELETE FROM devis WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Devis not found' });
+        }
+        res.status(204).send();
+    } catch (err) {
+        console.error(`Error deleting devis ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
+
+
 // Client relations: include sites and demandes
 app.get('/api/clients/:id/relations', authenticateToken, async (req, res) => {
   const { id } = req.params;
@@ -3796,21 +4087,21 @@ app.get('/api/factures/:id', authenticateToken, async (req, res) => {
 });
 app.post('/api/factures', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    let { reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id } = req.body;
+    let { reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id, association_id } = req.body;
     if (montant_ht != null && tva != null && (montant_ttc == null)) {
       montant_ttc = Number(montant_ht) * (1 + Number(tva)/100);
     }
-    const r = await pool.query('INSERT INTO facture (reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id) VALUES ($1, COALESCE($2,\'Brouillon\'), $3,$4,$5,$6,$7,$8,$9) RETURNING *', [reference||null, statut||null, montant_ht||null, tva||null, montant_ttc||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null]);
+    const r = await pool.query('INSERT INTO facture (reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id, association_id) VALUES ($1, COALESCE($2,\'Brouillon\'), $3,$4,$5,$6,$7,$8,$9,$10) RETURNING *', [reference||null, statut||null, montant_ht||null, tva||null, montant_ttc||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null]);
     res.status(201).json(r.rows[0]);
   } catch (err) { console.error('Error creating facture:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });
 app.put('/api/factures/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params; try {
-    let { reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id } = req.body;
+    let { reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id, association_id } = req.body;
     if (montant_ht != null && tva != null && (montant_ttc == null)) {
       montant_ttc = Number(montant_ht) * (1 + Number(tva)/100);
     }
-    const r = await pool.query('UPDATE facture SET reference=$1, statut=COALESCE($2, statut), montant_ht=$3, tva=$4, montant_ttc=$5, date_emission=$6, date_echeance=$7, client_id=$8, affaire_id=$9 WHERE id=$10 RETURNING *', [reference||null, statut||null, montant_ht||null, tva||null, montant_ttc||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, id]);
+    const r = await pool.query('UPDATE facture SET reference=$1, statut=COALESCE($2, statut), montant_ht=$3, tva=$4, montant_ttc=$5, date_emission=$6, date_echeance=$7, client_id=$8, affaire_id=$9, association_id=$10 WHERE id=$11 RETURNING *', [reference||null, statut||null, montant_ht||null, tva||null, montant_ttc||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null, id]);
     res.json(r.rows[0] || null);
   } catch (err) { console.error('Error updating facture:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });
