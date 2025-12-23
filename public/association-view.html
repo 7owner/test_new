@@ -15,6 +15,7 @@
     .hero h1 { font-size: 1.4rem; margin: 0; }
     .pill { background:#e0e7ff; border-radius:12px; padding:6px 12px; font-weight:700; color:#1e293b; }
     .list-group-item { border: none; border-bottom: 1px solid #f0f4ff; }
+    .embed #navbar-placeholder { display:none !important; }
   </style>
 </head>
 <body class="dashboard-bg">
@@ -97,6 +98,8 @@
     document.addEventListener('DOMContentLoaded', async () => {
       const qp = new URLSearchParams(window.location.search);
       const associationId = qp.get('id');
+      const isEmbed = window.self !== window.top || qp.get('embed') === '1' || qp.get('modal') === '1';
+      if (isEmbed) document.body.classList.add('embed');
       const token = localStorage.getItem('token');
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
