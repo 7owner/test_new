@@ -27,6 +27,10 @@
           <div class="col-md-4"><label class="form-label">Désignation</label><input class="form-control" id="mat_designation"></div>
           <div class="col-md-4"><label class="form-label">Catégorie</label><input class="form-control" id="mat_categorie"></div>
           <div class="col-md-4"><label class="form-label">Fabricant</label><input class="form-control" id="mat_fabricant"></div>
+          <div class="col-md-4"><label class="form-label">Fournisseur</label><input class="form-control" id="mat_fournisseur"></div>
+          <div class="col-md-4"><label class="form-label">Classe Matériel</label><input class="form-control" id="mat_classe_materiel"></div>
+          <div class="col-md-4"><label class="form-label">Prix d'achat</label><input type="number" step="0.01" class="form-control" id="mat_prix"></div>
+          <div class="col-md-4"><label class="form-label">Remise Fournisseur (%)</label><input type="number" step="0.01" class="form-control" id="mat_remise_fournisseur"></div>
           <div class="col-md-4"><label class="form-label">Métier</label><select class="form-select" id="mat_metier">
             <option value="">(Non spécifié)</option>
             <option value="GTB">GTB</option>
@@ -34,7 +38,7 @@
             <option value="Intrusion">Intrusion</option>
             <option value="Control_Acces">Control d'Acces</option>
           </select></div>
-          <div class="col-md-4"><label class="form-label">Prix d'achat</label><input type="number" step="0.01" class="form-control" id="mat_prix"></div>
+          <div class="col-md-8"><label class="form-label">Documentation (URL)</label><input class="form-control" id="mat_documentation"></div>
           <div class="col-12"><label class="form-label">Commentaire</label><textarea class="form-control" id="mat_commentaire"></textarea></div>
           <div class="col-12 d-flex gap-2">
             <button type="submit" class="btn btn-primary" id="saveBtn">Enregistrer</button>
@@ -50,7 +54,7 @@
       <table class="table table-striped align-middle">
         <thead>
           <tr>
-            <th>ID</th><th>Référence</th><th>Désignation</th><th>Catégorie</th><th>Fabricant</th><th>Métier</th><th>Prix</th><th>Commentaire</th><th></th>
+            <th>ID</th><th>Référence</th><th>Désignation</th><th>Catégorie</th><th>Fabricant</th><th>Fournisseur</th><th>Classe</th><th>Prix</th><th>Remise</th><th>Métier</th><th>Commentaire</th><th></th>
           </tr>
         </thead>
         <tbody id="matList"></tbody>
@@ -69,16 +73,16 @@
       const form = document.getElementById('matForm');
 
       async function load() {
-        listEl.innerHTML = '<tr><td colspan="8" class="text-muted">Chargement...</td></tr>';
+        listEl.innerHTML = '<tr><td colspan="12" class="text-muted">Chargement...</td></tr>';
         try {
           const r = await fetch('/api/materiels', { headers: Object.assign({}, token? { 'Authorization': `Bearer ${token}` }: {}), credentials: 'same-origin' });
           if (!r.ok) throw new Error('Load failed');
           const data = await r.json();
           listEl.innerHTML = '';
-          if (!data.length) { listEl.innerHTML = '<tr><td colspan="8" class="text-muted">Aucun matériel.</td></tr>'; return; }
+          if (!data.length) { listEl.innerHTML = '<tr><td colspan="12" class="text-muted">Aucun matériel.</td></tr>'; return; }
           data.forEach(m => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${m.id}</td><td>${m.reference||''}</td><td>${m.designation||''}</td><td>${m.categorie||''}</td><td>${m.fabricant||''}</td><td>${m.metier||''}</td><td>${m.prix_achat||''}</td><td>${m.commentaire||''}</td><td>${isAdmin?'<button class="btn btn-sm btn-outline-primary me-2 edit">Éditer</button><button class="btn btn-sm btn-outline-danger delete">Suppr.</button>':''}</td>`;
+            tr.innerHTML = `<td>${m.id}</td><td>${m.reference||''}</td><td>${m.designation||''}</td><td>${m.categorie||''}</td><td>${m.fabricant||''}</td><td>${m.fournisseur||''}</td><td>${m.classe_materiel||''}</td><td>${m.prix_achat||''}</td><td>${m.remise_fournisseur||''}</td><td>${m.metier||''}</td><td>${m.commentaire||''}</td><td>${isAdmin?'<button class="btn btn-sm btn-outline-primary me-2 edit">Éditer</button><button class="btn btn-sm btn-outline-danger delete">Suppr.</button>':''}</td>`;
             if (isAdmin) {
               tr.querySelector('.edit').addEventListener('click', () => {
                 document.getElementById('mat_id').value = m.id;
@@ -86,7 +90,11 @@
                 document.getElementById('mat_designation').value = m.designation || '';
                 document.getElementById('mat_categorie').value = m.categorie || '';
                 document.getElementById('mat_fabricant').value = m.fabricant || '';
+                document.getElementById('mat_fournisseur').value = m.fournisseur || '';
+                document.getElementById('mat_classe_materiel').value = m.classe_materiel || '';
                 document.getElementById('mat_prix').value = m.prix_achat || '';
+                document.getElementById('mat_remise_fournisseur').value = m.remise_fournisseur || '';
+                document.getElementById('mat_documentation').value = m.documentation || '';
                 document.getElementById('mat_commentaire').value = m.commentaire || '';
                 document.getElementById('mat_metier').value = m.metier || '';
               });
@@ -99,7 +107,7 @@
             listEl.appendChild(tr);
           });
         } catch (e) {
-          listEl.innerHTML = '<tr><td colspan="9" class="text-danger">Erreur de chargement.</td></tr>';
+          listEl.innerHTML = '<tr><td colspan="12" class="text-danger">Erreur de chargement.</td></tr>';
         }
       }
 
@@ -111,7 +119,11 @@
           designation: document.getElementById('mat_designation').value.trim() || null,
           categorie: document.getElementById('mat_categorie').value.trim() || null,
           fabricant: document.getElementById('mat_fabricant').value.trim() || null,
+          fournisseur: document.getElementById('mat_fournisseur').value.trim() || null,
+          classe_materiel: document.getElementById('mat_classe_materiel').value.trim() || null,
           prix_achat: document.getElementById('mat_prix').value || null,
+          remise_fournisseur: document.getElementById('mat_remise_fournisseur').value || null,
+          documentation: document.getElementById('mat_documentation').value.trim() || null,
           commentaire: document.getElementById('mat_commentaire').value.trim() || null,
           metier: document.getElementById('mat_metier').value || null,
         };

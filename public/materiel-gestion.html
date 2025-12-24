@@ -75,26 +75,35 @@
                 <label class="form-label">Catégorie</label>
                 <input type="text" id="mat-categorie" class="form-control" placeholder="Ex: Consommable, Outil..." required>
               </div>
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Fournisseur</label>
-                  <input type="text" id="mat-fournisseur" class="form-control">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Documentation</label>
-                  <input type="text" id="mat-documentation" class="form-control" placeholder="URL du document">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Remise Fournisseur (%)</label>
-                  <input type="number" id="mat-remise" class="form-control" min="0" max="100" step="0.01">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Classe Matériel</label>
-                  <input type="text" id="mat-classe" class="form-control">
-                </div>
+              <div class="col-md-6">
+                <label class="form-label">Fabricant</label>
+                <input type="text" id="mat-fabricant" class="form-control" placeholder="Ex: Bosch, Schneider...">
               </div>
-
-              <div class="col-md-3">
+              <div class="col-md-6">
+                <label class="form-label">Fournisseur</label>
+                <input type="text" id="mat-fournisseur" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Prix achat (€)</label>
+                <input type="number" step="0.01" min="0" id="mat-prix" class="form-control" placeholder="0.00">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Quantité (info)</label>
+                <input type="number" min="0" id="mat-quantite" class="form-control" placeholder="Indiquer une quantité (non stockée)">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Documentation</label>
+                <input type="text" id="mat-documentation" class="form-control" placeholder="URL du document">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Remise Fournisseur (%)</label>
+                <input type="number" id="mat-remise" class="form-control" min="0" max="100" step="0.01">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Classe Matériel</label>
+                <input type="text" id="mat-classe" class="form-control">
+              </div>
+              <div class="col-md-6">
                 <label class="form-label">Commentaire</label>
                 <input type="text" id="mat-commentaire" class="form-control" placeholder="Optionnel">
               </div>
@@ -131,6 +140,8 @@
         categorie: document.getElementById('mat-categorie'),
         commentaire: document.getElementById('mat-commentaire'),
         fournisseur: document.getElementById('mat-fournisseur'),
+        fabricant: document.getElementById('mat-fabricant'),
+        prix: document.getElementById('mat-prix'),
         documentation: document.getElementById('mat-documentation'),
         remise: document.getElementById('mat-remise'),
         classe: document.getElementById('mat-classe')
@@ -152,7 +163,7 @@
       function render() {
         const term = (searchEl.value || '').toLowerCase();
         const cat = filterCat.value;
-        const filtered = materiels.filter(m => {
+      const filtered = materiels.filter(m => {
           const blob = `${m.reference||''} ${m.designation||''} ${m.categorie||''} ${m.commentaire||''}`.toLowerCase();
           const matchText = !term || blob.includes(term);
           const matchCat = !cat || m.categorie === cat;
@@ -174,11 +185,13 @@
                   <span class="badge bg-light text-dark">${m.categorie || '—'}</span>
                 </div>
                 <div class="small">${m.commentaire || ''}</div>
-                <div class="mt-2">
-                  <small class="text-muted">Fournisseur: ${m.fournisseur || '—'}</small><br>
-                  <small class="text-muted">Classe: ${m.classe_materiel || '—'}</small><br>
-                  ${m.documentation ? `<small class="text-muted">Documentation: <a href="${m.documentation}" target="_blank">Voir</a></small><br>` : ''}
-                  ${m.remise_fournisseur ? `<small class="text-muted">Remise: ${m.remise_fournisseur}%</small>` : ''}
+                <div class="mt-2 small text-muted">
+                  <div>Fabricant: ${m.fabricant || '—'}</div>
+                  <div>Fournisseur: ${m.fournisseur || '—'}</div>
+                  <div>Prix achat: ${m.prix_achat ? m.prix_achat + ' €' : '—'}</div>
+                  <div>Classe: ${m.classe_materiel || '—'}</div>
+                  ${m.remise_fournisseur ? `<div>Remise: ${m.remise_fournisseur}%</div>` : ''}
+                  ${m.documentation ? `<div>Doc: <a href="${m.documentation}" target="_blank">Voir</a></div>` : ''}
                 </div>
               </div>
               <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
@@ -224,6 +237,8 @@
         fields.categorie.value = mat?.categorie || '';
         fields.commentaire.value = mat?.commentaire || '';
         fields.fournisseur.value = mat?.fournisseur || '';
+        fields.fabricant.value = mat?.fabricant || '';
+        fields.prix.value = mat?.prix_achat || '';
         fields.documentation.value = mat?.documentation || '';
         fields.remise.value = mat?.remise_fournisseur || '';
         fields.classe.value = mat?.classe_materiel || '';
@@ -239,6 +254,8 @@
           categorie: fields.categorie.value.trim(),
           commentaire: fields.commentaire.value.trim(),
           fournisseur: fields.fournisseur.value.trim(),
+          fabricant: fields.fabricant.value.trim(),
+          prix_achat: fields.prix.value ? Number(fields.prix.value) : null,
           documentation: fields.documentation.value.trim(),
           remise_fournisseur: Number(fields.remise.value) || null,
           classe_materiel: fields.classe.value.trim()
