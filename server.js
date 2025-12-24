@@ -3188,14 +3188,14 @@ app.get('/api/interventions/:id', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, res) => {
-    const { titre, description, date_debut, date_fin, ticket_id, site_id, demande_id, status, ticket_agent_id } = req.body;
+    const { titre, description, date_debut, date_fin, ticket_id, site_id, demande_id, status, ticket_agent_id, metier } = req.body;
     if (!description || !date_debut || !ticket_id) {
         return res.status(400).json({ error: 'Description, date de début et ticket ID sont requis' });
     }
     try {
         const result = await pool.query(
-            'INSERT INTO intervention (titre, description, date_debut, date_fin, ticket_id, site_id, demande_id, status, ticket_agent_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
-            [titre || null, description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status || 'En_attente', ticket_agent_id || null]
+            'INSERT INTO intervention (titre, description, date_debut, date_fin, ticket_id, site_id, demande_id, status, ticket_agent_id, metier) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+            [titre || null, description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status || 'En_attente', ticket_agent_id || null, metier || null]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -3206,11 +3206,11 @@ app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, re
 
 app.put('/api/interventions/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id } = req.params;
-    const { description, date_debut, date_fin = null, ticket_id, site_id, demande_id, status, ticket_agent_id } = req.body;
+    const { description, date_debut, date_fin = null, ticket_id, site_id, demande_id, status, ticket_agent_id, metier } = req.body;
     try {
         const result = await pool.query(
-            'UPDATE intervention SET description = $1, date_debut = $2, date_fin = $3, ticket_id = $4, site_id = $5, demande_id = $6, status = COALESCE($7::statut_intervention, status), ticket_agent_id = $8 WHERE id = $9 RETURNING *',
-            [description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status, ticket_agent_id || null, id]
+            'UPDATE intervention SET description = $1, date_debut = $2, date_fin = $3, ticket_id = $4, site_id = $5, demande_id = $6, status = COALESCE($7::statut_intervention, status), ticket_agent_id = $8, metier = $9 WHERE id = $10 RETURNING *',
+            [description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status, ticket_agent_id || null, metier || null, id]
         );
         if (result.rows.length === 0) {
             return res.status(404).json({ error: `Intervention with id ${id} not found` });

@@ -167,11 +167,18 @@
 
   <!-- ✅ Rendus d'intervention -->
   <div class="main-card">
-    <div class="card-header-gradient d-flex justify-content-between align-items-center">
-      <span><i class="bi bi-journal-text me-2"></i>Rendus d'intervention</span>
-      <a href="#" class="btn btn-light btn-sm" id="add-rendu-btn">
-        <i class="bi bi-plus-circle me-1"></i>Ajouter un rendu
-      </a>
+    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h4 class="mb-0 d-flex align-items-center">
+        <i class="bi bi-journal-text me-2"></i>Rendus d'intervention
+      </h4>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-light btn-sm" id="request-materiel-btn">
+          <i class="bi bi-box-seam me-1"></i>Demander du matériel
+        </button>
+        <a href="#" class="btn btn-light btn-sm" id="add-rendu-btn">
+          <i class="bi bi-plus-circle me-1"></i>Ajouter un rendu
+        </a>
+      </div>
     </div>
     <div class="card-body p-4">
       <div id="rendu-intervention-list"></div>
@@ -239,6 +246,42 @@
     </div>
   </div>
 
+</div>
+
+<!-- Modal Demander Matériel -->
+<div class="modal fade" id="requestMaterielModal" tabindex="-1" aria-labelledby="requestMaterielModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="requestMaterielModalLabel">Demander du matériel</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <input type="text" class="form-control" id="request-materiel-search" placeholder="Rechercher par référence, désignation...">
+          </div>
+          <div class="col-md-6">
+            <select class="form-select" id="request-materiel-metier-filter">
+              <option value="">Tous les métiers</option>
+              <option value="GTB">GTB</option>
+              <option value="Video">Vidéo</option>
+              <option value="Intrusion">Intrusion</option>
+              <option value="Control_Acces">Contrôle d'Accès</option>
+            </select>
+          </div>
+        </div>
+        <div id="request-materiel-catalog" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mb-3">
+          <!-- Material items will be loaded here -->
+        </div>
+        <div id="request-materiel-empty" class="alert alert-info d-none">Aucun matériel trouvé correspondant aux critères.</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-primary" id="add-selected-materiels-btn">Ajouter les sélectionnés</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modale ajout responsable -->
@@ -369,20 +412,26 @@ document.addEventListener('DOMContentLoaded', async function () {
   const materielsEmpty = document.getElementById('materiels-empty');
   const materielFilter = document.getElementById('materiel-filter');
 
+  // New elements for material request modal
+  const requestMaterielBtn = document.getElementById('request-materiel-btn');
+  const requestMaterielModalEl = document.getElementById('requestMaterielModal');
+  const requestMaterielModalInstance = requestMaterielModalEl ? new bootstrap.Modal(requestMaterielModalEl) : null;
+  const requestMaterielSearch = document.getElementById('request-materiel-search');
+  const requestMaterielMetierFilter = document.getElementById('request-materiel-metier-filter');
+  const requestMaterielCatalog = document.getElementById('request-materiel-catalog');
+  const requestMaterielEmpty = document.getElementById('request-materiel-empty');
+  const addSelectedMaterielsBtn = document.getElementById('add-selected-materiels-btn');
+
+
   let ticketId = null;
   let demandeId = null;
+  let interventionMetier = null; // To store the metier of the current intervention
   let allAgents = [];
-  let materielsCache = [];
+  let materielsCache = []; // Materiels already linked to this intervention
+  let materielCatalog = []; // All available materials for the catalog
   let isAdmin = false;
-
-  // Decode JWT roles
-  try {
-    if (token) {
-      const p = JSON.parse(atob(token.split('.')[1]));
-      isAdmin = Array.isArray(p && p.roles) && p.roles.includes('ROLE_ADMIN');
-    }
-  } catch {}
-
+```
+```javascript
   // Masquer certains boutons pour non-admin
   if (!isAdmin) {
     const addRespBtn = document.getElementById('add-responsable-btn');
@@ -391,8 +440,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (addRespBtn) addRespBtn.style.display = 'none';
     if (addAgentBtn) addAgentBtn.style.display = 'none';
     if (addDocBtn)  addDocBtn.style.display  = 'none';
+    if (requestMaterielBtn) requestMaterielBtn.style.display = 'none'; // Hide for non-admin
   } else {
     if (showMaterielsBtn) showMaterielsBtn.classList.remove('d-none');
+    if (requestMaterielBtn) requestMaterielBtn.style.display = ''; // Ensure visible for admin
   }
 
   const renderMd = (txt='') => { try { return marked.parse(txt); } catch { return txt; } };
@@ -415,7 +466,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (!startStr) return '—';
     const start = new Date(startStr).getTime();
     if (Number.isNaN(start)) return '—';
-    const isClosed = status === 'Termine' || status === 'Terminé' || status === 'Fermé';
+    const isClosed = status === 'Termine' || status === 'Termifié' || status === 'Fermé';
     const end = endStr ? new Date(endStr).getTime() : Date.now();
     if (Number.isNaN(end)) return '—';
     const diff = Math.max(0, end - start);
@@ -428,6 +479,111 @@ document.addEventListener('DOMContentLoaded', async function () {
     parts.push(String(hours).padStart(2,'0') + ' h ' + String(mins).padStart(2,'0') + ' min');
     return parts.join(' ');
   };
+
+  // --- Material Request / Catalog Logic ---
+  const renderCatalogMaterials = () => {
+    if (!requestMaterielCatalog) return;
+    const searchTerm = (requestMaterielSearch.value || '').toLowerCase();
+    const selectedMetier = requestMaterielMetierFilter.value;
+
+    requestMaterielCatalog.innerHTML = '';
+    let count = 0;
+
+    const filteredMaterials = materielCatalog.filter(m => {
+      const matchesSearch =
+        (m.reference && m.reference.toLowerCase().includes(searchTerm)) ||
+        (m.designation && m.designation.toLowerCase().includes(searchTerm)) ||
+        (m.categorie && m.categorie.toLowerCase().includes(searchTerm)) ||
+        (m.commentaire && m.commentaire.toLowerCase().includes(searchTerm));
+
+      const matchesMetier = !selectedMetier || (m.metier === selectedMetier);
+      return matchesSearch && matchesMetier;
+    });
+
+    if (filteredMaterials.length === 0) {
+      requestMaterielEmpty.classList.remove('d-none');
+    } else {
+      requestMaterielEmpty.classList.add('d-none');
+    }
+
+    filteredMaterials.forEach(m => {
+      count++;
+      const col = document.createElement('div');
+      col.className = 'col';
+      col.innerHTML = `
+        <div class="card h-100 shadow-sm">
+          <div class="card-body d-flex flex-column">
+            <h6 class="card-title">${m.designation || 'Matériel sans désignation'}</h6>
+            <p class="card-text small text-muted mb-1">
+              Référence: ${m.reference || 'N/A'}<br>
+              Catégorie: ${m.categorie || 'N/A'}<br>
+              Métier: ${m.metier || 'N/A'}<br>
+              Fournisseur: ${m.fournisseur || 'N/A'}<br>
+              Prix unitaire: ${m.prix_achat ? m.prix_achat + ' €' : 'N/A'}<br>
+              Statut commande: ${m.commande_status || 'N/A'}
+            </p>
+            <div class="mt-auto pt-2">
+              <label for="qty-${m.id}" class="form-label visually-hidden">Quantité</label>
+              <input type="number" id="qty-${m.id}" class="form-control form-control-sm" value="1" min="1" data-materiel-id="${m.id}">
+            </div>
+          </div>
+        </div>
+      `;
+      requestMaterielCatalog.appendChild(col);
+    });
+  };
+
+  const loadCatalogMaterials = async () => {
+    try {
+      // Fetch all materials from the catalog
+      const allMaterials = await fetchJSON('/api/materiels');
+      materielCatalog = allMaterials || [];
+      renderCatalogMaterials();
+    } catch (e) {
+      console.error('Error loading material catalog:', e);
+      requestMaterielCatalog.innerHTML = '<div class="col-12 text-danger">Erreur de chargement du catalogue de matériel.</div>';
+    }
+  };
+
+  const addSelectedMateriels = async () => {
+    const selected = [];
+    requestMaterielCatalog.querySelectorAll('input[type="number"][data-materiel-id]').forEach(input => {
+      const materielId = input.dataset.materielId;
+      const quantity = parseInt(input.value, 10);
+      if (quantity > 0) {
+        selected.push({ materiel_id: materielId, quantite: quantity });
+      }
+    });
+
+    if (selected.length === 0) {
+      alert('Veuillez sélectionner au moins un matériel avec une quantité positive.');
+      return;
+    }
+
+    addSelectedMaterielsBtn.disabled = true;
+    addSelectedMaterielsBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Ajout...';
+
+    try {
+      for (const item of selected) {
+        await fetchJSON(`/api/interventions/${interventionId}/materiels`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item)
+        });
+      }
+      alert('Matériels ajoutés avec succès à l\'intervention.');
+      requestMaterielModalInstance.hide();
+      fetchAndPopulateAll(); // Refresh all intervention data, including materiels
+    } catch (e) {
+      console.error('Error adding materiels to intervention:', e);
+      alert(`Erreur lors de l\'ajout des matériels: ${e.message}`);
+    } finally {
+      addSelectedMaterielsBtn.disabled = false;
+      addSelectedMaterielsBtn.innerHTML = 'Ajouter les sélectionnés';
+    }
+  };
+
+  // --- End Material Request / Catalog Logic ---
 
   function renderMateriels(filterTerm = '') {
     if (!materielsGrid || !materielsEmpty) return;
@@ -475,8 +631,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         col.innerHTML = `
           <div class="border rounded p-2 mb-2">
             <div class="fw-semibold">${m.designation || 'Matériel'}</div>
-            <div class="text-muted small">Ref: ${m.reference || '—'} • Catégorie: ${m.categorie || '—'}</div>
-            <div class="small">Qté: ${m.quantite || 1} ${m.commentaire ? '• ' + m.commentaire : ''}</div>
+            <div class="text-muted small">Ref: ${m.reference || '—'} • Catégorie: ${m.categorie || '—'} • Métier: ${m.metier || '—'}</div>
+            <div class="small">Qté: ${m.quantite || 1} • Statut Commande: ${m.commande_status || '—'} ${m.commentaire ? '• ' + m.commentaire : ''}</div>
           </div>`;
         materielsGrid.appendChild(col);
       });
@@ -627,6 +783,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       const it = rel.intervention;
       ticketId  = rel.ticket ? rel.ticket.id : null;
       demandeId = rel.ticket ? rel.ticket.demande_id : null;
+      interventionMetier = it.metier || null; // Store the metier of the current intervention
 
       const statusText = it.status || it.statut || '—';
       const elapsed = formatElapsed(it.date_debut, it.date_fin, statusText);
@@ -829,6 +986,47 @@ document.addEventListener('DOMContentLoaded', async function () {
         saveDocumentBtn.disabled = false;
         saveDocumentBtn.textContent = 'Enregistrer';
       }
+    });
+  }
+
+  // --- Event Listeners for Materiel Request Modal ---
+  if (requestMaterielBtn) {
+    requestMaterielBtn.addEventListener('click', async e => {
+      e.preventDefault();
+      if (!interventionId) {
+        alert('Intervention inconnue.');
+        return;
+      }
+      requestMaterielSearch.value = ''; // Reset search
+      if (interventionMetier && requestMaterielMetierFilter) {
+        requestMaterielMetierFilter.value = interventionMetier; // Pre-fill metier filter
+      } else {
+        requestMaterielMetierFilter.value = ''; // Reset metier filter
+      }
+      await loadCatalogMaterials(); // Load and render all materials
+      if (requestMaterielModalInstance) requestMaterielModalInstance.show();
+    });
+  }
+
+  if (requestMaterielSearch) {
+    requestMaterielSearch.addEventListener('input', renderCatalogMaterials);
+  }
+
+  if (requestMaterielMetierFilter) {
+    requestMaterielMetierFilter.addEventListener('change', renderCatalogMaterials);
+  }
+
+  if (addSelectedMaterielsBtn) {
+    addSelectedMaterielsBtn.addEventListener('click', addSelectedMateriels);
+  }
+
+  // Reset inputs when modal closes
+  if (requestMaterielModalEl) {
+    requestMaterielModalEl.addEventListener('hidden.bs.modal', () => {
+      requestMaterielSearch.value = '';
+      requestMaterielMetierFilter.value = '';
+      requestMaterielCatalog.innerHTML = '';
+      requestMaterielEmpty.classList.add('d-none');
     });
   }
 
