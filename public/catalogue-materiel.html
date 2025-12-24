@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catalogue Matériel</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=2"></script>
+  <style>
+    body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); }
+    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+  </style>
+</head>
+<body class="dashboard-bg">
+  <div id="navbar-placeholder"></div>
+
+  <main class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <h1 class="h4 mb-0">Catalogue Matériel</h1>
+      <button class="btn btn-primary btn-sm" id="open-create"><i class="bi bi-plus-circle me-1"></i>Nouveau matériel</button>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Filtrer par intervention</label>
+            <select id="filter-intervention" class="form-select">
+              <option value="">Toutes</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Filtrer par métier / catégorie</label>
+            <select id="filter-categorie" class="form-select">
+              <option value="">Toutes</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Statut de commande</label>
+            <select id="filter-status" class="form-select">
+              <option value="">Tous</option>
+              <option value="A_commander">À commander</option>
+              <option value="Commande">Commandé</option>
+              <option value="Livraison">En livraison</option>
+              <option value="Recu">Reçu</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Référence</th>
+                <th>Désignation</th>
+                <th>Métier</th>
+                <th>Fabricant</th>
+                <th>Prix</th>
+                <th>Intervention</th>
+                <th>Commande</th>
+                <th class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="mat-tbody">
+              <tr><td colspan="8" class="text-muted text-center py-4">Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal create/edit -->
+  <div class="modal fade" id="matModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="matModalLabel">Matériel</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Référence</label>
+              <input class="form-control" id="mat-ref">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Désignation</label>
+              <input class="form-control" id="mat-desig">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Métier / Catégorie</label>
+              <input class="form-control" id="mat-cat" placeholder="GTB, Vidéo, Intrusion...">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Fabricant</label>
+              <input class="form-control" id="mat-fab">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Prix achat</label>
+              <input class="form-control" id="mat-prix" type="number" step="0.01">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Intervention liée (optionnel)</label>
+              <select class="form-select" id="mat-inter">
+                <option value="">Aucune</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Statut de commande</label>
+              <select class="form-select" id="mat-status">
+                <option value="">-</option>
+                <option value="A_commander">À commander</option>
+                <option value="Commande">Commandé</option>
+                <option value="Livraison">En livraison</option>
+                <option value="Recu">Reçu</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Commentaire</label>
+              <textarea class="form-control" id="mat-comment" rows="3"></textarea>
+            </div>
+          </div>
+          <div class="alert d-none mt-3" id="mat-feedback"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="mat-save-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token');
+      if (!token) { window.location.href='/login.html'; return; }
+      const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' };
+      const tbody = document.getElementById('mat-tbody');
+      const matModalEl = document.getElementById('matModal');
+      const matModal = new bootstrap.Modal(matModalEl);
+      const matFeedback = document.getElementById('mat-feedback');
+      const saveBtn = document.getElementById('mat-save-btn');
+      const filtInter = document.getElementById('filter-intervention');
+      const filtCat = document.getElementById('filter-categorie');
+      const filtStatus = document.getElementById('filter-status');
+      const interSelect = document.getElementById('mat-inter');
+      let editingId = null;
+
+      function showFb(msg, cls='alert alert-info') {
+        matFeedback.className = cls;
+        matFeedback.textContent = msg;
+        matFeedback.classList.remove('d-none');
+      }
+
+      async function loadInterventions() {
+        try {
+          const r = await fetch('/api/interventions', { headers, credentials:'same-origin' });
+          const arr = r.ok ? await r.json() : [];
+          [filtInter, interSelect].forEach(sel => {
+            sel.innerHTML = '<option value="">Toutes</option>';
+          });
+          arr.forEach(i => {
+            const opt = document.createElement('option');
+            opt.value = i.id;
+            opt.textContent = `#${i.id} - ${i.titre || i.description || 'Intervention'}`;
+            filtInter.appendChild(opt.cloneNode(true));
+            interSelect.appendChild(opt);
+          });
+        } catch(_){ }
+      }
+
+      async function loadMateriels() {
+        const params = new URLSearchParams();
+        if (filtInter.value) params.set('intervention_id', filtInter.value);
+        if (filtCat.value) params.set('categorie', filtCat.value);
+        if (filtStatus.value) params.set('commande_status', filtStatus.value);
+        tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-4">Chargement...</td></tr>';
+        try {
+          const r = await fetch(`/api/materiels?${params.toString()}`, { headers, credentials:'same-origin' });
+          const arr = r.ok ? await r.json() : [];
+          const cats = new Set();
+          tbody.innerHTML = '';
+          if (!arr.length) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-4">Aucun matériel.</td></tr>';
+            return;
+          }
+          arr.forEach(m => cats.add(m.categorie || m.metier || '')); 
+          filtCat.innerHTML = '<option value="">Toutes</option>';
+          Array.from(cats).filter(Boolean).forEach(c => {
+            const opt = document.createElement('option'); opt.value = c; opt.textContent = c; filtCat.appendChild(opt);
+          });
+
+          arr.forEach(m => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="fw-semibold">${m.reference || '-'}</td>
+              <td>${m.designation || '-'}</td>
+              <td>${m.metier || m.categorie || '-'}</td>
+              <td>${m.fabricant || '-'}</td>
+              <td>${m.prix_achat ? m.prix_achat + ' €' : '-'}</td>
+              <td>${m.intervention_id ? `<a href="/intervention-view.html?id=${m.intervention_id}" target="_blank" rel="noopener">#${m.intervention_id}</a>` : '-'}</td>
+              <td>
+                <select class="form-select form-select-sm cmd-status" data-id="${m.id}">
+                  <option value="">-</option>
+                  <option value="A_commander" ${m.commande_status==='A_commander'?'selected':''}>À commander</option>
+                  <option value="Commande" ${m.commande_status==='Commande'?'selected':''}>Commandé</option>
+                  <option value="Livraison" ${m.commande_status==='Livraison'?'selected':''}>En livraison</option>
+                  <option value="Recu" ${m.commande_status==='Recu'?'selected':''}>Reçu</option>
+                </select>
+              </td>
+              <td class="text-center">
+                <button class="btn btn-sm btn-outline-secondary edit-btn" data-id="${m.id}"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-sm btn-outline-danger del-btn" data-id="${m.id}"><i class="bi bi-trash"></i></button>
+              </td>`;
+            tbody.appendChild(tr);
+          });
+        } catch(_){
+          tbody.innerHTML = '<tr><td colspan="8" class="text-danger text-center py-4">Erreur de chargement.</td></tr>';
+        }
+      }
+
+      document.getElementById('open-create').addEventListener('click', () => {
+        editingId = null;
+        matModalLabel.textContent = 'Nouveau matériel';
+        matFeedback.classList.add('d-none');
+        ['mat-ref','mat-desig','mat-cat','mat-fab','mat-prix','mat-comment'].forEach(id=>document.getElementById(id).value='');
+        document.getElementById('mat-inter').value='';
+        document.getElementById('mat-status').value='';
+        matModal.show();
+      });
+
+      [filtInter, filtCat, filtStatus].forEach(sel => sel.addEventListener('change', loadMateriels));
+
+      tbody.addEventListener('change', async (e) => {
+        const sel = e.target.closest('.cmd-status');
+        if (!sel) return;
+        const id = sel.getAttribute('data-id');
+        const status = sel.value || null;
+        try { await fetch(`/api/materiels/${id}`, { method:'PUT', headers, credentials:'same-origin', body: JSON.stringify({ commande_status: status }) }); }
+        catch(_){ alert('Erreur de mise à jour du statut'); }
+      });
+
+      tbody.addEventListener('click', async (e) => {
+        const del = e.target.closest('.del-btn');
+        const edit = e.target.closest('.edit-btn');
+        if (del) {
+          const id = del.getAttribute('data-id');
+          if (!confirm('Supprimer ce matériel ?')) return;
+          try { await fetch(`/api/materiels/${id}`, { method:'DELETE', headers, credentials:'same-origin' }); loadMateriels(); }
+          catch(_){ alert('Suppression impossible'); }
+        }
+        if (edit) {
+          const id = edit.getAttribute('data-id');
+          try {
+            const r = await fetch(`/api/materiels/${id}`, { headers, credentials:'same-origin' });
+            const m = await r.json();
+            if (!r.ok) throw new Error(m.error||'Erreur');
+            editingId = id;
+            matModalLabel.textContent = `Modifier matériel #${id}`;
+            matFeedback.classList.add('d-none');
+            document.getElementById('mat-ref').value = m.reference||'';
+            document.getElementById('mat-desig').value = m.designation||'';
+            document.getElementById('mat-cat').value = m.metier || m.categorie || '';
+            document.getElementById('mat-fab').value = m.fabricant||'';
+            document.getElementById('mat-prix').value = m.prix_achat||'';
+            document.getElementById('mat-comment').value = m.commentaire||'';
+            document.getElementById('mat-inter').value = m.intervention_id || '';
+            document.getElementById('mat-status').value = m.commande_status || '';
+            matModal.show();
+          } catch(err) { alert(err.message || 'Impossible de charger le matériel'); }
+        }
+      });
+
+      saveBtn.addEventListener('click', async () => {
+        const payload = {
+          reference: document.getElementById('mat-ref').value.trim(),
+          designation: document.getElementById('mat-desig').value.trim(),
+          categorie: document.getElementById('mat-cat').value.trim(),
+          metier: document.getElementById('mat-cat').value.trim(),
+          fabricant: document.getElementById('mat-fab').value.trim(),
+          prix_achat: document.getElementById('mat-prix').value || null,
+          commentaire: document.getElementById('mat-comment').value.trim(),
+          intervention_id: document.getElementById('mat-inter').value || null,
+          commande_status: document.getElementById('mat-status').value || null
+        };
+        try {
+          const method = editingId ? 'PUT' : 'POST';
+          const url = editingId ? `/api/materiels/${editingId}` : '/api/materiels';
+          const r = await fetch(url, { method, headers, credentials:'same-origin', body: JSON.stringify(payload) });
+          const data = await r.json().catch(()=>({}));
+          if (!r.ok) throw new Error(data.error || 'Erreur de sauvegarde');
+          showFb('Enregistré','alert alert-success');
+          loadMateriels();
+          setTimeout(()=>matModal.hide(), 600);
+        } catch(e) {
+          showFb(e.message || 'Erreur','alert alert-danger');
+        }
+      });
+
+      loadInterventions().then(loadMateriels);
+    });
+  </script>
+</body>
+</html>

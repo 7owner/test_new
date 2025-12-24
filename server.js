@@ -1307,10 +1307,34 @@ app.get('/api/interventions/:id/relations', authenticateToken, async (req, res) 
 });
 
 // -------------------- Matériels API --------------------
-// List all materiels
+// List all materiels (filters: intervention_id, categorie/metier, commande_status)
 app.get('/api/materiels', authenticateToken, async (req, res) => {
   try {
-    const r = await pool.query('SELECT * FROM materiel ORDER BY id DESC');
+    const { intervention_id, categorie, metier, commande_status } = req.query;
+    const params = [];
+    const where = [];
+    if (intervention_id) {
+      params.push(intervention_id);
+      where.push(`intervention_id = $${params.length}`);
+    }
+    if (categorie) {
+      params.push(categorie);
+      where.push(`categorie = $${params.length}`);
+    }
+    if (metier) {
+      params.push(metier);
+      where.push(`metier = $${params.length}`);
+    }
+    if (commande_status) {
+      params.push(commande_status);
+      where.push(`commande_status = $${params.length}`);
+    }
+    const sql = `
+      SELECT *
+      FROM materiel
+      ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+      ORDER BY id DESC`;
+    const r = await pool.query(sql, params);
     res.json(r.rows);
   } catch (e) { console.error('Error fetching materiels:', e); res.status(500).json({ error: 'Internal Server Error' }); }
 });
@@ -1326,11 +1350,11 @@ app.get('/api/materiels/:id', authenticateToken, async (req, res) => {
 
 // Create materiel (admin)
 app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) => {
-  const { reference, designation, categorie, fabricant, prix_achat, commentaire, fournisseur, documentation, remise_fournisseur, classe_materiel } = req.body;
+  const { reference, designation, categorie, fabricant, prix_achat, commentaire, fournisseur, documentation, remise_fournisseur, classe_materiel, metier, commande_status, intervention_id } = req.body;
   try {
     const r = await pool.query(
-      'INSERT INTO materiel (reference, designation, categorie, fabricant, prix_achat, commentaire, fournisseur, documentation, remise_fournisseur, classe_materiel) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *',
-      [reference || null, designation || null, categorie || null, fabricant || null, prix_achat || null, commentaire || null, fournisseur || null, documentation || null, remise_fournisseur || null, classe_materiel || null]
+      'INSERT INTO materiel (reference, designation, categorie, fabricant, prix_achat, commentaire, fournisseur, documentation, remise_fournisseur, classe_materiel, metier, commande_status, intervention_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *',
+      [reference || null, designation || null, categorie || null, fabricant || null, prix_achat || null, commentaire || null, fournisseur || null, documentation || null, remise_fournisseur || null, classe_materiel || null, metier || null, commande_status || null, intervention_id || null]
     );
     res.status(201).json(r.rows[0]);
   } catch (e) { console.error('Error creating materiel:', e); res.status(500).json({ error: 'Internal Server Error' }); }
@@ -1338,11 +1362,11 @@ app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) =
 
 // Update materiel (admin)
 app.put('/api/materiels/:id', authenticateToken, authorizeAdmin, async (req, res) => {
-  const { reference, designation, categorie, fabricant, prix_achat, commentaire, fournisseur, documentation, remise_fournisseur, classe_materiel } = req.body;
+  const { reference, designation, categorie, fabricant, prix_achat, commentaire, fournisseur, documentation, remise_fournisseur, classe_materiel, metier, commande_status, intervention_id } = req.body;
   try {
     const r = await pool.query(
-      'UPDATE materiel SET reference=$1, designation=$2, categorie=$3, fabricant=$4, prix_achat=$5, commentaire=$6, fournisseur=$7, documentation=$8, remise_fournisseur=$9, classe_materiel=$10 WHERE id=$11 RETURNING *',
-      [reference || null, designation || null, categorie || null, fabricant || null, prix_achat || null, commentaire || null, fournisseur || null, documentation || null, remise_fournisseur || null, classe_materiel || null, req.params.id]
+      'UPDATE materiel SET reference=$1, designation=$2, categorie=$3, fabricant=$4, prix_achat=$5, commentaire=$6, fournisseur=$7, documentation=$8, remise_fournisseur=$9, classe_materiel=$10, metier=$11, commande_status=$12, intervention_id=$13 WHERE id=$14 RETURNING *',
+      [reference || null, designation || null, categorie || null, fabricant || null, prix_achat || null, commentaire || null, fournisseur || null, documentation || null, remise_fournisseur || null, classe_materiel || null, metier || null, commande_status || null, intervention_id || null, req.params.id]
     );
     if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(r.rows[0]);

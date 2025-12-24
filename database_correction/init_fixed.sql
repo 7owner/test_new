@@ -75,6 +75,8 @@ CREATE TYPE role_agence         AS ENUM ('Admin','Manager','Membre');
 CREATE TYPE type_formation      AS ENUM ('Habilitation','Certification','Permis');
 CREATE TYPE site_status AS ENUM ('Actif', 'Inactif');
 CREATE TYPE devis_status AS ENUM ('Brouillon', 'Envoye', 'Accepte', 'Refuse');
+CREATE TYPE metier_type AS ENUM ('GTB', 'Video', 'Intrusion', 'Control_Acces');
+CREATE TYPE commande_status_type AS ENUM ('A commander', 'Commande', 'En livraison', 'Reçu', 'Installé');
 
 -- --------------------------------------------------
 -- CORE ENTITIES
@@ -284,6 +286,8 @@ CREATE TABLE IF NOT EXISTS materiel (
     classe_materiel TEXT,
     prix_achat NUMERIC(12,2),
     commentaire TEXT,
+    commande_status commande_status_type DEFAULT 'A commander',
+    metier metier_type,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
