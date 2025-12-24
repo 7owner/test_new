@@ -216,11 +216,16 @@ INSERT INTO intervention (ticket_id, date_debut, intervention_precedente_id, sta
 -- ======================================================
 
 -- Matériels disponibles
-INSERT INTO materiel (reference, designation, categorie, fabricant, prix_achat, commentaire)
+INSERT INTO materiel (reference, designation, categorie, fabricant, prix_achat, commentaire, commande_status, metier)
 VALUES
-('REF001', 'Capteur Solaire 450W', 'Énergie', 'SunPower', 280.00, 'Panneau photovoltaïque dernière génération'),
-('REF002', 'Convertisseur Triphasé', 'Électrique', 'Schneider', 540.00, 'Utilisé sur installation Lyon'),
-('REF003', 'Pompe Hydraulique', 'Hydraulique', 'Grundfos', 650.00, 'Maintenance annuelle requise');
+('REF001', 'Capteur Solaire 450W', 'Énergie', 'SunPower', 280.00, 'Panneau photovoltaïque dernière génération', 'Reçu', 'GTB'),
+('REF002', 'Convertisseur Triphasé', 'Électrique', 'Schneider', 540.00, 'Utilisé sur installation Lyon', 'Installé', 'Control_Acces'),
+('REF003', 'Pompe Hydraulique', 'Hydraulique', 'Grundfos', 650.00, 'Maintenance annuelle requise', 'Commande', 'GTB'),
+('REF004', 'Caméra IP 4K', 'Sécurité', 'Hikvision', 120.00, 'Caméra de surveillance haute résolution', 'A commander', 'Video'),
+('REF005', 'Détecteur de mouvement PIR', 'Sécurité', 'Bosch', 45.00, 'Détecteur infrarouge passif', 'Reçu', 'Intrusion'),
+('REF006', 'Lecteur de badges RFID', 'Contrôle d''accès', 'HID Global', 90.00, 'Lecteur pour badges d''accès', 'En livraison', 'Control_Acces'),
+('REF007', 'Centrale d''alarme connectée', 'Sécurité', 'Daitem', 350.00, 'Système d''alarme complet', 'Commande', 'Intrusion'),
+('REF008', 'Câble Cat6a STP', 'Réseau', 'Legrand', 0.80, 'Câble Ethernet blindé au mètre', 'Reçu', 'GTB');
 
 -- Lier quelques matériels aux interventions
 INSERT INTO intervention_materiel (intervention_id, materiel_id, quantite, commentaire)

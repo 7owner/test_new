@@ -121,6 +121,22 @@
           </div>
         </div>
       </div>
+
+      <div class="col">
+        <div class="metric-card h-100">
+          <div class="d-flex align-items-center gap-3">
+            <div class="metric-icon icon-green"><i class="bi bi-box-seam"></i></div>
+            <div>
+              <div class="metric-label">Commandes matériel</div>
+              <div class="metric-value" id="adminMaterielCount">-</div>
+              <div class="metric-sub text-success">Suivi des statuts</div>
+            </div>
+          </div>
+          <div class="mt-auto">
+            <a href="/catalogue-materiel.html" class="btn btn-outline-success btn-sm">Ouvrir</a>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -151,6 +167,8 @@
       setText('adminAgentsCount', await fetchCount('/api/agents'));
       setText('adminFacturesCount', await fetchCount('/api/factures'));
       setText('adminReglementsCount', await fetchCount('/api/reglements'));
+      // Commandes matériel (basé sur les matériels référencés)
+      setText('adminMaterielCount', await fetchCount('/api/materiels'));
     });
   </script>
 </body>

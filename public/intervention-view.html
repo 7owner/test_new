@@ -188,6 +188,23 @@
     </div>
   </div>
 
+  <!-- ✅ Commandes / matériels liés -->
+  <div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h4 class="mb-0 d-flex align-items-center">
+        <i class="bi bi-box-seam me-2"></i>Commandes matériel
+      </h4>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-light btn-sm" id="inline-request-materiel-btn">
+          <i class="bi bi-plus-circle me-1"></i>Demander du matériel
+        </button>
+      </div>
+    </div>
+    <div class="card-body p-4" id="materiels-inline-list">
+      <div class="text-muted">Chargement...</div>
+    </div>
+  </div>
+
   <!-- ✅ Matériels (modal uniquement) -->
   <div class="modal fade" id="materielsModal" tabindex="-1" aria-labelledby="materielsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -421,6 +438,8 @@ document.addEventListener('DOMContentLoaded', async function () {
   const requestMaterielCatalog = document.getElementById('request-materiel-catalog');
   const requestMaterielEmpty = document.getElementById('request-materiel-empty');
   const addSelectedMaterielsBtn = document.getElementById('add-selected-materiels-btn');
+  const materielsInlineList = document.getElementById('materiels-inline-list');
+  const inlineRequestBtn = document.getElementById('inline-request-materiel-btn');
 
 
   let ticketId = null;
@@ -447,6 +466,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   } else {
     if (showMaterielsBtn) showMaterielsBtn.classList.remove('d-none');
     if (requestMaterielBtn) requestMaterielBtn.style.display = ''; // Ensure visible for admin
+    if (inlineRequestBtn) inlineRequestBtn.classList.remove('d-none');
   }
 
   const renderMd = (txt='') => { try { return marked.parse(txt); } catch { return txt; } };
@@ -546,6 +566,57 @@ document.addEventListener('DOMContentLoaded', async function () {
       console.error('Error loading material catalog:', e);
       requestMaterielCatalog.innerHTML = '<div class="col-12 text-danger">Erreur de chargement du catalogue de matériel.</div>';
     }
+  };
+
+  // Rendu inline des matériels avec possibilité de changer le statut (admin)
+  const renderMaterielsInline = () => {
+    if (!materielsInlineList) return;
+    if (!materielsCache.length) {
+      materielsInlineList.innerHTML = '<div class="text-muted">Aucun matériel lié à cette intervention.</div>';
+      return;
+    }
+    materielsInlineList.innerHTML = '';
+    materielsCache.forEach(m => {
+      const status = m.commande_status || '—';
+      const card = document.createElement('div');
+      card.className = 'card mb-2 shadow-sm';
+      card.innerHTML = `
+        <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
+          <div>
+            <div class="fw-semibold">${m.designation || 'Matériel'}</div>
+            <div class="small text-muted">Ref: ${m.reference || '—'}${m.categorie ? ' • ' + m.categorie : ''}${m.metier ? ' • ' + m.metier : ''}</div>
+            <div class="small text-muted">Quantité: ${m.quantite || 1}</div>
+            ${m.commentaire ? `<div class="small text-muted">Commentaire: ${m.commentaire}</div>` : ''}
+          </div>
+          <div class="text-end" style="min-width:190px;">
+            <label class="small text-muted d-block">Statut commande</label>
+            ${isAdmin ? `
+              <select class="form-select form-select-sm mat-inline-status">
+                ${['', 'En attente', 'Commande en cours', 'Reçue', 'Installée', 'Annulée'].map(opt => `<option value="${opt}" ${opt===status?'selected':''}>${opt || '—'}</option>`).join('')}
+              </select>
+            ` : `<span class="badge bg-light text-dark">${status}</span>`}
+          </div>
+        </div>
+      `;
+      materielsInlineList.appendChild(card);
+      if (isAdmin) {
+        const select = card.querySelector('.mat-inline-status');
+        if (select) {
+          select.addEventListener('change', async () => {
+            try {
+              await fetchJSON(`/api/materiels/${m.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ commande_status: select.value || null })
+              });
+            } catch (e) {
+              alert(e.message || 'Mise à jour impossible');
+              select.value = status;
+            }
+          });
+        }
+      }
+    });
   };
 
   const addSelectedMateriels = async () => {
@@ -665,6 +736,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       console.warn('Chargement materiels:', e);
     } finally {
       renderMateriels(materielFilter ? materielFilter.value : '');
+      renderMaterielsInline();
     }
   }
 
@@ -921,6 +993,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       if (materielsModalInstance) materielsModalInstance.show();
       if (!materielsCache.length) loadMateriels();
       else renderMateriels(materielFilter ? materielFilter.value : '');
+      renderMaterielsInline();
     });
   }
   if (materielFilter) {
@@ -1010,6 +1083,12 @@ document.addEventListener('DOMContentLoaded', async function () {
       if (requestMaterielModalInstance) requestMaterielModalInstance.show();
     });
   }
+  if (inlineRequestBtn) {
+    inlineRequestBtn.addEventListener('click', async e => {
+      e.preventDefault();
+      if (requestMaterielBtn) requestMaterielBtn.click();
+    });
+  }
 
   if (requestMaterielSearch) {
     requestMaterielSearch.addEventListener('input', renderCatalogMaterials);
@@ -1034,6 +1113,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   }
 
   fetchAndPopulateAll();
+  renderMaterielsInline();
 });
 </script>
 </body>
