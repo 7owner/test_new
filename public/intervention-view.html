@@ -430,8 +430,11 @@ document.addEventListener('DOMContentLoaded', async function () {
   let materielsCache = []; // Materiels already linked to this intervention
   let materielCatalog = []; // All available materials for the catalog
   let isAdmin = false;
-```
-```javascript
+  try {
+    const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
+    isAdmin = Array.isArray(payload?.roles) && payload.roles.includes('ROLE_ADMIN');
+  } catch {}
+
   // Masquer certains boutons pour non-admin
   if (!isAdmin) {
     const addRespBtn = document.getElementById('add-responsable-btn');
