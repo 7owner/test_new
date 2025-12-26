@@ -1306,6 +1306,90 @@ app.get('/api/interventions/:id/relations', authenticateToken, async (req, res) 
   }
 });
 
+// -------------------- Matériel Catalogue API --------------------
+// List all catalogue materiels
+app.get('/api/catalogue', authenticateToken, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM materiel_catalogue ORDER BY id DESC');
+    res.json(r.rows);
+  } catch (e) { console.error('Error fetching materiel catalogue:', e); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+// Get one catalogue materiel with relations
+app.get('/api/catalogue/:id/relations', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const itemResult = await pool.query('SELECT * FROM materiel_catalogue WHERE id = $1', [id]);
+        const item = itemResult.rows[0];
+        if (!item) {
+            return res.status(404).json({ error: 'Catalogue item not found' });
+        }
+        const documentsResult = await pool.query(
+            "SELECT * FROM documents_repertoire WHERE cible_type = 'MaterielCatalogue' AND cible_id = $1 ORDER BY id DESC",
+            [id]
+        );
+        item.documents = documentsResult.rows;
+        res.json(item);
+    } catch (err) {
+        console.error(`Error fetching relations for catalogue item ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Get one catalogue materiel
+app.get('/api/catalogue/:id', authenticateToken, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM materiel_catalogue WHERE id=$1', [req.params.id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json(r.rows[0]);
+  } catch (e) { console.error('Error fetching materiel catalogue item:', e); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+// Create catalogue materiel (admin)
+app.post('/api/catalogue', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, actif } = req.body;
+  try {
+    const r = await pool.query(
+      'INSERT INTO materiel_catalogue (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, actif) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *',
+      [titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, actif]
+    );
+    res.status(201).json(r.rows[0]);
+  } catch (e) { 
+      if (e.code === '23505') return res.status(409).json({ error: 'An item with this reference already exists.' });
+      console.error('Error creating materiel catalogue item:', e); res.status(500).json({ error: 'Internal Server Error' }); 
+  }
+});
+
+// Update catalogue materiel (admin)
+app.put('/api/catalogue/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, actif } = req.body;
+  try {
+    const r = await pool.query(
+      'UPDATE materiel_catalogue SET titre=$1, reference=$2, designation=$3, categorie=$4, fabricant=$5, fournisseur=$6, remise_fournisseur=$7, classe_materiel=$8, prix_achat=$9, commentaire=$10, metier=$11, actif=$12 WHERE id=$13 RETURNING *',
+      [titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, actif, id]
+    );
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json(r.rows[0]);
+  } catch (e) { 
+      if (e.code === '23505') return res.status(409).json({ error: 'An item with this reference already exists.' });
+      console.error('Error updating materiel catalogue item:', e); res.status(500).json({ error: 'Internal Server Error' }); 
+  }
+});
+
+// Delete catalogue materiel (admin)
+app.delete('/api/catalogue/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    const r = await pool.query('DELETE FROM materiel_catalogue WHERE id=$1 RETURNING id', [req.params.id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.status(204).send();
+  } catch (e) { 
+      if (e.code === '23503') return res.status(409).json({ error: 'Cannot delete item, it is referenced by an order.' });
+      console.error('Error deleting materiel catalogue item:', e); res.status(500).json({ error: 'Internal Server Error' }); 
+  }
+});
+
+
 // -------------------- Matériels API --------------------
 // List all materiels (filters: intervention_id, categorie/metier, commande_status)
 app.get('/api/materiels', authenticateToken, async (req, res) => {
@@ -1371,16 +1455,32 @@ app.get('/api/materiels/:id/relations', authenticateToken, async (req, res) => {
     }
 });
 
-// Create materiel (admin)
+// Create materiel (order) from a catalogue item (admin)
 app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) => {
-  const { titre, reference, designation, categorie, fabricant, prix_achat, commentaire, fournisseur, remise_fournisseur, classe_materiel, metier, commande_status } = req.body;
+  const { catalogue_id } = req.body;
+  if (!catalogue_id) {
+      return res.status(400).json({ error: 'catalogue_id is required to create an order.' });
+  }
+
   try {
+    // 1. Fetch the item from the catalogue
+    const catalogueItemResult = await pool.query('SELECT * FROM materiel_catalogue WHERE id = $1', [catalogue_id]);
+    const item = catalogueItemResult.rows[0];
+    if (!item) {
+        return res.status(404).json({ error: 'Catalogue item not found.' });
+    }
+
+    // 2. Create a new order record in 'materiel' table by copying the data
     const r = await pool.query(
-      'INSERT INTO materiel (titre, reference, designation, categorie, fabricant, prix_achat, commentaire, fournisseur, remise_fournisseur, classe_materiel, metier, commande_status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *',
-      [titre || null, reference || null, designation || null, categorie || null, fabricant || null, prix_achat || null, commentaire || null, fournisseur || null, remise_fournisseur || null, classe_materiel || null, metier || null, commande_status || null]
+      `INSERT INTO materiel (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, commande_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'A commander') RETURNING *`,
+      [item.titre, item.reference, item.designation, item.categorie, item.fabricant, item.fournisseur, item.remise_fournisseur, item.classe_materiel, item.prix_achat, item.commentaire, item.metier]
     );
     res.status(201).json(r.rows[0]);
-  } catch (e) { console.error('Error creating materiel:', e); res.status(500).json({ error: 'Internal Server Error' }); }
+  } catch (e) { 
+      console.error('Error creating materiel order from catalogue:', e); 
+      res.status(500).json({ error: 'Internal Server Error' }); 
+  }
 });
 
 // Update materiel (admin)

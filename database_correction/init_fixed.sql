@@ -65,7 +65,7 @@ CREATE TYPE sujet_type          AS ENUM ('ticket','intervention');
 CREATE TYPE statut_rdv          AS ENUM ('Planifie','Confirme','Termine','Annule');
 CREATE TYPE doc_cible_type      AS ENUM (
     'Affaire','Agent','Agence','Adresse','Client','Site','RendezVous','DOE','Ticket','Intervention',
-    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention', 'DemandeClient', 'Contrat', 'Materiel'
+    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention', 'DemandeClient', 'Contrat', 'Materiel', 'MaterielCatalogue'
 );
 CREATE TYPE doc_nature          AS ENUM ('Document','Video','Audio','Autre');
 CREATE TYPE statut_achat        AS ENUM ('Brouillon','Valide','Commande','Recu_partiel','Recu','Annule');
@@ -275,10 +275,27 @@ CREATE TABLE IF NOT EXISTS intervention (
     metier metier_type
 );
 
-CREATE TABLE IF NOT EXISTS materiel (
+CREATE TABLE IF NOT EXISTS materiel_catalogue (
     id SERIAL PRIMARY KEY,
     titre TEXT,
     reference TEXT UNIQUE,
+    designation TEXT,
+    categorie TEXT,
+    fabricant TEXT,
+    fournisseur TEXT,
+    remise_fournisseur NUMERIC(5, 2),
+    classe_materiel TEXT,
+    prix_achat NUMERIC(12,2),
+    commentaire TEXT,
+    metier metier_type,
+    actif BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS materiel (
+    id SERIAL PRIMARY KEY,
+    titre TEXT,
+    reference TEXT,
     designation TEXT,
     categorie TEXT,
     fabricant TEXT,
@@ -441,12 +458,7 @@ CREATE TABLE IF NOT EXISTS images (
     cible_id BIGINT
 );
 
-CREATE TABLE IF NOT EXISTS materiel_image (
-    id SERIAL PRIMARY KEY,
-    materiel_id INTEGER NOT NULL REFERENCES materiel(id) ON DELETE CASCADE,
-    nom_fichier TEXT,
-    type_mime TEXT
-);
+
 
 CREATE TABLE IF NOT EXISTS messagerie (
     id SERIAL PRIMARY KEY,

@@ -91,6 +91,14 @@ Cette mise à jour a significativement enrichi les fonctionnalités et stabilis�
 
 ## Mises à jour effectuées par l'agent (Current Session)
 
+*   **Refonte de la Gestion Matériel**:
+    *   **Séparation des concepts**: La gestion du matériel a été divisée en deux parties distinctes : un catalogue maître (`materiel_catalogue`) et des commandes spécifiques (`materiel`).
+    *   **Nouvelle Table `materiel_catalogue`**: Une nouvelle table a été créée pour stocker les informations de base et permanentes des articles (référence, désignation, fabricant, etc.), incluant un nouveau champ `actif` pour gérer la disponibilité des articles.
+    *   **Nouvelle Page "Catalogue Matériel"**: La page `public/catalogue-materiel.html` a été créée pour gérer ce catalogue maître. Elle permet de créer, modifier (y compris le statut "actif"), et supprimer des articles du catalogue. Chaque article dispose d'un bouton pour initier une commande.
+    *   **Refonte de la "Gestion des Commandes"**: L'ancienne page a été renommée `public/gestion-commande.html` et gère désormais les instances de commande créées à partir du catalogue. L'interface a été adaptée pour se concentrer sur le suivi des statuts de commande.
+    *   **Nouvelles Routes API**: De nouvelles routes d'API (`/api/catalogue`) ont été ajoutées pour supporter les opérations CRUD sur le nouveau catalogue. La route `POST /api/materiels` a été modifiée pour créer une commande en copiant les données d'un article du catalogue.
+    *   **Gestion des Pièces Jointes**: La fonctionnalité de documentation a été intégrée aux deux modules. Il est désormais possible d'attacher des documents (fiches techniques, etc.) à un article du catalogue, et d'autres documents (bons de livraison, etc.) à une commande spécifique, via le système de gestion de documents centralisé.
+
 *   **Implémentation de la fonctionnalité Calendrier**:
     *   Création de `public/calendrier.html` (page principale).
     *   Création de `public/js/calendrier.js` (logique client, intégration FullCalendar, filtrage par agent, intégration modale).

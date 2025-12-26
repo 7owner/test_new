@@ -11,6 +11,7 @@
   <style>
     body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); }
     .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+    .table-hover tbody tr:hover { background-color: rgba(0,0,0,0.03); }
   </style>
 </head>
 <body class="dashboard-bg">
@@ -19,32 +20,20 @@
   <main class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
       <h1 class="h4 mb-0">Catalogue Matériel</h1>
-      <button class="btn btn-primary btn-sm" id="open-create"><i class="bi bi-plus-circle me-1"></i>Nouveau matériel</button>
+      <button class="btn btn-primary btn-sm" id="open-create-btn"><i class="bi bi-plus-circle me-1"></i>Nouveau dans le catalogue</button>
     </div>
 
     <div class="card mb-3">
       <div class="card-body">
-        <div class="row g-2 align-items-end">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Filtrer par intervention</label>
-            <select id="filter-intervention" class="form-select">
-              <option value="">Toutes</option>
-            </select>
+        <div class="row g-2">
+          <div class="col-md-8">
+             <input type="text" id="search-input" class="form-control" placeholder="Rechercher par titre, référence, fabricant...">
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Filtrer par métier / catégorie</label>
-            <select id="filter-categorie" class="form-select">
-              <option value="">Toutes</option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Statut de commande</label>
-            <select id="filter-status" class="form-select">
-              <option value="">Tous</option>
-              <option value="A_commander">À commander</option>
-              <option value="Commande">Commandé</option>
-              <option value="Livraison">En livraison</option>
-              <option value="Recu">Reçu</option>
+            <select id="filter-actif" class="form-select">
+              <option value="">Tous les statuts</option>
+              <option value="true" selected>Actif</option>
+              <option value="false">Inactif</option>
             </select>
           </div>
         </div>
@@ -57,18 +46,15 @@
           <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
               <tr>
+                <th>Titre</th>
                 <th>Référence</th>
-                <th>Désignation</th>
-                <th>Métier</th>
                 <th>Fabricant</th>
-                <th>Prix</th>
-                <th>Intervention</th>
-                <th>Commande</th>
+                <th class="text-center">Actif</th>
                 <th class="text-center">Actions</th>
               </tr>
             </thead>
-            <tbody id="mat-tbody">
-              <tr><td colspan="8" class="text-muted text-center py-4">Chargement...</td></tr>
+            <tbody id="catalogue-tbody">
+              <tr><td colspan="5" class="text-muted text-center py-4">Chargement...</td></tr>
             </tbody>
           </table>
         </div>
@@ -77,61 +63,82 @@
   </main>
 
   <!-- Modal create/edit -->
-  <div class="modal fade" id="matModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" id="catalogueModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="matModalLabel">Matériel</h5>
+          <h5 class="modal-title" id="catalogueModalLabel">Édition d'article du catalogue</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Référence</label>
-              <input class="form-control" id="mat-ref">
+          <form id="catalogue-form">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Titre*</label>
+                    <input type="text" id="cat-titre" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Référence*</label>
+                    <input type="text" id="cat-reference" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Désignation</label>
+                    <input type="text" id="cat-designation" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Fabricant</label>
+                    <input type="text" id="cat-fabricant" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Fournisseur (par défaut)</label>
+                    <input type="text" id="cat-fournisseur" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Prix d'achat (par défaut)</label>
+                    <input type="number" id="cat-prix_achat" class="form-control" step="0.01">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Remise (par défaut %)</label>
+                    <input type="number" id="cat-remise_fournisseur" class="form-control" step="0.01">
+                </div>
+                 <div class="col-md-4">
+                    <label class="form-label">Classe Matériel</label>
+                    <input type="text" id="cat-classe_materiel" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Métier</label>
+                    <select id="cat-metier" class="form-select">
+                        <option value="">Non spécifié</option>
+                        <option value="GTB">GTB</option>
+                        <option value="Video">Video</option>
+                        <option value="Intrusion">Intrusion</option>
+                        <option value="Control_Acces">Contrôle d'Accès</option>
+                    </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="cat-actif" checked>
+                      <label class="form-check-label" for="cat-actif">Article Actif</label>
+                    </div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Commentaire</label>
+                  <textarea id="cat-commentaire" class="form-control" rows="2"></textarea>
+                </div>
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Désignation</label>
-              <input class="form-control" id="mat-desig">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Métier / Catégorie</label>
-              <input class="form-control" id="mat-cat" placeholder="GTB, Vidéo, Intrusion...">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Fabricant</label>
-              <input class="form-control" id="mat-fab">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Prix achat</label>
-              <input class="form-control" id="mat-prix" type="number" step="0.01">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Intervention liée (optionnel)</label>
-              <select class="form-select" id="mat-inter">
-                <option value="">Aucune</option>
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Statut de commande</label>
-              <select class="form-select" id="mat-status">
-                <option value="">-</option>
-                <option value="A_commander">À commander</option>
-                <option value="Commande">Commandé</option>
-                <option value="Livraison">En livraison</option>
-                <option value="Recu">Reçu</option>
-              </select>
-            </div>
-            <div class="col-12">
-              <label class="form-label fw-semibold">Commentaire</label>
-              <textarea class="form-control" id="mat-comment" rows="3"></textarea>
-            </div>
+          </form>
+          <hr>
+          <h6>Pièces Jointes</h6>
+          <div id="cat-documents-list" class="list-group mb-3"></div>
+          <div class="input-group">
+              <input type="file" class="form-control" id="cat-document-upload">
+              <button class="btn btn-outline-secondary" type="button" id="btn-upload-document">Téléverser</button>
           </div>
-          <div class="alert d-none mt-3" id="mat-feedback"></div>
+          <div class="alert d-none mt-3" id="cat-feedback"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="mat-save-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
+          <button type="button" class="btn btn-primary" id="cat-save-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
         </div>
       </div>
     </div>
@@ -143,169 +150,243 @@
       const token = localStorage.getItem('token');
       if (!token) { window.location.href='/login.html'; return; }
       const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' };
-      const tbody = document.getElementById('mat-tbody');
-      const matModalEl = document.getElementById('matModal');
-      const matModal = new bootstrap.Modal(matModalEl);
-      const matFeedback = document.getElementById('mat-feedback');
-      const saveBtn = document.getElementById('mat-save-btn');
-      const filtInter = document.getElementById('filter-intervention');
-      const filtCat = document.getElementById('filter-categorie');
-      const filtStatus = document.getElementById('filter-status');
-      const interSelect = document.getElementById('mat-inter');
-      let editingId = null;
+      
+      const tbody = document.getElementById('catalogue-tbody');
+      const searchInput = document.getElementById('search-input');
+      const actifFilter = document.getElementById('filter-actif');
 
-      function showFb(msg, cls='alert alert-info') {
-        matFeedback.className = cls;
-        matFeedback.textContent = msg;
-        matFeedback.classList.remove('d-none');
-      }
+      const catModalEl = document.getElementById('catalogueModal');
+      const catModal = new bootstrap.Modal(catModalEl);
+      const catModalLabel = document.getElementById('catalogueModalLabel');
+      const catFeedback = document.getElementById('cat-feedback');
+      const catSaveBtn = document.getElementById('cat-save-btn');
+      
+      let catalogueItems = [];
+      let editingCatalogueId = null;
 
-      async function loadInterventions() {
-        try {
-          const r = await fetch('/api/interventions', { headers, credentials:'same-origin' });
-          const arr = r.ok ? await r.json() : [];
-          [filtInter, interSelect].forEach(sel => {
-            sel.innerHTML = '<option value="">Toutes</option>';
-          });
-          arr.forEach(i => {
-            const opt = document.createElement('option');
-            opt.value = i.id;
-            opt.textContent = `#${i.id} - ${i.titre || i.description || 'Intervention'}`;
-            filtInter.appendChild(opt.cloneNode(true));
-            interSelect.appendChild(opt);
-          });
-        } catch(_){ }
-      }
+      const fields = {
+          titre: document.getElementById('cat-titre'),
+          reference: document.getElementById('cat-reference'),
+          designation: document.getElementById('cat-designation'),
+          fabricant: document.getElementById('cat-fabricant'),
+          fournisseur: document.getElementById('cat-fournisseur'),
+          prix_achat: document.getElementById('cat-prix_achat'),
+          remise_fournisseur: document.getElementById('cat-remise_fournisseur'),
+          classe_materiel: document.getElementById('cat-classe_materiel'),
+          metier: document.getElementById('cat-metier'),
+          actif: document.getElementById('cat-actif'),
+          commentaire: document.getElementById('cat-commentaire'),
+          docList: document.getElementById('cat-documents-list'),
+          docUploadInput: document.getElementById('cat-document-upload'),
+          docUploadBtn: document.getElementById('btn-upload-document')
+      };
 
-      async function loadMateriels() {
-        const params = new URLSearchParams();
-        if (filtInter.value) params.set('intervention_id', filtInter.value);
-        if (filtCat.value) params.set('categorie', filtCat.value);
-        if (filtStatus.value) params.set('commande_status', filtStatus.value);
-        tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-4">Chargement...</td></tr>';
-        try {
-          const r = await fetch(`/api/materiels?${params.toString()}`, { headers, credentials:'same-origin' });
-          const arr = r.ok ? await r.json() : [];
-          const cats = new Set();
-          tbody.innerHTML = '';
-          if (!arr.length) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-4">Aucun matériel.</td></tr>';
+      const api = async (url, opts = {}) => {
+          const res = await fetch(url, { headers, credentials: 'same-origin', ...opts });
+          if (res.status === 401) window.location.href = '/login.html';
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || `HTTP Error ${res.status}`);
+          return data;
+      };
+
+      function render() {
+        const term = searchInput.value.toLowerCase();
+        const actif = actifFilter.value;
+        const filtered = catalogueItems.filter(item => {
+            const matchesTerm = !term || [item.titre, item.reference, item.fabricant, item.designation].some(f => f?.toLowerCase().includes(term));
+            const matchesActif = actif === '' || String(item.actif) === actif;
+            return matchesTerm && matchesActif;
+        });
+
+        tbody.innerHTML = '';
+        if (!filtered.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-4">Aucun article dans le catalogue.</td></tr>';
             return;
-          }
-          arr.forEach(m => cats.add(m.categorie || m.metier || '')); 
-          filtCat.innerHTML = '<option value="">Toutes</option>';
-          Array.from(cats).filter(Boolean).forEach(c => {
-            const opt = document.createElement('option'); opt.value = c; opt.textContent = c; filtCat.appendChild(opt);
-          });
+        }
 
-          arr.forEach(m => {
+        filtered.forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-              <td class="fw-semibold">${m.reference || '-'}</td>
-              <td>${m.designation || '-'}</td>
-              <td>${m.metier || m.categorie || '-'}</td>
-              <td>${m.fabricant || '-'}</td>
-              <td>${m.prix_achat ? m.prix_achat + ' €' : '-'}</td>
-              <td>${m.intervention_id ? `<a href="/intervention-view.html?id=${m.intervention_id}" target="_blank" rel="noopener">#${m.intervention_id}</a>` : '-'}</td>
-              <td>
-                <select class="form-select form-select-sm cmd-status" data-id="${m.id}">
-                  <option value="">-</option>
-                  <option value="A_commander" ${m.commande_status==='A_commander'?'selected':''}>À commander</option>
-                  <option value="Commande" ${m.commande_status==='Commande'?'selected':''}>Commandé</option>
-                  <option value="Livraison" ${m.commande_status==='Livraison'?'selected':''}>En livraison</option>
-                  <option value="Recu" ${m.commande_status==='Recu'?'selected':''}>Reçu</option>
-                </select>
-              </td>
+              <td>${item.titre || ''}</td>
+              <td class="fw-semibold">${item.reference || '-'}</td>
+              <td>${item.fabricant || '-'}</td>
+              <td class="text-center">${item.actif ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}</td>
               <td class="text-center">
-                <button class="btn btn-sm btn-outline-secondary edit-btn" data-id="${m.id}"><i class="bi bi-pencil"></i></button>
-                <button class="btn btn-sm btn-outline-danger del-btn" data-id="${m.id}"><i class="bi bi-trash"></i></button>
+                <button class="btn btn-sm btn-success create-order-btn" data-id="${item.id}" title="Créer une commande à partir de cet article"><i class="bi bi-cart-plus"></i></button>
+                <button class="btn btn-sm btn-outline-secondary edit-btn" data-id="${item.id}" title="Modifier l'article"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-sm btn-outline-danger del-btn" data-id="${item.id}" title="Supprimer l'article"><i class="bi bi-trash"></i></button>
               </td>`;
             tbody.appendChild(tr);
-          });
-        } catch(_){
-          tbody.innerHTML = '<tr><td colspan="8" class="text-danger text-center py-4">Erreur de chargement.</td></tr>';
+        });
+      }
+
+      async function loadCatalogue() {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-4">Chargement...</td></tr>';
+        try {
+          catalogueItems = await api('/api/catalogue');
+          render();
+        } catch(e) {
+          tbody.innerHTML = `<tr><td colspan="5" class="text-danger text-center py-4">Erreur de chargement: ${e.message}</td></tr>`;
         }
       }
 
-      document.getElementById('open-create').addEventListener('click', () => {
-        editingId = null;
-        matModalLabel.textContent = 'Nouveau matériel';
-        matFeedback.classList.add('d-none');
-        ['mat-ref','mat-desig','mat-cat','mat-fab','mat-prix','mat-comment'].forEach(id=>document.getElementById(id).value='');
-        document.getElementById('mat-inter').value='';
-        document.getElementById('mat-status').value='';
-        matModal.show();
-      });
+      function showFeedback(msg, isError = true) {
+          catFeedback.className = `alert ${isError ? 'alert-danger' : 'alert-success'}`;
+          catFeedback.textContent = msg;
+          catFeedback.classList.remove('d-none');
+      }
 
-      [filtInter, filtCat, filtStatus].forEach(sel => sel.addEventListener('change', loadMateriels));
+      function openModal(item = null) {
+          document.getElementById('catalogue-form').reset();
+          catFeedback.classList.add('d-none');
+          editingCatalogueId = item?.id || null;
+          catModalLabel.textContent = item ? `Modifier: ${item.titre}` : 'Nouvel article de catalogue';
+          
+          fields.titre.value = item?.titre || '';
+          fields.reference.value = item?.reference || '';
+          fields.designation.value = item?.designation || '';
+          fields.fabricant.value = item?.fabricant || '';
+          fields.fournisseur.value = item?.fournisseur || '';
+          fields.prix_achat.value = item?.prix_achat || '';
+          fields.remise_fournisseur.value = item?.remise_fournisseur || '';
+          fields.classe_materiel.value = item?.classe_materiel || '';
+          fields.metier.value = item?.metier || '';
+          fields.actif.checked = item ? item.actif : true;
+          fields.commentaire.value = item?.commentaire || '';
 
-      tbody.addEventListener('change', async (e) => {
-        const sel = e.target.closest('.cmd-status');
-        if (!sel) return;
-        const id = sel.getAttribute('data-id');
-        const status = sel.value || null;
-        try { await fetch(`/api/materiels/${id}`, { method:'PUT', headers, credentials:'same-origin', body: JSON.stringify({ commande_status: status }) }); }
-        catch(_){ alert('Erreur de mise à jour du statut'); }
-      });
+          if (item?.id) {
+              fields.docUploadBtn.disabled = false;
+              renderDocuments(item.id);
+          } else {
+              fields.docList.innerHTML = '<div class="text-muted small">Enregistrez l\'article pour pouvoir ajouter des documents.</div>';
+              fields.docUploadBtn.disabled = true;
+          }
+          catModal.show();
+      }
 
-      tbody.addEventListener('click', async (e) => {
-        const del = e.target.closest('.del-btn');
-        const edit = e.target.closest('.edit-btn');
-        if (del) {
-          const id = del.getAttribute('data-id');
-          if (!confirm('Supprimer ce matériel ?')) return;
-          try { await fetch(`/api/materiels/${id}`, { method:'DELETE', headers, credentials:'same-origin' }); loadMateriels(); }
-          catch(_){ alert('Suppression impossible'); }
-        }
-        if (edit) {
-          const id = edit.getAttribute('data-id');
+      catSaveBtn.addEventListener('click', async () => {
+          const payload = {
+              titre: fields.titre.value,
+              reference: fields.reference.value,
+              designation: fields.designation.value,
+              fabricant: fields.fabricant.value,
+              fournisseur: fields.fournisseur.value,
+              prix_achat: fields.prix_achat.value ? Number(fields.prix_achat.value) : null,
+              remise_fournisseur: fields.remise_fournisseur.value ? Number(fields.remise_fournisseur.value) : null,
+              classe_materiel: fields.classe_materiel.value,
+              metier: fields.metier.value || null,
+              actif: fields.actif.checked,
+              commentaire: fields.commentaire.value
+          };
+
+          if (!payload.titre || !payload.reference) {
+              return showFeedback('Titre et Référence sont obligatoires.');
+          }
+
+          const url = editingCatalogueId ? `/api/catalogue/${editingCatalogueId}` : '/api/catalogue';
+          const method = editingCatalogueId ? 'PUT' : 'POST';
+
           try {
-            const r = await fetch(`/api/materiels/${id}`, { headers, credentials:'same-origin' });
-            const m = await r.json();
-            if (!r.ok) throw new Error(m.error||'Erreur');
-            editingId = id;
-            matModalLabel.textContent = `Modifier matériel #${id}`;
-            matFeedback.classList.add('d-none');
-            document.getElementById('mat-ref').value = m.reference||'';
-            document.getElementById('mat-desig').value = m.designation||'';
-            document.getElementById('mat-cat').value = m.metier || m.categorie || '';
-            document.getElementById('mat-fab').value = m.fabricant||'';
-            document.getElementById('mat-prix').value = m.prix_achat||'';
-            document.getElementById('mat-comment').value = m.commentaire||'';
-            document.getElementById('mat-inter').value = m.intervention_id || '';
-            document.getElementById('mat-status').value = m.commande_status || '';
-            matModal.show();
-          } catch(err) { alert(err.message || 'Impossible de charger le matériel'); }
-        }
+              catSaveBtn.disabled = true;
+              await api(url, { method, body: JSON.stringify(payload) });
+              showFeedback('Enregistré avec succès.', false);
+              await loadCatalogue();
+              setTimeout(() => catModal.hide(), 800);
+          } catch (e) {
+              showFeedback(e.message);
+          } finally {
+              catSaveBtn.disabled = false;
+          }
+      });
+      
+      tbody.addEventListener('click', async (e) => {
+          const target = e.target.closest('button');
+          if (!target) return;
+
+          const id = target.dataset.id;
+          if (target.classList.contains('edit-btn')) {
+              const item = catalogueItems.find(i => i.id == id);
+              openModal(item);
+          } else if (target.classList.contains('del-btn')) {
+              if (!confirm('Supprimer cet article du catalogue? Cette action est irréversible.')) return;
+              try {
+                  await api(`/api/catalogue/${id}`, { method: 'DELETE' });
+                  loadCatalogue();
+              } catch(e) { alert(e.message); }
+          } else if (target.classList.contains('create-order-btn')) {
+              if (!confirm('Créer une nouvelle commande pour cet article?')) return;
+              try {
+                  await api('/api/materiels', { method: 'POST', body: JSON.stringify({ catalogue_id: id }) });
+                  alert('Commande créée avec succès! Vous pouvez la voir dans la page "Gestion des Commandes".');
+              } catch(e) { alert(`Erreur: ${e.message}`); }
+          }
       });
 
-      saveBtn.addEventListener('click', async () => {
-        const payload = {
-          reference: document.getElementById('mat-ref').value.trim(),
-          designation: document.getElementById('mat-desig').value.trim(),
-          categorie: document.getElementById('mat-cat').value.trim(),
-          metier: document.getElementById('mat-cat').value.trim(),
-          fabricant: document.getElementById('mat-fab').value.trim(),
-          prix_achat: document.getElementById('mat-prix').value || null,
-          commentaire: document.getElementById('mat-comment').value.trim(),
-          intervention_id: document.getElementById('mat-inter').value || null,
-          commande_status: document.getElementById('mat-status').value || null
-        };
-        try {
-          const method = editingId ? 'PUT' : 'POST';
-          const url = editingId ? `/api/materiels/${editingId}` : '/api/materiels';
-          const r = await fetch(url, { method, headers, credentials:'same-origin', body: JSON.stringify(payload) });
-          const data = await r.json().catch(()=>({}));
-          if (!r.ok) throw new Error(data.error || 'Erreur de sauvegarde');
-          showFb('Enregistré','alert alert-success');
-          loadMateriels();
-          setTimeout(()=>matModal.hide(), 600);
-        } catch(e) {
-          showFb(e.message || 'Erreur','alert alert-danger');
-        }
+      // --- Document Logic ---
+      async function renderDocuments(catalogueId) {
+          fields.docList.innerHTML = '<div class="text-muted small">Chargement...</div>';
+          try {
+              const item = await api(`/api/catalogue/${catalogueId}/relations`);
+              const documents = item.documents || [];
+              fields.docList.innerHTML = !documents.length ? '<div class="text-muted small">Aucun document.</div>' : '';
+              documents.forEach(doc => {
+                  const li = document.createElement('div');
+                  li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                  li.innerHTML = `<a href="/api/documents/${doc.id}/download" target="_blank">${doc.nom_fichier}</a>
+                                  <button class="btn btn-sm btn-outline-danger" data-doc-id="${doc.id}"><i class="bi bi-trash"></i></button>`;
+                  li.querySelector('button').addEventListener('click', () => deleteDocument(doc.id, catalogueId));
+                  fields.docList.appendChild(li);
+              });
+          } catch (e) {
+              fields.docList.innerHTML = `<div class="text-danger small">Erreur: ${e.message}</div>`;
+          }
+      }
+      async function deleteDocument(docId, catId) {
+          if (!confirm('Supprimer ce document?')) return;
+          try {
+              await api(`/api/documents/${docId}`, { method: 'DELETE' });
+              await renderDocuments(catId);
+          } catch(e) { alert(`Erreur: ${e.message}`); }
+      }
+      function fileToBase64(file) {
+          return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.readAsDataURL(file);
+              reader.onload = () => resolve(reader.result.split(',')[1]);
+              reader.onerror = reject;
+          });
+      }
+      fields.docUploadBtn.addEventListener('click', async () => {
+          if (!editingCatalogueId) return;
+          const file = fields.docUploadInput.files[0];
+          if (!file) return alert('Sélectionnez un fichier.');
+          
+          fields.docUploadBtn.disabled = true;
+          try {
+              const base64 = await fileToBase64(file);
+              const payload = {
+                  cible_type: 'MaterielCatalogue',
+                  cible_id: editingCatalogueId,
+                  nom_fichier: file.name,
+                  type_mime: file.type,
+                  base64
+              };
+              await api('/api/documents', { method: 'POST', body: JSON.stringify(payload) });
+              await renderDocuments(editingCatalogueId);
+              fields.docUploadInput.value = '';
+          } catch (e) {
+              alert(`Erreur: ${e.message}`);
+          } finally {
+              fields.docUploadBtn.disabled = false;
+          }
       });
+      // --- End Document Logic ---
 
-      loadInterventions().then(loadMateriels);
+      document.getElementById('open-create-btn').addEventListener('click', () => openModal(null));
+      searchInput.addEventListener('input', render);
+      actifFilter.addEventListener('change', render);
+
+      loadCatalogue();
     });
   </script>
 </body>
