@@ -45,7 +45,12 @@
   <div class="container mt-4">
     <div class="row">
       <div class="col-md-4">
-        <h2>Conversations</h2>
+        <div class="d-flex justify-content-between align-items-center">
+          <h2 class="mb-0">Conversations</h2>
+          <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newMessageModal">
+            <i class="bi bi-envelope-plus me-1"></i>Nouveau message
+          </button>
+        </div>
         <div class="mb-3">
           <div class="row g-2">
             <div class="col-md-12">
@@ -121,6 +126,35 @@
     </div>
   </div>
 
+  <!-- Modal nouveau message -->
+  <div class="modal fade" id="newMessageModal" tabindex="-1" aria-labelledby="newMessageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="newMessageModalLabel"><i class="bi bi-envelope-plus me-2"></i>Envoyer un message à un client</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Client destinataire</label>
+            <select id="modal-client-select" class="form-select">
+              <option value="">Sélectionner un client...</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Message</label>
+            <textarea id="modal-client-message" class="form-control" rows="3" placeholder="Votre message..."></textarea>
+          </div>
+          <div id="modal-client-feedback" class="small"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+          <button type="button" class="btn btn-primary" id="modal-send-btn"><i class="bi bi-send me-1"></i>Envoyer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="/nav.js"></script>
     <script>
@@ -160,7 +194,11 @@
         const newConvoBtn = document.getElementById('new-convo-btn');
         const newConvoFeedback = document.getElementById('new-convo-feedback');
         const clientEmailsList = document.getElementById('clientEmails');
-  
+        const modalClientSelect = document.getElementById('modal-client-select');
+        const modalClientMessage = document.getElementById('modal-client-message');
+        const modalClientFeedback = document.getElementById('modal-client-feedback');
+        const modalSendBtn = document.getElementById('modal-send-btn');
+
         let currentConversationId = null;
         let currentReceiverId = null;
         let currentConversationLabel = '';
@@ -168,6 +206,7 @@
         const demandeSiteMap = new Map();
         const demandeClientMap = new Map();
         const preselectConversationId = new URLSearchParams(window.location.search).get('conversation');
+        let clientsCache = [];
   
               function hrefForAttachment(att) {
                 if (!att || !att.id) return '#';
@@ -233,13 +272,23 @@
           try {
             const clients = await fetchJSON('/api/clients');
             if (!Array.isArray(clients)) return;
+            clientsCache = clients;
             clientEmailsList.innerHTML = '';
+            if (modalClientSelect) {
+              modalClientSelect.innerHTML = '<option value=\"\">Sélectionner un client...</option>';
+            }
             clients.forEach(c => {
               if (c.representant_email) {
                 const opt = document.createElement('option');
                 opt.value = c.representant_email;
                 opt.label = c.nom_client || c.representant_nom || c.representant_email;
                 clientEmailsList.appendChild(opt);
+                if (modalClientSelect) {
+                  const opt2 = document.createElement('option');
+                  opt2.value = c.representant_email;
+                  opt2.textContent = `${c.nom_client || c.representant_nom || c.representant_email} (${c.representant_email})`;
+                  modalClientSelect.appendChild(opt2);
+                }
               }
             });
           } catch (e) {
@@ -416,7 +465,43 @@
             }
           });
         }
-  
+
+        // Envoi depuis la modal
+        if (modalSendBtn) {
+          modalSendBtn.addEventListener('click', async () => {
+            modalClientFeedback.textContent = '';
+            modalClientFeedback.className = 'small';
+            const email = modalClientSelect?.value || '';
+            const body = (modalClientMessage?.value || '').trim();
+            if (!email || !body) {
+              modalClientFeedback.classList.add('text-danger');
+              modalClientFeedback.textContent = 'Choisissez un client et saisissez un message.';
+              return;
+            }
+            try {
+              modalSendBtn.disabled = true;
+              modalSendBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Envoi...';
+              await fetchJSON('/api/conversations/new', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message_body: body, recipient_email: email })
+              });
+              modalClientFeedback.classList.add('text-success');
+              modalClientFeedback.textContent = 'Message envoyé.';
+              if (modalClientMessage) modalClientMessage.value = '';
+              const modalEl = document.getElementById('newMessageModal');
+              if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+              loadConversations();
+            } catch (err) {
+              modalClientFeedback.classList.add('text-danger');
+              modalClientFeedback.textContent = err.message || 'Erreur lors de l\'envoi.';
+            } finally {
+              modalSendBtn.disabled = false;
+              modalSendBtn.innerHTML = '<i class="bi bi-send me-1"></i>Envoyer';
+            }
+          });
+        }
+
         loadDemandesLabels().then(loadConversations).catch(loadConversations);
         loadClientEmails();
     });
