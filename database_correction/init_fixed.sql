@@ -277,6 +277,7 @@ CREATE TABLE IF NOT EXISTS intervention (
 
 CREATE TABLE IF NOT EXISTS materiel (
     id SERIAL PRIMARY KEY,
+    titre TEXT,
     reference TEXT UNIQUE,
     designation TEXT,
     categorie TEXT,

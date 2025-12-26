@@ -60,25 +60,81 @@
           <form id="materiel-form">
             <input type="hidden" id="mat-id">
             <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Référence</label>
-                <input type="text" id="mat-ref" class="form-control" required>
+              <!-- New Row for Titre -->
+              <div class="col-md-12">
+                <label class="form-label">Titre*</label>
+                <input type="text" id="mat-titre" class="form-control" required>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Désignation</label>
+              <!-- Row 1 -->
+              <div class="col-md-4">
+                <label class="form-label">Référence*</label>
+                <input type="text" id="mat-reference" class="form-control" required>
+              </div>
+              <div class="col-md-8">
+                <label class="form-label">Désignation*</label>
                 <input type="text" id="mat-designation" class="form-control" required>
               </div>
-              <div class="col-md-6">
+
+              <!-- Row 2 -->
+              <div class="col-md-4">
                 <label class="form-label">Catégorie</label>
-                <input type="text" id="mat-categorie" class="form-control" placeholder="Ex: Consommable, Outil..." required>
+                <input type="text" id="mat-categorie" class="form-control" placeholder="Ex: Câble, Capteur...">
               </div>
-              <div class="col-md-3">
-                <label class="form-label">Quantité</label>
-                <input type="number" id="mat-quantite" class="form-control" min="0" step="1" value="1">
+              <div class="col-md-4">
+                <label class="form-label">Fabricant</label>
+                <input type="text" id="mat-fabricant" class="form-control" placeholder="Ex: Siemens, Schneider...">
               </div>
-              <div class="col-md-3">
+              <div class="col-md-4">
+                <label class="form-label">Fournisseur</label>
+                <input type="text" id="mat-fournisseur" class="form-control" placeholder="Ex: Rexel, Sonepar...">
+              </div>
+
+              <!-- Row 3 -->
+              <div class="col-md-4">
+                <label class="form-label">Prix d'achat (€)</label>
+                <input type="number" id="mat-prix_achat" class="form-control" min="0" step="0.01" placeholder="0.00">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Remise Fournisseur (%)</label>
+                <input type="number" id="mat-remise_fournisseur" class="form-control" min="0" max="100" step="0.01" placeholder="0.00">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Classe Matériel</label>
+                <input type="text" id="mat-classe_materiel" class="form-control" placeholder="Ex: A, B, C...">
+              </div>
+
+              <!-- Row 4 -->
+              <div class="col-md-6">
+                <label class="form-label">Métier</label>
+                <select id="mat-metier" class="form-select">
+                  <option value="">Non spécifié</option>
+                  <option value="GTB">GTB</option>
+                  <option value="Video">Video</option>
+                  <option value="Intrusion">Intrusion</option>
+                  <option value="Control_Acces">Contrôle d'Accès</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Statut Commande</label>
+                <select id="mat-commande_status" class="form-select">
+                  <option value="A commander">A commander</option>
+                  <option value="Commande">Commandé</option>
+                  <option value="En livraison">En livraison</option>
+                  <option value="Reçu">Reçu</option>
+                  <option value="Installé">Installé</option>
+                </select>
+              </div>
+
+              <!-- Row 5 -->
+              <div class="col-md-12">
+                <label class="form-label">Documentation</label>
+                <input type="text" id="mat-documentation" class="form-control" placeholder="Lien web ou référence document...">
+              </div>
+              
+              <!-- Row 6 -->
+              <div class="col-md-12">
                 <label class="form-label">Commentaire</label>
-                <input type="text" id="mat-commentaire" class="form-control" placeholder="Optionnel">
+                <textarea id="mat-commentaire" class="form-control" rows="2" placeholder="Informations additionnelles..."></textarea>
               </div>
             </div>
           </form>
@@ -107,11 +163,19 @@
       const titleEl = document.getElementById('modalTitle');
       const fields = {
         id: document.getElementById('mat-id'),
-        ref: document.getElementById('mat-ref'),
+        titre: document.getElementById('mat-titre'),
+        reference: document.getElementById('mat-reference'),
         designation: document.getElementById('mat-designation'),
         categorie: document.getElementById('mat-categorie'),
-        quantite: document.getElementById('mat-quantite'),
-        commentaire: document.getElementById('mat-commentaire')
+        fabricant: document.getElementById('mat-fabricant'),
+        fournisseur: document.getElementById('mat-fournisseur'),
+        documentation: document.getElementById('mat-documentation'),
+        remise_fournisseur: document.getElementById('mat-remise_fournisseur'),
+        classe_materiel: document.getElementById('mat-classe_materiel'),
+        prix_achat: document.getElementById('mat-prix_achat'),
+        commentaire: document.getElementById('mat-commentaire'),
+        commande_status: document.getElementById('mat-commande_status'),
+        metier: document.getElementById('mat-metier')
       };
 
       let materiels = [];
@@ -131,7 +195,7 @@
         const term = (searchEl.value || '').toLowerCase();
         const cat = filterCat.value;
         const filtered = materiels.filter(m => {
-          const blob = `${m.reference||''} ${m.designation||''} ${m.categorie||''} ${m.commentaire||''}`.toLowerCase();
+          const blob = `${m.titre||''} ${m.reference||''} ${m.designation||''} ${m.categorie||''} ${m.fabricant||''} ${m.fournisseur||''} ${m.commentaire||''}`.toLowerCase();
           const matchText = !term || blob.includes(term);
           const matchCat = !cat || m.categorie === cat;
           return matchText && matchCat;
@@ -141,17 +205,20 @@
         filtered.forEach(m => {
           const col = document.createElement('div');
           col.className = 'col-12 col-md-6 col-lg-4';
+          const prix = m.prix_achat ? `${parseFloat(m.prix_achat).toFixed(2)}€` : '—';
           col.innerHTML = `
             <div class="card h-100">
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                   <div>
-                    <div class="fw-bold">${m.designation || '(Sans nom)'}</div>
-                    <div class="text-muted small">Ref: ${m.reference || '—'}</div>
+                    <h5 class="fw-bold">${m.titre || '(Sans titre)'}</h5>
+                    <div class="text-muted small">Ref: ${m.reference || '—'} | Désignation: ${m.designation || '—'}</div>
                   </div>
                   <span class="badge bg-light text-dark">${m.categorie || '—'}</span>
                 </div>
-                <div class="text-muted small mb-2">Qté: ${m.quantite ?? '—'}</div>
+                <div class="text-muted small mb-2">
+                    Fabricant: ${m.fabricant || 'N/A'} | Prix: <span class="fw-bold">${prix}</span>
+                </div>
                 <div class="small">${m.commentaire || ''}</div>
               </div>
               <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
@@ -168,7 +235,7 @@
         const set = new Set();
         materiels.forEach(m => { if (m.categorie) set.add(m.categorie); });
         filterCat.innerHTML = '<option value="">Toutes catégories</option>';
-        set.forEach(c => {
+        Array.from(set).sort().forEach(c => {
           const opt = document.createElement('option');
           opt.value = c;
           opt.textContent = c;
@@ -192,38 +259,54 @@
         form.reset();
         formFeedback.textContent = '';
         fields.id.value = mat?.id || '';
-        fields.ref.value = mat?.reference || '';
+        fields.titre.value = mat?.titre || '';
+        fields.reference.value = mat?.reference || '';
         fields.designation.value = mat?.designation || '';
         fields.categorie.value = mat?.categorie || '';
-        fields.quantite.value = mat?.quantite != null ? mat.quantite : 1;
+        fields.fabricant.value = mat?.fabricant || '';
+        fields.fournisseur.value = mat?.fournisseur || '';
+        fields.documentation.value = mat?.documentation || '';
+        fields.remise_fournisseur.value = mat?.remise_fournisseur || '';
+        fields.classe_materiel.value = mat?.classe_materiel || '';
+        fields.prix_achat.value = mat?.prix_achat || '';
         fields.commentaire.value = mat?.commentaire || '';
-        titleEl.textContent = mat ? 'Modifier le matériel' : 'Nouveau matériel';
+        fields.commande_status.value = mat?.commande_status || 'A commander';
+        fields.metier.value = mat?.metier || '';
+        titleEl.textContent = mat ? `Modifier : ${mat.titre || mat.designation}` : 'Nouveau matériel';
         if (modal) modal.show();
       }
 
       async function saveMateriel() {
         formFeedback.textContent = '';
         const payload = {
-          reference: fields.ref.value.trim(),
+          titre: fields.titre.value.trim(),
+          reference: fields.reference.value.trim(),
           designation: fields.designation.value.trim(),
           categorie: fields.categorie.value.trim(),
-          quantite: Number(fields.quantite.value) || 0,
-          commentaire: fields.commentaire.value.trim()
+          fabricant: fields.fabricant.value.trim(),
+          fournisseur: fields.fournisseur.value.trim(),
+          documentation: fields.documentation.value.trim(),
+          remise_fournisseur: fields.remise_fournisseur.value ? Number(fields.remise_fournisseur.value) : null,
+          classe_materiel: fields.classe_materiel.value.trim(),
+          prix_achat: fields.prix_achat.value ? Number(fields.prix_achat.value) : null,
+          commentaire: fields.commentaire.value.trim(),
+          commande_status: fields.commande_status.value,
+          metier: fields.metier.value || null
         };
-        if (!payload.reference || !payload.designation) {
-          formFeedback.textContent = 'Référence et désignation sont obligatoires.';
+
+        if (!payload.titre || !payload.reference || !payload.designation) {
+          formFeedback.textContent = 'Titre, Référence et désignation sont obligatoires.';
           return;
         }
+
         const id = fields.id.value;
-        const opts = {
-          method: id ? 'PUT' : 'POST',
-          body: JSON.stringify(payload)
-        };
         const url = id ? `/api/materiels/${id}` : '/api/materiels';
+        const method = id ? 'PUT' : 'POST';
+        
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sauvegarde...';
         try {
-          await api(url, opts);
+          await api(url, { method, body: JSON.stringify(payload) });
           if (modal) modal.hide();
           await loadMateriels();
         } catch (e) {
@@ -235,12 +318,12 @@
       }
 
       async function deleteMateriel(id) {
-        if (!confirm('Supprimer ce matériel ?')) return;
+        if (!confirm('Supprimer ce matériel ? Cette action est irréversible.')) return;
         try {
           await api(`/api/materiels/${id}`, { method: 'DELETE' });
           await loadMateriels();
         } catch (e) {
-          alert(e.message || 'Suppression impossible');
+          alert(e.message || 'Suppression impossible. Le matériel est peut-être lié à une intervention.');
         }
       }
 

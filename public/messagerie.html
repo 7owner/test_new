@@ -78,6 +78,27 @@
         <div id="conversations-list" class="list-group conversations-list">
           <!-- Conversations will be loaded here -->
         </div>
+
+        <!-- Nouvelle conversation avec un client -->
+        <div class="card mt-3">
+          <div class="card-body">
+            <h6 class="fw-semibold mb-2"><i class="bi bi-person-plus me-1"></i>Nouvelle conversation client</h6>
+            <div class="mb-2">
+              <label class="form-label small">Choisir un client (email représentant)</label>
+              <input type="text" id="new-convo-client" class="form-control form-control-sm" list="clientEmails" placeholder="client@example.com">
+              <datalist id="clientEmails"></datalist>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">Message</label>
+              <textarea id="new-convo-message" class="form-control form-control-sm" rows="2" placeholder="Votre message..."></textarea>
+            </div>
+            <div class="text-end">
+              <button class="btn btn-primary btn-sm" id="new-convo-btn"><i class="bi bi-send me-1"></i>Envoyer</button>
+            </div>
+            <div id="new-convo-feedback" class="small mt-2"></div>
+          </div>
+        </div>
+
       </div>
       <div class="col-md-8">
         <div id="messages-container" class="d-none">
@@ -134,6 +155,11 @@
         const demandStatusFilter = document.getElementById('demand-status-filter');
         const dateStartInput = document.getElementById('date-start');
         const dateEndInput = document.getElementById('date-end');
+        const newConvoClient = document.getElementById('new-convo-client');
+        const newConvoMessage = document.getElementById('new-convo-message');
+        const newConvoBtn = document.getElementById('new-convo-btn');
+        const newConvoFeedback = document.getElementById('new-convo-feedback');
+        const clientEmailsList = document.getElementById('clientEmails');
   
         let currentConversationId = null;
         let currentReceiverId = null;
@@ -200,6 +226,24 @@
               opt.value = name;
               clientNamesDatalist.appendChild(opt);
             });
+          }
+        }
+
+        async function loadClientEmails() {
+          try {
+            const clients = await fetchJSON('/api/clients');
+            if (!Array.isArray(clients)) return;
+            clientEmailsList.innerHTML = '';
+            clients.forEach(c => {
+              if (c.representant_email) {
+                const opt = document.createElement('option');
+                opt.value = c.representant_email;
+                opt.label = c.nom_client || c.representant_nom || c.representant_email;
+                clientEmailsList.appendChild(opt);
+              }
+            });
+          } catch (e) {
+            console.warn('Impossible de charger les emails clients', e);
           }
         }
         
@@ -339,8 +383,42 @@
         if (demandStatusFilter) demandStatusFilter.addEventListener('change', loadConversations);
         if (dateStartInput) dateStartInput.addEventListener('change', loadConversations);
         if (dateEndInput) dateEndInput.addEventListener('change', loadConversations);
+
+        if (newConvoBtn) {
+          newConvoBtn.addEventListener('click', async () => {
+            newConvoFeedback.textContent = '';
+            newConvoFeedback.className = 'small';
+            const email = (newConvoClient.value || '').trim();
+            const body = (newConvoMessage.value || '').trim();
+            if (!email || !body) {
+              newConvoFeedback.classList.add('text-danger');
+              newConvoFeedback.textContent = 'Sélectionnez un client et saisissez un message.';
+              return;
+            }
+            try {
+              newConvoBtn.disabled = true;
+              newConvoBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Envoi...';
+              await fetchJSON('/api/conversations/new', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message_body: body, recipient_email: email })
+              });
+              newConvoFeedback.classList.add('text-success');
+              newConvoFeedback.textContent = 'Conversation créée et message envoyé.';
+              newConvoMessage.value = '';
+              loadConversations();
+            } catch (err) {
+              newConvoFeedback.classList.add('text-danger');
+              newConvoFeedback.textContent = err.message || 'Erreur lors de l\'envoi.';
+            } finally {
+              newConvoBtn.disabled = false;
+              newConvoBtn.innerHTML = '<i class="bi bi-send me-1"></i>Envoyer';
+            }
+          });
+        }
   
         loadDemandesLabels().then(loadConversations).catch(loadConversations);
+        loadClientEmails();
     });
     </script></body>
 </html>
