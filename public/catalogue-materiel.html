@@ -46,15 +46,20 @@
           <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
               <tr>
-                <th>Titre</th>
                 <th>Référence</th>
+                <th>Désignation</th>
                 <th>Fabricant</th>
+                <th>Fournisseur</th>
+                <th>Prix achat</th>
+                <th>Remise %</th>
+                <th>Classe</th>
+                <th>Métier</th>
                 <th class="text-center">Actif</th>
                 <th class="text-center">Actions</th>
               </tr>
             </thead>
             <tbody id="catalogue-tbody">
-              <tr><td colspan="5" class="text-muted text-center py-4">Chargement...</td></tr>
+              <tr><td colspan="10" class="text-muted text-center py-4">Chargement...</td></tr>
             </tbody>
           </table>
         </div>
@@ -144,6 +149,21 @@
     </div>
   </div>
 
+  <!-- Modal documents (consultation rapide) -->
+  <div class="modal fade" id="docsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="docsModalLabel">Pièces jointes</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+          <div id="docs-list" class="list-group"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -160,6 +180,10 @@
       const catModalLabel = document.getElementById('catalogueModalLabel');
       const catFeedback = document.getElementById('cat-feedback');
       const catSaveBtn = document.getElementById('cat-save-btn');
+      const docsModalEl = document.getElementById('docsModal');
+      const docsModal = new bootstrap.Modal(docsModalEl);
+      const docsList = document.getElementById('docs-list');
+      const docsModalLabel = document.getElementById('docsModalLabel');
       
       let catalogueItems = [];
       let editingCatalogueId = null;
@@ -181,6 +205,19 @@
           docUploadBtn: document.getElementById('btn-upload-document')
       };
 
+      const formatPrice = (value) => {
+        if (value === null || value === undefined || value === '') return '—';
+        const num = Number(value);
+        if (Number.isNaN(num)) return '—';
+        return `${num.toFixed(2)} €`;
+      };
+      const formatPercent = (value) => {
+        if (value === null || value === undefined || value === '') return '—';
+        const num = Number(value);
+        if (Number.isNaN(num)) return '—';
+        return `${num.toFixed(2)} %`;
+      };
+
       const api = async (url, opts = {}) => {
           const res = await fetch(url, { headers, credentials: 'same-origin', ...opts });
           if (res.status === 401) window.location.href = '/login.html';
@@ -200,18 +237,24 @@
 
         tbody.innerHTML = '';
         if (!filtered.length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-4">Aucun article dans le catalogue.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-muted text-center py-4">Aucun article dans le catalogue.</td></tr>';
             return;
         }
 
         filtered.forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-              <td>${item.titre || ''}</td>
               <td class="fw-semibold">${item.reference || '-'}</td>
+              <td>${item.designation || item.titre || ''}</td>
               <td>${item.fabricant || '-'}</td>
+              <td>${item.fournisseur || '-'}</td>
+              <td>${formatPrice(item.prix_achat)}</td>
+              <td>${formatPercent(item.remise_fournisseur)}</td>
+              <td>${item.classe_materiel || '-'}</td>
+              <td>${item.metier || '-'}</td>
               <td class="text-center">${item.actif ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}</td>
               <td class="text-center">
+                <button class="btn btn-sm btn-outline-primary docs-btn" data-id="${item.id}" title="Pièces jointes"><i class="bi bi-paperclip"></i></button>
                 <button class="btn btn-sm btn-success create-order-btn" data-id="${item.id}" title="Créer une commande à partir de cet article"><i class="bi bi-cart-plus"></i></button>
                 <button class="btn btn-sm btn-outline-secondary edit-btn" data-id="${item.id}" title="Modifier l'article"><i class="bi bi-pencil"></i></button>
                 <button class="btn btn-sm btn-outline-danger del-btn" data-id="${item.id}" title="Supprimer l'article"><i class="bi bi-trash"></i></button>
@@ -221,12 +264,12 @@
       }
 
       async function loadCatalogue() {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-4">Chargement...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="text-muted text-center py-4">Chargement...</td></tr>';
         try {
           catalogueItems = await api('/api/catalogue');
           render();
         } catch(e) {
-          tbody.innerHTML = `<tr><td colspan="5" class="text-danger text-center py-4">Erreur de chargement: ${e.message}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="10" class="text-danger text-center py-4">Erreur de chargement: ${e.message}</td></tr>`;
         }
       }
 
@@ -319,6 +362,8 @@
                   await api('/api/materiels', { method: 'POST', body: JSON.stringify({ catalogue_id: id }) });
                   alert('Commande créée avec succès! Vous pouvez la voir dans la page "Gestion des Commandes".');
               } catch(e) { alert(`Erreur: ${e.message}`); }
+          } else if (target.classList.contains('docs-btn')) {
+              openDocsModal(id);
           }
       });
 
@@ -381,6 +426,31 @@
           }
       });
       // --- End Document Logic ---
+
+      async function openDocsModal(itemId) {
+        docsModalLabel.textContent = 'Pièces jointes';
+        docsList.innerHTML = '<div class="text-muted small">Chargement...</div>';
+        docsModal.show();
+        try {
+          const item = await api(`/api/catalogue/${itemId}/relations`);
+          const documents = item.documents || [];
+          docsModalLabel.textContent = `Pièces jointes — ${item.reference || item.titre || 'Article'}`;
+          if (!documents.length) {
+            docsList.innerHTML = '<div class="text-muted small">Aucune pièce jointe.</div>';
+            return;
+          }
+          docsList.innerHTML = '';
+          documents.forEach(doc => {
+            const row = document.createElement('div');
+            row.className = 'list-group-item d-flex justify-content-between align-items-center';
+            row.innerHTML = `<a href="/api/documents/${doc.id}/download" target="_blank" rel="noopener">${doc.nom_fichier || 'Document'}</a>
+                             <span class="text-muted small">${doc.type_mime || ''}</span>`;
+            docsList.appendChild(row);
+          });
+        } catch (e) {
+          docsList.innerHTML = `<div class="text-danger small">Erreur: ${e.message}</div>`;
+        }
+      }
 
       document.getElementById('open-create-btn').addEventListener('click', () => openModal(null));
       searchInput.addEventListener('input', render);
