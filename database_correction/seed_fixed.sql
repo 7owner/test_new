@@ -215,34 +215,177 @@ INSERT INTO intervention (ticket_id, date_debut, intervention_precedente_id, sta
 -- 12) MATERIEL + MATERIEL_IMAGE + INTERVENTION_MATERIEL
 -- ======================================================
 
--- Matériels disponibles
-INSERT INTO materiel (reference, designation, categorie, fabricant, prix_achat, commentaire, commande_status, metier)
-VALUES
-('REF001', 'Capteur Solaire 450W', 'Énergie', 'SunPower', 280.00, 'Panneau photovoltaïque dernière génération', 'Reçu', 'GTB'),
-('REF002', 'Convertisseur Triphasé', 'Électrique', 'Schneider', 540.00, 'Utilisé sur installation Lyon', 'Installé', 'Control_Acces'),
-('REF003', 'Pompe Hydraulique', 'Hydraulique', 'Grundfos', 650.00, 'Maintenance annuelle requise', 'Commande', 'GTB'),
-('REF004', 'Caméra IP 4K', 'Sécurité', 'Hikvision', 120.00, 'Caméra de surveillance haute résolution', 'A commander', 'Video'),
-('REF005', 'Détecteur de mouvement PIR', 'Sécurité', 'Bosch', 45.00, 'Détecteur infrarouge passif', 'Reçu', 'Intrusion'),
-('REF006', 'Lecteur de badges RFID', 'Contrôle d''accès', 'HID Global', 90.00, 'Lecteur pour badges d''accès', 'En livraison', 'Control_Acces'),
-('REF007', 'Centrale d''alarme connectée', 'Sécurité', 'Daitem', 350.00, 'Système d''alarme complet', 'Commande', 'Intrusion'),
-('REF008', 'Câble Cat6a STP', 'Réseau', 'Legrand', 0.80, 'Câble Ethernet blindé au mètre', 'Reçu', 'GTB');
+-- ======================================================
+-- 12) MATERIEL_CATALOGUE + MATERIEL + INTERVENTION_MATERIEL
+-- ======================================================
 
--- Lier quelques matériels aux interventions
+-- Populate materiel_catalogue
+INSERT INTO materiel_catalogue (titre, reference, designation, categorie, fabricant, prix_achat, commentaire, metier, actif)
+VALUES
+('Capteur Solaire Pro', 'REF001', 'Capteur Solaire 450W', 'Énergie', 'SunPower', 280.00, 'Panneau photovoltaïque dernière génération', 'GTB', TRUE),
+('Convertisseur Triphasé', 'REF002', 'Convertisseur Triphasé', 'Électrique', 'Schneider', 540.00, 'Utilisé sur installation Lyon', 'Control_Acces', TRUE),
+('Pompe Hydraulique Standard', 'REF003', 'Pompe Hydraulique', 'Hydraulique', 'Grundfos', 650.00, 'Maintenance annuelle requise', 'GTB', TRUE),
+('Caméra IP 4K Pro', 'REF004', 'Caméra IP 4K', 'Sécurité', 'Hikvision', 120.00, 'Caméra de surveillance haute résolution', 'Video', TRUE),
+('Détecteur PIR Basique', 'REF005', 'Détecteur de mouvement PIR', 'Sécurité', 'Bosch', 45.00, 'Détecteur infrarouge passif', 'Intrusion', TRUE),
+('Lecteur Badges RFID', 'REF006', 'Lecteur de badges RFID', 'Contrôle d''accès', 'HID Global', 90.00, 'Lecteur pour badges d''accès', 'Control_Acces', TRUE),
+('Centrale Alarme Connectée', 'REF007', 'Centrale d''alarme connectée', 'Sécurité', 'Daitem', 350.00, 'Système d''alarme complet', 'Intrusion', TRUE),
+('Câble Réseau Cat6a', 'REF008', 'Câble Cat6a STP', 'Réseau', 'Legrand', 0.80, 'Câble Ethernet blindé au mètre', 'GTB', TRUE);
+
+
+-- Populate materiel (orders/instances) by referencing materiel_catalogue
+INSERT INTO materiel (titre, reference, designation, categorie, fabricant, prix_achat, commentaire, commande_status, metier, fournisseur, remise_fournisseur, classe_materiel)
+SELECT
+    mc.titre,
+    mc.reference,
+    mc.designation,
+    mc.categorie,
+    mc.fabricant,
+    mc.prix_achat,
+    mc.commentaire,
+    'Reçu', -- specific status for this order
+    mc.metier,
+    mc.fournisseur, -- Use default supplier from catalogue
+    mc.remise_fournisseur, -- Use default discount
+    mc.classe_materiel -- Use default class
+FROM materiel_catalogue mc
+WHERE mc.reference = 'REF001'; -- Link to specific catalogue item
+
+INSERT INTO materiel (titre, reference, designation, categorie, fabricant, prix_achat, commentaire, commande_status, metier, fournisseur, remise_fournisseur, classe_materiel)
+SELECT
+    mc.titre,
+    mc.reference,
+    mc.designation,
+    mc.categorie,
+    mc.fabricant,
+    mc.prix_achat,
+    mc.commentaire,
+    'Installé',
+    mc.metier,
+    mc.fournisseur,
+    mc.remise_fournisseur,
+    mc.classe_materiel
+FROM materiel_catalogue mc
+WHERE mc.reference = 'REF002';
+
+INSERT INTO materiel (titre, reference, designation, categorie, fabricant, prix_achat, commentaire, commande_status, metier, fournisseur, remise_fournisseur, classe_materiel)
+SELECT
+    mc.titre,
+    mc.reference,
+    mc.designation,
+    mc.categorie,
+    mc.fabricant,
+    mc.prix_achat,
+    mc.commentaire,
+    'Commande',
+    mc.metier,
+    mc.fournisseur,
+    mc.remise_fournisseur,
+    mc.classe_materiel
+FROM materiel_catalogue mc
+WHERE mc.reference = 'REF003';
+
+INSERT INTO materiel (titre, reference, designation, categorie, fabricant, prix_achat, commentaire, commande_status, metier, fournisseur, remise_fournisseur, classe_materiel)
+SELECT
+    mc.titre,
+    mc.reference,
+    mc.designation,
+    mc.categorie,
+    mc.fabricant,
+    mc.prix_achat,
+    mc.commentaire,
+    'A commander',
+    mc.metier,
+    mc.fournisseur,
+    mc.remise_fournisseur,
+    mc.classe_materiel
+FROM materiel_catalogue mc
+WHERE mc.reference = 'REF004';
+
+INSERT INTO materiel (titre, reference, designation, categorie, fabricant, prix_achat, commentaire, commande_status, metier, fournisseur, remise_fournisseur, classe_materiel)
+SELECT
+    mc.titre,
+    mc.reference,
+    mc.designation,
+    mc.categorie,
+    mc.fabricant,
+    mc.prix_achat,
+    mc.commentaire,
+    'Reçu',
+    mc.metier,
+    mc.fournisseur,
+    mc.remise_fournisseur,
+    mc.classe_materiel
+FROM materiel_catalogue mc
+WHERE mc.reference = 'REF005';
+
+INSERT INTO materiel (titre, reference, designation, categorie, fabricant, prix_achat, commentaire, commande_status, metier, fournisseur, remise_fournisseur, classe_materiel)
+SELECT
+    mc.titre,
+    mc.reference,
+    mc.designation,
+    mc.categorie,
+    mc.fabricant,
+    mc.prix_achat,
+    mc.commentaire,
+    'En livraison',
+    mc.metier,
+    mc.fournisseur,
+    mc.remise_fournisseur,
+    mc.classe_materiel
+FROM materiel_catalogue mc
+WHERE mc.reference = 'REF006';
+
+INSERT INTO materiel (titre, reference, designation, categorie, fabricant, prix_achat, commentaire, commande_status, metier, fournisseur, remise_fournisseur, classe_materiel)
+SELECT
+    mc.titre,
+    mc.reference,
+    mc.designation,
+    mc.categorie,
+    mc.fabricant,
+    mc.prix_achat,
+    mc.commentaire,
+    'Commande',
+    mc.metier,
+    mc.fournisseur,
+    mc.remise_fournisseur,
+    mc.classe_materiel
+FROM materiel_catalogue mc
+WHERE mc.reference = 'REF007';
+
+INSERT INTO materiel (titre, reference, designation, categorie, fabricant, prix_achat, commentaire, commande_status, metier, fournisseur, remise_fournisseur, classe_materiel)
+SELECT
+    mc.titre,
+    mc.reference,
+    mc.designation,
+    mc.categorie,
+    mc.fabricant,
+    mc.prix_achat,
+    mc.commentaire,
+    'Reçu',
+    mc.metier,
+    mc.fournisseur,
+    mc.remise_fournisseur,
+    mc.classe_materiel
+FROM materiel_catalogue mc
+WHERE mc.reference = 'REF008';
+
+
+-- Lier quelques matériels aux interventions (ids des materiel (orders) plutôt que materiel_catalogue)
 INSERT INTO intervention_materiel (intervention_id, materiel_id, quantite, commentaire)
 VALUES
-(1, 1, 2, 'Remplacement capteurs'),
-(2, 2, 1, 'Installation neuve'),
-(3, 3, 1, 'Révision pompe'),
-(4, 1, 1, 'Contrôle tension'),
-(5, 2, 1, 'Test de puissance'),
-(6, 3, 1, 'Changement joint');
+(1, (SELECT id FROM materiel WHERE reference = 'REF001' AND commande_status = 'Reçu' LIMIT 1), 2, 'Remplacement capteurs'),
+(2, (SELECT id FROM materiel WHERE reference = 'REF002' AND commande_status = 'Installé' LIMIT 1), 1, 'Installation neuve'),
+(3, (SELECT id FROM materiel WHERE reference = 'REF003' AND commande_status = 'Commande' LIMIT 1), 1, 'Révision pompe'),
+(4, (SELECT id FROM materiel WHERE reference = 'REF001' AND commande_status = 'Reçu' LIMIT 1), 1, 'Contrôle tension'),
+(5, (SELECT id FROM materiel WHERE reference = 'REF002' AND commande_status = 'Installé' LIMIT 1), 1, 'Test de puissance'),
+(6, (SELECT id FROM materiel WHERE reference = 'REF003' AND commande_status = 'Commande' LIMIT 1), 1, 'Changement joint');
 
--- Images liées à du matériel
-INSERT INTO materiel_image (materiel_id, nom_fichier, type_mime)
-VALUES
-(1, 'capteur.jpg', 'image/jpeg'),
-(2, 'convertisseur.jpg', 'image/jpeg'),
-(3, 'pompe.jpg', 'image/jpeg');
+-- Images liées à du matériel (via documents_repertoire maintenant) - Ce bloc est obsolète, les images seront liées aux documents_repertoire
+-- INSERT INTO materiel_image (materiel_id, nom_fichier, type_mime)
+-- VALUES
+-- (1, 'capteur.jpg', 'image/jpeg'),
+-- (2, 'convertisseur.jpg', 'image/jpeg'),
+-- (3, 'pompe.jpg', 'image/jpeg');
 
 -- ======================================================
 -- 13) RENDU_INTERVENTION + RENDU_INTERVENTION_IMAGE
