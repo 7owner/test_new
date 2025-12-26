@@ -167,6 +167,7 @@
       const formFeedback = document.getElementById('form-feedback');
       const saveBtn = document.getElementById('save-btn');
       const titleEl = document.getElementById('modalTitle');
+      
       const fields = {
         id: document.getElementById('mat-id'),
         titre: document.getElementById('mat-titre'),
@@ -175,13 +176,15 @@
         categorie: document.getElementById('mat-categorie'),
         fabricant: document.getElementById('mat-fabricant'),
         fournisseur: document.getElementById('mat-fournisseur'),
-        documentation: document.getElementById('mat-documentation'),
         remise_fournisseur: document.getElementById('mat-remise_fournisseur'),
         classe_materiel: document.getElementById('mat-classe_materiel'),
         prix_achat: document.getElementById('mat-prix_achat'),
         commentaire: document.getElementById('mat-commentaire'),
         commande_status: document.getElementById('mat-commande_status'),
-        metier: document.getElementById('mat-metier')
+        metier: document.getElementById('mat-metier'),
+        docList: document.getElementById('mat-documents-list'),
+        docUploadInput: document.getElementById('mat-document-upload'),
+        docUploadBtn: document.getElementById('btn-upload-document')
       };
 
       let materiels = [];
@@ -189,7 +192,8 @@
       const baseHeaders = token ? { 'Authorization': 'Bearer ' + token } : {};
 
       const api = async (url, opts = {}) => {
-        const res = await fetch(url, { credentials: 'same-origin', headers: { 'Content-Type': 'application/json', ...baseHeaders, ...(opts.headers||{}) }, ...opts });
+        const defaultHeaders = opts.body instanceof FormData ? {} : { 'Content-Type': 'application/json' };
+        const res = await fetch(url, { credentials: 'same-origin', headers: { ...defaultHeaders, ...baseHeaders, ...(opts.headers||{}) }, ...opts });
         if (res.status === 401) { location.href = '/login.html'; return null; }
         const ct = res.headers.get('content-type') || '';
         const body = ct.includes('application/json') ? await res.json() : null;
@@ -237,6 +241,41 @@
         });
       }
 
+      async function renderDocuments(materielId) {
+        fields.docList.innerHTML = '<div class="text-muted small">Chargement des documents...</div>';
+        try {
+            const materiel = await api(`/api/materiels/${materielId}/relations`);
+            const documents = materiel.documents || [];
+            if (!documents.length) {
+                fields.docList.innerHTML = '<div class="text-muted small">Aucun document.</div>';
+                return;
+            }
+            fields.docList.innerHTML = '';
+            documents.forEach(doc => {
+                const li = document.createElement('div');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.innerHTML = `
+                    <a href="/api/documents/${doc.id}/download" target="_blank">${doc.nom_fichier}</a>
+                    <button class="btn btn-sm btn-outline-danger" data-doc-id="${doc.id}"><i class="bi bi-trash"></i></button>
+                `;
+                li.querySelector('button').addEventListener('click', () => deleteDocument(doc.id, materielId));
+                fields.docList.appendChild(li);
+            });
+        } catch (e) {
+            fields.docList.innerHTML = '<div class="text-danger small">Erreur de chargement des documents.</div>';
+        }
+      }
+
+      async function deleteDocument(docId, materielId) {
+        if (!confirm('Voulez-vous vraiment supprimer ce document ?')) return;
+        try {
+            await api(`/api/documents/${docId}`, { method: 'DELETE' });
+            await renderDocuments(materielId); // Refresh list
+        } catch(e) {
+            alert(`Erreur: ${e.message}`);
+        }
+      }
+
       function populateCategories() {
         const set = new Set();
         materiels.forEach(m => { if (m.categorie) set.add(m.categorie); });
@@ -271,15 +310,68 @@
         fields.categorie.value = mat?.categorie || '';
         fields.fabricant.value = mat?.fabricant || '';
         fields.fournisseur.value = mat?.fournisseur || '';
-        fields.documentation.value = mat?.documentation || '';
         fields.remise_fournisseur.value = mat?.remise_fournisseur || '';
         fields.classe_materiel.value = mat?.classe_materiel || '';
         fields.prix_achat.value = mat?.prix_achat || '';
         fields.commentaire.value = mat?.commentaire || '';
         fields.commande_status.value = mat?.commande_status || 'A commander';
         fields.metier.value = mat?.metier || '';
+        
         titleEl.textContent = mat ? `Modifier : ${mat.titre || mat.designation}` : 'Nouveau matériel';
+
+        if (mat?.id) {
+            renderDocuments(mat.id);
+            fields.docUploadBtn.disabled = false;
+        } else {
+            fields.docList.innerHTML = '<div class="text-muted small">Veuillez d\'abord enregistrer le matériel pour ajouter des documents.</div>';
+            fields.docUploadBtn.disabled = true;
+        }
+
         if (modal) modal.show();
+      }
+
+      function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = error => reject(error);
+        });
+      }
+
+      async function uploadDocument() {
+        const materielId = fields.id.value;
+        if (!materielId) {
+            alert('Veuillez enregistrer le matériel avant de téléverser un document.');
+            return;
+        }
+        const file = fields.docUploadInput.files[0];
+        if (!file) {
+            alert('Veuillez sélectionner un fichier.');
+            return;
+        }
+
+        fields.docUploadBtn.disabled = true;
+        fields.docUploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        try {
+            const base64 = await fileToBase64(file);
+            const payload = {
+                cible_type: 'Materiel',
+                cible_id: materielId,
+                nom_fichier: file.name,
+                type_mime: file.type,
+                base64: base64
+            };
+            await api('/api/documents', { method: 'POST', body: JSON.stringify(payload) });
+            await renderDocuments(materielId); // Refresh list
+            fields.docUploadInput.value = ''; // Clear input
+        } catch (e) {
+            alert(`Erreur de téléversement: ${e.message}`);
+        } finally {
+            fields.docUploadBtn.disabled = false;
+            fields.docUploadBtn.innerHTML = 'Téléverser';
+        }
       }
 
       async function saveMateriel() {
@@ -291,7 +383,6 @@
           categorie: fields.categorie.value.trim(),
           fabricant: fields.fabricant.value.trim(),
           fournisseur: fields.fournisseur.value.trim(),
-          documentation: fields.documentation.value.trim(),
           remise_fournisseur: fields.remise_fournisseur.value ? Number(fields.remise_fournisseur.value) : null,
           classe_materiel: fields.classe_materiel.value.trim(),
           prix_achat: fields.prix_achat.value ? Number(fields.prix_achat.value) : null,
@@ -312,7 +403,7 @@
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sauvegarde...';
         try {
-          await api(url, { method, body: JSON.stringify(payload) });
+          const savedMateriel = await api(url, { method, body: JSON.stringify(payload) });
           if (modal) modal.hide();
           await loadMateriels();
         } catch (e) {
@@ -344,6 +435,7 @@
       });
 
       document.getElementById('btn-add').addEventListener('click', () => openModal(null));
+      fields.docUploadBtn.addEventListener('click', uploadDocument);
       saveBtn.addEventListener('click', saveMateriel);
       searchEl.addEventListener('input', render);
       filterCat.addEventListener('change', render);
