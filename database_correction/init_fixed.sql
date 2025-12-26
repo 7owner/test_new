@@ -65,7 +65,7 @@ CREATE TYPE sujet_type          AS ENUM ('ticket','intervention');
 CREATE TYPE statut_rdv          AS ENUM ('Planifie','Confirme','Termine','Annule');
 CREATE TYPE doc_cible_type      AS ENUM (
     'Affaire','Agent','Agence','Adresse','Client','Site','RendezVous','DOE','Ticket','Intervention',
-    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention', 'DemandeClient', 'Contrat'
+    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention', 'DemandeClient', 'Contrat', 'Materiel'
 );
 CREATE TYPE doc_nature          AS ENUM ('Document','Video','Audio','Autre');
 CREATE TYPE statut_achat        AS ENUM ('Brouillon','Valide','Commande','Recu_partiel','Recu','Annule');
@@ -283,7 +283,6 @@ CREATE TABLE IF NOT EXISTS materiel (
     categorie TEXT,
     fabricant TEXT,
     fournisseur TEXT,
-    documentation TEXT,
     remise_fournisseur NUMERIC(5, 2),
     classe_materiel TEXT,
     prix_achat NUMERIC(12,2),

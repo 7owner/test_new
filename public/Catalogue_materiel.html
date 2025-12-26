@@ -125,10 +125,16 @@
                 </select>
               </div>
 
-              <!-- Row 5 -->
-              <div class="col-md-12">
-                <label class="form-label">Documentation</label>
-                <input type="text" id="mat-documentation" class="form-control" placeholder="Lien web ou référence document...">
+              <!-- Row 5: Document Upload -->
+              <div class="col-12">
+                <hr>
+                <h5>Pièces Jointes</h5>
+                <div id="mat-documents-list" class="list-group mb-3"></div>
+                <div class="input-group">
+                    <input type="file" class="form-control" id="mat-document-upload">
+                    <button class="btn btn-outline-secondary" type="button" id="btn-upload-document">Téléverser</button>
+                </div>
+                <small class="form-text text-muted">Ajouter un document (PDF, image, etc.)</small>
               </div>
               
               <!-- Row 6 -->
