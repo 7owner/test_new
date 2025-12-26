@@ -1483,17 +1483,19 @@ app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) =
   }
 });
 
-// Update materiel (admin)
+// Update materiel (order) (admin)
 app.put('/api/materiels/:id', authenticateToken, authorizeAdmin, async (req, res) => {
-  const { titre, reference, designation, categorie, fabricant, prix_achat, commentaire, fournisseur, remise_fournisseur, classe_materiel, metier, commande_status } = req.body;
+  const { id } = req.params;
+  // Only allow updating order-specific fields
+  const { fournisseur, prix_achat, remise_fournisseur, commentaire, commande_status } = req.body;
   try {
     const r = await pool.query(
-      'UPDATE materiel SET titre=$1, reference=$2, designation=$3, categorie=$4, fabricant=$5, prix_achat=$6, commentaire=$7, fournisseur=$8, remise_fournisseur=$9, classe_materiel=$10, metier=$11, commande_status=$12 WHERE id=$13 RETURNING *',
-      [titre || null, reference || null, designation || null, categorie || null, fabricant || null, prix_achat || null, commentaire || null, fournisseur || null, remise_fournisseur || null, classe_materiel || null, metier || null, commande_status || null, req.params.id]
+      'UPDATE materiel SET fournisseur=$1, prix_achat=$2, remise_fournisseur=$3, commentaire=$4, commande_status=$5 WHERE id=$6 RETURNING *',
+      [fournisseur, prix_achat, remise_fournisseur, commentaire, commande_status, id]
     );
     if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(r.rows[0]);
-  } catch (e) { console.error('Error updating materiel:', e); res.status(500).json({ error: 'Internal Server Error' }); }
+  } catch (e) { console.error('Error updating materiel order:', e); res.status(500).json({ error: 'Internal Server Error' }); }
 });
 
 // Delete materiel (admin)
