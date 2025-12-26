@@ -52,14 +52,16 @@
               <tr>
                 <th>Référence</th>
                 <th>Désignation</th>
+                <th>Fabricant</th>
                 <th>Fournisseur</th>
-                <th>Prix</th>
+                <th>Prix achat</th>
+                <th>Remise %</th>
                 <th>Statut Commande</th>
                 <th class="text-center">Actions</th>
               </tr>
             </thead>
             <tbody id="orders-tbody">
-              <tr><td colspan="6" class="text-muted text-center py-4">Chargement...</td></tr>
+              <tr><td colspan="8" class="text-muted text-center py-4">Chargement...</td></tr>
             </tbody>
           </table>
         </div>
@@ -115,6 +117,21 @@
     </div>
   </div>
 
+  <!-- Modal consultation documents -->
+  <div class="modal fade" id="docsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="docsModalLabel">Pièces jointes</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+          <div id="docs-list" class="list-group"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -131,6 +148,10 @@
       const orderModalLabel = document.getElementById('orderModalLabel');
       const feedback = document.getElementById('ord-feedback');
       const saveBtn = document.getElementById('ord-save-btn');
+      const docsModalEl = document.getElementById('docsModal');
+      const docsModal = new bootstrap.Modal(docsModalEl);
+      const docsList = document.getElementById('docs-list');
+      const docsModalLabel = document.getElementById('docsModalLabel');
       
       let orders = [];
       let editingOrderId = null;
@@ -145,6 +166,29 @@
           docUploadInput: document.getElementById('ord-document-upload'),
           docUploadBtn: document.getElementById('btn-upload-document'),
       };
+
+      const statusClass = (status) => {
+        switch (status) {
+          case 'A commander': return 'bg-secondary';
+          case 'Commande': return 'bg-primary';
+          case 'En livraison': return 'bg-warning text-dark';
+          case 'Reçu': return 'bg-success';
+          case 'Installé': return 'bg-info text-dark';
+          default: return 'bg-light text-dark';
+        }
+      };
+      const formatPrice = (value) => {
+        if (value === null || value === undefined || value === '') return '—';
+        const num = Number(value);
+        if (Number.isNaN(num)) return '—';
+        return `${num.toFixed(2)} €`;
+      };
+      const formatPercent = (value) => {
+        if (value === null || value === undefined || value === '') return '—';
+        const num = Number(value);
+        if (Number.isNaN(num)) return '—';
+        return `${num.toFixed(2)} %`;
+      };
       
       const api = async (url, opts = {}) => {
           const res = await fetch(url, { headers, credentials: 'same-origin', ...opts });
@@ -158,14 +202,14 @@
         const term = searchInput.value.toLowerCase();
         const status = statusFilter.value;
         const filtered = orders.filter(item => {
-            const matchesTerm = !term || [item.titre, item.reference, item.fournisseur, item.designation].some(f => f?.toLowerCase().includes(term));
+            const matchesTerm = !term || [item.titre, item.reference, item.fournisseur, item.designation, item.fabricant].some(f => f?.toLowerCase().includes(term));
             const matchesStatus = !status || item.commande_status === status;
             return matchesTerm && matchesStatus;
         });
 
         tbody.innerHTML = '';
         if (!filtered.length) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center py-4">Aucune commande.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-4">Aucune commande.</td></tr>';
             return;
         }
 
@@ -174,10 +218,13 @@
             tr.innerHTML = `
               <td class="fw-semibold">${item.reference || '-'}</td>
               <td>${item.designation || '-'}</td>
+              <td>${item.fabricant || '-'}</td>
               <td>${item.fournisseur || '-'}</td>
-              <td>${item.prix_achat ? Number(item.prix_achat).toFixed(2) + ' €' : '-'}</td>
-              <td><span class="badge bg-primary">${item.commande_status.replace('_', ' ')}</span></td>
+              <td>${formatPrice(item.prix_achat)}</td>
+              <td>${formatPercent(item.remise_fournisseur)}</td>
+              <td><span class="badge ${statusClass(item.commande_status)}">${(item.commande_status || '').replace('_', ' ')}</span></td>
               <td class="text-center">
+                <button class="btn btn-sm btn-outline-primary docs-btn" data-id="${item.id}" title="Pièces jointes"><i class="bi bi-paperclip"></i></button>
                 <button class="btn btn-sm btn-outline-secondary edit-btn" data-id="${item.id}" title="Détails"><i class="bi bi-pencil"></i></button>
                 <button class="btn btn-sm btn-outline-danger del-btn" data-id="${item.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
               </td>`;
@@ -186,12 +233,12 @@
       }
 
       async function loadOrders() {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center py-4">Chargement...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-4">Chargement...</td></tr>';
         try {
           orders = await api('/api/materiels');
           render();
         } catch(e) {
-          tbody.innerHTML = `<tr><td colspan="6" class="text-danger text-center py-4">Erreur: ${e.message}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="8" class="text-danger text-center py-4">Erreur: ${e.message}</td></tr>`;
         }
       }
 
@@ -249,6 +296,8 @@
           } else if (target.classList.contains('del-btn')) {
               if (!confirm('Supprimer cette commande?')) return;
               api(`/api/materiels/${id}`, { method: 'DELETE' }).then(loadOrders).catch(e => alert(e.message));
+          } else if (target.classList.contains('docs-btn')) {
+              openDocsModal(id);
           }
       });
 
@@ -305,6 +354,29 @@
           }
       });
       // --- End Document Logic ---
+
+      async function openDocsModal(orderId) {
+        docsModalLabel.textContent = 'Pièces jointes';
+        docsList.innerHTML = '<div class="text-muted small">Chargement...</div>';
+        docsModal.show();
+        try {
+          const documents = await api(`/api/documents?cible_type=Materiel&cible_id=${orderId}`);
+          if (!documents.length) {
+            docsList.innerHTML = '<div class="text-muted small">Aucune pièce jointe.</div>';
+            return;
+          }
+          docsList.innerHTML = '';
+          documents.forEach(doc => {
+            const row = document.createElement('div');
+            row.className = 'list-group-item d-flex justify-content-between align-items-center';
+            row.innerHTML = `<a href="/api/documents/${doc.id}/download" target="_blank" rel="noopener">${doc.nom_fichier || 'Document'}</a>
+                             <span class="text-muted small">${doc.type_mime || ''}</span>`;
+            docsList.appendChild(row);
+          });
+        } catch (e) {
+          docsList.innerHTML = `<div class="text-danger small">Erreur: ${e.message}</div>`;
+        }
+      }
 
       searchInput.addEventListener('input', render);
       statusFilter.addEventListener('change', render);
