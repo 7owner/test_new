@@ -426,45 +426,6 @@ CREATE TABLE IF NOT EXISTS achat (
     statut statut_achat DEFAULT 'Brouillon'
 );
 
-CREATE TABLE IF NOT EXISTS association (
-    id SERIAL PRIMARY KEY,
-    titre VARCHAR(255) NOT NULL,
-    email_comptabilite VARCHAR(255),
-    adresse_id INTEGER REFERENCES adresse(id) ON DELETE SET NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS association_responsable (
-    id SERIAL PRIMARY KEY,
-    association_id INTEGER NOT NULL REFERENCES association(id) ON DELETE CASCADE,
-    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
-    UNIQUE (association_id, agent_matricule)
-);
-
-CREATE TABLE IF NOT EXISTS association_agent (
-    id SERIAL PRIMARY KEY,
-    association_id INTEGER NOT NULL REFERENCES association(id) ON DELETE CASCADE,
-    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
-    UNIQUE (association_id, agent_matricule)
-);
-
-CREATE TABLE IF NOT EXISTS association_site (
-    id SERIAL PRIMARY KEY,
-    association_id INTEGER NOT NULL REFERENCES association(id) ON DELETE CASCADE,
-    site_id INTEGER NOT NULL REFERENCES site(id) ON DELETE CASCADE,
-    UNIQUE (association_id, site_id)
-);
-
-CREATE TABLE IF NOT EXISTS devis (
-    id SERIAL PRIMARY KEY,
-    titre VARCHAR(255) NOT NULL,
-    description TEXT,
-    montant NUMERIC(12, 2),
-    status devis_status DEFAULT 'Brouillon',
-    association_id INTEGER REFERENCES association(id) ON DELETE SET NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE IF NOT EXISTS facture (
     id SERIAL PRIMARY KEY,
     client_id BIGINT REFERENCES client(id) ON DELETE SET NULL,

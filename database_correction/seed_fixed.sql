@@ -52,9 +52,9 @@ VALUES
 
 INSERT INTO site (client_id, nom_site, adresse_id, statut)
 VALUES
-(1, 'Site Solaire Paris 15', 1, 'en attente'),
-(2, 'Site Hydro Lyon',       2, 'prise en charge'),
-(3, 'Site Client Demo',      1, 'en attente');
+(1, 'Site Solaire Paris 15', 1, 'Actif'),
+(2, 'Site Hydro Lyon',       2, 'Actif'),
+(3, 'Site Client Demo',      1, 'Actif');
 
 -- Demandes d'intervention (client demo)
 INSERT INTO demande_client (client_id, site_id, description, status)
