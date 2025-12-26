@@ -137,6 +137,7 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Client destinataire</label>
+            <input type="text" id="modal-client-filter" class="form-control mb-2" placeholder="Filtrer les clients...">
             <select id="modal-client-select" class="form-select">
               <option value="">Sélectionner un client...</option>
             </select>
@@ -144,6 +145,10 @@
           <div class="mb-3">
             <label class="form-label">Message</label>
             <textarea id="modal-client-message" class="form-control" rows="3" placeholder="Votre message..."></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Pièces jointes</label>
+            <input type="file" id="modal-client-attachments" class="form-control" multiple>
           </div>
           <div id="modal-client-feedback" class="small"></div>
         </div>
@@ -195,7 +200,9 @@
         const newConvoFeedback = document.getElementById('new-convo-feedback');
         const clientEmailsList = document.getElementById('clientEmails');
         const modalClientSelect = document.getElementById('modal-client-select');
+        const modalClientFilter = document.getElementById('modal-client-filter');
         const modalClientMessage = document.getElementById('modal-client-message');
+        const modalClientAttachments = document.getElementById('modal-client-attachments');
         const modalClientFeedback = document.getElementById('modal-client-feedback');
         const modalSendBtn = document.getElementById('modal-send-btn');
 
@@ -268,29 +275,40 @@
           }
         }
 
+        const renderClientOptions = (filterTerm = '') => {
+          if (!modalClientSelect) return;
+          modalClientSelect.innerHTML = '<option value="">Sélectionner un client...</option>';
+          const term = filterTerm.toLowerCase();
+          clientsCache
+            .filter(c => {
+              const label = `${c.nom_client || ''} ${c.representant_nom || ''} ${c.representant_email || ''}`.toLowerCase();
+              return !term || label.includes(term);
+            })
+            .forEach(c => {
+              if (c.representant_email) {
+                const opt2 = document.createElement('option');
+                opt2.value = c.representant_email;
+                opt2.textContent = `${c.nom_client || c.representant_nom || c.representant_email} (${c.representant_email})`;
+                modalClientSelect.appendChild(opt2);
+              }
+            });
+        };
+
         async function loadClientEmails() {
           try {
             const clients = await fetchJSON('/api/clients');
             if (!Array.isArray(clients)) return;
             clientsCache = clients;
             clientEmailsList.innerHTML = '';
-            if (modalClientSelect) {
-              modalClientSelect.innerHTML = '<option value=\"\">Sélectionner un client...</option>';
-            }
             clients.forEach(c => {
               if (c.representant_email) {
                 const opt = document.createElement('option');
                 opt.value = c.representant_email;
                 opt.label = c.nom_client || c.representant_nom || c.representant_email;
                 clientEmailsList.appendChild(opt);
-                if (modalClientSelect) {
-                  const opt2 = document.createElement('option');
-                  opt2.value = c.representant_email;
-                  opt2.textContent = `${c.nom_client || c.representant_nom || c.representant_email} (${c.representant_email})`;
-                  modalClientSelect.appendChild(opt2);
-                }
               }
             });
+            renderClientOptions(modalClientFilter?.value || '');
           } catch (e) {
             console.warn('Impossible de charger les emails clients', e);
           }
@@ -432,6 +450,9 @@
         if (demandStatusFilter) demandStatusFilter.addEventListener('change', loadConversations);
         if (dateStartInput) dateStartInput.addEventListener('change', loadConversations);
         if (dateEndInput) dateEndInput.addEventListener('change', loadConversations);
+        if (modalClientFilter) {
+          modalClientFilter.addEventListener('input', () => renderClientOptions(modalClientFilter.value || ''));
+        }
 
         if (newConvoBtn) {
           newConvoBtn.addEventListener('click', async () => {
@@ -473,6 +494,7 @@
             modalClientFeedback.className = 'small';
             const email = modalClientSelect?.value || '';
             const body = (modalClientMessage?.value || '').trim();
+            const files = modalClientAttachments?.files || [];
             if (!email || !body) {
               modalClientFeedback.classList.add('text-danger');
               modalClientFeedback.textContent = 'Choisissez un client et saisissez un message.';
@@ -481,14 +503,23 @@
             try {
               modalSendBtn.disabled = true;
               modalSendBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Envoi...';
-              await fetchJSON('/api/conversations/new', {
+              const fd = new FormData();
+              fd.append('message_body', body);
+              fd.append('recipient_email', email);
+              Array.from(files).forEach(f => fd.append('attachments[]', f));
+              const res = await fetch('/api/conversations/new', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message_body: body, recipient_email: email })
+                headers: { 'Authorization': 'Bearer ' + token },
+                body: fd
               });
+              if (!res.ok) {
+                const errTxt = await res.text().catch(()=> 'Erreur');
+                throw new Error(errTxt || `HTTP ${res.status}`);
+              }
               modalClientFeedback.classList.add('text-success');
               modalClientFeedback.textContent = 'Message envoyé.';
               if (modalClientMessage) modalClientMessage.value = '';
+              if (modalClientAttachments) modalClientAttachments.value = '';
               const modalEl = document.getElementById('newMessageModal');
               if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
               loadConversations();
