@@ -89,7 +89,7 @@ async function seed() {
       ['titre', 'designation', 'telephone', 'email'],
       ['Agence Marseille', 'Agence Sud', '0491000000', 'marseille@exemple.fr']
     );
-    const agent1User = await getOrCreate(
+  const agent1User = await getOrCreate(
       client,
       'users',
       { email: 'agent1@example.com' },
@@ -108,14 +108,16 @@ async function seed() {
       'agent',
       { matricule: 'AGT001' },
       ['matricule', 'nom', 'prenom', 'email', 'tel', 'admin', 'actif', 'agence_id', 'user_id'],
-      ['AGT001', 'Dupont', 'Jean', 'agent1@example.com', '0600000001', true, true, agenceId, agent1User]
+      ['AGT001', 'Dupont', 'Jean', 'agent1@example.com', '0600000001', true, true, agenceId, agent1User],
+      'matricule'
     );
     const agt2 = await getOrCreate(
       client,
       'agent',
       { matricule: 'AGT002' },
       ['matricule', 'nom', 'prenom', 'email', 'tel', 'admin', 'actif', 'agence_id', 'user_id'],
-      ['AGT002', 'Martin', 'Sophie', 'agent2@example.com', '0600000002', false, true, agenceId, agent2User]
+      ['AGT002', 'Martin', 'Sophie', 'agent2@example.com', '0600000002', false, true, agenceId, agent2User],
+      'matricule'
     );
     log(`Agents ok (${agt1}, ${agt2})`);
 
