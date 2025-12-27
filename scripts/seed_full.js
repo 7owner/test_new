@@ -18,6 +18,14 @@ async function tableExists(client, table) {
   return !!rows[0].reg;
 }
 
+async function columnExists(client, table, column) {
+  const { rows } = await client.query(
+    `SELECT 1 FROM information_schema.columns WHERE table_name=$1 AND column_name=$2 LIMIT 1;`,
+    [table, column]
+  );
+  return rows.length > 0;
+}
+
 async function getOrCreate(client, table, selectIdentifier, insertCols, insertVals, returningCol = 'id') {
   const selectQuery = `SELECT ${returningCol} FROM ${table} WHERE ${Object.keys(selectIdentifier)
     .map((key, i) => `${key} = $${i + 1}`)
@@ -45,6 +53,13 @@ async function seed() {
     const hasTicketSatisfaction = await tableExists(client, 'ticket_satisfaction');
     const hasMaterielCatalogue = await tableExists(client, 'materiel_catalogue');
     const hasMateriel = await tableExists(client, 'materiel');
+    const hasTicketAgentId = await columnExists(client, 'intervention', 'ticket_agent_id');
+    const statusCol =
+      (await columnExists(client, 'intervention', 'status')) ? 'status' :
+      (await columnExists(client, 'intervention', 'statut')) ? 'statut' :
+      (await columnExists(client, 'intervention', 'statut_intervention')) ? 'statut_intervention' :
+      (await columnExists(client, 'intervention', 'etat')) ? 'etat' :
+      null;
 
     // --- utilisateurs / rôles ---
     const pwd = await bcrypt.hash('password', 10);
@@ -246,13 +261,19 @@ async function seed() {
           )
         ).rows[0]?.id
       : null;
-    await getOrCreate(
-      client,
-      'intervention',
-      { ticket_id: ticket1, titre: 'Diagnostic' },
-      ['ticket_id', 'site_id', 'titre', 'description', 'date_debut', 'status', 'ticket_agent_id'],
-      [ticket1, site1, 'Diagnostic', 'Relevé des automates GTB.', '2025-01-16', 'En_attente', ticketAgentId]
-    );
+    {
+      const cols = ['ticket_id', 'site_id', 'titre', 'description', 'date_debut'];
+      const vals = [ticket1, site1, 'Diagnostic', 'Relevé des automates GTB.', '2025-01-16'];
+      if (statusCol) { cols.push(statusCol); vals.push('En_attente'); }
+      if (hasTicketAgentId) { cols.push('ticket_agent_id'); vals.push(ticketAgentId); }
+      await getOrCreate(
+        client,
+        'intervention',
+        { ticket_id: ticket1, titre: 'Diagnostic' },
+        cols,
+        vals
+      );
+    }
 
     // Ticket 2 (clos)
     const dem2 = await getOrCreate(
@@ -287,13 +308,18 @@ async function seed() {
         [ticket2, 'AGT002']
       );
     }
-    await getOrCreate(
-      client,
-      'intervention',
-      { ticket_id: ticket2, titre: 'Remplacement caméra' },
-      ['ticket_id', 'site_id', 'titre', 'description', 'date_debut', 'date_fin', 'status'],
-      [ticket2, site2, 'Remplacement caméra', 'Caméra remplacée.', '2025-02-11', '2025-02-11', 'Termine']
-    );
+    {
+      const cols = ['ticket_id', 'site_id', 'titre', 'description', 'date_debut', 'date_fin'];
+      const vals = [ticket2, site2, 'Remplacement caméra', 'Caméra remplacée.', '2025-02-11', '2025-02-11'];
+      if (statusCol) { cols.push(statusCol); vals.push('Termine'); }
+      await getOrCreate(
+        client,
+        'intervention',
+        { ticket_id: ticket2, titre: 'Remplacement caméra' },
+        cols,
+        vals
+      );
+    }
 
     if (hasTicketSatisfaction) {
       await getOrCreate(
