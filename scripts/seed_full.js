@@ -56,6 +56,7 @@ async function seed() {
     const hasMessagerie = await tableExists(client, 'messagerie');
     const hasMessagerieAttachment = await tableExists(client, 'messagerie_attachment');
     const hasClientRepresentant = await tableExists(client, 'client_representant');
+    const hasClientTable = await tableExists(client, 'client'); // alias pour cohérence
     const hasSiteAgent = await tableExists(client, 'site_agent');
     const hasSiteResponsable = await tableExists(client, 'site_responsable');
     const hasInterventionMateriel = await tableExists(client, 'intervention_materiel');
@@ -72,6 +73,7 @@ async function seed() {
     const hasAffaire = await tableExists(client, 'affaire');
     const hasDoe = await tableExists(client, 'doe');
     const hasSiteAffaire = await tableExists(client, 'site_affaire');
+    const hasDemandeTable = await tableExists(client, 'demande_client');
     const hasTicketAgentId = await columnExists(client, 'intervention', 'ticket_agent_id');
     const statusCol =
       (await columnExists(client, 'intervention', 'status')) ? 'status' :
@@ -351,19 +353,27 @@ async function seed() {
     }
 
     // --- demandes / tickets / interventions ---
-    const dem1 = await getOrCreate(
-      client,
-      'demande_client',
-      { titre: 'GTB en panne' },
-      ['client_id', 'site_id', 'titre', 'description', 'status'],
-      [cli1, site1, 'GTB en panne', 'Le chauffage ne répond plus.', 'En cours de traitement']
-    );
+    let dem1 = null;
+    let dem2 = null;
+    let dem3 = null;
+    let dem4 = null;
+    let dem5 = null;
+
+    if (hasDemandeTable) {
+      dem1 = await getOrCreate(
+        client,
+        'demande_client',
+        { titre: 'GTB en panne' },
+        ['client_id', 'site_id', 'titre', 'description', 'status'],
+        [cli1, site1, 'GTB en panne', 'Le chauffage ne répond plus.', 'En cours de traitement']
+      );
+    }
     const ticket1 = await getOrCreate(
       client,
       'ticket',
-      { demande_id: dem1 },
-      ['titre', 'description', 'site_id', 'demande_id', 'etat', 'responsable', 'date_debut', ...(hasDoe ? ['doe_id'] : []), ...(hasAffaire ? ['affaire_id'] : [])],
-      ['Demande: GTB en panne', 'Ticket ouvert depuis la demande GTB.', site1, dem1, 'En_cours', 'AGT001', '2025-01-15', ...(hasDoe ? [doe1] : []), ...(hasAffaire ? [affaire1] : [])]
+      { demande_id: dem1 || null, titre: 'Demande: GTB en panne' },
+      ['titre', 'description', 'site_id', ...(hasDemandeTable ? ['demande_id'] : []), 'etat', 'responsable', 'date_debut', ...(hasDoe ? ['doe_id'] : []), ...(hasAffaire ? ['affaire_id'] : [])],
+      ['Demande: GTB en panne', 'Ticket ouvert depuis la demande GTB.', site1, ...(hasDemandeTable ? [dem1] : []), 'En_cours', 'AGT001', '2025-01-15', ...(hasDoe ? [doe1] : []), ...(hasAffaire ? [affaire1] : [])]
     );
     if (hasTicketAgent) {
       await getOrCreate(
@@ -423,19 +433,21 @@ async function seed() {
     }
 
     // Ticket 2 (clos)
-    const dem2 = await getOrCreate(
-      client,
-      'demande_client',
-      { titre: 'Caméra HS Hangar' },
-      ['client_id', 'site_id', 'titre', 'description', 'status'],
-      [cli1, site2, 'Caméra HS Hangar', 'Caméra ne transmet plus.', 'Traitee']
-    );
+    if (hasDemandeTable) {
+      dem2 = await getOrCreate(
+        client,
+        'demande_client',
+        { titre: 'Caméra HS Hangar' },
+        ['client_id', 'site_id', 'titre', 'description', 'status'],
+        [cli1, site2, 'Caméra HS Hangar', 'Caméra ne transmet plus.', 'Traitee']
+      );
+    }
     const ticket2 = await getOrCreate(
       client,
       'ticket',
-      { demande_id: dem2 },
+      { demande_id: dem2 || null, titre: 'Demande: Caméra HS' },
       ['titre', 'description', 'site_id', 'demande_id', 'etat', 'responsable', 'date_debut', 'date_fin', ...(hasDoe ? ['doe_id'] : []), ...(hasAffaire ? ['affaire_id'] : [])],
-      ['Demande: Caméra HS', 'Ticket clos', site2, dem2, 'Termine', 'AGT002', '2025-02-10', '2025-02-12', ...(hasDoe ? [doe2] : []), ...(hasAffaire ? [affaire2] : [])]
+      ['Demande: Caméra HS', 'Ticket clos', site2, dem2 || null, 'Termine', 'AGT002', '2025-02-10', '2025-02-12', ...(hasDoe ? [doe2] : []), ...(hasAffaire ? [affaire2] : [])]
     );
     if (hasTicketAgent) {
       await getOrCreate(
@@ -469,19 +481,21 @@ async function seed() {
     }
 
     // Ticket 3 (site 3, ouvert)
-    const dem3 = await getOrCreate(
-      client,
-      'demande_client',
-      { titre: 'Accès badge Hall A' },
-      ['client_id', 'site_id', 'titre', 'description', 'status'],
-      [cli2, site3, 'Accès badge Hall A', 'Badge ne fonctionne pas.', 'En cours de traitement']
-    );
+    if (hasDemandeTable) {
+      dem3 = await getOrCreate(
+        client,
+        'demande_client',
+        { titre: 'Accès badge Hall A' },
+        ['client_id', 'site_id', 'titre', 'description', 'status'],
+        [cli2, site3, 'Accès badge Hall A', 'Badge ne fonctionne pas.', 'En cours de traitement']
+      );
+    }
     const ticket3 = await getOrCreate(
       client,
       'ticket',
       { titre: 'Badge Hall A' },
-      ['titre', 'description', 'site_id', 'demande_id', 'etat', 'responsable', 'date_debut'],
-      ['Badge Hall A', 'Création d\'un nouvel accès.', site3, dem3, 'En_cours', 'AGT003', '2025-03-05']
+      ['titre', 'description', 'site_id', ...(hasDemandeTable ? ['demande_id'] : []), 'etat', 'responsable', 'date_debut'],
+      ['Badge Hall A', 'Création d\'un nouvel accès.', site3, ...(hasDemandeTable ? [dem3] : []), 'En_cours', 'AGT003', '2025-03-05']
     );
     if (hasTicketAgent) {
       await getOrCreate(client, 'ticket_agent', { ticket_id: ticket3, agent_matricule: 'AGT003' }, ['ticket_id', 'agent_matricule'], [ticket3, 'AGT003']);
@@ -517,22 +531,36 @@ async function seed() {
         return getOrCreate(client, 'messagerie', selectKey, cols, vals);
       }
 
-      // Conversation liée à la demande 1 / ticket 1
-      const convoDem1 = `demande-${dem1}`;
       const baseCols = ['conversation_id', 'sender_id', 'receiver_id', 'body'];
-      const colSet1 = [...baseCols];
-      const valSet1 = [convoDem1, adminId, clientUserId, 'Bonjour, nous avons bien reçu votre demande GTB.'];
-      if (hasTicketFk) { colSet1.push('ticket_id'); valSet1.push(ticket1); }
-      if (hasDemandeFk) { colSet1.push('demande_id'); valSet1.push(dem1); }
-      if (hasClientFk) { colSet1.push('client_id'); valSet1.push(cli1); }
-      await insertMessage({ conversation_id: convoDem1, body: valSet1[3] }, colSet1, valSet1);
 
-      const colSet2 = [...baseCols];
-      const valSet2 = [convoDem1, clientUserId, adminId, 'Merci, pouvez-vous intervenir cette semaine ?'];
-      if (hasTicketFk) { colSet2.push('ticket_id'); valSet2.push(ticket1); }
-      if (hasDemandeFk) { colSet2.push('demande_id'); valSet2.push(dem1); }
-      if (hasClientFk) { colSet2.push('client_id'); valSet2.push(cli1); }
-      await insertMessage({ conversation_id: convoDem1, body: valSet2[3] }, colSet2, valSet2);
+      // Demande 1
+      if (dem1 && hasDemandeTable) {
+        const convoDem1 = `demande-${dem1}`;
+        const colSet1 = [...baseCols];
+        const valSet1 = [convoDem1, adminId, clientUserId, 'Bonjour, nous avons bien reçu votre demande GTB.'];
+        if (hasTicketFk) { colSet1.push('ticket_id'); valSet1.push(ticket1); }
+        if (hasDemandeFk) { colSet1.push('demande_id'); valSet1.push(dem1); }
+        if (hasClientFk) { colSet1.push('client_id'); valSet1.push(cli1); }
+        await insertMessage({ conversation_id: convoDem1, body: valSet1[3] }, colSet1, valSet1);
+
+        const colSet2 = [...baseCols];
+        const valSet2 = [convoDem1, clientUserId, adminId, 'Merci, pouvez-vous intervenir cette semaine ?'];
+        if (hasTicketFk) { colSet2.push('ticket_id'); valSet2.push(ticket1); }
+        if (hasDemandeFk) { colSet2.push('demande_id'); valSet2.push(dem1); }
+        if (hasClientFk) { colSet2.push('client_id'); valSet2.push(cli1); }
+        await insertMessage({ conversation_id: convoDem1, body: valSet2[3] }, colSet2, valSet2);
+      }
+
+      // Demande 3 (ouverte, badge)
+      if (dem3 && hasDemandeTable) {
+        const convoDem3 = `demande-${dem3}`;
+        const colSet = [...baseCols];
+        const valSet = [convoDem3, adminId, clientUserId, 'Nous allons planifier un créneau pour votre badge.'];
+        if (hasTicketFk) { colSet.push('ticket_id'); valSet.push(ticket3); }
+        if (hasDemandeFk) { colSet.push('demande_id'); valSet.push(dem3); }
+        if (hasClientFk) { colSet.push('client_id'); valSet.push(cli2); }
+        await insertMessage({ conversation_id: convoDem3, body: valSet[3] }, colSet, valSet);
+      }
 
       // Conversation liée au ticket 2 (caméra)
       const convoTicket2 = `ticket-${ticket2}`;
@@ -549,6 +577,26 @@ async function seed() {
           'INSERT INTO messagerie_attachment (message_id, file_blob, file_name, file_type, file_size) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING',
           [msgId, Buffer.from('Rapport intervention caméra', 'utf8'), 'rapport.txt', 'text/plain', Buffer.byteLength('Rapport intervention caméra')]
         );
+        // attachement pour ticket 3
+        const msg3Id = await insertMessage(
+          { conversation_id: `ticket-${ticket3}`, body: 'Pièce jointe badge' },
+          [...baseCols, ...(hasTicketFk ? ['ticket_id'] : []), ...(hasDemandeFk ? ['demande_id'] : []), ...(hasClientFk ? ['client_id'] : [])],
+          [
+            `ticket-${ticket3}`,
+            adminId,
+            clientUserId,
+            'Pièce jointe badge',
+            ...(hasTicketFk ? [ticket3] : []),
+            ...(hasDemandeFk ? [dem3] : []),
+            ...(hasClientFk ? [cli2] : []),
+          ]
+        );
+        if (msg3Id) {
+          await client.query(
+            'INSERT INTO messagerie_attachment (message_id, file_blob, file_name, file_type, file_size) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING',
+            [msg3Id, Buffer.from('Notice badge', 'utf8'), 'notice.txt', 'text/plain', Buffer.byteLength('Notice badge')]
+          );
+        }
       }
 
       log('Messagerie seedée');
@@ -622,14 +670,48 @@ async function seed() {
           true,
         ]
       );
+      const cat3 = await getOrCreate(
+        client,
+        'materiel_catalogue',
+        { reference: 'REF003' },
+        [
+          'titre',
+          'reference',
+          'designation',
+          'categorie',
+          'fabricant',
+          'fournisseur',
+          'remise_fournisseur',
+          'classe_materiel',
+          'prix_achat',
+          'commentaire',
+          'metier',
+          'actif',
+        ],
+        [
+          'Lecteur RFID',
+          'REF003',
+          'Lecteur de badges RFID',
+          'Contrôle d\'accès',
+          'HID',
+          'Fournisseur Accès',
+          3,
+          'Classe B',
+          90.0,
+          'Lecteur RFID pour portiques',
+          'Control_Acces',
+          true,
+        ]
+      );
 
       if (hasMateriel) {
-        const catRes = await client.query('SELECT * FROM materiel_catalogue WHERE reference IN ($1,$2)', ['REF001', 'REF002']);
+        const catRes = await client.query('SELECT * FROM materiel_catalogue WHERE reference IN ($1,$2,$3)', ['REF001', 'REF002', 'REF003']);
         for (const item of catRes.rows) {
+          const status = item.reference === 'REF001' ? 'En livraison' : item.reference === 'REF002' ? 'Reçu' : 'A commander';
           await client.query(
             `INSERT INTO materiel (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, commande_status)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'A commander')
-             ON CONFLICT DO NOTHING`,
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+             ON CONFLICT (reference) DO NOTHING`,
             [
               item.titre,
               item.reference,
@@ -641,7 +723,8 @@ async function seed() {
               item.classe_materiel,
               item.prix_achat,
               item.commentaire,
-              item.metier,
+              item.metier || null,
+              status,
             ]
           );
         }
@@ -649,7 +732,7 @@ async function seed() {
         if (hasInterventionMateriel) {
           const matRes = await client.query('SELECT id FROM materiel ORDER BY id ASC LIMIT 2');
           const mats = matRes.rows;
-          const intRes = await client.query('SELECT id FROM intervention WHERE ticket_id IN ($1,$2) ORDER BY id ASC', [ticket1, ticket2]);
+          const intRes = await client.query('SELECT id FROM intervention WHERE ticket_id IN ($1,$2,$3) ORDER BY id ASC', [ticket1, ticket2, ticket3]);
           const ints = intRes.rows;
           if (mats.length && ints.length) {
             await client.query(
@@ -661,6 +744,12 @@ async function seed() {
             await client.query(
               'INSERT INTO intervention_materiel (intervention_id, materiel_id, quantite, commentaire) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING',
               [ints[1].id, mats[1].id, 2, 'Pose caméra']
+            );
+          }
+          if (mats.length > 2 && ints.length > 2) {
+            await client.query(
+              'INSERT INTO intervention_materiel (intervention_id, materiel_id, quantite, commentaire) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING',
+              [ints[2].id, mats[2].id, 1, 'Installation badge']
             );
           }
         }
