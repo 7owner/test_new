@@ -53,6 +53,9 @@ async function seed() {
     const hasTicketSatisfaction = await tableExists(client, 'ticket_satisfaction');
     const hasMaterielCatalogue = await tableExists(client, 'materiel_catalogue');
     const hasMateriel = await tableExists(client, 'materiel');
+    const hasMessagerie = await tableExists(client, 'messagerie');
+    const hasMessagerieAttachment = await tableExists(client, 'messagerie_attachment');
+    const hasClientRepresentant = await tableExists(client, 'client_representant');
     const hasTicketAgentId = await columnExists(client, 'intervention', 'ticket_agent_id');
     const statusCol =
       (await columnExists(client, 'intervention', 'status')) ? 'status' :
@@ -137,6 +140,18 @@ async function seed() {
     log(`Agents ok (${agt1}, ${agt2})`);
 
     // --- clients / sites ---
+    // représentant dédié (si modèle client_representant existe)
+    let repUserId = null;
+    if (hasClientRepresentant) {
+      repUserId = await getOrCreate(
+        client,
+        'users',
+        { email: 'representant@example.com' },
+        ['email', 'password', 'roles'],
+        ['representant@example.com', pwd, '["ROLE_CLIENT"]']
+      );
+    }
+
     const cli1 = await getOrCreate(
       client,
       'client',
@@ -151,6 +166,33 @@ async function seed() {
       ['nom_client', 'representant_email', 'adresse_id'],
       ['Aéroport Marseille Provence', 'client2@example.com', addrDepot]
     );
+
+    // Client représentants (nouveau modèle)
+    if (hasClientRepresentant && repUserId) {
+      const cols = ['client_id', 'user_id'];
+      const vals1 = [cli1, repUserId];
+      const vals2 = [cli2, repUserId];
+      if (await columnExists(client, 'client_representant', 'nom')) { cols.push('nom'); vals1.push('Marie Responsable'); vals2.push('Marie Responsable'); }
+      if (await columnExists(client, 'client_representant', 'email')) { cols.push('email'); vals1.push('representant@example.com'); vals2.push('representant@example.com'); }
+      if (await columnExists(client, 'client_representant', 'tel')) { cols.push('tel'); vals1.push('0611223344'); vals2.push('0611223344'); }
+      if (await columnExists(client, 'client_representant', 'fonction')) { cols.push('fonction'); vals1.push('Responsable site'); vals2.push('Responsable site'); }
+
+      await getOrCreate(
+        client,
+        'client_representant',
+        { client_id: cli1, user_id: repUserId },
+        cols,
+        vals1
+      );
+      await getOrCreate(
+        client,
+        'client_representant',
+        { client_id: cli2, user_id: repUserId },
+        cols,
+        vals2
+      );
+      log('Représentants client liés');
+    }
 
     const site1 = await getOrCreate(
       client,
@@ -329,6 +371,54 @@ async function seed() {
         ['ticket_id', 'rating', 'comment'],
         [ticket2, 5, 'Service rapide et efficace.']
       );
+    }
+
+    // --- Messagerie (conversations & messages) ---
+    if (hasMessagerie) {
+      const hasTicketFk = await columnExists(client, 'messagerie', 'ticket_id');
+      const hasDemandeFk = await columnExists(client, 'messagerie', 'demande_id');
+      const hasClientFk = await columnExists(client, 'messagerie', 'client_id');
+
+      async function insertMessage(selectKey, cols, vals) {
+        // selectKey: object to identify an existing message (conversation_id + body)
+        return getOrCreate(client, 'messagerie', selectKey, cols, vals);
+      }
+
+      // Conversation liée à la demande 1 / ticket 1
+      const convoDem1 = `demande-${dem1}`;
+      const baseCols = ['conversation_id', 'sender_id', 'receiver_id', 'body'];
+      const colSet1 = [...baseCols];
+      const valSet1 = [convoDem1, adminId, clientUserId, 'Bonjour, nous avons bien reçu votre demande GTB.'];
+      if (hasTicketFk) { colSet1.push('ticket_id'); valSet1.push(ticket1); }
+      if (hasDemandeFk) { colSet1.push('demande_id'); valSet1.push(dem1); }
+      if (hasClientFk) { colSet1.push('client_id'); valSet1.push(cli1); }
+      await insertMessage({ conversation_id: convoDem1, body: valSet1[3] }, colSet1, valSet1);
+
+      const colSet2 = [...baseCols];
+      const valSet2 = [convoDem1, clientUserId, adminId, 'Merci, pouvez-vous intervenir cette semaine ?'];
+      if (hasTicketFk) { colSet2.push('ticket_id'); valSet2.push(ticket1); }
+      if (hasDemandeFk) { colSet2.push('demande_id'); valSet2.push(dem1); }
+      if (hasClientFk) { colSet2.push('client_id'); valSet2.push(cli1); }
+      await insertMessage({ conversation_id: convoDem1, body: valSet2[3] }, colSet2, valSet2);
+
+      // Conversation liée au ticket 2 (caméra)
+      const convoTicket2 = `ticket-${ticket2}`;
+      const colSet3 = [...baseCols];
+      const valSet3 = [convoTicket2, adminId, clientUserId, 'Ticket caméra HS traité, retour à la normale.'];
+      if (hasTicketFk) { colSet3.push('ticket_id'); valSet3.push(ticket2); }
+      if (hasDemandeFk) { colSet3.push('demande_id'); valSet3.push(dem2); }
+      if (hasClientFk) { colSet3.push('client_id'); valSet3.push(cli1); }
+      const msgId = await insertMessage({ conversation_id: convoTicket2, body: valSet3[3] }, colSet3, valSet3);
+
+      // Attachement de test
+      if (hasMessagerieAttachment) {
+        await client.query(
+          'INSERT INTO messagerie_attachment (message_id, file_blob, file_name, file_type, file_size) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING',
+          [msgId, Buffer.from('Rapport intervention caméra', 'utf8'), 'rapport.txt', 'text/plain', Buffer.byteLength('Rapport intervention caméra')]
+        );
+      }
+
+      log('Messagerie seedée');
     }
 
     // --- Matériel catalogue + commandes ---
