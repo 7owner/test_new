@@ -56,6 +56,22 @@ async function seed() {
     const hasMessagerie = await tableExists(client, 'messagerie');
     const hasMessagerieAttachment = await tableExists(client, 'messagerie_attachment');
     const hasClientRepresentant = await tableExists(client, 'client_representant');
+    const hasSiteAgent = await tableExists(client, 'site_agent');
+    const hasSiteResponsable = await tableExists(client, 'site_responsable');
+    const hasInterventionMateriel = await tableExists(client, 'intervention_materiel');
+    const hasRendezvous = await tableExists(client, 'rendezvous');
+    const hasDocuments = await tableExists(client, 'documents_repertoire');
+    const hasAchat = await tableExists(client, 'achat');
+    const hasFacture = await tableExists(client, 'facture');
+    const hasReglement = await tableExists(client, 'reglement');
+    const hasFonction = await tableExists(client, 'fonction');
+    const hasAgentFonction = await tableExists(client, 'agent_fonction');
+    const hasEquipe = await tableExists(client, 'equipe');
+    const hasAgentEquipe = await tableExists(client, 'agent_equipe');
+    const hasAgenceMembre = await tableExists(client, 'agence_membre');
+    const hasAffaire = await tableExists(client, 'affaire');
+    const hasDoe = await tableExists(client, 'doe');
+    const hasSiteAffaire = await tableExists(client, 'site_affaire');
     const hasTicketAgentId = await columnExists(client, 'intervention', 'ticket_agent_id');
     const statusCol =
       (await columnExists(client, 'intervention', 'status')) ? 'status' :
@@ -121,6 +137,13 @@ async function seed() {
       ['email', 'password', 'roles'],
       ['agent2@example.com', pwd, '["ROLE_USER"]']
     );
+    const agent3User = await getOrCreate(
+      client,
+      'users',
+      { email: 'agent3@example.com' },
+      ['email', 'password', 'roles'],
+      ['agent3@example.com', pwd, '["ROLE_USER"]']
+    );
     const agt1 = await getOrCreate(
       client,
       'agent',
@@ -137,7 +160,39 @@ async function seed() {
       ['AGT002', 'Martin', 'Sophie', 'agent2@example.com', '0600000002', false, true, agenceId, agent2User],
       'matricule'
     );
-    log(`Agents ok (${agt1}, ${agt2})`);
+    const agt3 = await getOrCreate(
+      client,
+      'agent',
+      { matricule: 'AGT003' },
+      ['matricule', 'nom', 'prenom', 'email', 'tel', 'admin', 'actif', 'agence_id', 'user_id'],
+      ['AGT003', 'Durand', 'Paul', 'agent3@example.com', '0600000003', false, true, agenceId, agent3User],
+      'matricule'
+    );
+
+    if (hasFonction) {
+      const fnTech = await getOrCreate(client, 'fonction', { code: 'TECH' }, ['code', 'libelle'], ['TECH', 'Technicien']);
+      const fnChef = await getOrCreate(client, 'fonction', { code: 'CHEF' }, ['code', 'libelle'], ['CHEF', 'Chef de projet']);
+      if (hasAgentFonction) {
+        await getOrCreate(client, 'agent_fonction', { agent_matricule: 'AGT001', fonction_id: fnChef }, ['agent_matricule', 'fonction_id', 'principal'], ['AGT001', fnChef, true]);
+        await getOrCreate(client, 'agent_fonction', { agent_matricule: 'AGT002', fonction_id: fnTech }, ['agent_matricule', 'fonction_id', 'principal'], ['AGT002', fnTech, true]);
+        await getOrCreate(client, 'agent_fonction', { agent_matricule: 'AGT003', fonction_id: fnTech }, ['agent_matricule', 'fonction_id', 'principal'], ['AGT003', fnTech, true]);
+      }
+    }
+    if (hasEquipe) {
+      const eq1 = await getOrCreate(client, 'equipe', { nom: 'Equipe Sud' }, ['agence_id', 'nom'], [agenceId, 'Equipe Sud']);
+      const eq2 = await getOrCreate(client, 'equipe', { nom: 'Equipe Projet' }, ['agence_id', 'nom'], [agenceId, 'Equipe Projet']);
+      if (hasAgentEquipe) {
+        await getOrCreate(client, 'agent_equipe', { equipe_id: eq1, agent_matricule: 'AGT001' }, ['equipe_id', 'agent_matricule'], [eq1, 'AGT001']);
+        await getOrCreate(client, 'agent_equipe', { equipe_id: eq1, agent_matricule: 'AGT002' }, ['equipe_id', 'agent_matricule'], [eq1, 'AGT002']);
+        await getOrCreate(client, 'agent_equipe', { equipe_id: eq2, agent_matricule: 'AGT003' }, ['equipe_id', 'agent_matricule'], [eq2, 'AGT003']);
+      }
+      if (hasAgenceMembre) {
+        await getOrCreate(client, 'agence_membre', { agence_id: agenceId, agent_matricule: 'AGT001' }, ['agence_id', 'agent_matricule', 'role'], [agenceId, 'AGT001', 'Admin']);
+        await getOrCreate(client, 'agence_membre', { agence_id: agenceId, agent_matricule: 'AGT002' }, ['agence_id', 'agent_matricule', 'role'], [agenceId, 'AGT002', 'Membre']);
+        await getOrCreate(client, 'agence_membre', { agence_id: agenceId, agent_matricule: 'AGT003' }, ['agence_id', 'agent_matricule', 'role'], [agenceId, 'AGT003', 'Membre']);
+      }
+    }
+    log(`Agents ok (${agt1}, ${agt2}, ${agt3})`);
 
     // --- clients / sites ---
     // représentant dédié (si modèle client_representant existe)
@@ -217,6 +272,41 @@ async function seed() {
     );
     log(`Sites ok (${site1}, ${site2}, ${site3})`);
 
+    // Site agents/responsables
+    if (hasSiteAgent) {
+      await getOrCreate(client, 'site_agent', { site_id: site1, agent_matricule: 'AGT001' }, ['site_id', 'agent_matricule'], [site1, 'AGT001']);
+      await getOrCreate(client, 'site_agent', { site_id: site2, agent_matricule: 'AGT002' }, ['site_id', 'agent_matricule'], [site2, 'AGT002']);
+      await getOrCreate(client, 'site_agent', { site_id: site3, agent_matricule: 'AGT003' }, ['site_id', 'agent_matricule'], [site3, 'AGT003']);
+    }
+    if (hasSiteResponsable) {
+      await getOrCreate(client, 'site_responsable', { site_id: site1, agent_matricule: 'AGT001' }, ['site_id', 'agent_matricule', 'role'], [site1, 'AGT001', 'Responsable']);
+      await getOrCreate(client, 'site_responsable', { site_id: site2, agent_matricule: 'AGT002' }, ['site_id', 'agent_matricule', 'role'], [site2, 'AGT002', 'Responsable']);
+    }
+
+    // Affaires / DOE
+    let affaire1 = null;
+    let affaire2 = null;
+    let doe1 = null;
+    let doe2 = null;
+    if (hasAffaire) {
+      const hasNumeroAffaire = await columnExists(client, 'affaire', 'numero_affaire');
+      const affCols = ['nom_affaire', 'client_id', 'description'];
+      const affVals1 = ['AFF-2025-GTB', cli1, 'Affaire GTB portuaire'];
+      const affVals2 = ['AFF-2025-CAM', cli1, 'Surveillance vidéo Hangar'];
+      if (hasNumeroAffaire) { affCols.push('numero_affaire'); affVals1.push('NUM-GTB-001'); affVals2.push('NUM-CAM-002'); }
+      affaire1 = await getOrCreate(client, 'affaire', { nom_affaire: 'AFF-2025-GTB' }, affCols, affVals1);
+      affaire2 = await getOrCreate(client, 'affaire', { nom_affaire: 'AFF-2025-CAM' }, affCols, affVals2);
+    }
+    if (hasDoe) {
+      const doeCols = ['site_id', 'affaire_id', 'titre', 'description'];
+      doe1 = await getOrCreate(client, 'doe', { titre: 'DOE GTB Terminal' }, doeCols, [site1, affaire1, 'DOE GTB Terminal', 'Dossier GTB complet']);
+      doe2 = await getOrCreate(client, 'doe', { titre: 'DOE Caméras Hangar' }, doeCols, [site2, affaire2, 'DOE Caméras Hangar', 'Dossier caméras']);
+    }
+    if (hasSiteAffaire && affaire1 && affaire2) {
+      await getOrCreate(client, 'site_affaire', { site_id: site1, affaire_id: affaire1 }, ['site_id', 'affaire_id'], [site1, affaire1]);
+      await getOrCreate(client, 'site_affaire', { site_id: site2, affaire_id: affaire2 }, ['site_id', 'affaire_id'], [site2, affaire2]);
+    }
+
     // --- associations + contrats (optionnel) ---
     if (hasAssociation) {
       const assocId = await getOrCreate(
@@ -272,8 +362,8 @@ async function seed() {
       client,
       'ticket',
       { demande_id: dem1 },
-      ['titre', 'description', 'site_id', 'demande_id', 'etat', 'responsable', 'date_debut'],
-      ['Demande: GTB en panne', 'Ticket ouvert depuis la demande GTB.', site1, dem1, 'En_cours', 'AGT001', '2025-01-15']
+      ['titre', 'description', 'site_id', 'demande_id', 'etat', 'responsable', 'date_debut', ...(hasDoe ? ['doe_id'] : []), ...(hasAffaire ? ['affaire_id'] : [])],
+      ['Demande: GTB en panne', 'Ticket ouvert depuis la demande GTB.', site1, dem1, 'En_cours', 'AGT001', '2025-01-15', ...(hasDoe ? [doe1] : []), ...(hasAffaire ? [affaire1] : [])]
     );
     if (hasTicketAgent) {
       await getOrCreate(
@@ -317,6 +407,21 @@ async function seed() {
       );
     }
 
+    // Intervention secondaire ticket1
+    {
+      const cols = ['ticket_id', 'site_id', 'titre', 'description', 'date_debut'];
+      const vals = [ticket1, site1, 'Correction GTB', 'Remplacement automate GTB.', '2025-01-20'];
+      if (statusCol) { cols.push(statusCol); vals.push('En_attente'); }
+      if (hasTicketAgentId) { cols.push('ticket_agent_id'); vals.push(ticketAgentId); }
+      await getOrCreate(
+        client,
+        'intervention',
+        { ticket_id: ticket1, titre: 'Correction GTB' },
+        cols,
+        vals
+      );
+    }
+
     // Ticket 2 (clos)
     const dem2 = await getOrCreate(
       client,
@@ -329,8 +434,8 @@ async function seed() {
       client,
       'ticket',
       { demande_id: dem2 },
-      ['titre', 'description', 'site_id', 'demande_id', 'etat', 'responsable', 'date_debut', 'date_fin'],
-      ['Demande: Caméra HS', 'Ticket clos', site2, dem2, 'Termine', 'AGT002', '2025-02-10', '2025-02-12']
+      ['titre', 'description', 'site_id', 'demande_id', 'etat', 'responsable', 'date_debut', 'date_fin', ...(hasDoe ? ['doe_id'] : []), ...(hasAffaire ? ['affaire_id'] : [])],
+      ['Demande: Caméra HS', 'Ticket clos', site2, dem2, 'Termine', 'AGT002', '2025-02-10', '2025-02-12', ...(hasDoe ? [doe2] : []), ...(hasAffaire ? [affaire2] : [])]
     );
     if (hasTicketAgent) {
       await getOrCreate(
@@ -361,6 +466,34 @@ async function seed() {
         cols,
         vals
       );
+    }
+
+    // Ticket 3 (site 3, ouvert)
+    const dem3 = await getOrCreate(
+      client,
+      'demande_client',
+      { titre: 'Accès badge Hall A' },
+      ['client_id', 'site_id', 'titre', 'description', 'status'],
+      [cli2, site3, 'Accès badge Hall A', 'Badge ne fonctionne pas.', 'En cours de traitement']
+    );
+    const ticket3 = await getOrCreate(
+      client,
+      'ticket',
+      { titre: 'Badge Hall A' },
+      ['titre', 'description', 'site_id', 'demande_id', 'etat', 'responsable', 'date_debut'],
+      ['Badge Hall A', 'Création d\'un nouvel accès.', site3, dem3, 'En_cours', 'AGT003', '2025-03-05']
+    );
+    if (hasTicketAgent) {
+      await getOrCreate(client, 'ticket_agent', { ticket_id: ticket3, agent_matricule: 'AGT003' }, ['ticket_id', 'agent_matricule'], [ticket3, 'AGT003']);
+    }
+    if (hasTicketResponsable) {
+      await getOrCreate(client, 'ticket_responsable', { ticket_id: ticket3, agent_matricule: 'AGT003' }, ['ticket_id', 'agent_matricule'], [ticket3, 'AGT003']);
+    }
+    {
+      const cols = ['ticket_id', 'site_id', 'titre', 'description', 'date_debut'];
+      const vals = [ticket3, site3, 'Pose lecteur badge', 'Installation d\'un nouveau lecteur.', '2025-03-06'];
+      if (statusCol) { cols.push(statusCol); vals.push('En_attente'); }
+      await getOrCreate(client, 'intervention', { ticket_id: ticket3, titre: 'Pose lecteur badge' }, cols, vals);
     }
 
     if (hasTicketSatisfaction) {
@@ -513,6 +646,72 @@ async function seed() {
           );
         }
         log('Catalogue et commandes créés');
+        if (hasInterventionMateriel) {
+          const matRes = await client.query('SELECT id FROM materiel ORDER BY id ASC LIMIT 2');
+          const mats = matRes.rows;
+          const intRes = await client.query('SELECT id FROM intervention WHERE ticket_id IN ($1,$2) ORDER BY id ASC', [ticket1, ticket2]);
+          const ints = intRes.rows;
+          if (mats.length && ints.length) {
+            await client.query(
+              'INSERT INTO intervention_materiel (intervention_id, materiel_id, quantite, commentaire) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING',
+              [ints[0].id, mats[0].id, 1, 'Utilisé pour diagnostic']
+            );
+          }
+          if (mats.length > 1 && ints.length > 1) {
+            await client.query(
+              'INSERT INTO intervention_materiel (intervention_id, materiel_id, quantite, commentaire) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING',
+              [ints[1].id, mats[1].id, 2, 'Pose caméra']
+            );
+          }
+        }
+      }
+    }
+
+    // Rendezvous
+    if (hasRendezvous) {
+      await getOrCreate(
+        client,
+        'rendezvous',
+        { titre: 'RDV GTB Janvier' },
+        ['titre', 'description', 'date_rdv', 'date_fin', 'statut', 'sujet', 'intervention_id', 'site_id'],
+        ['RDV GTB Janvier', 'Planification diagnostic', '2025-01-15 09:00', '2025-01-15 10:00', 'Planifie', 'intervention', 1, site1]
+      );
+      await getOrCreate(
+        client,
+        'rendezvous',
+        { titre: 'RDV Caméra' },
+        ['titre', 'description', 'date_rdv', 'date_fin', 'statut', 'sujet', 'intervention_id', 'site_id'],
+        ['RDV Caméra', 'Remplacement caméra', '2025-02-11 14:00', '2025-02-11 15:00', 'Planifie', 'intervention', 2, site2]
+      );
+    }
+
+    // Documents
+    if (hasDocuments) {
+      const docCols = ['cible_type', 'cible_id', 'nature', 'nom_fichier'];
+      const docExtra = [];
+      if (await columnExists(client, 'documents_repertoire', 'type_mime')) { docCols.push('type_mime'); docExtra.push('application/pdf'); }
+      if (await columnExists(client, 'documents_repertoire', 'taille_octets')) { docCols.push('taille_octets'); docExtra.push(12345); }
+      await client.query(
+        `INSERT INTO documents_repertoire (${docCols.join(',')}) VALUES ($1,$2,$3,$4${docExtra.length ? ',' + docExtra.map((_, i) => `$${i + 5}`).join(',') : ''}) ON CONFLICT DO NOTHING`,
+        ['Ticket', ticket1, 'Document', 'rapport_ticket1.pdf', ...docExtra]
+      );
+      await client.query(
+        `INSERT INTO documents_repertoire (${docCols.join(',')}) VALUES ($1,$2,$3,$4${docExtra.length ? ',' + docExtra.map((_, i) => `$${i + 5}`).join(',') : ''}) ON CONFLICT DO NOTHING`,
+        ['Site', site1, 'Document', 'plan_site1.pdf', ...docExtra]
+      );
+    }
+
+    // Financier
+    if (hasAchat) {
+      const achat1 = await getOrCreate(client, 'achat', { reference: 'ACH-GTB-001' }, ['reference', 'site_id', 'statut'], ['ACH-GTB-001', site1, 'Commande']);
+      if (hasFacture) {
+        const hasRefFacture = await columnExists(client, 'facture', 'reference');
+        const factCols = hasRefFacture ? ['reference', 'client_id', 'statut'] : ['client_id', 'statut'];
+        const factVals = hasRefFacture ? ['FAC-GTB-001', cli1, 'Emise'] : [cli1, 'Emise'];
+        const facture1 = await getOrCreate(client, 'facture', hasRefFacture ? { reference: 'FAC-GTB-001' } : { client_id: cli1, statut: 'Emise' }, factCols, factVals);
+        if (hasReglement) {
+          await getOrCreate(client, 'reglement', { facture_id: facture1, montant: 1500 }, ['facture_id', 'montant'], [facture1, 1500]);
+        }
       }
     }
 
