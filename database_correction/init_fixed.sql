@@ -2,6 +2,8 @@
 -- ✅ PostgreSQL Schema Initialization (Corrected Order for Heroku)
 -- --------------------------------------------------
 
+SET search_path TO public;
+
 -- Reset all previous tables (reverse dependency order)
 DROP TABLE IF EXISTS rendu_intervention_image CASCADE;
 DROP TABLE IF EXISTS rendu_intervention CASCADE;
