@@ -167,8 +167,7 @@ INSERT INTO intervention_materiel (intervention_id, materiel_id, quantite, comme
 
 -- Rendezvous
 INSERT INTO rendezvous (titre, description, date_rdv, date_fin, statut, sujet, intervention_id, site_id) VALUES
-('RDV GTB Janvier','Planification diagnostic','2025-01-15 09:00','2025-01-15 10:00','Planifie','intervention',(SELECT id FROM intervention WHERE titr
-e='Diagnostic' LIMIT 1),1),
+('RDV GTB Janvier','Planification diagnostic','2025-01-15 09:00','2025-01-15 10:00','Planifie','intervention',(SELECT id FROM intervention WHERE titre='Diagnostic' LIMIT 1),1),
 ('RDV Caméra','Remplacement caméra','2025-02-11 14:00','2025-02-11 15:00','Planifie','intervention',(SELECT id FROM intervention WHERE titre='Remplacement caméra' LIMIT 1),2);
 
 -- Documents
