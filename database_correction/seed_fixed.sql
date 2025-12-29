@@ -88,42 +88,44 @@ FROM (SELECT id FROM site WHERE nom_site = 'Site Paris 1' LIMIT 1) s,
      (SELECT id FROM affaire WHERE nom_affaire = 'Contrat Maintenance ACME' LIMIT 1) a
 WHERE NOT EXISTS (SELECT 1 FROM doe WHERE titre = 'DOE Paris 2025');
 
--- Seed maintenances (some ongoing and blocked)
-INSERT INTO maintenance (doe_id, affaire_id, titre, description, etat, responsable, date_debut)
-SELECT d.id, a.id, 'Maintenance Semaine 42', 'Vérifications périodiques', 'En_cours', 'AGT001', NOW() - INTERVAL '10 days'
+-- Seed tickets to replace maintenance entries
+INSERT INTO ticket (doe_id, affaire_id, titre, description, etat, responsable, date_debut)
+SELECT d.id, a.id, 'Ticket Maintenance Semaine 42', 'Ticket pour vérifications périodiques', 'En_cours', 'AGT001', NOW() - INTERVAL '10 days'
 FROM (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1) d,
      (SELECT id FROM affaire WHERE nom_affaire = 'Contrat Maintenance ACME' LIMIT 1) a
-WHERE NOT EXISTS (SELECT 1 FROM maintenance WHERE titre = 'Maintenance Semaine 42');
+WHERE NOT EXISTS (SELECT 1 FROM ticket WHERE titre = 'Ticket Maintenance Semaine 42');
 
-INSERT INTO maintenance (doe_id, affaire_id, titre, description, etat, responsable, date_debut)
-SELECT d.id, a.id, 'Maintenance Urgente', 'Panne critique sur site', 'En_cours', 'AGT002', NOW() - INTERVAL '2 days'
+INSERT INTO ticket (doe_id, affaire_id, titre, description, etat, responsable, date_debut)
+SELECT d.id, a.id, 'Ticket Maintenance Urgente', 'Ticket pour panne critique sur site', 'En_cours', 'AGT002', NOW() - INTERVAL '2 days'
 FROM (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1) d,
      (SELECT id FROM affaire WHERE nom_affaire = 'Contrat Maintenance ACME' LIMIT 1) a
-WHERE NOT EXISTS (SELECT 1 FROM maintenance WHERE titre = 'Maintenance Urgente');
+WHERE NOT EXISTS (SELECT 1 FROM ticket WHERE titre = 'Ticket Maintenance Urgente');
 
 -- Seed interventions
-INSERT INTO intervention (maintenance_id, description, date_debut, status)
-SELECT m.id, 'Intervention initiale', CURRENT_DATE - INTERVAL '1 day', 'Termine'
-FROM (SELECT id FROM maintenance WHERE titre = 'Maintenance Semaine 42' LIMIT 1) m
+INSERT INTO intervention (ticket_id, site_id, demande_id, titre, description, date_debut, status, metier)
+SELECT t.id, s.id, NULL, 'Intervention Semaine 42 Initiale', 'Intervention initiale pour Ticket Maintenance Semaine 42', CURRENT_DATE - INTERVAL '1 day', 'Termine', 'GTB'
+FROM (SELECT id FROM ticket WHERE titre = 'Ticket Maintenance Semaine 42' LIMIT 1) t,
+     (SELECT id FROM site WHERE nom_site = 'Site Paris 1' LIMIT 1) s
 WHERE NOT EXISTS (
-  SELECT 1 FROM intervention WHERE description = 'Intervention initiale' AND maintenance_id = m.id
+  SELECT 1 FROM intervention WHERE titre = 'Intervention Semaine 42 Initiale' AND ticket_id = t.id
 );
 
-INSERT INTO intervention (maintenance_id, description, date_debut, status)
-SELECT m.id, 'Intervention de suivi', CURRENT_DATE, 'En_cours'
-FROM (SELECT id FROM maintenance WHERE titre = 'Maintenance Semaine 42' LIMIT 1) m
+INSERT INTO intervention (ticket_id, site_id, demande_id, titre, description, date_debut, status, metier)
+SELECT t.id, s.id, NULL, 'Intervention Semaine 42 Suivi', 'Intervention de suivi pour Ticket Maintenance Semaine 42', CURRENT_DATE, 'En_attente', 'GTB'
+FROM (SELECT id FROM ticket WHERE titre = 'Ticket Maintenance Semaine 42' LIMIT 1) t,
+     (SELECT id FROM site WHERE nom_site = 'Site Paris 1' LIMIT 1) s
 WHERE NOT EXISTS (
-  SELECT 1 FROM intervention WHERE description = 'Intervention de suivi' AND maintenance_id = m.id
+  SELECT 1 FROM intervention WHERE titre = 'Intervention Semaine 42 Suivi' AND ticket_id = t.id
 );
 
 -- Seed passeport for AGT001
-INSERT INTO passeport (agent_matricule, permis, habilitations, certifications)
-SELECT 'AGT001', 'Permis B', 'H0B0, BR', 'SST'
+INSERT INTO passeport (agent_matricule, permis, habilitations)
+SELECT 'AGT001', 'Permis B', 'H0B0, BR'
 WHERE NOT EXISTS (SELECT 1 FROM passeport WHERE agent_matricule = 'AGT001');
 
 -- Seed formation for AGT001
-INSERT INTO formation (agent_matricule, type, libelle, date_obtention, date_expiration, organisme)
-SELECT 'AGT001', 'Certification', 'CACES R489', CURRENT_DATE - INTERVAL '200 days', CURRENT_DATE + INTERVAL '165 days', 'Organisme X'
+INSERT INTO formation (agent_matricule, type, libelle, date_obtention, date_validite)
+SELECT 'AGT001', 'Certification', 'CACES R489', CURRENT_DATE - INTERVAL '200 days', CURRENT_DATE + INTERVAL '165 days'
 WHERE NOT EXISTS (SELECT 1 FROM formation WHERE agent_matricule = 'AGT001' AND libelle = 'CACES R489');
 
 -- Seed rendu_intervention
@@ -142,12 +144,12 @@ SELECT 'rapport_int001_2.jpg', 'image/jpeg', 153600, '\xCAFEBABE', 'Photo après
 WHERE NOT EXISTS (SELECT 1 FROM images WHERE nom_fichier = 'rapport_int001_2.jpg');
 
 -- Seed documents for DOE
-INSERT INTO documents_repertoire (cible_type, cible_id, nom_fichier, type_mime, commentaire, auteur_matricule)
-SELECT 'DOE', (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1), 'plan_site_A.pdf', 'application/pdf', 'Plan détaillé du site A.', 'AGT002'
+INSERT INTO documents_repertoire (cible_type, cible_id, nom_fichier, type_mime, auteur_matricule)
+SELECT 'DOE', (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1), 'plan_site_A.pdf', 'application/pdf', 'AGT002'
 WHERE NOT EXISTS (SELECT 1 FROM documents_repertoire WHERE nom_fichier = 'plan_site_A.pdf');
 
-INSERT INTO documents_repertoire (cible_type, cible_id, nom_fichier, type_mime, commentaire, auteur_matricule)
-SELECT 'DOE', (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1), 'rapport_audit_B.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'Rapport d''audit de sécurité du site B.', 'AGT002'
+INSERT INTO documents_repertoire (cible_type, cible_id, nom_fichier, type_mime, auteur_matricule)
+SELECT 'DOE', (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1), 'rapport_audit_B.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'AGT002'
 WHERE NOT EXISTS (SELECT 1 FROM documents_repertoire WHERE nom_fichier = 'rapport_audit_B.docx');
 
 -- Seed images for DOE
