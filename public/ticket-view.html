@@ -1152,7 +1152,8 @@
         for (const inter of interventions) {
           if (!inter?.id) continue;
           try {
-            const mats = await fetchJSON(`/api/materiels?intervention_id=${inter.id}`);
+            // Charger les matériels liés via l'endpoint relationnel dédié
+            const mats = await fetchJSON(`/api/interventions/${inter.id}/materiels`);
             (mats || []).forEach(m => all.push({ ...m, _intervention: inter }));
           } catch (err) {
             console.warn('Materiels non chargés pour intervention', inter.id, err);

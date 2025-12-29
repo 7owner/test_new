@@ -99,7 +99,7 @@ async function buildHeaders(json=false){
             const matId = cmd.id || cmd.materiel_id;
             const ivId = matId ? await findInterventionForMateriel(matId) : null;
             const btnInter = ivId
-              ? `<a class="btn btn-sm btn-outline-info" href="/intervention-view.html?id=${ivId}"><i class="bi bi-eye"></i> Voir intervention</a>`
+              ? `<button class="btn btn-sm btn-outline-info btn-intervention-modal" data-id="${ivId}"><i class="bi bi-eye"></i> Voir intervention</button>`
               : `<a class="btn btn-sm btn-outline-secondary" href="/interventions.html?q=${encodeURIComponent(cmd.reference || '')}"><i class="bi bi-search"></i> Trouver intervention</a>`;
             el.innerHTML = `
               <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
@@ -123,6 +123,20 @@ async function buildHeaders(json=false){
           ordersReceivedDiv.innerHTML = '<p class="text-muted">Impossible de charger les commandes.</p>';
         }
       })();
+
+      // Ouverture modal intervention depuis les commandes reçues
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-intervention-modal');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        const modalEl = document.getElementById('orderInterventionModal');
+        const frame = document.getElementById('orderInterventionFrame');
+        if (modalEl && frame) {
+          frame.src = `/intervention-view.html?id=${id}`;
+          const m = bootstrap.Modal.getOrCreateInstance(modalEl);
+          m.show();
+        }
+      });
 
       // Tickets (ouvert/total) + graphiques (bar + donut)
       (async () => {
