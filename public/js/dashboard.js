@@ -98,7 +98,9 @@ async function buildHeaders(json=false){
             const prix = cmd.prix_achat != null ? `${Number(cmd.prix_achat).toFixed(2)} €` : '—';
             const matId = cmd.id || cmd.materiel_id;
             const ivId = matId ? await findInterventionForMateriel(matId) : null;
-            const btnInter = ivId ? `<a class="btn btn-sm btn-outline-info" href="/intervention-view.html?id=${ivId}"><i class="bi bi-eye"></i> Voir intervention</a>` : '';
+            const btnInter = ivId
+              ? `<a class="btn btn-sm btn-outline-info" href="/intervention-view.html?id=${ivId}"><i class="bi bi-eye"></i> Voir intervention</a>`
+              : `<a class="btn btn-sm btn-outline-secondary" href="/interventions.html?q=${encodeURIComponent(cmd.reference || '')}"><i class="bi bi-search"></i> Trouver intervention</a>`;
             el.innerHTML = `
               <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                 <div>
