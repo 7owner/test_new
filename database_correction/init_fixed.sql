@@ -60,6 +60,9 @@ DROP TYPE IF EXISTS mode_reglement CASCADE;
 DROP TYPE IF EXISTS role_agence CASCADE;
 DROP TYPE IF EXISTS type_formation CASCADE;
 DROP TYPE IF EXISTS site_status CASCADE;
+DROP TYPE IF EXISTS devis_status CASCADE;
+DROP TYPE IF EXISTS metier_type CASCADE;
+DROP TYPE IF EXISTS commande_status_type CASCADE;
 
 CREATE TYPE statut_intervention AS ENUM ('En_attente','Termine');
 CREATE TYPE etat_rapport        AS ENUM ('Pas_commence','En_cours','Termine');
