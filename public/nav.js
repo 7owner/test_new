@@ -39,7 +39,20 @@
         if (userInfoContainer) userInfoContainer.textContent = `Bienvenue`;
         
         if (matricule) {
-          userIconLink.href = `/agent-view.html?matricule=${encodeURIComponent(matricule)}`;
+          userIconLink.dataset.matricule = matricule;
+          userIconLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            const modalEl = document.getElementById('navAgentModal');
+            const frame = document.getElementById('navAgentFrame');
+            if (modalEl && frame) {
+              frame.src = `/agent-view.html?matricule=${encodeURIComponent(matricule)}&embed=1&modal=1`;
+              const m = bootstrap.Modal.getOrCreateInstance(modalEl);
+              m.show();
+            } else {
+              // fallback navigation
+              window.location.href = `/agent-view.html?matricule=${encodeURIComponent(matricule)}`;
+            }
+          });
         }
 
         const roles = payload.roles || [];
@@ -236,6 +249,5 @@
     }
   }
 });
-
 
 
