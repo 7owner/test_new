@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Rendu Intervention</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #111827; }
+    h1,h2,h3,h4,h5 { margin: 0 0 8px 0; }
+    .rendu-section { margin-bottom: 16px; }
+    .rendu-meta { font-size: 13px; color: #6b7280; }
+    .attachments { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .attachment { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; }
+    .attachment h4 { font-size: 14px; margin: 0 0 6px 0; }
+    .attachment .meta { font-size: 12px; color: #6b7280; }
+    .attachment .comment { font-size: 12px; margin-top: 6px; }
+    @media print { .no-print { display:none; } }
+  </style>
+</head>
+<body>
+  <header class="rendu-section">
+    <h2 id="p-title">Rendu d'intervention</h2>
+    <div class="rendu-meta" id="p-meta">—</div>
+    <div class="rendu-meta" id="p-valeur">Valeur : —</div>
+  </header>
+
+  <section class="rendu-section">
+    <h3>Pièces jointes</h3>
+    <div class="attachments" id="p-attachments">
+      <!-- Cartes PJ injectées ici -->
+    </div>
+  </section>
+</body>
+</html>
