@@ -42,6 +42,48 @@ async function buildHeaders(json=false){
         } catch (e) { urgentMaintenancesDiv.innerHTML = '<p class="text-muted">Impossible de charger les tickets ouverts.</p>'; }
       })();
 
+      // Commandes reçues
+      const ordersReceivedDiv = document.getElementById('ordersReceived');
+      (async () => {
+        if (!ordersReceivedDiv) return;
+        try {
+          const r = await fetch('/api/materiels', { headers: await buildHeaders(false), credentials: 'same-origin' });
+          const rows = r.ok ? await r.json() : [];
+          const commandes = (Array.isArray(rows) ? rows : []).filter(m => {
+            const status = (m.commande_status || m.status || '').toLowerCase();
+            return status === 'reçu' || status === 'recu';
+          });
+          commandes.sort((a, b) => (new Date(b.date_fin || b.updated_at || b.created_at || 0)) - (new Date(a.date_fin || a.updated_at || a.created_at || 0)));
+          const limited = commandes.slice(0, 5);
+          if (!limited.length) {
+            ordersReceivedDiv.innerHTML = '<p class="text-muted">Aucune commande reçue.</p>';
+            return;
+          }
+          ordersReceivedDiv.innerHTML = '';
+          limited.forEach(cmd => {
+            const el = document.createElement('div');
+            el.className = 'card card-body mb-2';
+            const prix = cmd.prix_achat != null ? `${Number(cmd.prix_achat).toFixed(2)} €` : '—';
+            el.innerHTML = `
+              <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                <div>
+                  <div class="fw-semibold">${cmd.reference || 'Sans ref.'} — ${cmd.designation || cmd.titre || ''}</div>
+                  <div class="small text-muted">Fournisseur: ${cmd.fournisseur || '—'}</div>
+                  <div class="small text-muted">Prix: ${prix}</div>
+                </div>
+                <span class="badge bg-success">Reçu</span>
+              </div>`;
+            ordersReceivedDiv.appendChild(el);
+          });
+          const footer = document.createElement('div');
+          footer.className = 'd-flex justify-content-end mt-2';
+          footer.innerHTML = '<a class="btn btn-sm btn-outline-primary" href="/gestion-commande.html">Voir toutes</a>';
+          ordersReceivedDiv.appendChild(footer);
+        } catch (e) {
+          ordersReceivedDiv.innerHTML = '<p class="text-muted">Impossible de charger les commandes.</p>';
+        }
+      })();
+
       // Tickets (ouvert/total) + graphiques (bar + donut)
       (async () => {
         try {
