@@ -47,7 +47,8 @@ async function buildHeaders(json=false){
       (async () => {
         if (!ordersReceivedDiv) return;
         try {
-          const r = await fetch('/api/materiels', { headers: await buildHeaders(false), credentials: 'same-origin' });
+          const headers = await buildHeaders(false);
+          const r = await fetch('/api/materiels', { headers, credentials: 'same-origin' });
           const rows = r.ok ? await r.json() : [];
           const commandes = (Array.isArray(rows) ? rows : []).filter(m => {
             const status = (m.commande_status || m.status || '').toLowerCase();
@@ -60,10 +61,44 @@ async function buildHeaders(json=false){
             return;
           }
           ordersReceivedDiv.innerHTML = '';
-          limited.forEach(cmd => {
+          // Précharger la liste des interventions pour trouver un lien
+          let interventions = [];
+          try {
+            const ri = await fetch('/api/interventions', { headers, credentials:'same-origin' });
+            interventions = ri.ok ? await ri.json() : [];
+          } catch {}
+          const materiMap = new Map(); // materiel_id -> intervention_id
+          const interMaterialsCache = new Map(); // intervention_id -> materiel_ids[]
+
+          async function findInterventionForMateriel(matId) {
+            if (materiMap.has(matId)) return materiMap.get(matId);
+            for (const iv of interventions) {
+              const ivId = iv.id || iv.intervention_id;
+              if (!ivId) continue;
+              let mats = interMaterialsCache.get(ivId);
+              if (!mats) {
+                try {
+                  const res = await fetch(`/api/interventions/${ivId}/materiels`, { headers, credentials:'same-origin' });
+                  mats = res.ok ? await res.json() : [];
+                  interMaterialsCache.set(ivId, mats);
+                } catch { mats = []; interMaterialsCache.set(ivId, mats); }
+              }
+              if (Array.isArray(mats) && mats.some(m => String(m.materiel_id || m.id) === String(matId))) {
+                materiMap.set(matId, ivId);
+                return ivId;
+              }
+            }
+            materiMap.set(matId, null);
+            return null;
+          }
+
+          for (const cmd of limited) {
             const el = document.createElement('div');
             el.className = 'card card-body mb-2';
             const prix = cmd.prix_achat != null ? `${Number(cmd.prix_achat).toFixed(2)} €` : '—';
+            const matId = cmd.id || cmd.materiel_id;
+            const ivId = matId ? await findInterventionForMateriel(matId) : null;
+            const btnInter = ivId ? `<a class="btn btn-sm btn-outline-info" href="/intervention-view.html?id=${ivId}"><i class="bi bi-eye"></i> Voir intervention</a>` : '';
             el.innerHTML = `
               <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                 <div>
@@ -71,10 +106,13 @@ async function buildHeaders(json=false){
                   <div class="small text-muted">Fournisseur: ${cmd.fournisseur || '—'}</div>
                   <div class="small text-muted">Prix: ${prix}</div>
                 </div>
-                <span class="badge bg-success">Reçu</span>
+                <div class="d-flex flex-column align-items-end gap-1">
+                  <span class="badge bg-success">Reçu</span>
+                  ${btnInter}
+                </div>
               </div>`;
             ordersReceivedDiv.appendChild(el);
-          });
+          }
           const footer = document.createElement('div');
           footer.className = 'd-flex justify-content-end mt-2';
           footer.innerHTML = '<a class="btn btn-sm btn-outline-primary" href="/gestion-commande.html">Voir toutes</a>';
