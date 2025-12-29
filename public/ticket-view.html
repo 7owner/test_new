@@ -683,7 +683,7 @@
       const addMaterielBtn = document.getElementById('add-materiel-btn');
       const materielModalEl = document.getElementById('materielModal');
       const materielModal = materielModalEl ? new bootstrap.Modal(materielModalEl) : null;
-      const matStatusOptions = ['En attente','Commande en cours','Reçue','Installée','Annulée'];
+      const matStatusOptions = ['A commander','Commande','En livraison','Reçu','Installé'];
       let interventionsCache = [];
       try {
         const res = await fetch(`/api/tickets/${ticketId}/relations`, { headers, credentials: 'same-origin' });
@@ -1182,7 +1182,7 @@
               <div class="text-end" style="min-width:180px;">
                 <label class="small text-muted">Statut commande</label>
                 <div class="d-flex gap-2 align-items-center">
-                  ${isAdmin ? `
+                 ${isAdmin ? `
                     <select class="form-select form-select-sm mat-status">
                       ${['', ...matStatusOptions].map(opt => `<option value="${opt}" ${opt===status?'selected':''}>${opt || '—'}</option>`).join('')}
                     </select>
