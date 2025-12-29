@@ -1487,7 +1487,19 @@ app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) =
 app.put('/api/materiels/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
   // Only allow updating order-specific fields
-  const { fournisseur, prix_achat, remise_fournisseur, commentaire, commande_status } = req.body;
+  const { fournisseur, prix_achat, remise_fournisseur, commentaire } = req.body;
+  let { commande_status } = req.body;
+  // Normalise statut pour respecter l'ENUM
+  const allowedStatuses = ['A commander', 'Commande', 'En livraison', 'Reçu', 'Installé'];
+  const normalizeMap = {
+    'Commande en cours': 'Commande',
+    'Commandé': 'Commande',
+    'En cours': 'En livraison'
+  };
+  if (commande_status && normalizeMap[commande_status]) commande_status = normalizeMap[commande_status];
+  if (commande_status && !allowedStatuses.includes(commande_status)) {
+    return res.status(400).json({ error: `Statut de commande invalide (valeurs autorisées: ${allowedStatuses.join(', ')})` });
+  }
   try {
     const r = await pool.query(
       'UPDATE materiel SET fournisseur=$1, prix_achat=$2, remise_fournisseur=$3, commentaire=$4, commande_status=$5 WHERE id=$6 RETURNING *',
