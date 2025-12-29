@@ -129,7 +129,10 @@
             const elapsed = fmtElapsed(it.date_debut, it.date_fin, it.status || it.statut);
             const tr = document.createElement('tr');
             tr.innerHTML = `
-              <td class="fw-bold text-primary">#${it.id||''}</td>
+              <td>
+                <div class="fw-semibold">${it.titre || '(Sans titre)'}</div>
+                <div class="small text-muted">#${it.id||''}</div>
+              </td>
               <td>
                 ${it.ticket_id ? `<span class="fw-semibold">#${it.ticket_id}</span> — <span class="text-muted">${it.ticket_titre || ''}</span>` : '—'}
               </td>

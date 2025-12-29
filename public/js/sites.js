@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   const isAdmin = (() => { try { const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
   let apiSites = [];
   let apiAgents = [];
+  let apiAssociations = [];
   let openDemandSites = new Set();
   let sortAsc = true;
 
@@ -21,15 +22,19 @@ document.addEventListener('DOMContentLoaded', async function() {
   async function load() {
     tableBody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-3">Chargement...</td></tr>';
     const headers = token? { 'Authorization': `Bearer ${token}` } : {};
+    const params = new URLSearchParams(window.location.search);
+    const preselectAssociationId = params.get('association_id');
     try {
-      const [sRes, aRes, dRes] = await Promise.all([
+      const [sRes, aRes, dRes, assoRes] = await Promise.all([
         fetch('/api/sites', { headers, credentials:'same-origin' }),
         fetch('/api/agents', { headers, credentials:'same-origin' }),
-        fetch('/api/demandes_client?include_deleted=false', { headers, credentials:'same-origin' })
+        fetch('/api/demandes_client?include_deleted=false', { headers, credentials:'same-origin' }),
+        fetch('/api/associations', { headers, credentials:'same-origin' })
       ]);
       if (sRes.status===401||sRes.status===403){ try{ location.replace('/login.html'); }catch{ location.href='/login.html'; } return; }
       apiSites = sRes.ok ? await sRes.json() : [];
       apiAgents = aRes && aRes.ok ? await aRes.json() : [];
+      apiAssociations = assoRes && assoRes.ok ? await assoRes.json() : [];
       openDemandSites = new Set();
       if (dRes && dRes.ok) {
         const demands = await dRes.json();
@@ -37,6 +42,18 @@ document.addEventListener('DOMContentLoaded', async function() {
           if (!d.ticket_id && d.site_id) openDemandSites.add(String(d.site_id));
         });
       }
+      // Populate association filter
+      if (associationFilter) {
+        associationFilter.innerHTML = '<option value="">Toutes les associations</option>';
+        apiAssociations.forEach(asso => {
+          const option = document.createElement('option');
+          option.value = asso.id;
+          option.textContent = asso.titre;
+          associationFilter.appendChild(option);
+        });
+        if (preselectAssociationId) associationFilter.value = preselectAssociationId;
+      }
+
       applyFilters();
     } catch (e) {
       console.error(e);
