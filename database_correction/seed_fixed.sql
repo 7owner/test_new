@@ -137,36 +137,47 @@ INSERT INTO ticket (doe_id, affaire_id, site_id, demande_id, responsable, titre,
 (NULL,NULL,3,3,'AGT003','Badge Hall A','Création d''un nouvel accès.','En_cours','2025-03-05',NULL);
 
 INSERT INTO ticket_agent (ticket_id, agent_matricule) VALUES (1,'AGT001'),(2,'AGT002'),(3,'AGT003');
-INSERT INTO ticket_responsable (ticket_id, agent_matricule, role) VALUES (1,'AGT001','Responsable'),(2,'AGT002','Responsable'),(3,'AGT003','Responsable');
+INSERT INTO ticket_responsable (ticket_id, agent_matricule, role) VALUES (1,'AGT001','Responsable'),(2,'AGT002','Responsable'),(3,'AGT003','Responsab
+le');
 INSERT INTO ticket_satisfaction (ticket_id, rating, comment, envoieok) VALUES (2,5,'Service rapide et efficace.',TRUE);
 
 -- Interventions
 INSERT INTO intervention (ticket_id, site_id, demande_id, titre, description, date_debut, date_fin, status, ticket_agent_id, metier) VALUES
-(1,1,1,'Diagnostic','Relevé des automates GTB.','2025-01-16',NULL,'En_attente',(SELECT id FROM ticket_agent WHERE ticket_id=1 LIMIT 1),'GTB'),
-(1,1,1,'Correction GTB','Remplacement automate GTB.','2025-01-20',NULL,'En_attente',(SELECT id FROM ticket_agent WHERE ticket_id=1 LIMIT 1),'GTB'),
-(2,2,2,'Remplacement caméra','Caméra remplacée.','2025-02-11','2025-02-11','Termine',(SELECT id FROM ticket_agent WHERE ticket_id=2 LIMIT 1),'Video'),
-(3,3,3,'Pose lecteur badge','Installation d''un nouveau lecteur.','2025-03-06',NULL,'En_attente',(SELECT id FROM ticket_agent WHERE ticket_id=3 LIMIT 1),'Control_Acces');
+(1,1,1,'Diagnostic','Relevé des automates GTB.','2025-01-16',NULL,'En_attente',(SELECT id FROM ticket_agent WHERE ticket_id=1 LIMIT 1),'GTB'),       
+(1,1,1,'Correction GTB','Remplacement automate GTB.','2025-01-20',NULL,'En_attente',(SELECT id FROM ticket_agent WHERE ticket_id=1 LIMIT 1),'GTB'),  
+(2,2,2,'Remplacement caméra','Caméra remplacée.','2025-02-11','2025-02-11','Termine',(SELECT id FROM ticket_agent WHERE ticket_id=2 LIMIT 1),'Video')
+,
+(3,3,3,'Pose lecteur badge','Installation d''un nouvel accès.','2025-03-06',NULL,'En_attente',(SELECT id FROM ticket_agent WHERE ticket_id=3 LIMIT
+ 1),'Control_Acces');
 
 -- Matériel catalogue + commandes
-INSERT INTO materiel_catalogue (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, actif) VALUES
-('Capteur Solaire 450W','REF001','Capteur Solaire 450W','Énergie','SunPower','Fournisseur Solaire',0,'Classe A',280.00,'Panneau PV dernière génération','GTB',TRUE),
-('Caméra IP 4K','REF002','Caméra IP 4K','Sécurité','Hikvision','Fournisseur Sécurité',5,'Classe B',120.00,'Caméra haute résolution','Video',TRUE),
-('Lecteur RFID','REF003','Lecteur de badges RFID','Contrôle d''accès','HID','Fournisseur Accès',3,'Classe B',90.00,'Lecteur RFID pour portiques','Control_Acces',TRUE);
+INSERT INTO materiel_catalogue (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, co
+mmentaire, metier, actif) VALUES
+('Capteur Solaire 450W','REF001','Capteur Solaire 450W','Énergie','SunPower','Fournisseur Solaire',0,'Classe A',280.00,'Panneau PV dernière génératio
+n','GTB',TRUE),
+('Caméra IP 4K','REF002','Caméra IP 4K','Sécurité','Hikvision','Fournisseur Sécurité',5,'Classe B',120.00,'Caméra haute résolution','Video',TRUE),   
+('Lecteur RFID','REF003','Lecteur de badges RFID','Contrôle d''accès','HID','Fournisseur Accès',3,'Classe B',90.00,'Lecteur RFID pour portiques','Con
+trol_Acces',TRUE);
 
-INSERT INTO materiel (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, commande_status) VALUES
-('Capteur Solaire 450W','REF001','Capteur Solaire 450W','Énergie','SunPower','Fournisseur Solaire',0,'Classe A',280.00,'Commande capteur','GTB','En livraison'),
+INSERT INTO materiel (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire,
+ metier, commande_status) VALUES
+('Capteur Solaire 450W','REF001','Capteur Solaire 450W','Énergie','SunPower','Fournisseur Solaire',0,'Classe A',280.00,'Commande capteur','GTB','En l
+ivraison'),
 ('Caméra IP 4K','REF002','Caméra IP 4K','Sécurité','Hikvision','Fournisseur Sécurité',5,'Classe B',120.00,'Commande caméra','Video','Reçu'),
-('Lecteur RFID','REF003','Lecteur de badges RFID','Contrôle d''accès','HID','Fournisseur Accès',3,'Classe B',90.00,'Commande badge','Control_Acces','A commander');
+('Lecteur RFID','REF003','Lecteur de badges RFID','Contrôle d''accès','HID','Fournisseur Accès',3,'Classe B',90.00,'Commande badge','Control_Acces','
+A commander');
 
 INSERT INTO intervention_materiel (intervention_id, materiel_id, quantite, commentaire) VALUES
-((SELECT id FROM intervention WHERE titre='Diagnostic' LIMIT 1),(SELECT id FROM materiel WHERE reference='REF001'),1,'Utilisé pour diagnostic'),
-((SELECT id FROM intervention WHERE titre='Remplacement caméra' LIMIT 1),(SELECT id FROM materiel WHERE reference='REF002'),2,'Pose caméra'),
-((SELECT id FROM intervention WHERE titre='Pose lecteur badge' LIMIT 1),(SELECT id FROM materiel WHERE reference='REF003'),1,'Installation badge');
+((SELECT id FROM intervention WHERE titre='Diagnostic' LIMIT 1),(SELECT id FROM materiel WHERE reference='REF001'),1,'Utilisé pour diagnostic'),     
+((SELECT id FROM intervention WHERE titre='Remplacement caméra' LIMIT 1),(SELECT id FROM materiel WHERE reference='REF002'),2,'Pose caméra'),        
+((SELECT id FROM intervention WHERE titre='Pose lecteur badge' LIMIT 1),(SELECT id FROM materiel WHERE reference='REF003'),1,'Installation badge');  
 
 -- Rendezvous
 INSERT INTO rendezvous (titre, description, date_rdv, date_fin, statut, sujet, intervention_id, site_id) VALUES
-('RDV GTB Janvier','Planification diagnostic','2025-01-15 09:00','2025-01-15 10:00','Planifie','intervention',(SELECT id FROM intervention WHERE titre='Diagnostic' LIMIT 1),1),
-('RDV Caméra','Remplacement caméra','2025-02-11 14:00','2025-02-11 15:00','Planifie','intervention',(SELECT id FROM intervention WHERE titre='Remplacement caméra' LIMIT 1),2);
+('RDV GTB Janvier','Planification diagnostic','2025-01-15 09:00','2025-01-15 10:00','Planifie','intervention',(SELECT id FROM intervention WHERE titr
+e='Diagnostic' LIMIT 1),1),
+('RDV Caméra','Remplacement caméra','2025-02-11 14:00','2025-02-11 15:00','Planifie','intervention',(SELECT id FROM intervention WHERE titre='Remplac
+ement caméra' LIMIT 1),2);
 
 -- Documents
 INSERT INTO documents_repertoire (cible_type, cible_id, nature, nom_fichier) VALUES
@@ -187,7 +198,9 @@ INSERT INTO messagerie (conversation_id, sender_id, receiver_id, ticket_id, dema
 ('ticket-3', 1, 2, 3, 3, 2, 'Pièce jointe badge');
 
 INSERT INTO messagerie_attachment (message_id, file_blob, file_name, file_type, file_size) VALUES
-((SELECT id FROM messagerie WHERE conversation_id='ticket-2' ORDER BY id DESC LIMIT 1), decode('526170706f727420696e74657276656e74696f6e2063616d657261','hex'), 'rapport.txt', 'text/plain', 28),
-((SELECT id FROM messagerie WHERE conversation_id='ticket-3' ORDER BY id DESC LIMIT 1), decode('4e6f74696365206261646765','hex'), 'notice.txt', 'text/plain', 12);
+((SELECT id FROM messagerie WHERE conversation_id='ticket-2' ORDER BY id DESC LIMIT 1), decode('526170706f727420696e74657276656e74696f6e2063616d65726
+1','hex'), 'rapport.txt', 'text/plain', 28),
+((SELECT id FROM messagerie WHERE conversation_id='ticket-3' ORDER BY id DESC LIMIT 1), decode('4e6f74696365206261646765','hex'), 'notice.txt', 'text
+/plain', 12);
 
 COMMIT;
