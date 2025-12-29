@@ -72,23 +72,32 @@
       <div class="row g-3 mt-2">
         <div class="col-lg-6">
           <div class="card h-100">
-            <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
-              <span>Sites associés</span>
-              <span class="badge bg-primary" id="sites-count">0</span>
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div class="d-flex align-items-center gap-2">
+                <span>Sites associés</span>
+                <span class="badge bg-primary" id="sites-count">0</span>
+              </div>
+              <a class="btn btn-sm btn-outline-primary" id="sites-all-btn" href="#"><i class="bi bi-building"></i> Voir tous</a>
             </div>
             <ul id="sites-list" class="list-group list-group-flush"></ul>
           </div>
         </div>
         <div class="col-lg-6">
           <div class="card h-100">
-            <div class="card-header fw-semibold">Factures</div>
+            <div class="card-header fw-semibold d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <span>Factures</span>
+              <a class="btn btn-sm btn-outline-secondary" id="factures-all-btn" href="#"><i class="bi bi-receipt"></i> Voir toutes</a>
+            </div>
             <ul id="factures-list" class="list-group list-group-flush"></ul>
           </div>
         </div>
       </div>
 
       <div class="card mt-3">
-        <div class="card-header fw-semibold">Devis</div>
+        <div class="card-header fw-semibold d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <span>Devis</span>
+          <a class="btn btn-sm btn-outline-info" id="devis-all-btn" href="#"><i class="bi bi-file-earmark-text"></i> Voir tous</a>
+        </div>
         <ul id="devis-list" class="list-group list-group-flush"></ul>
       </div>
     </div>
@@ -201,9 +210,15 @@
         renderDocs(document.getElementById('devis-list'), data.devis || [], 'Aucun devis');
 
         // Set up links
-        document.getElementById('sites-link').href = `association-sites.html?association_id=${associationId}`;
-        document.getElementById('factures-link').href = `association-factures.html?association_id=${associationId}`;
-        document.getElementById('devis-link').href = `association-devis.html?association_id=${associationId}`;
+        const sitesUrl = `sites.html?association_id=${associationId}`;
+        const facturesUrl = `factures.html?association_id=${associationId}`;
+        const devisUrl = `contrats.html?association_id=${associationId}`;
+        document.getElementById('sites-link').href = sitesUrl;
+        document.getElementById('factures-link').href = facturesUrl;
+        document.getElementById('devis-link').href = devisUrl;
+        document.getElementById('sites-all-btn').href = sitesUrl;
+        document.getElementById('factures-all-btn').href = facturesUrl;
+        document.getElementById('devis-all-btn').href = devisUrl;
 
         loadingEl.classList.add('d-none');
         mainContentEl.classList.remove('d-none');
