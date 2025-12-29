@@ -41,10 +41,7 @@
           <input type="date" id="contrat-date-end" class="form-control" title="Date de début max">
         </div>
         <div class="col-lg-3 col-md-4 col-12">
-          <select id="association-filter" class="form-select">
-            <option value="">Toutes les associations</option>
-            <!-- Options loaded by JS -->
-          </select>
+          <input type="text" id="association-filter" class="form-control" placeholder="Filtrer par association">
         </div>
       </div>
     </div>
@@ -121,7 +118,6 @@
       const editContratFrame = document.getElementById('editContratFrame');
 
       let contrats = [];
-      let apiAssociations = []; // To store fetched associations
 
       async function api(url, opts={}) {
         const res = await fetch(url, { headers, ...opts });
@@ -139,22 +135,8 @@
       async function loadContrats() {
         tableBody.innerHTML = '<tr><td colspan="6" class="text-muted">Chargement...</td></tr>';
         try {
-          const [contratsList, associationsList] = await Promise.all([
-            api('/api/contrats'),
-            api('/api/associations')
-          ]);
+          const contratsList = await api('/api/contrats');
           contrats = contratsList;
-          apiAssociations = associationsList;
-
-          // Populate association filter
-          associationFilter.innerHTML = '<option value="">Toutes les associations</option>';
-          apiAssociations.forEach(asso => {
-            const option = document.createElement('option');
-            option.value = asso.id;
-            option.textContent = asso.titre;
-            associationFilter.appendChild(option);
-          });
-          
           applyFilters();
         } catch (e) {
           tableBody.innerHTML = '<tr><td colspan="6" class="text-danger">Erreur de chargement.</td></tr>';
@@ -165,7 +147,7 @@
         const term = (searchInput.value || '').toLowerCase();
         const start = dateStart.value ? new Date(dateStart.value) : null;
         const end = dateEnd.value ? new Date(dateEnd.value) : null;
-        const selectedAssociationId = associationFilter.value;
+        const associationSearchTerm = (associationFilter.value || '').toLowerCase(); // Get text input value
         if (start) start.setHours(0,0,0,0);
         if (end) end.setHours(23,59,59,999);
 
@@ -175,8 +157,8 @@
           if (start && deb && deb < start) return false;
           if (end && deb && deb > end) return false;
 
-          // Filter by association
-          const matchesAssociation = !selectedAssociationId || (c.associations && c.associations.some(asso => String(asso.id) === selectedAssociationId));
+          // Filter by association title
+          const matchesAssociation = !associationSearchTerm || (c.associations && c.associations.some(asso => asso.titre.toLowerCase().includes(associationSearchTerm)));
           
           return matchTerm && matchesAssociation;
         });
@@ -242,7 +224,7 @@
       searchInput.addEventListener('input', applyFilters);
       dateStart.addEventListener('change', applyFilters);
       dateEnd.addEventListener('change', applyFilters);
-      associationFilter.addEventListener('change', applyFilters); // New event listener
+      associationFilter.addEventListener('input', applyFilters); // Change to 'input' event listener
 
       if (toggleFiltersBtn && filtersRow) {
         toggleFiltersBtn.addEventListener('click', () => {

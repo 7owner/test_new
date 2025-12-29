@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   const isAdmin = (() => { try { const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
   let apiSites = [];
   let apiAgents = [];
-  let apiAssociations = []; // To store associations
   let openDemandSites = new Set();
   let sortAsc = true;
 
@@ -23,16 +22,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     tableBody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-3">Chargement...</td></tr>';
     const headers = token? { 'Authorization': `Bearer ${token}` } : {};
     try {
-      const [sRes, aRes, dRes, assoRes] = await Promise.all([
+      const [sRes, aRes, dRes] = await Promise.all([
         fetch('/api/sites', { headers, credentials:'same-origin' }),
         fetch('/api/agents', { headers, credentials:'same-origin' }),
-        fetch('/api/demandes_client?include_deleted=false', { headers, credentials:'same-origin' }),
-        fetch('/api/associations', { headers, credentials:'same-origin' }) // Fetch associations
+        fetch('/api/demandes_client?include_deleted=false', { headers, credentials:'same-origin' })
       ]);
       if (sRes.status===401||sRes.status===403){ try{ location.replace('/login.html'); }catch{ location.href='/login.html'; } return; }
       apiSites = sRes.ok ? await sRes.json() : [];
       apiAgents = aRes && aRes.ok ? await aRes.json() : [];
-      apiAssociations = assoRes && assoRes.ok ? await assoRes.json() : []; // Store associations
       openDemandSites = new Set();
       if (dRes && dRes.ok) {
         const demands = await dRes.json();
@@ -40,16 +37,6 @@ document.addEventListener('DOMContentLoaded', async function() {
           if (!d.ticket_id && d.site_id) openDemandSites.add(String(d.site_id));
         });
       }
-
-      // Populate association filter
-      associationFilter.innerHTML = '<option value="">Toutes les associations</option>';
-      apiAssociations.forEach(asso => {
-        const option = document.createElement('option');
-        option.value = asso.id;
-        option.textContent = asso.titre;
-        associationFilter.appendChild(option);
-      });
-
       applyFilters();
     } catch (e) {
       console.error(e);
@@ -91,7 +78,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       function applyFilters(){
         const term = (searchInput.value||'').toLowerCase();
-        const selectedAssociationId = associationFilter.value; // Get selected association
+        const associationSearchTerm = (associationFilter.value || '').toLowerCase(); // Get text input value
         const startDate = dateStartInput.value ? new Date(dateStartInput.value) : null;
         const endDate = dateEndInput.value ? new Date(dateEndInput.value) : null;
 
@@ -108,8 +95,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             || String(s.id||'').toLowerCase().includes(term)
             || addressText.includes(term);
           
-          // Filter by association
-          const matchesAssociation = !selectedAssociationId || (s.associations && s.associations.some(asso => String(asso.id) === selectedAssociationId));
+          // Filter by association title
+          const matchesAssociation = !associationSearchTerm || (s.associations && s.associations.some(asso => asso.titre.toLowerCase().includes(associationSearchTerm)));
           
           const siteStart = s.date_debut ? new Date(s.date_debut) : null;
           const siteEnd = s.date_fin ? new Date(s.date_fin) : null;
@@ -129,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
 
       searchInput.addEventListener('input', applyFilters);
-      associationFilter.addEventListener('change', applyFilters); // New event listener for association filter
+      associationFilter.addEventListener('input', applyFilters); // Change to 'input' event listener
       dateStartInput.addEventListener('change', applyFilters);
       dateEndInput.addEventListener('change', applyFilters);
       
