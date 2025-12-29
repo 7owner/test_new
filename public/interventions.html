@@ -130,8 +130,10 @@
             const tr = document.createElement('tr');
             tr.innerHTML = `
               <td class="fw-bold text-primary">#${it.id||''}</td>
-              <td><span class="fw-semibold">${it.ticket_id ? '#'+it.ticket_id : '—'}</span></td>
-              <td>${it.description||''}</td>
+              <td>
+                ${it.ticket_id ? `<span class="fw-semibold">#${it.ticket_id}</span> — <span class="text-muted">${it.ticket_titre || ''}</span>` : '—'}
+              </td>
+              <td>${it.titre ? `<div class="fw-semibold">${it.titre}</div><div class="small text-muted">${it.description||''}</div>` : (it.description||'')}</td>
               <td>${dDeb||'-'}</td>
               <td>${dFin||'-'}</td>
               <td>${elapsed||'-'}</td>
