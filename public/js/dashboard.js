@@ -33,7 +33,7 @@ async function buildHeaders(json=false){
                   <span class="badge ${badge}">${String(t.etat||'').replace('_',' ')}</span>
                 </div>
                 <div>
-                  <a href="ticket-view.html?id=${t.id}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i> Détails</a>
+                  <button class="btn btn-sm btn-info ticket-modal-btn" data-id="${t.id}"><i class="bi bi-eye"></i> Détails</button>
                 </div>
               </div>`;
             urgentMaintenancesDiv.appendChild(el);
@@ -133,6 +133,20 @@ async function buildHeaders(json=false){
         const frame = document.getElementById('orderInterventionFrame');
         if (modalEl && frame) {
           frame.src = `/intervention-view.html?id=${id}`;
+          const m = bootstrap.Modal.getOrCreateInstance(modalEl);
+          m.show();
+        }
+      });
+
+      // Ouverture du ticket en modal depuis la carte "Tickets ouverts récents"
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.ticket-modal-btn');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        const modalEl = document.getElementById('ticketModal');
+        const frame = document.getElementById('ticketFrame');
+        if (modalEl && frame) {
+          frame.src = `/ticket-view.html?id=${id}`;
           const m = bootstrap.Modal.getOrCreateInstance(modalEl);
           m.show();
         }
