@@ -1,5 +1,6 @@
 -- --------------------------------------------------
 -- ✅ PostgreSQL Schema Initialization (Corrected Order for Heroku)
+-- -- Forcing update --
 -- --------------------------------------------------
 
 SET search_path TO public;
