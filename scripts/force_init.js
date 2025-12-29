@@ -12,6 +12,7 @@ async function forceInit() {
     const client = await pool.connect();
     try {
         console.log('Forcing database initialization...');
+        await client.query('SET search_path TO public;');
         const schemaPath = path.join(__dirname, '..', 'database_correction', 'init_fixed.sql');
         const schemaSqlRaw = fs.readFileSync(schemaPath, 'utf8');
         
