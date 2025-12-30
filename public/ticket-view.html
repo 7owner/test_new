@@ -1177,6 +1177,7 @@
                 <div class="small text-muted">Intervention : <a href="intervention-view.html?id=${m.intervention_id || m._intervention?.id || ''}" class="link-button">${interLabel}</a></div>
                 ${m.fabricant ? `<div class="small text-muted">Fabricant : ${m.fabricant}</div>` : ''}
                 ${m.prix_achat ? `<div class="small text-muted">Prix achat : ${m.prix_achat} €</div>` : ''}
+                ${m.quantite ? `<div class="small text-muted">Quantité : ${m.quantite}</div>` : ''}
                 ${m.commentaire ? `<div class="small text-muted">Commentaire : ${m.commentaire}</div>` : ''}
               </div>
               <div class="text-end" style="min-width:180px;">
