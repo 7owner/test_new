@@ -48,76 +48,41 @@ async function buildHeaders(json=false){
         if (!ordersReceivedDiv) return;
         try {
           const headers = await buildHeaders(false);
-          const r = await fetch('/api/materiels', { headers, credentials: 'same-origin' });
-          const rows = r.ok ? await r.json() : [];
-          const commandes = (Array.isArray(rows) ? rows : []).filter(m => {
-            const status = (m.commande_status || m.status || '').toLowerCase();
-            return status === 'reçu' || status === 'recu';
-          });
-          commandes.sort((a, b) => (new Date(b.date_fin || b.updated_at || b.created_at || 0)) - (new Date(a.date_fin || a.updated_at || a.created_at || 0)));
-          const limited = commandes.slice(0, 5);
-          if (!limited.length) {
+          // Fetch full dashboard data which now includes recentOrders
+          const dashboardData = await (await fetch('/api/dashboard', { headers, credentials: 'same-origin' })).json();
+          const recentOrders = dashboardData.recentOrders || [];
+
+          if (!recentOrders.length) {
             ordersReceivedDiv.innerHTML = '<p class="text-muted">Aucune commande reçue.</p>';
             return;
           }
           ordersReceivedDiv.innerHTML = '';
-          // Précharger la liste des interventions pour trouver un lien
-          let interventions = [];
-          try {
-            const ri = await fetch('/api/interventions', { headers, credentials:'same-origin' });
-            interventions = ri.ok ? await ri.json() : [];
-          } catch {}
-          const materiMap = new Map(); // materiel_id -> intervention_id
-          const interMaterialsCache = new Map(); // intervention_id -> materiel_ids[]
-
-          async function findInterventionForMateriel(matId) {
-            if (materiMap.has(matId)) return materiMap.get(matId);
-            for (const iv of interventions) {
-              const ivId = iv.id || iv.intervention_id;
-              if (!ivId) continue;
-              let mats = interMaterialsCache.get(ivId);
-              if (!mats) {
-                try {
-                  const res = await fetch(`/api/interventions/${ivId}/materiels`, { headers, credentials:'same-origin' });
-                  mats = res.ok ? await res.json() : [];
-                  interMaterialsCache.set(ivId, mats);
-                } catch { mats = []; interMaterialsCache.set(ivId, mats); }
-              }
-              if (Array.isArray(mats) && mats.some(m => String(m.materiel_id || m.id) === String(matId))) {
-                materiMap.set(matId, ivId);
-                return ivId;
-              }
-            }
-            materiMap.set(matId, null);
-            return null;
-          }
-
-          for (const cmd of limited) {
+          
+          recentOrders.forEach(cmd => {
             const el = document.createElement('div');
             el.className = 'card card-body mb-2';
             const prix = cmd.prix_achat != null ? `${Number(cmd.prix_achat).toFixed(2)} €` : '—';
-            const matId = cmd.id || cmd.materiel_id;
-            const ivId = matId ? await findInterventionForMateriel(matId) : null;
-            const btnInter = ivId
-              ? `<button class="btn btn-sm btn-outline-info btn-intervention-modal" data-id="${ivId}"><i class="bi bi-eye"></i> Voir intervention</button>`
-              : `<a class="btn btn-sm btn-outline-secondary" href="/interventions.html?q=${encodeURIComponent(cmd.reference || '')}"><i class="bi bi-search"></i> Trouver intervention</a>`;
+            // Placeholder for intervention link - can be enhanced if needed
+            const btnInter = cmd.total_quantite_used_in_interventions > 0
+              ? `<button class="btn btn-sm btn-info" disabled title="Quantité utilisée en intervention">Utilisé: ${cmd.total_quantite_used_in_interventions}</button>`
+              : `<span class="badge bg-secondary">Non utilisé</span>`;
+
             el.innerHTML = `
               <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                 <div>
                   <div class="fw-semibold">${cmd.reference || 'Sans ref.'} — ${cmd.designation || cmd.titre || ''}</div>
-                  <div class="small text-muted">Fournisseur: ${cmd.fournisseur || '—'}</div>
+                  <div class="small text-muted">Statut: ${cmd.commande_status || 'N/A'}</div>
                   <div class="small text-muted">Prix: ${prix}</div>
                 </div>
                 <div class="d-flex flex-column align-items-end gap-1">
-                  <span class="badge bg-success">Reçu</span>
                   ${btnInter}
                 </div>
               </div>`;
             ordersReceivedDiv.appendChild(el);
-          }
+          });
           const footer = document.createElement('div');
           footer.className = 'd-flex justify-content-end mt-2';
-          footer.innerHTML = '<a class="btn btn-sm btn-outline-primary" href="/gestion-commande.html">Voir toutes</a>';
+          footer.innerHTML = '<a class="btn btn-sm btn-outline-primary" href="/materiel-gestion.html">Voir toutes</a>';
           ordersReceivedDiv.appendChild(footer);
         } catch (e) {
           ordersReceivedDiv.innerHTML = '<p class="text-muted">Impossible de charger les commandes.</p>';

@@ -748,6 +748,23 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
             }]
         };
 
+        // Fetch recently received materiel orders with quantities
+        const recentOrders = (await pool.query(`
+            SELECT
+                m.id,
+                m.titre,
+                m.reference,
+                m.designation,
+                m.commande_status,
+                COALESCE(SUM(im.quantite), 0) AS total_quantite_used_in_interventions
+            FROM materiel m
+            LEFT JOIN intervention_materiel im ON m.id = im.materiel_id
+            WHERE m.commande_status = 'Reçu' -- Only "received" orders
+            GROUP BY m.id
+            ORDER BY m.created_at DESC
+            LIMIT 5 -- Limit to 5 recent orders
+        `)).rows;
+
         res.json({
             activeTickets,
             ongoingInterventions,
@@ -757,7 +774,8 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
             chartData: chart,
             achatsCount,
             facturesCount,
-            reglementsCount
+            reglementsCount,
+            recentOrders // Include recent orders in the response
         });
     } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -1310,7 +1328,16 @@ app.get('/api/interventions/:id/relations', authenticateToken, async (req, res) 
 // List all catalogue materiels
 app.get('/api/catalogue', authenticateToken, async (req, res) => {
   try {
-    const r = await pool.query('SELECT * FROM materiel_catalogue ORDER BY id DESC');
+    const r = await pool.query(`
+      SELECT 
+          mc.*,
+          COALESCE(SUM(im.quantite), 0) AS total_quantite_used_in_interventions
+      FROM materiel_catalogue mc
+      LEFT JOIN materiel m ON mc.reference = m.reference -- Assuming materiel orders are linked by reference to catalogue
+      LEFT JOIN intervention_materiel im ON m.id = im.materiel_id
+      GROUP BY mc.id
+      ORDER BY mc.id DESC
+    `);
     res.json(r.rows);
   } catch (e) { console.error('Error fetching materiel catalogue:', e); res.status(500).json({ error: 'Internal Server Error' }); }
 });
@@ -1397,27 +1424,34 @@ app.get('/api/materiels', authenticateToken, async (req, res) => {
     const { intervention_id, categorie, metier, commande_status } = req.query;
     const params = [];
     const where = [];
+    let paramIndex = 1;
+
     if (intervention_id) {
+      where.push(`m.id IN (SELECT materiel_id FROM intervention_materiel WHERE intervention_id = $${paramIndex++})`);
       params.push(intervention_id);
-      where.push(`intervention_id = $${params.length}`);
     }
     if (categorie) {
+      where.push(`m.categorie = $${paramIndex++}`);
       params.push(categorie);
-      where.push(`categorie = $${params.length}`);
     }
     if (metier) {
+      where.push(`m.metier = $${paramIndex++}`);
       params.push(metier);
-      where.push(`metier = $${params.length}`);
     }
     if (commande_status) {
+      where.push(`m.commande_status = $${paramIndex++}`);
       params.push(commande_status);
-      where.push(`commande_status = $${params.length}`);
     }
+
     const sql = `
-      SELECT *
-      FROM materiel
+      SELECT
+          m.*,
+          COALESCE(SUM(im.quantite), 0) AS total_quantite_used_in_interventions
+      FROM materiel m
+      LEFT JOIN intervention_materiel im ON m.id = im.materiel_id
       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
-      ORDER BY id DESC`;
+      GROUP BY m.id
+      ORDER BY m.id DESC`;
     const r = await pool.query(sql, params);
     res.json(r.rows);
   } catch (e) { console.error('Error fetching materiels:', e); res.status(500).json({ error: 'Internal Server Error' }); }

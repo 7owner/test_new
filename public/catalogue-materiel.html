@@ -53,7 +53,8 @@
                 <th>Prix achat</th>
                 <th>Remise %</th>
                 <th>Classe</th>
-                <th>Métier</th>
+                <th class="text-center">Métier</th>
+                <th class="text-center">Utilisé en intervention</th>
                 <th class="text-center">Actif</th>
                 <th class="text-center">Actions</th>
               </tr>
@@ -252,6 +253,7 @@
               <td>${formatPercent(item.remise_fournisseur)}</td>
               <td>${item.classe_materiel || '-'}</td>
               <td>${item.metier || '-'}</td>
+              <td class="text-center">${item.total_quantite_used_in_interventions}</td>
               <td class="text-center">${item.actif ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}</td>
               <td class="text-center">
                 <button class="btn btn-sm btn-outline-primary docs-btn" data-id="${item.id}" title="Pièces jointes"><i class="bi bi-paperclip"></i></button>
