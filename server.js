@@ -758,10 +758,14 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
                 m.commande_status,
                 m.prix_achat,
                 m.fournisseur,
-                COALESCE(SUM(im.quantite), 0) AS total_quantite_used_in_interventions
+                COALESCE(SUM(im.quantite), 0) AS total_quantite_used_in_interventions,
+                MIN(im.intervention_id) AS intervention_id
             FROM materiel m
             LEFT JOIN intervention_materiel im ON m.id = im.materiel_id
-            WHERE m.commande_status = 'Reçu' -- Only "received" orders
+            WHERE LOWER(m.commande_status)::text IN (
+                'reçu','recu','reçue','reçus',
+                'installe','installé','installée'
+            )
             GROUP BY m.id
             ORDER BY m.created_at DESC
             LIMIT 5
