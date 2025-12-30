@@ -35,6 +35,7 @@
         <div class="text-muted small">Intervention <span id="intervention-id">-</span></div>
       </div>
       <div class="d-flex gap-2">
+        <button class="btn btn-outline-success btn-sm" id="download-html-btn"><i class="bi bi-download"></i> Télécharger (HTML)</button>
         <button class="btn btn-outline-primary btn-sm" id="edit-meta-btn"><i class="bi bi-pencil"></i> Modifier</button>
         <button class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
         <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer</button>
@@ -160,10 +161,13 @@
       const editValeurInput = document.getElementById('edit-valeur-input');
       const editResumeInput = document.getElementById('edit-resume-input');
       const editResumePreview = document.getElementById('edit-resume-preview');
+      const downloadBtn = document.getElementById('download-html-btn');
       let editResumeEditor = null;
       let currentRendu = null;
       let saving = false;
+      let attachments = [];
       let messages = [];
+      let printTemplate = null;
 
       const fetchJSON = async (url) => {
         const response = await fetch(url, { headers });
@@ -174,9 +178,77 @@
         return response.json();
       };
 
+      const escapeHtml = (str = '') => String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+      const buildAndDownloadHtml = async () => {
+        if (!currentRendu) return alert('Rendu non chargé.');
+        try {
+          if (!printTemplate) {
+            const resp = await fetch('/partials/rendu-print.html');
+            if (!resp.ok) throw new Error('Impossible de charger le modèle HTML.');
+            printTemplate = await resp.text();
+          }
+
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(printTemplate, 'text/html');
+          const titre = currentRendu.titre || `Rendu intervention #${currentRendu.intervention_id || renduId}`;
+          doc.getElementById('p-title')?.textContent = titre;
+          doc.getElementById('p-meta')?.textContent = `Intervention #${currentRendu.intervention_id || '-'} • Rendu #${currentRendu.id || renduId}`;
+          doc.getElementById('p-valeur')?.textContent = `Valeur : ${currentRendu.valeur || 'Non spécifiée'}`;
+          const resumeHtml = currentRendu.resume ? marked.parse(currentRendu.resume) : '<em>Aucun résumé.</em>';
+          const resumeBody = doc.getElementById('p-resume-body');
+          if (resumeBody) resumeBody.innerHTML = resumeHtml;
+
+          const attContainer = doc.getElementById('p-attachments');
+          if (attContainer) {
+            if (!attachments.length) {
+              attContainer.innerHTML = '<div class="meta">Aucune pièce jointe.</div>';
+            } else {
+              attContainer.innerHTML = attachments.map(att => {
+                const comment = escapeHtml(att.commentaire_image || 'Aucun commentaire');
+                const noteHtml = att.note ? marked.parse(att.note) : '';
+                const preview = att.kind === 'image'
+                  ? `<div style="margin:6px 0;"><img src="${att.url}" alt="${escapeHtml(att.nom_fichier || '')}" style="width:100%;border-radius:6px;"></div>`
+                  : '';
+                return `
+                  <div class="attachment">
+                    <h4>${escapeHtml(att.nom_fichier || 'Fichier')}</h4>
+                    <div class="meta">${escapeHtml(att.type || 'Pièce jointe')}</div>
+                    ${preview}
+                    <div class="comment">${comment}</div>
+                    ${noteHtml ? `<div class="comment">${noteHtml}</div>` : ''}
+                    <div class="meta"><a href="${att.url}" target="_blank" rel="noopener">Ouvrir</a></div>
+                  </div>
+                `;
+              }).join('');
+            }
+          }
+
+          const blob = new Blob([doc.documentElement.outerHTML], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `rendu-${currentRendu.id || renduId}.html`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          console.error(err);
+          alert(`Impossible de préparer le téléchargement : ${err.message}`);
+        }
+      };
+
       try {
         const { rendu, images, documents, message_attachments } = await fetchJSON(`/api/rendus/${renduId}`);
         currentRendu = rendu;
+        attachments = [];
+        messages = [];
 
         // Populate header and nav buttons
         interEl.textContent = rendu.intervention_id;
@@ -246,8 +318,6 @@
         });
 
         // Process and render attachments
-        const attachments = [];
-        const messages = [];
         (images || []).forEach(img => {
             attachments.push({
                 kind: 'image',
@@ -351,6 +421,8 @@
           `;
         }).join('');
       }
+
+      if (downloadBtn) downloadBtn.addEventListener('click', buildAndDownloadHtml);
     });
   </script>
 </body>

@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         <td><span class="badge ${hasTicket? 'bg-danger':'bg-success'}">${hasTicket? 'Oui':'Non'}</span></td>
         <td>${site.responsable_matricule? getAgentName(site.responsable_matricule): 'Non assigné'}</td>
         <td><small>Début: ${debut||''}<br>Fin: ${fin||''}</small></td>
-        <td class="d-flex gap-2 flex-wrap">
+        <td class="d-flex gap-2 flex-wrap justify-content-center align-items-center">
           <button class="btn btn-sm btn-info view-site" data-id="${site.id}"><i class="bi bi-eye"></i></button>
           ${isAdmin ? `<button class="btn btn-sm btn-warning edit-site" data-id="${site.id}"><i class="bi bi-pencil"></i></button>` : ''}
         </td>`;
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       function applyFilters(){
         const term = (searchInput.value||'').toLowerCase();
-        const associationSearchTerm = (associationFilter.value || '').toLowerCase(); // Get text input value
+        const associationId = associationFilter.value || '';
         const startDate = dateStartInput.value ? new Date(dateStartInput.value) : null;
         const endDate = dateEndInput.value ? new Date(dateEndInput.value) : null;
 
@@ -112,8 +112,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             || String(s.id||'').toLowerCase().includes(term)
             || addressText.includes(term);
           
-          // Filter by association title
-          const matchesAssociation = !associationSearchTerm || (s.associations && s.associations.some(asso => asso.titre.toLowerCase().includes(associationSearchTerm)));
+          // Filter by association id (if selected)
+          const matchesAssociation = !associationId || (s.associations && s.associations.some(asso => String(asso.id) === String(associationId)));
           
           const siteStart = s.date_debut ? new Date(s.date_debut) : null;
           const siteEnd = s.date_fin ? new Date(s.date_fin) : null;
@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
 
       searchInput.addEventListener('input', applyFilters);
-      associationFilter.addEventListener('input', applyFilters); // Change to 'input' event listener
+      associationFilter.addEventListener('change', applyFilters);
       dateStartInput.addEventListener('change', applyFilters);
       dateEndInput.addEventListener('change', applyFilters);
       
