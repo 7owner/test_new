@@ -762,9 +762,8 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
                 MIN(im.intervention_id) AS intervention_id
             FROM materiel m
             LEFT JOIN intervention_materiel im ON m.id = im.materiel_id
-            WHERE LOWER(m.commande_status)::text IN (
-                'reçu','recu','reçue','reçus',
-                'installe','installé','installée'
+            WHERE m.commande_status::text IN (
+                'Reçu','Recu','Installé','Installe'
             )
             GROUP BY m.id
             ORDER BY m.created_at DESC
