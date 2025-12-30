@@ -748,6 +748,28 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
             }]
         };
 
+        // Commandes reçues récentes (statuts reçus/installe, tolérance accent)
+        const recentOrders = (await pool.query(`
+            SELECT
+                m.id,
+                m.titre,
+                m.reference,
+                m.designation,
+                m.commande_status,
+                m.prix_achat,
+                m.fournisseur,
+                COALESCE(SUM(im.quantite), 0) AS total_quantite_used_in_interventions
+            FROM materiel m
+            LEFT JOIN intervention_materiel im ON m.id = im.materiel_id
+            WHERE LOWER(m.commande_status)::text IN (
+                'reçu','recu','reçue','reçus',
+                'installe','installé','installée'
+            )
+            GROUP BY m.id
+            ORDER BY COALESCE(m.updated_at, m.created_at) DESC
+            LIMIT 5
+        `)).rows;
+
         res.json({
             activeTickets,
             ongoingInterventions,
@@ -757,7 +779,8 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
             chartData: chart,
             achatsCount,
             facturesCount,
-            reglementsCount
+            reglementsCount,
+            recentOrders
         });
     } catch (err) {
         console.error('Error fetching dashboard data:', err);
