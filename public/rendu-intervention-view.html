@@ -272,21 +272,30 @@
 
         editBtn.addEventListener('click', () => {
           if (!currentRendu) return;
-          if (!editResumeEditor) {
-            editResumeEditor = new EasyMDE({
-              element: editResumeInput,
-              spellChecker: false,
-              forceSync: true,
-              status: false,
-              minHeight: "220px",
-              toolbar: ["bold","italic","heading","|","quote","unordered-list","ordered-list","|","link","table","code","preview"]
-            });
-            editResumeEditor.codemirror.on('change', updatePreview);
+          try {
+            // Init éditeur Markdown si dispo, sinon fallback textarea
+            if (!editResumeEditor && typeof EasyMDE !== 'undefined') {
+              editResumeEditor = new EasyMDE({
+                element: editResumeInput,
+                spellChecker: false,
+                forceSync: true,
+                status: false,
+                minHeight: "220px",
+                toolbar: ["bold","italic","heading","|","quote","unordered-list","ordered-list","|","link","table","code","preview"]
+              });
+              editResumeEditor.codemirror.on('change', updatePreview);
+            }
+            editValeurInput.value = currentRendu.valeur || '';
+            if (editResumeEditor) {
+              editResumeEditor.value(currentRendu.resume || '');
+            } else {
+              editResumeInput.value = currentRendu.resume || '';
+            }
+            updatePreview();
+            editModal.show();
+          } catch (err) {
+            alert('Impossible d’ouvrir le formulaire de modification : ' + err.message);
           }
-          editValeurInput.value = currentRendu.valeur || '';
-          editResumeEditor.value(currentRendu.resume || '');
-          updatePreview();
-          editModal.show();
         });
 
         document.getElementById('save-meta-btn').addEventListener('click', async () => {
