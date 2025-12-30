@@ -727,7 +727,7 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
         const ongoingInterventions = (await pool.query('SELECT COUNT(*) FROM intervention')).rows[0].count;
         const activeAgents = (await pool.query("SELECT COUNT(*) FROM agent WHERE actif = true")).rows[0].count;
         const sitesUnderContract = (await pool.query('SELECT COUNT(*) FROM site')).rows[0].count;
-        const urgentTickets = (await pool.query("SELECT * FROM ticket WHERE etat = 'Bloque'")).rows;
+        const urgentTickets = (await pool.query("SELECT * FROM ticket WHERE etat <> 'Termine'")).rows;
         const achatsCount = (await pool.query('SELECT COUNT(*) FROM achat')).rows[0].count;
         const facturesCount = (await pool.query('SELECT COUNT(*) FROM facture')).rows[0].count;
         const reglementsCount = (await pool.query('SELECT COUNT(*) FROM reglement')).rows[0].count;
@@ -756,13 +756,15 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
                 m.reference,
                 m.designation,
                 m.commande_status,
+                m.prix_achat,
+                m.fournisseur,
                 COALESCE(SUM(im.quantite), 0) AS total_quantite_used_in_interventions
             FROM materiel m
             LEFT JOIN intervention_materiel im ON m.id = im.materiel_id
-            WHERE m.commande_status = 'Reçu' -- Only "received" orders
+            WHERE m.commande_status IN ('Reçu','Recu','Installé')
             GROUP BY m.id
-            ORDER BY m.created_at DESC
-            LIMIT 5 -- Limit to 5 recent orders
+            ORDER BY COALESCE(m.updated_at, m.created_at) DESC
+            LIMIT 5
         `)).rows;
 
         res.json({
