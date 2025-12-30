@@ -63,14 +63,27 @@ async function buildHeaders(json=false){
             el.className = 'card card-body mb-2';
             const prix = cmd.prix_achat != null ? `${Number(cmd.prix_achat).toFixed(2)} €` : '—';
             const qtyUsed = Number(cmd.total_quantite_used_in_interventions || 0);
+            const status = cmd.commande_status || 'N/A';
+            const statusBadge = (() => {
+              switch (status) {
+                case 'Reçu':
+                case 'Recu': return 'bg-success';
+                case 'Installé': return 'bg-info text-dark';
+                case 'En livraison': return 'bg-warning text-dark';
+                default: return 'bg-secondary';
+              }
+            })();
 
             el.innerHTML = `
               <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                 <div>
                   <div class="fw-semibold">${cmd.reference || 'Sans ref.'} — ${cmd.designation || cmd.titre || ''}</div>
-                  <div class="small text-muted">Statut: ${cmd.commande_status || 'N/A'}</div>
+                  <div class="small text-muted">Fournisseur: ${cmd.fournisseur || '—'}</div>
                   <div class="small text-muted">Prix: ${prix}</div>
                   <div class="small text-muted">Quantité (interventions): ${qtyUsed}</div>
+                </div>
+                <div class="d-flex flex-column align-items-end gap-1">
+                  <span class="badge ${statusBadge}">${status}</span>
                 </div>
               </div>`;
             ordersReceivedDiv.appendChild(el);
