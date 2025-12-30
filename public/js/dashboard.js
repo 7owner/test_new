@@ -62,10 +62,7 @@ async function buildHeaders(json=false){
             const el = document.createElement('div');
             el.className = 'card card-body mb-2';
             const prix = cmd.prix_achat != null ? `${Number(cmd.prix_achat).toFixed(2)} €` : '—';
-            // Placeholder for intervention link - can be enhanced if needed
-            const btnInter = cmd.total_quantite_used_in_interventions > 0
-              ? `<button class="btn btn-sm btn-info" disabled title="Quantité utilisée en intervention">Utilisé: ${cmd.total_quantite_used_in_interventions}</button>`
-              : `<span class="badge bg-secondary">Non utilisé</span>`;
+            const qtyUsed = Number(cmd.total_quantite_used_in_interventions || 0);
 
             el.innerHTML = `
               <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
@@ -73,9 +70,7 @@ async function buildHeaders(json=false){
                   <div class="fw-semibold">${cmd.reference || 'Sans ref.'} — ${cmd.designation || cmd.titre || ''}</div>
                   <div class="small text-muted">Statut: ${cmd.commande_status || 'N/A'}</div>
                   <div class="small text-muted">Prix: ${prix}</div>
-                </div>
-                <div class="d-flex flex-column align-items-end gap-1">
-                  ${btnInter}
+                  <div class="small text-muted">Quantité (interventions): ${qtyUsed}</div>
                 </div>
               </div>`;
             ordersReceivedDiv.appendChild(el);
