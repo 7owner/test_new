@@ -73,6 +73,14 @@ async function buildHeaders(json=false){
                 default: return 'bg-secondary';
               }
             })();
+            const interId = cmd.intervention_id || null;
+            const interBtn = interId
+              ? `<a class="btn btn-sm btn-outline-primary btn-intervention-modal" data-id="${interId}">
+                    <i class="bi bi-search"></i> Trouver intervention
+                 </a>`
+              : (cmd.reference ? `<a class="btn btn-sm btn-outline-secondary" href="/interventions.html?q=${encodeURIComponent(cmd.reference)}" target="_blank">
+                    <i class="bi bi-search"></i> Rechercher par réf.
+                 </a>` : '');
 
             el.innerHTML = `
               <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
@@ -84,9 +92,7 @@ async function buildHeaders(json=false){
                 </div>
                 <div class="d-flex flex-column align-items-end gap-1">
                   <span class="badge ${statusBadge}">${status}</span>
-                  <a class="btn btn-sm btn-outline-primary btn-intervention-modal" data-id="${cmd.intervention_id || ''}">
-                    <i class="bi bi-search"></i> Trouver intervention
-                  </a>
+                  ${interBtn}
                 </div>
               </div>`;
             ordersReceivedDiv.appendChild(el);
@@ -107,7 +113,7 @@ async function buildHeaders(json=false){
         const id = btn.dataset.id;
         const modalEl = document.getElementById('orderInterventionModal');
         const frame = document.getElementById('orderInterventionFrame');
-        if (modalEl && frame) {
+        if (modalEl && frame && id) {
           frame.src = `/intervention-view.html?id=${id}`;
           const m = bootstrap.Modal.getOrCreateInstance(modalEl);
           m.show();
