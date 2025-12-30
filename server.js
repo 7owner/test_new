@@ -763,7 +763,7 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
             LEFT JOIN intervention_materiel im ON m.id = im.materiel_id
             WHERE m.commande_status = 'Reçu' -- Only "received" orders
             GROUP BY m.id
-            ORDER BY COALESCE(m.updated_at, m.created_at) DESC
+            ORDER BY m.created_at DESC
             LIMIT 5
         `)).rows;
 
