@@ -4,10 +4,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       try { const p = token ? JSON.parse(atob(token.split('.')[1])) : null; isAdmin = Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch {}
 
       const form = document.getElementById('site-new-form');
+      if (!form) return;
       const saveBtn = document.getElementById('save-site-btn');
       const adresseSelect = document.getElementById('adresse_id');
       const toggleNew = document.getElementById('toggle_new_address');
       const newAddr = document.getElementById('new-address-fields');
+      const clientSelect = document.getElementById('client_id');
+      const associationSelect = document.getElementById('association_ids');
+      const responsableSelect = document.getElementById('responsable_matricule');
+      const statutSelect = document.getElementById('site-statut');
 
       // Helper to build auth headers (JWT or CSRF for session)
       async function buildHeaders(json = false) {
@@ -26,8 +31,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Load addresses
       try {
-        const r = await fetch('/api/adresses', { headers: await buildHeaders(false), credentials: 'same-origin' });
-        if (r.ok) { const list = await r.json(); (Array.isArray(list)? list: []).forEach(a => adresseSelect.add(new Option(a.libelle || `Adresse #${a.id}`, a.id))); }
+        if (adresseSelect) {
+          const r = await fetch('/api/adresses', { headers: await buildHeaders(false), credentials: 'same-origin' });
+          if (r.ok) { const list = await r.json(); (Array.isArray(list)? list: []).forEach(a => adresseSelect.add(new Option(a.libelle || `Adresse #${a.id}`, a.id))); }
+        }
+      } catch {}
+
+      // Load clients
+      try {
+        if (clientSelect) {
+          const r = await fetch('/api/clients', { headers: await buildHeaders(false), credentials: 'same-origin' });
+          if (r.ok) { const list = await r.json(); (Array.isArray(list)? list: []).forEach(c => clientSelect.add(new Option(c.nom_client || `Client #${c.id}`, c.id))); }
+        }
+      } catch {}
+
+      // Load associations
+      try {
+        if (associationSelect) {
+          const r = await fetch('/api/associations', { headers: await buildHeaders(false), credentials: 'same-origin' });
+          if (r.ok) {
+            const list = await r.json();
+            (Array.isArray(list)? list: []).forEach(a => associationSelect.add(new Option(a.titre || `Association #${a.id}`, a.id)));
+          }
+        }
+      } catch {}
+
+      // Load agents for responsable
+      try {
+        if (responsableSelect) {
+          const r = await fetch('/api/agents', { headers: await buildHeaders(false), credentials: 'same-origin' });
+          if (r.ok) {
+            const list = await r.json();
+            (Array.isArray(list)? list: []).forEach(a => responsableSelect.add(new Option(`${a.nom||''} ${a.prenom||''}`.trim() || a.matricule, a.matricule)));
+          }
+        }
       } catch {}
 
       // Role guard
@@ -39,23 +76,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       const addrCP = document.getElementById('addr_code_postal');
       const addrVille = document.getElementById('addr_ville');
       const syncRequired = (on) => { req(addrL1,on); req(addrCP,on); req(addrVille,on); if (on) adresseSelect?.removeAttribute('required'); else adresseSelect?.setAttribute('required','true'); };
-      toggleNew.addEventListener('change', () => {
-        if (toggleNew.checked) { newAddr.classList.remove('d-none'); adresseSelect.setAttribute('disabled','true'); syncRequired(true); }
-        else { newAddr.classList.add('d-none'); adresseSelect.removeAttribute('disabled'); syncRequired(false); }
-      });
-      // Apply initial state
-      toggleNew.dispatchEvent(new Event('change'));
+      if (toggleNew) {
+        toggleNew.addEventListener('change', () => {
+          if (toggleNew.checked) { newAddr?.classList.remove('d-none'); adresseSelect?.setAttribute('disabled','true'); syncRequired(true); }
+          else { newAddr?.classList.add('d-none'); adresseSelect?.removeAttribute('disabled'); syncRequired(false); }
+        });
+        // Apply initial state
+        toggleNew.dispatchEvent(new Event('change'));
+      }
 
       // Submit
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!isAdmin) { alert('Action réservée aux administrateurs.'); return; }
         const nom_site = (document.getElementById('nom_site')?.value || '').trim();
-        let adresse_id = adresseSelect.disabled ? null : (Number(adresseSelect.value) || null);
+        let adresse_id = (adresseSelect && !adresseSelect.disabled) ? (Number(adresseSelect.value) || null) : null;
         const commentaire = (document.getElementById('commentaire')?.value || '').trim() || null;
         if (!nom_site) { alert('Veuillez renseigner le nom du site.'); return; }
+        if (clientSelect && !clientSelect.value) { alert('Veuillez sélectionner un client.'); return; }
 
-        if (toggleNew.checked) {
+        if (toggleNew && toggleNew.checked) {
           const libelle = (document.getElementById('addr_libelle')?.value || '').trim() || null;
           const ligne1 = (addrL1?.value || '').trim();
           const code_postal = (addrCP?.value || '').trim();
@@ -73,10 +113,41 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (!adresse_id) { alert('Veuillez sélectionner ou créer une adresse.'); return; }
         try {
-          const r = await fetch('/api/sites', { method: 'POST', headers: await buildHeaders(true), credentials: 'same-origin', body: JSON.stringify({ nom_site, adresse_id, commentaire }) });
+          const payload = {
+            nom_site,
+            adresse_id,
+            commentaire,
+            client_id: clientSelect ? Number(clientSelect.value) || null : null,
+            responsable_matricule: responsableSelect ? (responsableSelect.value || null) : null,
+            statut: statutSelect ? (statutSelect.value || 'Actif') : 'Actif'
+          };
+          const r = await fetch('/api/sites', { method: 'POST', headers: await buildHeaders(true), credentials: 'same-origin', body: JSON.stringify(payload) });
           const data = await r.json().catch(()=>null);
           if (!r.ok) throw new Error((data && data.error) || `HTTP ${r.status}`);
-          if (data?.id) { alert('Site créé avec succès'); location.href = `site-view.html?id=${data.id}`; } else { location.href = 'sites.html'; }
+          const siteId = data?.id;
+
+          // Lier les associations sélectionnées
+          if (siteId && associationSelect && associationSelect.selectedOptions.length) {
+            const selectedIds = Array.from(associationSelect.selectedOptions).map(o => o.value).filter(Boolean);
+            for (const assoId of selectedIds) {
+              try {
+                await fetch(`/api/associations/${assoId}/sites`, {
+                  method: 'POST',
+                  headers: await buildHeaders(true),
+                  credentials: 'same-origin',
+                  body: JSON.stringify({ site_id: siteId })
+                });
+              } catch (err) {
+                console.warn('Association non liée', assoId, err);
+              }
+            }
+          }
+
+          if (siteId) {
+            alert('Site créé avec succès');
+            try { window.parent.location.reload(); } catch {}
+            try { location.href = `site-view.html?id=${siteId}`; } catch {}
+          } else { location.href = 'sites.html'; }
         } catch (err) { console.error('Erreur création site:', err); alert(`Échec de la création: ${err.message}`); }
       });
     });

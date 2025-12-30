@@ -22,7 +22,7 @@
       <h1>Sites</h1>
       <div class="d-flex gap-2">
         <button class="btn btn-sm btn-outline-primary" id="toggle-filters-btn"><i class="bi bi-funnel-fill me-1"></i> Masquer les filtres</button>
-        <!--<button class="btn btn-primary" id="create-site-btn" data-bs-toggle="modal" data-bs-target="#createSiteModal"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau site</button>-->
+        <button class="btn btn-primary" id="create-site-btn" data-bs-toggle="modal" data-bs-target="#createSiteModal"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau site</button>
       </div>
     </div>
 
@@ -35,7 +35,9 @@
             <input type="text" class="form-control" id="site-search" placeholder="Rechercher par nom ou ID...">
         </div>
         <div class="col-lg-3 col-md-6">
-            <input type="text" class="form-control" id="association-filter" placeholder="Rechercher par association">
+            <select class="form-select" id="association-filter">
+              <option value="">Toutes les associations</option>
+            </select>
         </div>
         <div class="col-lg-2 col-md-6">
             <input type="date" class="form-control" id="site-date-start" title="Date de début">
@@ -81,7 +83,85 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <iframe src="/site-new.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+          <form id="site-new-form" class="row g-3">
+            <div class="col-12">
+              <label for="nom_site" class="form-label">Nom du Site</label>
+              <input type="text" class="form-control" id="nom_site" required>
+            </div>
+            <div class="col-lg-6 col-md-6">
+              <label for="client_id" class="form-label">Client</label>
+              <select class="form-select" id="client_id" required>
+                <option value="">Sélectionner un client</option>
+              </select>
+            </div>
+            <div class="col-lg-6 col-md-6">
+              <label for="responsable_matricule" class="form-label">Responsable</label>
+              <select class="form-select" id="responsable_matricule">
+                <option value="">Non assigné</option>
+              </select>
+            </div>
+            <div class="col-lg-6 col-md-6">
+              <label for="association_ids" class="form-label">Associations</label>
+              <select multiple class="form-select" id="association_ids">
+              </select>
+              <small class="text-muted">Choisissez une ou plusieurs associations.</small>
+            </div>
+            <div class="col-lg-3 col-md-6">
+              <label for="site-date-start" class="form-label">Date début</label>
+              <input type="date" class="form-control" id="site-date-start">
+            </div>
+            <div class="col-lg-3 col-md-6">
+              <label for="site-date-end" class="form-label">Date fin</label>
+              <input type="date" class="form-control" id="site-date-end">
+            </div>
+            <div class="col-lg-4 col-md-6">
+              <label for="site-statut" class="form-label">Statut</label>
+              <select class="form-select" id="site-statut">
+                <option value="Actif">Actif</option>
+                <option value="Inactif">Inactif</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="toggle_new_address">
+                <label class="form-check-label" for="toggle_new_address">Saisir une nouvelle adresse</label>
+              </div>
+              <label for="adresse_id" class="form-label">Adresse associée</label>
+              <select class="form-select" id="adresse_id">
+                <option value="">Sélectionner une adresse existante</option>
+              </select>
+              <div id="new-address-fields" class="row g-2 mt-2 d-none">
+                <div class="col-12">
+                  <label for="addr_libelle" class="form-label">Libellé (facultatif)</label>
+                  <input type="text" class="form-control" id="addr_libelle" placeholder="Ex: Siège, Entrepôt, ...">
+                </div>
+                <div class="col-12">
+                  <label for="addr_ligne1" class="form-label">Adresse (ligne 1)</label>
+                  <input type="text" class="form-control" id="addr_ligne1" placeholder="N°, Rue ...">
+                </div>
+                <div class="col-md-4">
+                  <label for="addr_code_postal" class="form-label">Code postal</label>
+                  <input type="text" class="form-control" id="addr_code_postal">
+                </div>
+                <div class="col-md-5">
+                  <label for="addr_ville" class="form-label">Ville</label>
+                  <input type="text" class="form-control" id="addr_ville">
+                </div>
+                <div class="col-md-3">
+                  <label for="addr_pays" class="form-label">Pays</label>
+                  <input type="text" class="form-control" id="addr_pays" value="France">
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <label for="commentaire" class="form-label">Commentaire</label>
+              <textarea class="form-control" id="commentaire" rows="3"></textarea>
+            </div>
+            <div class="col-12 d-flex gap-2">
+              <button type="submit" class="btn btn-primary" id="save-site-btn"><i class="bi bi-save me-2"></i>Enregistrer</button>
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -117,5 +197,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script src="/js/sites.js"></script>
+  <script src="/js/site-new.js"></script>
 </body>
 </html>
