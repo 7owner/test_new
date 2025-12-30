@@ -84,6 +84,9 @@ async function buildHeaders(json=false){
                 </div>
                 <div class="d-flex flex-column align-items-end gap-1">
                   <span class="badge ${statusBadge}">${status}</span>
+                  <a class="btn btn-sm btn-outline-primary btn-intervention-modal" data-id="${cmd.intervention_id || ''}">
+                    <i class="bi bi-search"></i> Trouver intervention
+                  </a>
                 </div>
               </div>`;
             ordersReceivedDiv.appendChild(el);
