@@ -54,6 +54,7 @@
                 <th>Désignation</th>
                 <th>Fabricant</th>
                 <th>Fournisseur</th>
+                <th>Quantité (interventions)</th>
                 <th>Prix achat</th>
                 <th>Remise %</th>
                 <th>Statut Commande</th>
@@ -117,6 +118,30 @@
     </div>
   </div>
 
+  <!-- Modal réception -->
+  <div class="modal fade" id="receiveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Marquer comme reçu</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2 text-muted" id="receive-ref">Référence : -</p>
+          <div class="mb-3">
+            <label class="form-label">Quantité reçue</label>
+            <input type="number" min="0" step="1" class="form-control" id="receive-qty" placeholder="Ex: 5">
+            <small class="text-muted">Cette quantité sera enregistrée dans le commentaire de la commande.</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-success" id="receive-save-btn"><i class="bi bi-check-circle me-1"></i>Valider reçu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal consultation documents -->
   <div class="modal fade" id="docsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -152,9 +177,15 @@
       const docsModal = new bootstrap.Modal(docsModalEl);
       const docsList = document.getElementById('docs-list');
       const docsModalLabel = document.getElementById('docsModalLabel');
+      const receiveModalEl = document.getElementById('receiveModal');
+      const receiveModal = new bootstrap.Modal(receiveModalEl);
+      const receiveRef = document.getElementById('receive-ref');
+      const receiveQty = document.getElementById('receive-qty');
+      const receiveSaveBtn = document.getElementById('receive-save-btn');
       
       let orders = [];
       let editingOrderId = null;
+      let receivingOrderId = null;
 
       const fields = {
           reference: document.getElementById('ord-reference'),
@@ -209,7 +240,7 @@
 
         tbody.innerHTML = '';
         if (!filtered.length) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-4">Aucune commande.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="text-muted text-center py-4">Aucune commande.</td></tr>';
             return;
         }
 
@@ -220,10 +251,12 @@
               <td>${item.designation || '-'}</td>
               <td>${item.fabricant || '-'}</td>
               <td>${item.fournisseur || '-'}</td>
+              <td>${item.total_quantite_used_in_interventions ?? 0}</td>
               <td>${formatPrice(item.prix_achat)}</td>
               <td>${formatPercent(item.remise_fournisseur)}</td>
               <td><span class="badge ${statusClass(item.commande_status)}">${(item.commande_status || '').replace('_', ' ')}</span></td>
               <td class="text-center">
+                <button class="btn btn-sm btn-outline-success receive-btn" data-id="${item.id}" title="Marquer reçu"><i class="bi bi-box-seam"></i></button>
                 <button class="btn btn-sm btn-outline-primary docs-btn" data-id="${item.id}" title="Pièces jointes"><i class="bi bi-paperclip"></i></button>
                 <button class="btn btn-sm btn-outline-secondary edit-btn" data-id="${item.id}" title="Détails"><i class="bi bi-pencil"></i></button>
                 <button class="btn btn-sm btn-outline-danger del-btn" data-id="${item.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
@@ -233,7 +266,7 @@
       }
 
       async function loadOrders() {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-4">Chargement...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-muted text-center py-4">Chargement...</td></tr>';
         try {
           orders = await api('/api/materiels');
           render();
@@ -293,12 +326,36 @@
           if (target.classList.contains('edit-btn')) {
               const order = orders.find(i => i.id == id);
               openModal(order);
+          } else if (target.classList.contains('receive-btn')) {
+              const order = orders.find(i => i.id == id);
+              if (!order) return;
+              receivingOrderId = id;
+              receiveRef.textContent = `Référence : ${order.reference || '-'}`;
+              receiveQty.value = '';
+              receiveModal.show();
           } else if (target.classList.contains('del-btn')) {
               if (!confirm('Supprimer cette commande?')) return;
               api(`/api/materiels/${id}`, { method: 'DELETE' }).then(loadOrders).catch(e => alert(e.message));
           } else if (target.classList.contains('docs-btn')) {
               openDocsModal(id);
           }
+      });
+
+      receiveSaveBtn.addEventListener('click', async () => {
+          if (!receivingOrderId) return;
+          const qty = Number(receiveQty.value);
+          if (Number.isNaN(qty) || qty < 0) { alert('Veuillez saisir une quantité valide.'); return; }
+          try {
+              await api(`/api/materiels/${receivingOrderId}`, {
+                  method: 'PUT',
+                  body: JSON.stringify({
+                    commande_status: 'Reçu',
+                    commentaire: `Quantité reçue: ${qty}`
+                  })
+              });
+              await loadOrders();
+              receiveModal.hide();
+          } catch (err) { alert(err.message); }
       });
 
       // --- Document Logic ---
