@@ -212,11 +212,19 @@
   <!-- ✅ HEADER -->
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <h4 class="mb-0 d-flex align-items-center">
-        <i class="bi bi-ticket-detailed me-2"></i>
-        <span id="header-title">Ticket</span>
-      </h4>
-      <!--<div class="small opacity-75" id="header-status-text"></div>-->
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <h4 class="mb-0 d-flex align-items-center">
+          <i class="bi bi-ticket-detailed me-2"></i>
+          <span id="header-title">Ticket</span>
+        </h4>
+        <div class="small opacity-75" id="header-status-text"></div>
+      </div>
+      <div class="d-flex flex-wrap gap-2" id="header-actions-bar" style="display:none;">
+        <button class="btn btn-light btn-sm" id="header-add-resp"><i class="bi bi-person-plus me-1"></i>Responsable</button>
+        <button class="btn btn-light btn-sm" id="header-add-agent"><i class="bi bi-people me-1"></i>Agent</button>
+        <button class="btn btn-light btn-sm" id="header-create-affaire"><i class="bi bi-briefcase me-1"></i>Affaire</button>
+        <button class="btn btn-light btn-sm" id="header-create-doe"><i class="bi bi-journal-text me-1"></i>DOE</button>
+      </div>
     </div>
 
     <!-- ✅ Ticket Infos -->
@@ -935,19 +943,27 @@
         renderAgents(agentsAssignes);
         await loadMaterielsSection(interventionsCache);
 
-        // Admin features
-        if (isAdmin) {
-          const addInt = document.getElementById('add-intervention-btn');
-          if (addInt) addInt.classList.remove('d-none');
-          const addResp = document.getElementById('add-responsable-btn');
-          if (addResp) addResp.classList.remove('d-none');
-          const addAgent = document.getElementById('add-agent-btn');
-          if (addAgent) addAgent.classList.remove('d-none');
-          if (addMaterielBtn) addMaterielBtn.classList.remove('d-none');
-          const editBtn = document.getElementById('edit-ticket-btn');
-          if (editBtn) editBtn.classList.remove('d-none');
-          const adminActions = document.getElementById('admin-actions-card');
-          if (adminActions) adminActions.classList.remove('d-none');
+       // Admin features
+       if (isAdmin) {
+         const addInt = document.getElementById('add-intervention-btn');
+         if (addInt) addInt.classList.remove('d-none');
+         const addResp = document.getElementById('add-responsable-btn');
+         if (addResp) addResp.classList.remove('d-none');
+         const addAgent = document.getElementById('add-agent-btn');
+         if (addAgent) addAgent.classList.remove('d-none');
+         if (addMaterielBtn) addMaterielBtn.classList.remove('d-none');
+         const editBtn = document.getElementById('edit-ticket-btn');
+         if (editBtn) editBtn.classList.remove('d-none');
+         const adminActions = document.getElementById('admin-actions-card');
+         if (adminActions) adminActions.classList.remove('d-none');
+          const bar = document.getElementById('header-actions-bar');
+          if (bar) {
+            bar.style.display = 'flex';
+            document.getElementById('header-add-resp')?.addEventListener('click', () => addResp?.click());
+            document.getElementById('header-add-agent')?.addEventListener('click', () => addAgent?.click());
+            document.getElementById('header-create-affaire')?.addEventListener('click', () => document.querySelector('[data-bs-target="#createAffaireModal"]')?.click());
+            document.getElementById('header-create-doe')?.addEventListener('click', () => document.querySelector('[data-bs-target="#createDoeModal"]')?.click());
+          }
 
           // Chargement des agents pour les sélecteurs
           let allAgents = [];
