@@ -234,6 +234,14 @@ CREATE TABLE IF NOT EXISTS demande_client (
     commentaire TEXT
 );
 
+CREATE TABLE IF NOT EXISTS demande_materiel (
+    id SERIAL PRIMARY KEY,
+    titre VARCHAR(255) NOT NULL,
+    commentaire TEXT,
+    quantite INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS ticket (
     id SERIAL PRIMARY KEY,
     doe_id BIGINT REFERENCES doe(id) ON DELETE SET NULL,
