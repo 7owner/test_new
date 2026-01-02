@@ -1001,13 +1001,10 @@
           if (addMaterielBtn) addMaterielBtn.classList.remove('d-none');
           const editBtn = document.getElementById('edit-ticket-btn');
           if (editBtn) editBtn.classList.remove('d-none');
-          const respAgentRow = document.getElementById('resp-agent-row');
-          if (respAgentRow) respAgentRow.classList.remove('d-none');
 
           const addResp = document.getElementById('add-responsable-btn');
           const addAgent = document.getElementById('add-agent-btn');
-          if (addResp) addResp.classList.remove('d-none');
-          if (addAgent) addAgent.classList.remove('d-none');
+          // Les cartes dédiées restent masquées; on utilise les boutons inline
           if (inlineAddResp) { inlineAddResp.classList.remove('d-none'); inlineAddResp.addEventListener('click', () => addResp?.click()); }
           if (inlineAddAgent) { inlineAddAgent.classList.remove('d-none'); inlineAddAgent.addEventListener('click', () => addAgent?.click()); }
           const bar = document.getElementById('header-actions-bar');
@@ -1020,11 +1017,8 @@
             document.getElementById('header-create-doe')?.addEventListener('click', () => document.querySelector('[data-bs-target="#createDoeModal"]')?.click());
           }
 
-          // Suppression Responsable
-          responsablesList?.addEventListener('click', async (e) => {
-            const btn = e.target.closest('.del-resp');
-            if (!btn) return;
-            const matricule = btn.dataset.m;
+          // Suppression Responsable (inline badges et éventuelle liste)
+          const handleRespDelete = async (matricule) => {
             if (!matricule) return;
             if (!confirm('Supprimer ce responsable ?')) return;
             try {
@@ -1032,13 +1026,20 @@
               if (!resDel.ok) throw new Error('Erreur suppression responsable');
               location.reload();
             } catch (err) { alert(err.message); }
+          };
+          inlineResp?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.del-resp');
+            if (!btn) return;
+            handleRespDelete(btn.dataset.m);
+          });
+          responsablesList?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.del-resp');
+            if (!btn) return;
+            handleRespDelete(btn.dataset.m);
           });
 
-          // Suppression Agent
-          agentsList?.addEventListener('click', async (e) => {
-            const btn = e.target.closest('.del-agent');
-            if (!btn) return;
-            const matricule = btn.dataset.m;
+          // Suppression Agent (inline badges et éventuelle liste)
+          const handleAgentDelete = async (matricule) => {
             if (!matricule) return;
             if (!confirm('Supprimer cet agent ?')) return;
             try {
@@ -1046,6 +1047,16 @@
               if (!resDel.ok) throw new Error('Erreur suppression agent');
               location.reload();
             } catch (err) { alert(err.message); }
+          };
+          inlineAg?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.del-agent');
+            if (!btn) return;
+            handleAgentDelete(btn.dataset.m);
+          });
+          agentsList?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.del-agent');
+            if (!btn) return;
+            handleAgentDelete(btn.dataset.m);
           });
 
           // Chargement des agents pour les sélecteurs (modales masquées mais accessibles si besoin)
