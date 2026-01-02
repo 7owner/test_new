@@ -150,15 +150,15 @@ INSERT INTO intervention (ticket_id, site_id, demande_id, titre, description, da
 (3,3,3,'Pose lecteur badge','Installation d''un nouvel accès.','2025-03-06',NULL,'En_attente',(SELECT id FROM ticket_agent WHERE ticket_id=3 LIMIT 1),'Control_Acces');
 
 -- Matériel catalogue + commandes
-INSERT INTO materiel_catalogue (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, actif) VALUES
-('Capteur Solaire 450W','REF001','Capteur Solaire 450W','Énergie','SunPower','Fournisseur Solaire',0,'Classe A',280.00,'Panneau PV dernière génération','GTB',TRUE),
-('Caméra IP 4K','REF002','Caméra IP 4K','Sécurité','Hikvision','Fournisseur Sécurité',5,'Classe B',120.00,'Caméra haute résolution','Video',TRUE),   
-('Lecteur RFID','REF003','Lecteur de badges RFID','Contrôle d''accès','HID','Fournisseur Accès',3,'Classe B',90.00,'Lecteur RFID pour portiques','Control_Acces',TRUE);
+INSERT INTO materiel_catalogue (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, actif) VALUES
+('Capteur Solaire 450W','REF001','Capteur Solaire 450W','Énergie','SunPower','Fournisseur Solaire',0,'Classe A',280.00,'Panneau PV dernière génération',TRUE),
+('Caméra IP 4K','REF002','Caméra IP 4K','Sécurité','Hikvision','Fournisseur Sécurité',5,'Classe B',120.00,'Caméra haute résolution',TRUE),   
+('Lecteur RFID','REF003','Lecteur de badges RFID','Contrôle d''accès','HID','Fournisseur Accès',3,'Classe B',90.00,'Lecteur RFID pour portiques',TRUE);
 
-INSERT INTO materiel (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, commande_status) VALUES
-('Capteur Solaire 450W','REF001','Capteur Solaire 450W','Énergie','SunPower','Fournisseur Solaire',0,'Classe A',280.00,'Commande capteur','GTB','En livraison'),
-('Caméra IP 4K','REF002','Caméra IP 4K','Sécurité','Hikvision','Fournisseur Sécurité',5,'Classe B',120.00,'Commande caméra','Video','Reçu'),
-('Lecteur RFID','REF003','Lecteur de badges RFID','Contrôle d''accès','HID','Fournisseur Accès',3,'Classe B',90.00,'Commande badge','Control_Acces','A commander');
+INSERT INTO materiel (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, commande_status) VALUES
+('Capteur Solaire 450W','REF001','Capteur Solaire 450W','Énergie','SunPower','Fournisseur Solaire',0,'Classe A',280.00,'Commande capteur','En livraison'),
+('Caméra IP 4K','REF002','Caméra IP 4K','Sécurité','Hikvision','Fournisseur Sécurité',5,'Classe B',120.00,'Commande caméra','Reçu'),
+('Lecteur RFID','REF003','Lecteur de badges RFID','Contrôle d''accès','HID','Fournisseur Accès',3,'Classe B',90.00,'Commande badge','A commander');
 
 INSERT INTO intervention_materiel (intervention_id, materiel_id, quantite, commentaire) VALUES
 ((SELECT id FROM intervention WHERE titre='Diagnostic' LIMIT 1),(SELECT id FROM materiel WHERE reference='REF001'),1,'Utilisé pour diagnostic'),     
