@@ -256,13 +256,19 @@
       <div class="row g-3 mt-4">
         <div class="col-lg-6">
           <div class="info-item">
-            <label>Responsables</label>
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="mb-0">Responsables</label>
+              <button class="btn btn-sm btn-outline-primary d-none" id="inline-add-resp"><i class="bi bi-plus"></i></button>
+            </div>
             <div id="inline-responsables" class="value text-muted small">Aucun responsable</div>
           </div>
         </div>
         <div class="col-lg-6">
           <div class="info-item">
-            <label>Agents assignés</label>
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="mb-0">Agents assignés</label>
+              <button class="btn btn-sm btn-outline-primary d-none" id="inline-add-agent"><i class="bi bi-plus"></i></button>
+            </div>
             <div id="inline-agents" class="value text-muted small">Aucun agent</div>
           </div>
         </div>
@@ -961,16 +967,28 @@
         // Inline recap in main card
         const inlineResp = document.getElementById('inline-responsables');
         const inlineAg = document.getElementById('inline-agents');
+        const inlineAddResp = document.getElementById('inline-add-resp');
+        const inlineAddAgent = document.getElementById('inline-add-agent');
         if (inlineResp) {
           if (responsables.length) {
-            inlineResp.innerHTML = responsables.map(r => `<span class="badge bg-secondary me-1">${r.agent_matricule || r.matricule || 'Resp'}</span>`).join(' ');
+            inlineResp.innerHTML = responsables.map(r => {
+              const label = r.agent_matricule || r.matricule || 'Resp';
+              return isAdmin
+                ? `<span class="badge bg-secondary me-1 d-inline-flex align-items-center gap-1">${label}<button class="btn btn-xs btn-link p-0 text-white del-resp" data-m="${label}"><i class="bi bi-x-lg"></i></button></span>`
+                : `<span class="badge bg-secondary me-1">${label}</span>`;
+            }).join(' ');
           } else {
             inlineResp.textContent = 'Aucun responsable';
           }
         }
         if (inlineAg) {
           if (agentsAssignes.length) {
-            inlineAg.innerHTML = agentsAssignes.map(a => `<span class="badge bg-light text-dark me-1">${a.agent_matricule || a.matricule || 'Agent'}</span>`).join(' ');
+            inlineAg.innerHTML = agentsAssignes.map(a => {
+              const label = a.agent_matricule || a.matricule || 'Agent';
+              return isAdmin
+                ? `<span class="badge bg-light text-dark me-1 d-inline-flex align-items-center gap-1">${label}<button class="btn btn-xs btn-link p-0 text-dark del-agent" data-m="${label}"><i class="bi bi-x-lg"></i></button></span>`
+                : `<span class="badge bg-light text-dark me-1">${label}</span>`;
+            }).join(' ');
           } else {
             inlineAg.textContent = 'Aucun agent';
           }
@@ -990,6 +1008,8 @@
           const addAgent = document.getElementById('add-agent-btn');
           if (addResp) addResp.classList.remove('d-none');
           if (addAgent) addAgent.classList.remove('d-none');
+          if (inlineAddResp) { inlineAddResp.classList.remove('d-none'); inlineAddResp.addEventListener('click', () => addResp?.click()); }
+          if (inlineAddAgent) { inlineAddAgent.classList.remove('d-none'); inlineAddAgent.addEventListener('click', () => addAgent?.click()); }
           const bar = document.getElementById('header-actions-bar');
           if (bar) {
             bar.classList.remove('d-none');
