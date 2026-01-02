@@ -219,7 +219,12 @@
         </h4>
         <div class="small opacity-75" id="header-status-text"></div>
       </div>
-      <div class="d-flex flex-wrap gap-2 d-none" id="header-actions-bar"></div>
+      <div class="d-flex flex-wrap gap-2 d-none" id="header-actions-bar">
+        <button class="btn btn-light btn-sm" id="header-add-resp"><i class="bi bi-person-plus me-1"></i>Responsable</button>
+        <button class="btn btn-light btn-sm" id="header-add-agent"><i class="bi bi-people me-1"></i>Agent</button>
+        <button class="btn btn-light btn-sm" id="header-create-affaire"><i class="bi bi-briefcase me-1"></i>Affaire</button>
+        <button class="btn btn-light btn-sm" id="header-create-doe"><i class="bi bi-journal-text me-1"></i>DOE</button>
+      </div>
     </div>
 
     <!-- ✅ Ticket Infos -->
@@ -978,6 +983,17 @@
           if (addMaterielBtn) addMaterielBtn.classList.remove('d-none');
           const editBtn = document.getElementById('edit-ticket-btn');
           if (editBtn) editBtn.classList.remove('d-none');
+
+          const addResp = document.getElementById('add-responsable-btn');
+          const addAgent = document.getElementById('add-agent-btn');
+          const bar = document.getElementById('header-actions-bar');
+          if (bar) {
+            bar.style.display = 'flex';
+            document.getElementById('header-add-resp')?.addEventListener('click', () => addResp?.click());
+            document.getElementById('header-add-agent')?.addEventListener('click', () => addAgent?.click());
+            document.getElementById('header-create-affaire')?.addEventListener('click', () => document.querySelector('[data-bs-target="#createAffaireModal"]')?.click());
+            document.getElementById('header-create-doe')?.addEventListener('click', () => document.querySelector('[data-bs-target="#createDoeModal"]')?.click());
+          }
 
           // Chargement des agents pour les sélecteurs (modales masquées mais accessibles si besoin)
           let allAgents = [];
