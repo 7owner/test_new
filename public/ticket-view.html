@@ -931,7 +931,7 @@
             li.className = 'list-group-item d-flex justify-content-between align-items-center';
             const label = (r.actor_email || r.actor_name || r.agent_matricule || 'Responsable')
               + (r.role ? ` (${r.role})` : '');
-            li.textContent = label;
+            li.innerHTML = `<span>${label}</span>` + (isAdmin ? `<button class="btn btn-sm btn-outline-danger del-resp" data-m="${r.agent_matricule || r.matricule || ''}"><i class="bi bi-x-lg"></i></button>` : '');
             responsablesList.appendChild(li);
           });
         }
@@ -948,7 +948,7 @@
           arr.forEach(a => {
             const li = document.createElement('li');
             li.className = 'list-group-item d-flex justify-content-between align-items-center';
-            li.textContent = a.agent_matricule || a.matricule || 'Agent';
+            li.innerHTML = `<span>${a.agent_matricule || a.matricule || 'Agent'}</span>` + (isAdmin ? `<button class="btn btn-sm btn-outline-danger del-agent" data-m="${a.agent_matricule || a.matricule || ''}"><i class="bi bi-x-lg"></i></button>` : '');
             agentsList.appendChild(li);
           });
         }
@@ -995,6 +995,34 @@
             document.getElementById('header-create-affaire')?.addEventListener('click', () => document.querySelector('[data-bs-target="#createAffaireModal"]')?.click());
             document.getElementById('header-create-doe')?.addEventListener('click', () => document.querySelector('[data-bs-target="#createDoeModal"]')?.click());
           }
+
+          // Suppression Responsable
+          responsablesList?.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.del-resp');
+            if (!btn) return;
+            const matricule = btn.dataset.m;
+            if (!matricule) return;
+            if (!confirm('Supprimer ce responsable ?')) return;
+            try {
+              const resDel = await fetch(`/api/tickets/${ticketId}/responsables/${matricule}`, { method:'DELETE', headers: { ...headers }, credentials:'same-origin' });
+              if (!resDel.ok) throw new Error('Erreur suppression responsable');
+              location.reload();
+            } catch (err) { alert(err.message); }
+          });
+
+          // Suppression Agent
+          agentsList?.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.del-agent');
+            if (!btn) return;
+            const matricule = btn.dataset.m;
+            if (!matricule) return;
+            if (!confirm('Supprimer cet agent ?')) return;
+            try {
+              const resDel = await fetch(`/api/tickets/${ticketId}/agents/${matricule}`, { method:'DELETE', headers: { ...headers }, credentials:'same-origin' });
+              if (!resDel.ok) throw new Error('Erreur suppression agent');
+              location.reload();
+            } catch (err) { alert(err.message); }
+          });
 
           // Chargement des agents pour les sélecteurs (modales masquées mais accessibles si besoin)
           let allAgents = [];
