@@ -187,6 +187,33 @@
     </div>
   </div>
 
+  <!-- ✅ Demandes de matériel -->
+  <div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h4 class="mb-0 d-flex align-items-center"><i class="bi bi-boxes me-2"></i>Demandes matériel</h4>
+    </div>
+    <div class="card-body p-4">
+      <div class="row g-3 align-items-end mb-3">
+        <div class="col-md-5">
+          <label class="form-label">Matériel</label>
+          <input type="text" class="form-control" id="demande-titre" placeholder="Ex: Etiquette, Casque...">
+        </div>
+        <div class="col-md-5">
+          <label class="form-label">Commentaire</label>
+          <input type="text" class="form-control" id="demande-commentaire" placeholder="Détail de la demande">
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+          <div class="flex-grow-1">
+            <label class="form-label">Quantité</label>
+            <input type="number" min="1" class="form-control" id="demande-quantite" value="1">
+          </div>
+          <button class="btn btn-primary align-self-end" id="demande-submit-btn">Ajouter</button>
+        </div>
+      </div>
+      <div id="demandes-materiel-list"></div>
+    </div>
+  </div>
+
   <!-- ✅ Rendus d'intervention -->
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -466,6 +493,12 @@ document.addEventListener('DOMContentLoaded', async function () {
   const inlineAg = document.getElementById('inline-agents');
   const inlineAddResp = document.getElementById('inline-add-resp');
   const inlineAddAgent = document.getElementById('inline-add-agent');
+  const demandesList = document.getElementById('demandes-materiel-list');
+  const demandeTitreInput = document.getElementById('demande-titre');
+  const demandeCommentaireInput = document.getElementById('demande-commentaire');
+  const demandeQuantiteInput = document.getElementById('demande-quantite');
+  const demandeSubmitBtn = document.getElementById('demande-submit-btn');
+  let demandesCache = [];
 
 
   let ticketId = null;
@@ -504,6 +537,48 @@ document.addEventListener('DOMContentLoaded', async function () {
   }
 
   const renderMd = (txt='') => { try { return marked.parse(txt); } catch { return txt; } };
+  const renderDemandes = () => {
+    if (!demandesList) return;
+    if (!demandesCache.length) { demandesList.innerHTML = '<div class="text-muted small">Aucune demande.</div>'; return; }
+    demandesList.innerHTML = '';
+    demandesCache.forEach(d => {
+      const wrap = document.createElement('div');
+      wrap.className = 'card mb-2 shadow-sm';
+      wrap.innerHTML = `
+        <div class="card-body d-flex justify-content-between align-items-start gap-2">
+          <div>
+            <div class="fw-semibold">${d.titre}</div>
+            <div class="small text-muted">${d.commentaire || ''}</div>
+            <div class="small text-muted">Quantité: ${d.quantite || 1}</div>
+          </div>
+          <div class="text-end">
+            <div class="form-check">
+              <input class="form-check-input demande-check" type="checkbox" data-id="${d.id}" ${d.commande_complete ? 'checked' : ''}>
+              <label class="form-check-label small">Commandé</label>
+            </div>
+            <div class="small text-muted">${d.statut || ''}</div>
+          </div>
+        </div>`;
+      demandesList.appendChild(wrap);
+    });
+
+    demandesList.querySelectorAll('.demande-check').forEach(cb => {
+      cb.addEventListener('change', async (e) => {
+        const id = cb.dataset.id;
+        const checked = cb.checked;
+        try {
+          await fetchJSON(`/api/demandes-materiel/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ commande_complete: checked, statut: checked ? 'Commandé' : 'En_attente' })
+          });
+        } catch (err) {
+          alert(err.message || 'Impossible de mettre à jour');
+          cb.checked = !checked;
+        }
+      });
+    });
+  };
 
   async function fetchJSON(url, opts = {}) {
     const res = await fetch(url, { ...opts, headers: { ...headers, ...opts.headers } });
@@ -692,6 +767,42 @@ document.addEventListener('DOMContentLoaded', async function () {
   };
 
   // --- End Material Request / Catalog Logic ---
+
+  // --- Demandes matériel simples ---
+  async function loadDemandes() {
+    if (!demandesList) return;
+    try {
+      const q = new URLSearchParams();
+      q.set('intervention_id', interventionId);
+      demandesCache = await fetchJSON(`/api/demandes-materiel?${q.toString()}`);
+      renderDemandes();
+    } catch (e) {
+      demandesList.innerHTML = `<div class="text-danger small">Erreur de chargement : ${e.message}</div>`;
+    }
+  }
+
+  async function createDemande() {
+    const titre = (demandeTitreInput?.value || '').trim();
+    const commentaire = (demandeCommentaireInput?.value || '').trim();
+    const quantite = parseInt(demandeQuantiteInput?.value || '1', 10) || 1;
+    if (!titre) { alert('Veuillez saisir le matériel.'); return; }
+    try {
+      demandeSubmitBtn.disabled = true;
+      await fetchJSON('/api/demandes-materiel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titre, commentaire, quantite, intervention_id: interventionId, ticket_id: ticketId })
+      });
+      if (demandeTitreInput) demandeTitreInput.value = '';
+      if (demandeCommentaireInput) demandeCommentaireInput.value = '';
+      if (demandeQuantiteInput) demandeQuantiteInput.value = '1';
+      await loadDemandes();
+    } catch (e) {
+      alert(e.message || 'Erreur lors de la demande.');
+    } finally {
+      demandeSubmitBtn.disabled = false;
+    }
+  }
 
   function renderMateriels(filterTerm = '') {
     if (!materielsGrid || !materielsEmpty) return;
@@ -1003,6 +1114,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       if (agentSelect)       agentSelect.innerHTML       = options;
 
       fetchAndDisplayTicketRelations();
+      await loadDemandes();
 
     } catch (e) {
       console.error('Erreur chargement initial', e);
@@ -1177,6 +1289,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   if (requestMaterielMetierFilter) {
     requestMaterielMetierFilter.addEventListener('change', renderCatalogMaterials);
+  }
+  if (demandeSubmitBtn) {
+    demandeSubmitBtn.addEventListener('click', createDemande);
   }
 
   if (addSelectedMaterielsBtn) {

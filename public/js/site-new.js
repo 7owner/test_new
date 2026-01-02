@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const toggleNew = document.getElementById('toggle_new_address');
       const newAddr = document.getElementById('new-address-fields');
       const clientSelect = document.getElementById('client_id');
-      const associationSelect = document.getElementById('association_ids');
+
       const responsableSelect = document.getElementById('responsable_matricule');
       const statutSelect = document.getElementById('site-statut');
 
@@ -45,16 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       } catch {}
 
-      // Load associations
-      try {
-        if (associationSelect) {
-          const r = await fetch('/api/associations', { headers: await buildHeaders(false), credentials: 'same-origin' });
-          if (r.ok) {
-            const list = await r.json();
-            (Array.isArray(list)? list: []).forEach(a => associationSelect.add(new Option(a.titre || `Association #${a.id}`, a.id)));
-          }
-        }
-      } catch {}
+
 
       // Load agents for responsable
       try {
@@ -126,22 +117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (!r.ok) throw new Error((data && data.error) || `HTTP ${r.status}`);
           const siteId = data?.id;
 
-          // Lier les associations sélectionnées
-          if (siteId && associationSelect && associationSelect.selectedOptions.length) {
-            const selectedIds = Array.from(associationSelect.selectedOptions).map(o => o.value).filter(Boolean);
-            for (const assoId of selectedIds) {
-              try {
-                await fetch(`/api/associations/${assoId}/sites`, {
-                  method: 'POST',
-                  headers: await buildHeaders(true),
-                  credentials: 'same-origin',
-                  body: JSON.stringify({ site_id: siteId })
-                });
-              } catch (err) {
-                console.warn('Association non liée', assoId, err);
-              }
-            }
-          }
+
 
           if (siteId) {
             alert('Site créé avec succès');

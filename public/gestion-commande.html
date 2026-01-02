@@ -46,6 +46,15 @@
       </div>
     </div>
 
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Demandes matériel</h5>
+        <div id="demandes-cards" class="row g-3">
+          <div class="col-12 text-muted">Chargement...</div>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-body">
         <div class="table-responsive">
@@ -152,6 +161,7 @@
       const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' };
       
       const cardsContainer = document.getElementById('orders-cards');
+      const demandesContainer = document.getElementById('demandes-cards');
       const searchInput = document.getElementById('search-input');
       const statusFilter = document.getElementById('filter-status');
       
@@ -173,6 +183,7 @@
       let orders = [];
       let editingOrderId = null;
       let receivingOrderId = null;
+      let demandes = [];
 
       const fields = {
           reference: document.getElementById('ord-reference'),
@@ -268,7 +279,64 @@
           orders = await api('/api/materiels');
           render();
         } catch(e) {
-          tbody.innerHTML = `<tr><td colspan="8" class="text-danger text-center py-4">Erreur: ${e.message}</td></tr>`;
+          cardsContainer.innerHTML = `<div class="col-12 text-danger text-center py-4">Erreur: ${e.message}</div>`;
+        }
+      }
+
+      async function loadDemandes() {
+        if (!demandesContainer) return;
+        demandesContainer.innerHTML = '<div class="col-12 text-muted">Chargement...</div>';
+        try {
+          demandes = await api('/api/demandes-materiel');
+          if (!demandes.length) { demandesContainer.innerHTML = '<div class="col-12 text-muted">Aucune demande.</div>'; return; }
+          demandesContainer.innerHTML = '';
+          demandes.forEach(d => {
+            const col = document.createElement('div');
+            col.className = 'col-12 col-md-6 col-lg-4';
+            col.innerHTML = `
+              <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-start gap-2">
+                  <div>
+                    <div class="fw-semibold">${d.titre}</div>
+                    <div class="small text-muted">${d.commentaire || ''}</div>
+                    <div class="small text-muted">Quantité: ${d.quantite || 1}</div>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input demande-check" type="checkbox" data-id="${d.id}" ${d.commande_complete ? 'checked' : ''}>
+                  </div>
+                </div>
+                <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+                  <span class="badge bg-secondary">${d.statut || 'En_attente'}</span>
+                  <button class="btn btn-sm btn-outline-danger del-demande" data-id="${d.id}"><i class="bi bi-trash"></i></button>
+                </div>
+              </div>`;
+            demandesContainer.appendChild(col);
+          });
+          demandesContainer.querySelectorAll('.demande-check').forEach(cb => {
+            cb.addEventListener('change', async () => {
+              const id = cb.dataset.id;
+              const checked = cb.checked;
+              try {
+                await api(`/api/demandes-materiel/${id}`, {
+                  method: 'PATCH',
+                  body: JSON.stringify({ commande_complete: checked, statut: checked ? 'Commandé' : 'En_attente' })
+                });
+              } catch (err) {
+                alert(err.message);
+                cb.checked = !checked;
+              }
+            });
+          });
+          demandesContainer.querySelectorAll('.del-demande').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              if (!confirm('Supprimer cette demande ?')) return;
+              const id = btn.dataset.id;
+              try { await api(`/api/demandes-materiel/${id}`, { method: 'DELETE' }); loadDemandes(); }
+              catch (err) { alert(err.message); }
+            });
+          });
+        } catch (e) {
+          demandesContainer.innerHTML = `<div class="col-12 text-danger">Erreur: ${e.message}</div>`;
         }
       }
 
@@ -436,6 +504,7 @@
       statusFilter.addEventListener('change', render);
 
       loadOrders();
+      loadDemandes();
     });
   </script>
 </body>

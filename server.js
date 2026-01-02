@@ -1392,6 +1392,82 @@ app.post('/api/catalogue', authenticateToken, authorizeAdmin, async (req, res) =
   }
 });
 
+// -------------------- Demande Matériel --------------------
+// List demandes (optional filters)
+app.get('/api/demandes-materiel', authenticateToken, async (req, res) => {
+  const { ticket_id, intervention_id, statut } = req.query;
+  try {
+    const where = [];
+    const params = [];
+    let idx = 1;
+    if (ticket_id) { where.push(`ticket_id = $${idx++}`); params.push(ticket_id); }
+    if (intervention_id) { where.push(`intervention_id = $${idx++}`); params.push(intervention_id); }
+    if (statut) { where.push(`statut = $${idx++}`); params.push(statut); }
+    const r = await pool.query(
+      `SELECT * FROM demande_materiel ${where.length ? 'WHERE '+where.join(' AND ') : ''} ORDER BY created_at DESC`,
+      params
+    );
+    res.json(r.rows);
+  } catch (e) {
+    console.error('Error fetching demande_materiel:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Create demande
+app.post('/api/demandes-materiel', authenticateToken, async (req, res) => {
+  const { titre, commentaire, quantite, ticket_id, intervention_id } = req.body;
+  if (!titre) return res.status(400).json({ error: 'titre is required' });
+  try {
+    const r = await pool.query(
+      `INSERT INTO demande_materiel (titre, commentaire, quantite, ticket_id, intervention_id)
+       VALUES ($1,$2,COALESCE($3,1),$4,$5)
+       RETURNING *`,
+      [titre, commentaire || null, quantite || 1, ticket_id || null, intervention_id || null]
+    );
+    res.status(201).json(r.rows[0]);
+  } catch (e) {
+    console.error('Error creating demande_materiel:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Update demande (statut / commande_complete / commentaire / quantite)
+app.patch('/api/demandes-materiel/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { statut, commande_complete, commentaire, quantite } = req.body;
+  try {
+    const r = await pool.query(
+      `UPDATE demande_materiel
+       SET statut = COALESCE($1, statut),
+           commande_complete = COALESCE($2, commande_complete),
+           commentaire = COALESCE($3, commentaire),
+           quantite = COALESCE($4, quantite),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $5
+       RETURNING *`,
+      [statut || null, commande_complete, commentaire || null, quantite || null, id]
+    );
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json(r.rows[0]);
+  } catch (e) {
+    console.error('Error updating demande_materiel:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Delete demande
+app.delete('/api/demandes-materiel/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    const r = await pool.query('DELETE FROM demande_materiel WHERE id=$1 RETURNING id', [req.params.id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.status(204).send();
+  } catch (e) {
+    console.error('Error deleting demande_materiel:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // Update catalogue materiel (admin)
 app.put('/api/catalogue/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
