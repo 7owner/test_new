@@ -234,18 +234,7 @@ CREATE TABLE IF NOT EXISTS demande_client (
     commentaire TEXT
 );
 
-CREATE TABLE IF NOT EXISTS demande_materiel (
-    id SERIAL PRIMARY KEY,
-    titre VARCHAR(255) NOT NULL,
-    commentaire TEXT,
-    quantite INTEGER NOT NULL DEFAULT 1,
-    statut VARCHAR(50) DEFAULT 'En_attente',
-    commande_complete BOOLEAN DEFAULT FALSE,
-    ticket_id INTEGER REFERENCES ticket(id) ON DELETE CASCADE,
-    intervention_id INTEGER REFERENCES intervention(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+
 
 CREATE TABLE IF NOT EXISTS ticket (
     id SERIAL PRIMARY KEY,
@@ -286,6 +275,19 @@ CREATE TABLE IF NOT EXISTS intervention (
     status statut_intervention DEFAULT 'En_attente' NOT NULL,
     ticket_agent_id INTEGER REFERENCES ticket_agent(id) ON DELETE SET NULL,
     metier metier_type
+);
+
+CREATE TABLE IF NOT EXISTS demande_materiel (
+    id SERIAL PRIMARY KEY,
+    titre VARCHAR(255) NOT NULL,
+    commentaire TEXT,
+    quantite INTEGER NOT NULL DEFAULT 1,
+    statut VARCHAR(50) DEFAULT 'En_attente',
+    commande_complete BOOLEAN DEFAULT FALSE,
+    ticket_id INTEGER REFERENCES ticket(id) ON DELETE CASCADE,
+    intervention_id INTEGER REFERENCES intervention(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS materiel_catalogue (
