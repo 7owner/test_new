@@ -195,6 +195,7 @@ CREATE TABLE IF NOT EXISTS contrat (
     titre VARCHAR(255) NOT NULL UNIQUE,
     client_id BIGINT REFERENCES client(id) ON DELETE SET NULL,
     site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    metier metier_type,
     date_debut DATE NOT NULL,
     date_fin DATE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
