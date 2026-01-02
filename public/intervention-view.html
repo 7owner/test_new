@@ -162,6 +162,28 @@
           <div class="value" id="view_ticket_link">Non lié</div>
         </div>-->
       </div>
+
+      <!-- Inline responsables / agents -->
+      <div class="row g-3 mt-4">
+        <div class="col-lg-6">
+          <div class="info-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="mb-0">Responsables</label>
+              <button class="btn btn-sm btn-outline-primary d-none" id="inline-add-resp"><i class="bi bi-plus"></i></button>
+            </div>
+            <div id="inline-responsables" class="value text-muted small">Aucun responsable</div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="info-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="mb-0">Agents assignés</label>
+              <button class="btn btn-sm btn-outline-primary d-none" id="inline-add-agent"><i class="bi bi-plus"></i></button>
+            </div>
+            <div id="inline-agents" class="value text-muted small">Aucun agent</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -224,8 +246,8 @@
     </div>
   </div>
 
-  <!-- ✅ Responsables -->
-  <div class="main-card">
+  <!-- ✅ Responsables (masqué, on gère en inline) -->
+  <div class="main-card d-none">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
       <span><i class="bi bi-people me-2"></i>Responsables</span>
       <button id="add-responsable-btn" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addResponsableModal">
@@ -237,8 +259,8 @@
     </div>
   </div>
 
-  <!-- ✅ Agents assignés -->
-  <div class="main-card">
+  <!-- ✅ Agents assignés (masqué, on gère en inline) -->
+  <div class="main-card d-none">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
       <span><i class="bi bi-person-badge me-2"></i>Agents assignés</span>
       <button id="add-agent-btn" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addAgentModal">
@@ -440,6 +462,10 @@ document.addEventListener('DOMContentLoaded', async function () {
   const addSelectedMaterielsBtn = document.getElementById('add-selected-materiels-btn');
   const materielsInlineList = document.getElementById('materiels-inline-list');
   const inlineRequestBtn = document.getElementById('inline-request-materiel-btn');
+  const inlineResp = document.getElementById('inline-responsables');
+  const inlineAg = document.getElementById('inline-agents');
+  const inlineAddResp = document.getElementById('inline-add-resp');
+  const inlineAddAgent = document.getElementById('inline-add-agent');
 
 
   let ticketId = null;
@@ -467,6 +493,14 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (showMaterielsBtn) showMaterielsBtn.classList.remove('d-none');
     if (requestMaterielBtn) requestMaterielBtn.style.display = ''; // Ensure visible for admin
     if (inlineRequestBtn) inlineRequestBtn.classList.remove('d-none');
+    if (inlineAddResp) inlineAddResp.classList.remove('d-none');
+    if (inlineAddAgent) inlineAddAgent.classList.remove('d-none');
+
+    // Boutons inline déclenchent les modales cachées
+    const addRespBtn = document.getElementById('add-responsable-btn');
+    const addAgentBtn = document.getElementById('add-agent-btn');
+    inlineAddResp?.addEventListener('click', () => addRespBtn?.click());
+    inlineAddAgent?.addEventListener('click', () => addAgentBtn?.click());
   }
 
   const renderMd = (txt='') => { try { return marked.parse(txt); } catch { return txt; } };
@@ -742,20 +776,53 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   function displayResponsables(responsables = []) {
     responsablesList.innerHTML = '';
+    const renderBadges = () => {
+      if (!inlineResp) return;
+      if (!responsables.length) {
+        inlineResp.textContent = 'Aucun responsable';
+        return;
+      }
+      inlineResp.innerHTML = responsables.map(r => {
+        const label = r.matricule || r.agent_matricule || r.nom || 'Resp';
+        return isAdmin
+          ? `<span class="badge bg-secondary me-1 d-inline-flex align-items-center gap-1">${label}<button class="btn btn-xs btn-link p-0 text-white del-resp" data-m="${label}"><i class="bi bi-x-lg"></i></button></span>`
+          : `<span class="badge bg-secondary me-1">${label}</span>`;
+      }).join(' ');
+    };
+
+    renderBadges();
+
     if (!responsables.length) {
       responsablesList.innerHTML = '<li class="list-group-item text-muted">Aucun responsable assigné.</li>';
       return;
     }
     responsables.forEach(r => {
       const li = document.createElement('li');
-      li.className = 'list-group-item';
-      li.textContent = `${r.prenom || ''} ${r.nom || ''} (${r.matricule || r.agent_matricule || ''})${r.role ? ' - ' + r.role : ''}`;
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      li.innerHTML = `<span>${r.prenom || ''} ${r.nom || ''} (${r.matricule || r.agent_matricule || ''})${r.role ? ' - ' + r.role : ''}</span>` +
+                     (isAdmin ? `<button class="btn btn-sm btn-outline-danger del-resp" data-m="${r.matricule || r.agent_matricule || ''}"><i class="bi bi-x-lg"></i></button>` : '');
       responsablesList.appendChild(li);
     });
   }
 
   function displayAgents(agents = []) {
     agentsList.innerHTML = '';
+    const renderBadges = () => {
+      if (!inlineAg) return;
+      if (!agents.length) {
+        inlineAg.textContent = 'Aucun agent';
+        return;
+      }
+      inlineAg.innerHTML = agents.map(a => {
+        const label = a.agent_matricule || a.matricule || a.nom || 'Agent';
+        return isAdmin
+          ? `<span class="badge bg-light text-dark me-1 d-inline-flex align-items-center gap-1">${label}<button class="btn btn-xs btn-link p-0 text-dark del-agent" data-m="${label}"><i class="bi bi-x-lg"></i></button></span>`
+          : `<span class="badge bg-light text-dark me-1">${label}</span>`;
+      }).join(' ');
+    };
+
+    renderBadges();
+
     if (!agents.length) {
       agentsList.innerHTML = '<li class="list-group-item text-muted">Aucun agent assigné.</li>';
       return;
@@ -763,14 +830,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     agents.forEach(a => {
       const li = document.createElement('li');
       li.className = 'list-group-item d-flex justify-content-between align-items-center';
-      li.textContent = `${a.prenom || ''} ${a.nom || ''} (${a.agent_matricule || a.matricule || ''})`;
-      if (isAdmin) {
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'btn btn-danger btn-sm';
-        removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
-        removeBtn.onclick = () => removeAgent(a.agent_matricule || a.matricule);
-        li.appendChild(removeBtn);
-      }
+      li.innerHTML = `<span>${a.prenom || ''} ${a.nom || ''} (${a.agent_matricule || a.matricule || ''})</span>` +
+                     (isAdmin ? `<button class="btn btn-sm btn-outline-danger del-agent" data-m="${a.agent_matricule || a.matricule || ''}"><i class="bi bi-x-lg"></i></button>` : '');
       agentsList.appendChild(li);
     });
   }
@@ -783,6 +844,17 @@ document.addEventListener('DOMContentLoaded', async function () {
     } catch (e) {
       console.error('Error removing agent:', e);
       alert('Erreur lors du retrait de l\'agent.');
+    }
+  }
+
+  async function removeResponsable(matricule) {
+    if (!ticketId || !matricule || !confirm(`Retirer le responsable ${matricule} ?`)) return;
+    try {
+      await fetchJSON(`/api/tickets/${ticketId}/responsables/${matricule}`, { method: 'DELETE' });
+      fetchAndDisplayTicketRelations();
+    } catch (e) {
+      console.error('Error removing responsable:', e);
+      alert('Erreur lors du retrait du responsable.');
     }
   }
 
@@ -842,6 +914,15 @@ document.addEventListener('DOMContentLoaded', async function () {
       const relations = await fetchJSON(`/api/tickets/${ticketId}/relations`);
       displayResponsables(relations.responsables || []);
       displayAgents(relations.agents_assignes || []);
+      // Events inline for delete (badges)
+      inlineResp?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.del-resp');
+        if (btn) removeResponsable(btn.dataset.m);
+      });
+      inlineAg?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.del-agent');
+        if (btn) removeAgent(btn.dataset.m);
+      });
     } catch (e) {
       console.error('Error fetching ticket relations:', e);
     }
