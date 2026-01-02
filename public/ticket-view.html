@@ -988,6 +988,8 @@
 
           const addResp = document.getElementById('add-responsable-btn');
           const addAgent = document.getElementById('add-agent-btn');
+          if (addResp) addResp.classList.remove('d-none');
+          if (addAgent) addAgent.classList.remove('d-none');
           const bar = document.getElementById('header-actions-bar');
           if (bar) {
             bar.classList.remove('d-none');
