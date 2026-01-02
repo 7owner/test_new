@@ -988,6 +988,7 @@
           const addAgent = document.getElementById('add-agent-btn');
           const bar = document.getElementById('header-actions-bar');
           if (bar) {
+            bar.classList.remove('d-none');
             bar.style.display = 'flex';
             document.getElementById('header-add-resp')?.addEventListener('click', () => addResp?.click());
             document.getElementById('header-add-agent')?.addEventListener('click', () => addAgent?.click());
