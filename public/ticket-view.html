@@ -219,12 +219,7 @@
         </h4>
         <div class="small opacity-75" id="header-status-text"></div>
       </div>
-      <div class="d-flex flex-wrap gap-2" id="header-actions-bar" style="display:none;">
-        <button class="btn btn-light btn-sm" id="header-add-resp"><i class="bi bi-person-plus me-1"></i>Responsable</button>
-        <button class="btn btn-light btn-sm" id="header-add-agent"><i class="bi bi-people me-1"></i>Agent</button>
-        <button class="btn btn-light btn-sm" id="header-create-affaire"><i class="bi bi-briefcase me-1"></i>Affaire</button>
-        <button class="btn btn-light btn-sm" id="header-create-doe"><i class="bi bi-journal-text me-1"></i>DOE</button>
-      </div>
+      <div class="d-flex flex-wrap gap-2 d-none" id="header-actions-bar"></div>
     </div>
 
     <!-- ✅ Ticket Infos -->
@@ -250,6 +245,22 @@
       <div class="mt-4">
         <label class="text-muted small fw-bold"><i class="bi bi-text-paragraph me-1"></i>Description :</label>
         <div class="p-3 bg-light rounded" id="view_description">-</div>
+      </div>
+
+      <!-- Infos intégrées (ex-cartes Responsables / Agents / Actions) -->
+      <div class="row g-3 mt-4">
+        <div class="col-lg-6">
+          <div class="info-item">
+            <label>Responsables</label>
+            <div id="inline-responsables" class="value text-muted small">Aucun responsable</div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="info-item">
+            <label>Agents assignés</label>
+            <div id="inline-agents" class="value text-muted small">Aucun agent</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -335,7 +346,7 @@
   </div>
 
   <!-- Responsables / Agents -->
-  <div class="row g-4 mb-4">
+  <div class="row g-4 mb-4 d-none" id="resp-agent-row">
     <div class="col-lg-6">
       <div class="main-card h-100">
         <div class="card-header-gradient d-flex justify-content-between align-items-center">
@@ -942,30 +953,33 @@
         renderResponsables(responsables);
         renderAgents(agentsAssignes);
         await loadMaterielsSection(interventionsCache);
+        // Inline recap in main card
+        const inlineResp = document.getElementById('inline-responsables');
+        const inlineAg = document.getElementById('inline-agents');
+        if (inlineResp) {
+          if (responsables.length) {
+            inlineResp.innerHTML = responsables.map(r => `<span class="badge bg-secondary me-1">${r.agent_matricule || r.matricule || 'Resp'}</span>`).join(' ');
+          } else {
+            inlineResp.textContent = 'Aucun responsable';
+          }
+        }
+        if (inlineAg) {
+          if (agentsAssignes.length) {
+            inlineAg.innerHTML = agentsAssignes.map(a => `<span class="badge bg-light text-dark me-1">${a.agent_matricule || a.matricule || 'Agent'}</span>`).join(' ');
+          } else {
+            inlineAg.textContent = 'Aucun agent';
+          }
+        }
 
        // Admin features
-       if (isAdmin) {
-         const addInt = document.getElementById('add-intervention-btn');
-         if (addInt) addInt.classList.remove('d-none');
-         const addResp = document.getElementById('add-responsable-btn');
-         if (addResp) addResp.classList.remove('d-none');
-         const addAgent = document.getElementById('add-agent-btn');
-         if (addAgent) addAgent.classList.remove('d-none');
-         if (addMaterielBtn) addMaterielBtn.classList.remove('d-none');
-         const editBtn = document.getElementById('edit-ticket-btn');
-         if (editBtn) editBtn.classList.remove('d-none');
-         const adminActions = document.getElementById('admin-actions-card');
-         if (adminActions) adminActions.classList.remove('d-none');
-          const bar = document.getElementById('header-actions-bar');
-          if (bar) {
-            bar.style.display = 'flex';
-            document.getElementById('header-add-resp')?.addEventListener('click', () => addResp?.click());
-            document.getElementById('header-add-agent')?.addEventListener('click', () => addAgent?.click());
-            document.getElementById('header-create-affaire')?.addEventListener('click', () => document.querySelector('[data-bs-target="#createAffaireModal"]')?.click());
-            document.getElementById('header-create-doe')?.addEventListener('click', () => document.querySelector('[data-bs-target="#createDoeModal"]')?.click());
-          }
+        if (isAdmin) {
+          const addInt = document.getElementById('add-intervention-btn');
+          if (addInt) addInt.classList.remove('d-none');
+          if (addMaterielBtn) addMaterielBtn.classList.remove('d-none');
+          const editBtn = document.getElementById('edit-ticket-btn');
+          if (editBtn) editBtn.classList.remove('d-none');
 
-          // Chargement des agents pour les sélecteurs
+          // Chargement des agents pour les sélecteurs (modales masquées mais accessibles si besoin)
           let allAgents = [];
           try {
             const agentsRes = await fetch('/api/agents', { headers, credentials: 'same-origin' });
