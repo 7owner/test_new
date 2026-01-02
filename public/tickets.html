@@ -29,8 +29,7 @@
       </div>
       <div class="d-flex gap-2">
         <button class="btn btn-primary btn-sm shadow-sm" id="toggle-filters-btn"><i class="bi bi-funnel-fill me-1"></i> Masquer les filtres</button>
-        <!--<button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#createDemandeClientModal"><i class="bi bi-plus-circle me-2"></i>Créer une demande client</button>-->
-        <!--<a href="ticket-new.html" class="btn btn-primary" id="create-ticket-btn"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau ticket</a>-->
+        <button class="btn btn-primary" id="create-ticket-btn" data-bs-toggle="modal" data-bs-target="#createTicketModal"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau ticket</button>
         <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#demandesClientModal" title="Demandes clients (Admin)"><i class="bi bi-inbox me-2"></i>Demandes clients</button>
       </div>
     </div>
@@ -160,6 +159,21 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
           <button type="button" class="btn btn-danger" id="confirm-delete-ticket-btn">Confirmer la suppression</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Créer Ticket -->
+  <div class="modal fade" id="createTicketModal" tabindex="-1" aria-labelledby="createTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createTicketModalLabel">Créer un nouveau Ticket</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="createTicketFrame" src="/ticket-new.html" style="width: 100%; height: 80vh; border: none;"></iframe>
         </div>
       </div>
     </div>

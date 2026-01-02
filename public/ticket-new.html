@@ -73,11 +73,29 @@
         <h2 class="card-title mb-4">Informations du ticket</h2>
         <div id="msg" class="d-none"></div>
         <form id="ticket-new-form" class="row g-3">
+          <div class="col-12">
+            <label for="client-search-input" class="form-label">Client</label>
+            <input type="text" class="form-control" id="client-search-input" placeholder="Rechercher un client" autocomplete="off">
+            <input type="hidden" id="client_id">
+            <div id="client-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
+          </div>
+          <div class="col-12">
+            <label for="contrat-search-input" class="form-label">Contrat</label>
+            <input type="text" class="form-control" id="contrat-search-input" placeholder="Rechercher un contrat" autocomplete="off">
+            <input type="hidden" id="contrat_id">
+            <div id="contrat-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
+          </div>
+          <div class="col-12">
+            <label for="site-search-input" class="form-label">Site</label>
+            <input type="text" class="form-control" id="site-search-input" placeholder="Rechercher un site" autocomplete="off">
+            <input type="hidden" id="site_id">
+            <div id="site-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
+          </div>
           <div class="col-md-6">
-            <label for="doe_id" class="form-label">DOE associé</label>
-            <select class="form-select" id="doe_id">
-              <option value="">Sélectionner un DOE</option>
-            </select>
+            <label for="doe-search-input" class="form-label">DOE associé</label>
+            <input type="text" class="form-control" id="doe-search-input" placeholder="Rechercher un DOE" autocomplete="off">
+            <input type="hidden" id="doe_id">
+            <div id="doe-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
             <div id="doe-details" class="mt-2 p-2 border rounded bg-light d-none">
               <strong>Titre:</strong> <span id="doe-title"></span><br>
               <strong>Description:</strong> <span id="doe-description"></span>
@@ -85,10 +103,10 @@
             </div>
           </div>
           <div class="col-md-6">
-            <label for="affaire_id" class="form-label">Affaire associée</label>
-            <select class="form-select" id="affaire_id">
-              <option value="">Sélectionner une affaire</option>
-            </select>
+            <label for="affaire-search-input" class="form-label">Affaire associée</label>
+            <input type="text" class="form-control" id="affaire-search-input" placeholder="Rechercher une affaire" autocomplete="off">
+            <input type="hidden" id="affaire_id">
+            <div id="affaire-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
           </div>
 
           <div class="col-12">
@@ -122,10 +140,10 @@
             </select>
           </div>
           <div class="col-md-6">
-            <label for="responsable" class="form-label">Responsable (optionnel)</label>
-            <select id="responsable" class="form-select">
-              <option value="">Aucun</option>
-            </select>
+            <label for="responsable-search-input" class="form-label">Responsable (optionnel)</label>
+            <input type="text" class="form-control" id="responsable-search-input" placeholder="Rechercher un responsable" autocomplete="off">
+            <input type="hidden" id="responsable">
+            <div id="responsable-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
           </div>
 
           <div class="col-12 d-flex gap-2">
@@ -138,161 +156,6 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', async function() {
-      const msg = document.getElementById('msg');
-      function showMsg(text, type) { if (!msg) return; msg.className = `alert alert-${type||'info'}`; msg.textContent = text; msg.classList.remove('d-none'); }
-
-      const token = localStorage.getItem('token');
-      let isAdmin = false;
-      if (token) { try { const p=JSON.parse(atob(token.split('.')[1])); isAdmin = Array.isArray(p.roles) && p.roles.includes('ROLE_ADMIN'); } catch(_){} }
-      if (!isAdmin) { const f=document.getElementById('ticket-new-form'); if (f) f.innerHTML = '<div class="alert alert-danger">Accès refusé. Seuls les administrateurs peuvent créer des tickets.</div>'; return; }
-
-      const headers = token ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } : { 'Content-Type': 'application/json' };
-
-      const doeSelect = document.getElementById('doe_id');
-      const affaireSelect = document.getElementById('affaire_id');
-      const responsableSelect = document.getElementById('responsable');
-      const doeDetailsDiv = document.getElementById('doe-details');
-      const doeTitleSpan = document.getElementById('doe-title');
-      const doeDescriptionSpan = document.getElementById('doe-description');
-      const viewDoeBtn = document.getElementById('view-doe-btn');
-      const siteCard = document.getElementById('site-card');
-      const siteViewLink = document.getElementById('site-view-link');
-
-      // Load DOE
-      try {
-        const r = await fetch('/api/does', { headers, credentials:'same-origin' });
-        const does = r.ok? await r.json() : [];
-        window.__API_DOES__ = Array.isArray(does)? does : [];
-        (window.__API_DOES__||[]).forEach(d => doeSelect.add(new Option(`${d.titre || 'DOE'} (ID: ${d.id})`, d.id)));
-      } catch(_){ showMsg('Impossible de charger les DOE.', 'danger'); }
-
-      // Load Affaires
-      try {
-        const r = await fetch('/api/affaires', { headers, credentials:'same-origin' });
-        const affaires = r.ok? await r.json() : [];
-        window.__API_AFFAIRES__ = Array.isArray(affaires)? affaires : [];
-        (window.__API_AFFAIRES__||[]).forEach(a => affaireSelect.add(new Option(`${a.nom_affaire || 'Affaire'} (ID: ${a.id})`, a.id)));
-      } catch(_){ showMsg('Impossible de charger les affaires.', 'danger'); }
-
-      // Load Agents (responsable)
-      try {
-        const r = await fetch('/api/agents', { headers, credentials:'same-origin' });
-        const agents = r.ok? await r.json() : [];
-        (Array.isArray(agents)? agents: []).forEach(a => responsableSelect.add(new Option(`${a.prenom||''} ${a.nom||''} (${a.matricule})`, a.matricule)));
-      } catch(_){ /* non bloquant */ }
-
-      // Sync affaire + details on DOE change
-      doeSelect.addEventListener('change', () => {
-        const sel = Number(doeSelect.value) || null;
-        const d = (window.__API_DOES__||[]).find(x => String(x.id) === String(sel));
-        if (d) {
-          doeTitleSpan.textContent = d.titre || '';
-          doeDescriptionSpan.textContent = d.description || '';
-          viewDoeBtn.href = `doe-view.html?id=${d.id}`;
-          doeDetailsDiv.classList.remove('d-none');
-          if (d.affaire_id) affaireSelect.value = String(d.affaire_id);
-        } else {
-          doeDetailsDiv.classList.add('d-none');
-        }
-      });
-
-      // Prefilter DOE by site_id if provided
-      try {
-        const siteParam = new URLSearchParams(location.search).get('site_id');
-        if (siteParam) {
-          const applyFilter = () => {
-            const list = Array.isArray(window.__API_DOES__)? window.__API_DOES__ : [];
-            const keepFirst = doeSelect.options[0];
-            doeSelect.innerHTML=''; if (keepFirst) doeSelect.appendChild(keepFirst);
-            list.filter(d => String(d.site_id) === String(siteParam)).forEach(d => doeSelect.add(new Option(`${d.titre || 'DOE'} (Site ${d.site_id})`, d.id)));
-          };
-          setTimeout(applyFilter, 300);
-          setTimeout(applyFilter, 800);
-        }
-      } catch(_){}
-
-      // Prévisualisation site associé (si ?site_id=...)
-      try {
-        const siteParam = new URLSearchParams(location.search).get('site_id');
-        if (siteParam) {
-          const resSite = await fetch(`/api/sites/${siteParam}/relations`, { headers, credentials:'same-origin' });
-          if (resSite.ok) {
-            const siteData = await resSite.json();
-            const { site = {}, adresse = {}, representants = [] } = siteData;
-            if (siteCard) siteCard.classList.remove('d-none');
-            if (siteViewLink) { siteViewLink.href = `site-view.html?id=${site.id || siteParam}`; }
-            document.getElementById('site-name').textContent = site.nom_site || `Site #${site.id || siteParam}`;
-            document.getElementById('site-client').textContent = site.nom_client || 'Non assigné';
-            const contactStr = `${site.representant_nom || ''} ${site.representant_tel || ''}`.trim();
-            document.getElementById('site-contact').textContent = contactStr || 'Non spécifié';
-            const adrHtml = [
-              adresse.ligne1,
-              adresse.ligne2,
-              [adresse.code_postal, adresse.ville].filter(Boolean).join(' '),
-              adresse.pays
-            ].filter(Boolean).join('<br>');
-            document.getElementById('site-adresse').innerHTML = adrHtml || 'Non renseignée';
-            document.getElementById('site-commentaire').textContent = site.commentaire || 'Aucun commentaire';
-            const repsEl = document.getElementById('site-representants');
-            if (repsEl) {
-              repsEl.innerHTML = '';
-              if (!representants.length) {
-                repsEl.innerHTML = '<div class="text-muted small">Aucun représentant.</div>';
-              } else {
-                representants.forEach(rep => {
-                  const badge = (rep.nom || rep.email || 'N')[0].toUpperCase();
-                  const tel = rep.tel ? `<span class="ms-2"><i class="bi bi-phone me-1"></i>${rep.tel}</span>` : '';
-                  repsEl.innerHTML += `
-                    <div class="d-flex align-items-start p-2 border rounded">
-                      <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;">${badge}</div>
-                      <div class="ms-2">
-                        <div class="fw-semibold">${rep.nom || 'Inconnu'}</div>
-                        <div class="small text-muted">${rep.fonction || ''}</div>
-                        <div class="small text-muted"><i class="bi bi-envelope me-1"></i>${rep.email || 'N/A'} ${tel}</div>
-                      </div>
-                    </div>`;
-                });
-              }
-            }
-          }
-        }
-      } catch(_){ /* affichage non bloquant */ }
-
-      // Submit
-      const form = document.getElementById('ticket-new-form');
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const payload = {
-          titre: (document.getElementById('titre')?.value || '').trim() || null,
-          description: (document.getElementById('description')?.value || '').trim() || null,
-          doe_id: Number(doeSelect.value) || null,
-          affaire_id: Number(affaireSelect.value) || null,
-          etat: (document.getElementById('etat')?.value || null),
-          responsable: (responsableSelect.value || null),
-          site_id: (new URLSearchParams(location.search).get('site_id') ? Number(new URLSearchParams(location.search).get('site_id')) : null)
-        };
-
-        // Optional dates: send ISO strings if provided
-        try {
-          const dd = (document.getElementById('date_debut')?.value || '').trim();
-          const df = (document.getElementById('date_fin')?.value || '').trim();
-          payload.date_debut = dd ? new Date(dd).toISOString() : null;
-          payload.date_fin = df ? new Date(df).toISOString() : null;
-        } catch(_) { payload.date_debut = payload.date_debut || null; payload.date_fin = payload.date_fin || null; }
-
-        if (!payload.doe_id || !payload.affaire_id) { alert('Veuillez sélectionner un DOE et une Affaire.'); return; }
-
-        try {
-          const r = await fetch('/api/tickets', { method:'POST', headers, credentials:'same-origin', body: JSON.stringify(payload) });
-          if (!r.ok) { const d=await r.json().catch(()=>({})); throw new Error(d && d.error ? d.error : `HTTP ${r.status}`); }
-          const created = await r.json();
-          if (created && created.id) { alert('Ticket créé avec succès'); location.href = `ticket-view.html?id=${created.id}`; }
-          else { throw new Error('Réponse invalide du serveur'); }
-        } catch(err) { console.error(err); alert(`Échec de la création: ${err.message}`); }
-      });
-    });
-  </script>
+  <script src="/js/ticket-new.js"></script>
 </body>
 </html>
