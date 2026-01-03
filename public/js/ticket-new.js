@@ -176,6 +176,9 @@ document.addEventListener('DOMContentLoaded', async function() {
               }
               if (doe.site_id) {
                 siteUpdateLocked = true;
+                if (siteSearchInput) {
+                  siteSearchInput.value = doe.site_nom || `Site #${doe.site_id}`;
+                }
                 siteIdHidden.value = doe.site_id;
                 siteIdHidden.dispatchEvent(new Event('change')); // Dispatch change event sans reset DOE
                 siteUpdateLocked = false;
