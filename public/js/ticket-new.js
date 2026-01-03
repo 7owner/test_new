@@ -41,7 +41,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (params[key]) url.searchParams.append(key, params[key]);
               }
 
-              const response = await fetch(url.toString(), { headers, credentials: 'same-origin' });
+              const response = await fetch(url.toString(), {
+                headers: { ...headers, 'Cache-Control': 'no-cache' },
+                credentials: 'same-origin',
+                cache: 'no-store'
+              });
               if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
               const items = await response.json();
               displaySuggestions(items, query);
