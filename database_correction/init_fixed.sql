@@ -577,6 +577,14 @@ CREATE TABLE IF NOT EXISTS client_representant (
     UNIQUE (client_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS client_association (
+    id SERIAL PRIMARY KEY,
+    client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
+    association_id INTEGER NOT NULL REFERENCES association(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (client_id, association_id)
+);
+
 CREATE TABLE IF NOT EXISTS ticket_satisfaction (
     id SERIAL PRIMARY KEY,
     ticket_id BIGINT NOT NULL UNIQUE REFERENCES ticket(id) ON DELETE CASCADE,
