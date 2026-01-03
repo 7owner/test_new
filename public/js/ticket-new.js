@@ -64,7 +64,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 suggestionsContainer.innerHTML = '';
                 // Trigger change event for dynamic updates (e.g., site preview)
                 searchInput.dispatchEvent(new Event('change'));
+                // Force blur/focusout to keep value
                 searchInput.blur();
+                setTimeout(() => searchInput.value = label, 0);
               });
               suggestionsContainer.appendChild(itemElement);
             });
