@@ -126,8 +126,12 @@
         <i class="bi bi-tools me-2"></i>
         <span id="header-title">Intervention</span>
       </h4>
-      <div class="small opacity-75">
-        <!--<span id="header-status-text"></span>-->
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button class="btn btn-sm btn-light" id="download-ppsps-btn"><i class="bi bi-download"></i> Télécharger PPSPS</button>
+        <button class="btn btn-sm btn-success" id="finish-inter-btn"><i class="bi bi-flag-fill"></i> Fin d'intervention</button>
+        <div class="small opacity-75">
+          <!--<span id="header-status-text"></span>-->
+        </div>
       </div>
     </div>
     <div class="card-body p-4">
@@ -184,6 +188,16 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ✅ Planning / événements par agent -->
+  <div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h4 class="mb-0 d-flex align-items-center"><i class="bi bi-calendar-event me-2"></i>Planning des agents</h4>
+    </div>
+    <div class="card-body p-4">
+      <div id="events-list" class="table-responsive"></div>
     </div>
   </div>
 
@@ -468,6 +482,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const rendusList = document.getElementById('rendu-intervention-list');
   const responsablesList = document.getElementById('responsables-list');
   const agentsList = document.getElementById('agents-list');
+  const downloadPpspsBtn = document.getElementById('download-ppsps-btn');
   const documentsList = document.getElementById('documents-list');
   const responsableSelect = document.getElementById('responsable-select');
   const agentSelect = document.getElementById('agent-select');
@@ -498,6 +513,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const demandeCommentaireInput = document.getElementById('demande-commentaire');
   const demandeQuantiteInput = document.getElementById('demande-quantite');
   const demandeSubmitBtn = document.getElementById('demande-submit-btn');
+  const finishInterBtn = document.getElementById('finish-inter-btn');
   let demandesCache = [];
 
 
@@ -508,6 +524,8 @@ document.addEventListener('DOMContentLoaded', async function () {
   let materielsCache = []; // Materiels already linked to this intervention
   let materielCatalog = []; // All available materials for the catalog
   let isAdmin = false;
+  let cachedResponsables = [];
+  let cachedAgentsAssignes = [];
   try {
     const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
     isAdmin = Array.isArray(payload?.roles) && payload.roles.includes('ROLE_ADMIN');
@@ -598,8 +616,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (!startStr) return '—';
     const start = new Date(startStr).getTime();
     if (Number.isNaN(start)) return '—';
-    const isClosed = status === 'Termine' || status === 'Termifié' || status === 'Fermé';
-    const end = endStr ? new Date(endStr).getTime() : Date.now();
+    // Temps réel seulement si fin déclarée (clic sur "Fin d'intervention")
+    if (!endStr) return 'En attente de fin';
+    const end = new Date(endStr).getTime();
     if (Number.isNaN(end)) return '—';
     const diff = Math.max(0, end - start);
     const totalMin = Math.floor(diff / 60000);
@@ -611,6 +630,36 @@ document.addEventListener('DOMContentLoaded', async function () {
     parts.push(String(hours).padStart(2,'0') + ' h ' + String(mins).padStart(2,'0') + ' min');
     return parts.join(' ');
   };
+
+  // Planning des événements (par agent)
+  const eventsListEl = document.getElementById('events-list');
+  function renderEvents(events = []) {
+    if (!eventsListEl) return;
+    if (!events.length) {
+      eventsListEl.innerHTML = '<div class="text-muted small">Aucun événement planifié.</div>';
+      return;
+    }
+    const rows = events.map(ev => `
+      <tr>
+        <td>${ev.agent_matricule || ''}</td>
+        <td>${ev.titre || ''}</td>
+        <td>${ev.statut || ''}</td>
+        <td>${ev.date_heure_debut_prevue || ''}</td>
+        <td>${ev.date_heure_fin_prevue || ''}</td>
+        <td>${ev.date_heure_fin_reelle || ''}</td>
+      </tr>
+    `).join('');
+    eventsListEl.innerHTML = `
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Agent</th><th>Titre</th><th>Statut</th><th>Début prévu</th><th>Fin prévue</th><th>Fin réelle</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
 
   // --- Material Request / Catalog Logic ---
   const renderCatalogMaterials = () => {
@@ -903,6 +952,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     renderBadges();
 
+    cachedResponsables = Array.isArray(responsables) ? responsables : [];
     if (!responsables.length) {
       responsablesList.innerHTML = '<li class="list-group-item text-muted">Aucun responsable assigné.</li>';
       return;
@@ -934,6 +984,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     renderBadges();
 
+    cachedAgentsAssignes = Array.isArray(agents) ? agents : [];
     if (!agents.length) {
       agentsList.innerHTML = '<li class="list-group-item text-muted">Aucun agent assigné.</li>';
       return;
@@ -1080,6 +1131,15 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
       }
 
+      // Charger les événements d'intervention (planning agents)
+      try {
+        const events = await fetchJSON(`/api/interventions/${interventionId}/events`);
+        renderEvents(events || []);
+      } catch (e) {
+        console.error('Erreur chargement événements:', e);
+        renderEvents([]);
+      }
+
       // Display assigned agent for the intervention
       const interventionAgentEl = document.getElementById('view_intervention_agent');
       if (interventionAgentEl) {
@@ -1214,6 +1274,56 @@ document.addEventListener('DOMContentLoaded', async function () {
       reader.onload  = () => resolve(reader.result.split(',')[1]);
       reader.onerror = error => reject(error);
     });
+  }
+
+  // Téléchargement PPSPS (responsables + agents)
+  function downloadPpsps() {
+    const rows = [['Nom', 'Prénom', 'Matricule', 'Rôle/Fonction']];
+    const pushRow = (p, roleLabel) => {
+      rows.push([
+        p.nom || '',
+        p.prenom || '',
+        p.agent_matricule || p.matricule || '',
+        roleLabel || p.role || p.fonction || ''
+      ]);
+    };
+    (cachedResponsables || []).forEach(r => pushRow(r, 'Responsable'));
+    (cachedAgentsAssignes || []).forEach(a => pushRow(a, 'Agent'));
+    const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ppsps-intervention-${interventionId || ''}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  if (downloadPpspsBtn) {
+    downloadPpspsBtn.addEventListener('click', downloadPpsps);
+  }
+
+  // Bouton fin d'intervention (admin)
+  if (finishInterBtn && isAdmin) {
+    finishInterBtn.addEventListener('click', async () => {
+      if (!interventionId) return;
+      if (!confirm('Clore cette intervention maintenant ?')) return;
+      const nowIso = new Date().toISOString();
+      try {
+        await fetchJSON(`/api/interventions/${interventionId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date_fin: nowIso, status: 'Termine' })
+        });
+        alert('Intervention clôturée.');
+        location.reload();
+      } catch (e) {
+        alert('Échec de la clôture: ' + e.message);
+      }
+    });
+  } else if (finishInterBtn) {
+    finishInterBtn.style.display = 'none';
   }
 
   if (saveDocumentBtn) {

@@ -3482,6 +3482,18 @@ app.get('/api/interventions', authenticateToken, async (req, res) => {
   }
 });
 
+// Events d'intervention (par agent)
+app.get('/api/interventions/:id/events', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const rows = (await pool.query('SELECT * FROM intervention_event WHERE intervention_id=$1 ORDER BY agent_matricule', [id])).rows;
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching intervention events:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // Get a single intervention by ID
 app.get('/api/interventions/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
@@ -3497,6 +3509,69 @@ app.get('/api/interventions/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Helper: récupérer les agents associés au ticket (agents assignés ou responsable principal)
+async function getAgentsForTicket(ticketId) {
+  const agents = [];
+  const assignRes = await pool.query('SELECT agent_matricule FROM ticket_agent WHERE ticket_id=$1', [ticketId]);
+  assignRes.rows.forEach(r => agents.push(r.agent_matricule));
+  if (!agents.length) {
+    const respRes = await pool.query('SELECT responsable FROM ticket WHERE id=$1', [ticketId]);
+    if (respRes.rows.length && respRes.rows[0].responsable) agents.push(respRes.rows[0].responsable);
+  }
+  // Uniques
+  return [...new Set(agents.filter(Boolean))];
+}
+
+// Helper: créer/mettre à jour les événements d'intervention par agent
+async function syncInterventionEvents(interventionRow) {
+  if (!interventionRow || !interventionRow.id || !interventionRow.ticket_id) return;
+  const agentMatricules = await getAgentsForTicket(interventionRow.ticket_id);
+  if (!agentMatricules.length) return;
+  const titre = interventionRow.titre || `Intervention #${interventionRow.id}`;
+  const desc  = interventionRow.description || '';
+  const dateDebut = interventionRow.date_debut;
+  const dateFinPrevue = interventionRow.date_fin || null;
+  const dateFinReelle = interventionRow.date_fin || null;
+  const mapStatut = (s) => {
+    switch ((s || '').toLowerCase()) {
+      case 'en_cours': return 'En_cours';
+      case 'termine': return 'Termine';
+      case 'annulee':
+      case 'annule':
+      case 'annulée': return 'Annule';
+      default: return 'Planifie';
+    }
+  };
+  const statutEvent = mapStatut(interventionRow.status);
+
+  for (const m of agentMatricules) {
+    const existing = await pool.query(
+      'SELECT id FROM intervention_event WHERE intervention_id=$1 AND agent_matricule=$2 LIMIT 1',
+      [interventionRow.id, m]
+    );
+    if (existing.rows.length) {
+      await pool.query(
+        `UPDATE intervention_event
+         SET titre=$1,
+             description=$2,
+             date_heure_debut_prevue=$3,
+             date_heure_fin_prevue=$4,
+             date_heure_fin_reelle=COALESCE(date_heure_fin_reelle, $5),
+             statut=$6,
+             updated_at=NOW()
+         WHERE id=$7`,
+        [titre, desc, dateDebut, dateFinPrevue, dateFinReelle, statutEvent, existing.rows[0].id]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO intervention_event (intervention_id, agent_matricule, titre, description, date_heure_debut_prevue, date_heure_fin_prevue, statut, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7, NOW())`,
+        [interventionRow.id, m, titre, desc, dateDebut, dateFinPrevue, statutEvent]
+      );
+    }
+  }
+}
+
 app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, res) => {
     const { titre, description, date_debut, date_fin, ticket_id, site_id, demande_id, status, ticket_agent_id, metier } = req.body;
     if (!description || !date_debut || !ticket_id) {
@@ -3507,6 +3582,8 @@ app.post('/api/interventions', authenticateToken, authorizeAdmin, async (req, re
             'INSERT INTO intervention (titre, description, date_debut, date_fin, ticket_id, site_id, demande_id, status, ticket_agent_id, metier) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
             [titre || null, description, date_debut, date_fin, ticket_id, site_id || null, demande_id || null, status || 'En_attente', ticket_agent_id || null, metier || null]
         );
+        // Sync événements par agent
+        await syncInterventionEvents(result.rows[0]);
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error('Error creating intervention:', err);
@@ -3525,11 +3602,44 @@ app.put('/api/interventions/:id', authenticateToken, authorizeAdmin, async (req,
         if (result.rows.length === 0) {
             return res.status(404).json({ error: `Intervention with id ${id} not found` });
         }
+        await syncInterventionEvents(result.rows[0]);
         res.json(result.rows[0]);
     } catch (err) {
         console.error(`Error updating intervention with id ${id}:`, err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
+});
+
+// PATCH partiel (utilisé pour annulation/fin)
+app.patch('/api/interventions/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  const fields = [];
+  const values = [];
+  const add = (col, val, cast = '') => { values.push(val); fields.push(`${col} = $${values.length}${cast}`); };
+
+  if ('description' in req.body) add('description', req.body.description);
+  if ('date_debut' in req.body) add('date_debut', req.body.date_debut);
+  if ('date_fin' in req.body) add('date_fin', req.body.date_fin);
+  if ('site_id' in req.body) add('site_id', req.body.site_id || null);
+  if ('demande_id' in req.body) add('demande_id', req.body.demande_id || null);
+  if ('status' in req.body) add('status', req.body.status, '::statut_intervention');
+  if ('ticket_agent_id' in req.body) add('ticket_agent_id', req.body.ticket_agent_id || null);
+  if ('metier' in req.body) add('metier', req.body.metier || null);
+
+  if (!fields.length) return res.status(400).json({ error: 'Aucun champ à mettre à jour' });
+
+  const sql = `UPDATE intervention SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${values.length + 1} RETURNING *`;
+  values.push(id);
+
+  try {
+    const result = await pool.query(sql, values);
+    if (!result.rows.length) return res.status(404).json({ error: 'Intervention not found' });
+    await syncInterventionEvents(result.rows[0]);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error patching intervention:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 app.delete('/api/interventions/:id', authenticateToken, authorizeAdmin, async (req, res) => {
