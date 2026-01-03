@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', async function() {
               }
               if (doe.site_id) {
                 siteIdHidden.value = doe.site_id;
-                updateSitePreview();
+                siteIdHidden.dispatchEvent(new Event('change')); // Dispatch change event
               }
               doeTitleSpan.textContent = doe.titre || '';
               doeDescriptionSpan.textContent = doe.description || '';
@@ -298,10 +298,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       const form = document.getElementById('ticket-new-form');
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (!doeIdHidden.value || !affaireIdHidden.value) {
-          alert('DOE et Affaire sont obligatoires pour créer un ticket.');
-          return;
-        }
+
         const payload = {
           titre: (document.getElementById('titre')?.value || '').trim() || null,
           description: (document.getElementById('description')?.value || '').trim() || null,
