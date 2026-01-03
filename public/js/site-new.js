@@ -61,120 +61,85 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       
 
-            // Autocomplete setup function
-
-            function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey, idKey) {
-
+            // Autocomplete setup function (persist selection)
+            function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrlOrFn, displayKey, idKey, options = {}) {
               let timeout;
-
-      
+              let selectedLabel = '';
+              let selectedId = '';
+              const minChars = options.minChars ?? 2;
+              const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
 
               searchInput.addEventListener('input', () => {
-
                 clearTimeout(timeout);
-
                 const query = searchInput.value.trim();
-
-                if (query.length < 2) {
-
+                if (query.length < minChars) {
                   suggestionsContainer.innerHTML = '';
-
-                  hiddenInput.value = '';
-
+                  if (query.length === 0) {
+                    hiddenInput.value = '';
+                    selectedLabel = '';
+                    selectedId = '';
+                  }
                   return;
-
                 }
-
-      
 
                 timeout = setTimeout(async () => {
-
                   try {
-
                     const headers = await buildHeaders(false);
-
-                    const response = await fetch(`${fetchUrl}?query=${encodeURIComponent(query)}`, { headers, credentials: 'same-origin' });
-
+                    const fetchUrl = (typeof fetchUrlOrFn === 'function') ? fetchUrlOrFn() : fetchUrlOrFn;
+                    const url = new URL(fetchUrl, window.location.origin);
+                    url.searchParams.append('query', query);
+                    const response = await fetch(url.toString(), { headers, credentials: 'same-origin', cache: 'no-store' });
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
                     const items = await response.json();
-
-                    displaySuggestions(items);
-
+                    displaySuggestions(items, query);
                   } catch (error) {
-
                     console.error('Autocomplete fetch error:', error);
-
                     suggestionsContainer.innerHTML = `<div class="list-group-item list-group-item-danger">Erreur de chargement.</div>`;
-
                   }
+                }, 250); // Debounce time
 
-                }, 300); // Debounce time
-
-      
-
-                function displaySuggestions(items) {
-
+                function displaySuggestions(items, queryStr) {
                   suggestionsContainer.innerHTML = '';
-
-                  if (items.length === 0) {
-
+                  const qNorm = norm(queryStr);
+                  const filtered = (items || []).filter(it => norm(it?.[displayKey] || '').includes(qNorm));
+                  if (!filtered.length) {
                     suggestionsContainer.innerHTML = '<div class="list-group-item">Aucun résultat.</div>';
-
                     return;
-
                   }
-
-                  items.forEach(item => {
-
+                  filtered.forEach(item => {
                     const itemElement = document.createElement('button');
-
                     itemElement.type = 'button';
-
                     itemElement.classList.add('list-group-item', 'list-group-item-action');
-
                     itemElement.textContent = item[displayKey];
-
-                    itemElement.addEventListener('click', () => {
-
-                      searchInput.value = item[displayKey];
-
-                      hiddenInput.value = item[idKey];
-
+                    itemElement.addEventListener('mousedown', (ev) => {
+                      ev.preventDefault(); // évite le blur avant la sélection
+                      selectedLabel = item[displayKey] || '';
+                      selectedId = item[idKey] || '';
+                      searchInput.value = selectedLabel;
+                      hiddenInput.value = selectedId;
                       suggestionsContainer.innerHTML = '';
-
+                      searchInput.dispatchEvent(new Event('change'));
                     });
-
                     suggestionsContainer.appendChild(itemElement);
-
                   });
-
                 }
-
               });
-
-      
 
               searchInput.addEventListener('blur', () => {
-
-                setTimeout(() => { suggestionsContainer.innerHTML = ''; }, 100); // Allow click event to fire
-
+                setTimeout(() => { suggestionsContainer.innerHTML = ''; }, 120); // Allow click event to fire
               });
-
-      
 
               // Clear hidden input if search input is cleared
-
               searchInput.addEventListener('change', () => {
-
-                  if (!searchInput.value) {
-
-                      hiddenInput.value = '';
-
-                  }
-
+                if (!searchInput.value.trim()) {
+                  hiddenInput.value = '';
+                  selectedLabel = '';
+                  selectedId = '';
+                } else if (selectedLabel) {
+                  searchInput.value = selectedLabel;
+                  hiddenInput.value = selectedId;
+                }
               });
-
             }
 
       
@@ -188,34 +153,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       // Association: filtrée par client si sélectionné
       if (associationSearchInput && associationIdHidden && associationSuggestionsContainer) {
-        associationSearchInput.addEventListener('input', async () => {
-          const q = associationSearchInput.value.trim();
-          if (q.length < 1) { associationSuggestionsContainer.innerHTML=''; return; }
-          const clientId = clientIdHidden.value || null;
-          const endpoint = clientId ? `/api/clients/${clientId}/associations` : '/api/associations';
-          try {
-            const headers = await buildHeaders(false);
-            const res = await fetch(endpoint, { headers, credentials:'same-origin' });
-            const list = res.ok ? await res.json() : [];
-            const norm = s => (s||'').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
-            const filtered = (Array.isArray(list)?list:[]).filter(a => norm(a.titre).includes(norm(q)));
-            associationSuggestionsContainer.innerHTML = '';
-            if (!filtered.length) { associationSuggestionsContainer.innerHTML = '<div class="list-group-item">Aucun résultat.</div>'; return; }
-            filtered.forEach(a => {
-              const btn = document.createElement('button');
-              btn.type='button';
-              btn.className='list-group-item list-group-item-action';
-              btn.textContent = a.titre;
-              btn.addEventListener('click', ()=>{
-                associationSearchInput.value = a.titre;
-                associationIdHidden.value = a.id;
-                associationSuggestionsContainer.innerHTML='';
-              });
-              associationSuggestionsContainer.appendChild(btn);
-            });
-          } catch(e){ associationSuggestionsContainer.innerHTML = '<div class="list-group-item list-group-item-danger">Erreur.</div>'; }
-        });
-        associationSearchInput.addEventListener('blur',()=> setTimeout(()=>associationSuggestionsContainer.innerHTML='',100));
+        setupAutocomplete(
+          associationSearchInput,
+          associationIdHidden,
+          associationSuggestionsContainer,
+          () => {
+            const clientId = clientIdHidden.value || null;
+            return clientId ? `/api/clients/${clientId}/associations` : '/api/associations';
+          },
+          'titre',
+          'id',
+          { minChars: 1 }
+        );
       }
 
             if (adresseSearchInput && adresseIdHidden && adresseSuggestionsContainer) {
