@@ -73,7 +73,9 @@ document.addEventListener('DOMContentLoaded', async function() {
               itemElement.type = 'button';
               itemElement.classList.add('list-group-item', 'list-group-item-action');
               itemElement.textContent = getLabel(item);
-              itemElement.addEventListener('click', () => {
+              // mousedown pour éviter le blur avant sélection
+              itemElement.addEventListener('mousedown', (ev) => {
+                ev.preventDefault();
                 const label = getLabel(item) || '';
                 const val = getId(item) || '';
                 console.log('[autocomplete select]', fetchUrl, { label, val });
@@ -83,12 +85,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 searchInput.dataset.selectedId = val;
                 suggestionsContainer.innerHTML = '';
                 hasSelection = true;
-                // Trigger change event for dynamic updates (e.g., site/DOE preview)
                 searchInput.dispatchEvent(new Event('change'));
                 hiddenInput.dispatchEvent(new Event('change'));
-                // Force blur/focusout to keep value
-                searchInput.blur();
-                setTimeout(() => searchInput.value = label, 0);
+                setTimeout(() => { searchInput.blur(); searchInput.value = label; }, 0);
               });
               suggestionsContainer.appendChild(itemElement);
             });
