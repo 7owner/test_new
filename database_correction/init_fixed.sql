@@ -64,6 +64,7 @@ DROP TYPE IF EXISTS site_status CASCADE;
 DROP TYPE IF EXISTS devis_status CASCADE;
 DROP TYPE IF EXISTS metier_type CASCADE;
 DROP TYPE IF EXISTS commande_status_type CASCADE;
+DROP TYPE IF EXISTS intervention_event_statut CASCADE;
 
 CREATE TYPE statut_intervention AS ENUM ('En_attente','Termine');
 CREATE TYPE etat_rapport        AS ENUM ('Pas_commence','En_cours','Termine');
@@ -83,6 +84,7 @@ CREATE TYPE site_status AS ENUM ('Actif', 'Inactif');
 CREATE TYPE devis_status AS ENUM ('Brouillon', 'Envoye', 'Accepte', 'Refuse');
 CREATE TYPE metier_type AS ENUM ('GTB', 'Video', 'Intrusion', 'Control_Acces');
 CREATE TYPE commande_status_type AS ENUM ('A commander', 'Commande', 'En livraison', 'Reçu', 'Installé');
+CREATE TYPE intervention_event_statut AS ENUM ('Planifie','En_cours','Termine','Annule','Reporte');
 
 -- --------------------------------------------------
 -- CORE ENTITIES
@@ -276,6 +278,21 @@ CREATE TABLE IF NOT EXISTS intervention (
     status statut_intervention DEFAULT 'En_attente' NOT NULL,
     ticket_agent_id INTEGER REFERENCES ticket_agent(id) ON DELETE SET NULL,
     metier metier_type
+);
+
+CREATE TABLE IF NOT EXISTS intervention_event (
+    id SERIAL PRIMARY KEY,
+    intervention_id BIGINT NOT NULL REFERENCES intervention(id) ON DELETE CASCADE,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    statut intervention_event_statut NOT NULL DEFAULT 'Planifie',
+    date_heure_debut_prevue TIMESTAMP WITH TIME ZONE NOT NULL,
+    date_heure_fin_prevue TIMESTAMP WITH TIME ZONE,
+    date_heure_debut_reelle TIMESTAMP WITH TIME ZONE,
+    date_heure_fin_reelle TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS demande_materiel (
