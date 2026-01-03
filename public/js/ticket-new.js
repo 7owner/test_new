@@ -324,8 +324,14 @@ document.addEventListener('DOMContentLoaded', async function() {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        // Champs requis côté client
+        const titreVal = (document.getElementById('titre')?.value || '').trim();
+        const dateDebutVal = (document.getElementById('date_debut')?.value || '').trim();
+        if (!titreVal) { alert('Le titre est obligatoire.'); return; }
+        if (!dateDebutVal) { alert('La date de début est obligatoire.'); return; }
+
         const payload = {
-          titre: (document.getElementById('titre')?.value || '').trim() || null,
+          titre: titreVal,
           description: (document.getElementById('description')?.value || '').trim() || null,
           site_id: Number(siteIdHidden.value) || null,
           doe_id: Number(doeIdHidden.value) || null,
@@ -336,7 +342,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Optional dates: send ISO strings if provided
         try {
-          const dd = (document.getElementById('date_debut')?.value || '').trim();
+          const dd = dateDebutVal;
           const df = (document.getElementById('date_fin')?.value || '').trim();
           payload.date_debut = dd ? new Date(dd).toISOString() : null;
           payload.date_fin = df ? new Date(df).toISOString() : null;

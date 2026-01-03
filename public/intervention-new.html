@@ -70,7 +70,7 @@
             <textarea class="form-control" id="description" rows="3" required></textarea>
           </div>
           <div class="mb-3">
-            <label for="date_debut" class="form-label">Date Début</label>
+            <label for="date_debut" class="form-label">Date et heure de début</label>
             <input type="datetime-local" class="form-control" id="date_debut" required>
           </div>
           <div class="mb-3">
@@ -186,13 +186,27 @@
     e.preventDefault();
     if (!token) return alert('Non authentifié.');
     if (!isAdmin) return alert('Action réservée aux administrateurs.');
+    // Validation de base
+    const dateDebutVal = (document.getElementById('date_debut')?.value || '').trim();
+    if (!dateDebutVal) {
+      alert('La date et l’heure de début sont obligatoires.');
+      return;
+    }
     
+    // Conversion dates -> ISO (serveur attend un timestamp)
+    let dateDebutIso = null;
+    let dateFinIso = null;
+    try { dateDebutIso = new Date(dateDebutVal).toISOString(); } catch(_) { dateDebutIso = null; }
+    const df = (document.getElementById('date_fin')?.value || '').trim();
+    if (df) {
+      try { dateFinIso = new Date(df).toISOString(); } catch(_) { dateFinIso = null; }
+    }
+
     const payload = {
       description: document.getElementById('description').value,
-      date_debut: document.getElementById('date_debut').value || null,
-      date_fin: document.getElementById('date_fin').value || null,
+      date_debut: dateDebutIso,
+      date_fin: dateFinIso,
       ticket_id: document.getElementById('ticket_id').value || null, // Correctly using ticket_id
-
       status: document.getElementById('status').value || 'En_attente' // Ensuring status is included
     };
 
