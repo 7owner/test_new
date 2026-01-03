@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       // Autocomplete setup function
       function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey, idKey, extraParams = {}) {
         let timeout;
+        const getLabel = (item) => (typeof displayKey === 'function') ? displayKey(item) : (item?.[displayKey] || '');
 
         searchInput.addEventListener('input', () => {
           clearTimeout(timeout);
@@ -50,9 +51,9 @@ document.addEventListener('DOMContentLoaded', async function() {
               const itemElement = document.createElement('button');
               itemElement.type = 'button';
               itemElement.classList.add('list-group-item', 'list-group-item-action');
-              itemElement.textContent = item[displayKey];
+              itemElement.textContent = getLabel(item);
               itemElement.addEventListener('click', () => {
-                searchInput.value = item[displayKey];
+                searchInput.value = getLabel(item);
                 hiddenInput.value = item[idKey];
                 suggestionsContainer.innerHTML = '';
                 // Trigger change event for dynamic updates (e.g., site preview)
