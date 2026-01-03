@@ -12,11 +12,13 @@ document.addEventListener('DOMContentLoaded', async function() {
       // Autocomplete setup function
       function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey, idKey, extraParams = {}) {
         let timeout;
+        let hasSelection = false;
         const getLabel = (item) => (typeof displayKey === 'function') ? displayKey(item) : (item?.[displayKey] || '');
         const getId = (item) => (typeof idKey === 'function') ? idKey(item) : (item?.[idKey] ?? '');
         const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
 
         searchInput.addEventListener('input', () => {
+          hasSelection = false;
           clearTimeout(timeout);
           const query = searchInput.value.trim();
           if (query.length < 2) {
@@ -62,6 +64,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 searchInput.value = label;
                 hiddenInput.value = val;
                 suggestionsContainer.innerHTML = '';
+                hasSelection = true;
                 // Trigger change event for dynamic updates (e.g., site preview)
                 searchInput.dispatchEvent(new Event('change'));
                 // Force blur/focusout to keep value
