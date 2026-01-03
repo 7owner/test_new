@@ -2142,6 +2142,24 @@ app.get('/api/associations/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// Associations liées à un client (client_association)
+app.get('/api/clients/:id/associations', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query(`
+          SELECT a.* 
+          FROM client_association ca 
+          JOIN association a ON a.id = ca.association_id 
+          WHERE ca.client_id = $1
+          ORDER BY a.titre ASC
+        `, [id]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching client associations:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // Create an association
 app.post('/api/associations', authenticateToken, authorizeAdmin, async (req, res) => {
     const { titre, email_comptabilite, adresse_id } = req.body;

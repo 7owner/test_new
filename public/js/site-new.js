@@ -179,25 +179,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       
 
-            // Initialize autocompletes
-
-            if (clientSearchInput && clientIdHidden && clientSuggestionsContainer) {
-
-              setupAutocomplete(clientSearchInput, clientIdHidden, clientSuggestionsContainer, '/api/clients', 'nom_client', 'id');
-
-            }
-
-                  if (responsableSearchInput && responsableMatriculeHidden && responsableSuggestionsContainer) {
-
-                    setupAutocomplete(responsableSearchInput, responsableMatriculeHidden, responsableSuggestionsContainer, '/api/agents', 'nom_complet', 'matricule');
-
-                  }
-
-                  if (associationSearchInput && associationIdHidden && associationSuggestionsContainer) {
-
-                    setupAutocomplete(associationSearchInput, associationIdHidden, associationSuggestionsContainer, '/api/associations', 'titre', 'id');
-
-                  }
+      // Initialize autocompletes
+      if (clientSearchInput && clientIdHidden && clientSuggestionsContainer) {
+        setupAutocomplete(clientSearchInput, clientIdHidden, clientSuggestionsContainer, '/api/clients', 'nom_client', 'id');
+      }
+      if (responsableSearchInput && responsableMatriculeHidden && responsableSuggestionsContainer) {
+        setupAutocomplete(responsableSearchInput, responsableMatriculeHidden, responsableSuggestionsContainer, '/api/agents', 'nom_complet', 'matricule');
+      }
+      // Association: filtrée par client si sélectionné
+      if (associationSearchInput && associationIdHidden && associationSuggestionsContainer) {
+        associationSearchInput.addEventListener('input', async () => {
+          const q = associationSearchInput.value.trim();
+          if (q.length < 1) { associationSuggestionsContainer.innerHTML=''; return; }
+          const clientId = clientIdHidden.value || null;
+          const endpoint = clientId ? `/api/clients/${clientId}/associations` : '/api/associations';
+          try {
+            const headers = await buildHeaders(false);
+            const res = await fetch(endpoint, { headers, credentials:'same-origin' });
+            const list = res.ok ? await res.json() : [];
+            const norm = s => (s||'').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+            const filtered = (Array.isArray(list)?list:[]).filter(a => norm(a.titre).includes(norm(q)));
+            associationSuggestionsContainer.innerHTML = '';
+            if (!filtered.length) { associationSuggestionsContainer.innerHTML = '<div class="list-group-item">Aucun résultat.</div>'; return; }
+            filtered.forEach(a => {
+              const btn = document.createElement('button');
+              btn.type='button';
+              btn.className='list-group-item list-group-item-action';
+              btn.textContent = a.titre;
+              btn.addEventListener('click', ()=>{
+                associationSearchInput.value = a.titre;
+                associationIdHidden.value = a.id;
+                associationSuggestionsContainer.innerHTML='';
+              });
+              associationSuggestionsContainer.appendChild(btn);
+            });
+          } catch(e){ associationSuggestionsContainer.innerHTML = '<div class="list-group-item list-group-item-danger">Erreur.</div>'; }
+        });
+        associationSearchInput.addEventListener('blur',()=> setTimeout(()=>associationSuggestionsContainer.innerHTML='',100));
+      }
 
             if (adresseSearchInput && adresseIdHidden && adresseSuggestionsContainer) {
 
