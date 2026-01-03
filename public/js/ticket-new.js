@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         let timeout;
         const getLabel = (item) => (typeof displayKey === 'function') ? displayKey(item) : (item?.[displayKey] || '');
         const getId = (item) => (typeof idKey === 'function') ? idKey(item) : (item?.[idKey] ?? '');
+        const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
 
         searchInput.addEventListener('input', () => {
           clearTimeout(timeout);
@@ -35,20 +36,22 @@ document.addEventListener('DOMContentLoaded', async function() {
               const response = await fetch(url.toString(), { headers, credentials: 'same-origin' });
               if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
               const items = await response.json();
-              displaySuggestions(items);
+              displaySuggestions(items, query);
             } catch (error) {
               console.error('Autocomplete fetch error:', error);
               suggestionsContainer.innerHTML = `<div class="list-group-item list-group-item-danger">Erreur de chargement.</div>`;
             }
           }, 300); // Debounce time
 
-          function displaySuggestions(items) {
+          function displaySuggestions(items, queryStr) {
             suggestionsContainer.innerHTML = '';
-            if (items.length === 0) {
+            const qNorm = norm(queryStr);
+            const filtered = (items || []).filter(it => norm(getLabel(it)).includes(qNorm));
+            if (!filtered.length) {
               suggestionsContainer.innerHTML = '<div class="list-group-item">Aucun résultat.</div>';
               return;
             }
-            items.forEach(item => {
+            filtered.forEach(item => {
               const itemElement = document.createElement('button');
               itemElement.type = 'button';
               itemElement.classList.add('list-group-item', 'list-group-item-action');
