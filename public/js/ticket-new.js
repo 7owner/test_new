@@ -76,6 +76,7 @@ document.addEventListener('DOMContentLoaded', async function() {
               itemElement.addEventListener('click', () => {
                 const label = getLabel(item) || '';
                 const val = getId(item) || '';
+                console.log('[autocomplete select]', fetchUrl, { label, val });
                 searchInput.value = label;
                 hiddenInput.value = val;
                 searchInput.dataset.selectedLabel = label;
