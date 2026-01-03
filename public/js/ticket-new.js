@@ -46,8 +46,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 credentials: 'same-origin',
                 cache: 'no-store'
               });
+              if (response.status === 304) {
+                displaySuggestions([], query); // pas de corps, on ne casse pas l'UI
+                return;
+              }
               if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-              const items = await response.json();
+              const text = await response.text();
+              const items = text ? JSON.parse(text) : [];
               displaySuggestions(items, query);
             } catch (error) {
               console.error('Autocomplete fetch error:', error);
