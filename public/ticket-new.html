@@ -72,12 +72,7 @@
         <div id="msg" class="d-none"></div>
         <form id="ticket-new-form" class="row g-3">
 
-          <div class="col-12">
-            <label for="site-search-input" class="form-label">Site</label>
-            <input type="text" class="form-control" id="site-search-input" placeholder="Rechercher un site" autocomplete="off">
-            <input type="hidden" id="site_id">
-            <div id="site-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
-          </div>
+          <!-- DOE / Affaire juste sous le titre -->
           <div class="col-md-6">
             <label for="doe-search-input" class="form-label">DOE associé</label>
             <input type="text" class="form-control" id="doe-search-input" placeholder="Rechercher un DOE" autocomplete="off">
@@ -94,6 +89,13 @@
             <input type="text" class="form-control" id="affaire-search-input" placeholder="Rechercher une affaire" autocomplete="off">
             <input type="hidden" id="affaire_id">
             <div id="affaire-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
+          </div>
+
+          <div class="col-12">
+            <label for="site-search-input" class="form-label">Site</label>
+            <input type="text" class="form-control" id="site-search-input" placeholder="Rechercher un site" autocomplete="off">
+            <input type="hidden" id="site_id">
+            <div id="site-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
           </div>
 
           <div class="col-12">
@@ -115,18 +117,7 @@
             <input type="datetime-local" class="form-control" id="date_fin">
           </div>
 
-          <div class="col-md-6">
-            <label for="etat" class="form-label">État (optionnel)</label>
-            <select id="etat" class="form-select">
-              <option value="">(par défaut: Pas_commence)</option>
-              <option value="Pas_commence">Pas_commence</option>
-              <option value="En_attente">En_attente</option>
-              <option value="En_cours">En_cours</option>
-              <option value="Bloque">Bloque</option>
-              <option value="Termine">Termine</option>
-            </select>
-          </div>
-          <div class="col-md-6">
+          <div class="col-md-6 offset-md-6">
             <label for="responsable-search-input" class="form-label">Responsable (optionnel)</label>
             <input type="text" class="form-control" id="responsable-search-input" placeholder="Rechercher un responsable" autocomplete="off">
             <input type="hidden" id="responsable">
