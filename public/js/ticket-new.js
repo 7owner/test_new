@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', async function() {
           if (query.length < 2) {
             suggestionsContainer.innerHTML = '';
             hiddenInput.value = '';
+            delete searchInput.dataset.selectedLabel;
+            delete searchInput.dataset.selectedId;
             return;
           }
 
@@ -64,6 +66,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const val = getId(item) || '';
                 searchInput.value = label;
                 hiddenInput.value = val;
+                searchInput.dataset.selectedLabel = label;
+                searchInput.dataset.selectedId = val;
                 suggestionsContainer.innerHTML = '';
                 hasSelection = true;
                 // Trigger change event for dynamic updates (e.g., site/DOE preview)
@@ -79,13 +83,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
 
         searchInput.addEventListener('blur', () => {
-          setTimeout(() => { suggestionsContainer.innerHTML = ''; }, 100); // Allow click event to fire
+          setTimeout(() => {
+            suggestionsContainer.innerHTML = '';
+            // Si une sélection existe, réafficher le label choisi
+            if (searchInput.dataset.selectedLabel && searchInput.value.trim().length < 2) {
+              searchInput.value = searchInput.dataset.selectedLabel;
+            }
+          }, 100); // Allow click event to fire
         });
 
         // Clear hidden input if search input is cleared
         searchInput.addEventListener('change', () => {
             if (!searchInput.value) {
                 hiddenInput.value = '';
+                delete searchInput.dataset.selectedLabel;
+                delete searchInput.dataset.selectedId;
             }
         });
       }
