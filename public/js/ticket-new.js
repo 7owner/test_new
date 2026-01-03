@@ -23,9 +23,12 @@ document.addEventListener('DOMContentLoaded', async function() {
           const query = searchInput.value.trim();
           if (query.length < 2) {
             suggestionsContainer.innerHTML = '';
-            hiddenInput.value = '';
-            delete searchInput.dataset.selectedLabel;
-            delete searchInput.dataset.selectedId;
+            if (!searchInput.dataset.selectedLabel) {
+              hiddenInput.value = '';
+            } else {
+              // Rétablir la sélection existante si on n'a pas vraiment effacé
+              searchInput.value = searchInput.dataset.selectedLabel;
+            }
             return;
           }
 
@@ -85,10 +88,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         searchInput.addEventListener('blur', () => {
           setTimeout(() => {
             suggestionsContainer.innerHTML = '';
-            // Si une sélection existe, réafficher le label choisi
-            if (searchInput.dataset.selectedLabel && searchInput.value.trim().length < 2) {
-              searchInput.value = searchInput.dataset.selectedLabel;
-            }
+            // Si une sélection existe, ne pas toucher à la valeur
           }, 100); // Allow click event to fire
         });
 
