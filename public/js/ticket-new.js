@@ -31,8 +31,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             try {
               const url = new URL(fetchUrl, window.location.origin);
               url.searchParams.append('query', query);
-              for (const key in extraParams) {
-                if (extraParams[key]) url.searchParams.append(key, extraParams[key]);
+              const params = typeof extraParams === 'function' ? extraParams() : extraParams;
+              for (const key in params) {
+                if (params[key]) url.searchParams.append(key, params[key]);
               }
 
               const response = await fetch(url.toString(), { headers, credentials: 'same-origin' });
@@ -65,8 +66,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 hiddenInput.value = val;
                 suggestionsContainer.innerHTML = '';
                 hasSelection = true;
-                // Trigger change event for dynamic updates (e.g., site preview)
+                // Trigger change event for dynamic updates (e.g., site/DOE preview)
                 searchInput.dispatchEvent(new Event('change'));
+                hiddenInput.dispatchEvent(new Event('change'));
                 // Force blur/focusout to keep value
                 searchInput.blur();
                 setTimeout(() => searchInput.value = label, 0);
@@ -114,15 +116,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       // Setup autocompletes
       setupAutocomplete(siteSearchInput, siteIdHidden, siteSuggestionsContainer, '/api/sites', 'nom_site', 'id'); // Site no longer filtered by client
-      setupAutocomplete(doeSearchInput, doeIdHidden, doeSuggestionsContainer, '/api/does', 'titre', 'id', { site_id: siteIdHidden.value }); // DOE can be filtered by site
+      setupAutocomplete(doeSearchInput, doeIdHidden, doeSuggestionsContainer, '/api/does', 'titre', 'id', () => ({ site_id: siteIdHidden.value })); // DOE filtré dynamiquement par site
       setupAutocomplete(affaireSearchInput, affaireIdHidden, affaireSuggestionsContainer, '/api/affaires', 'nom_affaire', 'id');
       setupAutocomplete(responsableSearchInput, responsableIdHidden, responsableSuggestionsContainer, '/api/agents', (item) => `${item.prenom} ${item.nom} (${item.matricule})`, 'matricule');
 
       // Update filters and preview on change
       siteIdHidden.addEventListener('change', () => {
-        // Re-initialize DOE autocomplete with new site_id filter
-        setupAutocomplete(doeSearchInput, doeIdHidden, doeSuggestionsContainer, '/api/does', 'titre', 'id', { site_id: siteIdHidden.value });
-        // Clear DOE selection
+        // Clear DOE selection et aperçu
         doeSearchInput.value = '';
         doeIdHidden.value = '';
         doeDetailsDiv.classList.add('d-none'); // Hide DOE details
