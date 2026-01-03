@@ -98,10 +98,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Clear hidden input if search input is cleared
         searchInput.addEventListener('change', () => {
-            if (!searchInput.value) {
-                hiddenInput.value = '';
-                delete searchInput.dataset.selectedLabel;
-                delete searchInput.dataset.selectedId;
+            if (!hasSelection && !searchInput.value) {
+              hiddenInput.value = '';
+              delete searchInput.dataset.selectedLabel;
+              delete searchInput.dataset.selectedId;
             }
         });
       }
