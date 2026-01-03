@@ -17,6 +17,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const responsableMatriculeHidden = document.getElementById('responsable_matricule');
       const responsableSuggestionsContainer = document.getElementById('responsable-suggestions');
 
+      // Association Autocomplete
+      const associationSearchInput = document.getElementById('association-search-input');
+      const associationIdHidden = document.getElementById('association_id');
+      const associationSuggestionsContainer = document.getElementById('association-suggestions');
+
       // Adresse Autocomplete
       const adresseSearchInput = document.getElementById('adresse-search-input');
       const adresseIdHidden = document.getElementById('adresse_id');
@@ -182,11 +187,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             }
 
-            if (responsableSearchInput && responsableMatriculeHidden && responsableSuggestionsContainer) {
+                  if (responsableSearchInput && responsableMatriculeHidden && responsableSuggestionsContainer) {
 
-              setupAutocomplete(responsableSearchInput, responsableMatriculeHidden, responsableSuggestionsContainer, '/api/agents', 'nom_complet', 'matricule');
+                    setupAutocomplete(responsableSearchInput, responsableMatriculeHidden, responsableSuggestionsContainer, '/api/agents', 'nom_complet', 'matricule');
 
-            }
+                  }
+
+                  if (associationSearchInput && associationIdHidden && associationSuggestionsContainer) {
+
+                    setupAutocomplete(associationSearchInput, associationIdHidden, associationSuggestionsContainer, '/api/associations', 'titre', 'id');
+
+                  }
 
             if (adresseSearchInput && adresseIdHidden && adresseSuggestionsContainer) {
 
@@ -272,6 +283,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             commentaire,
             client_id: Number(clientIdHidden.value) || null,
             responsable_matricule: responsableMatriculeHidden.value || null,
+            association_id: Number(associationIdHidden.value) || null,
             statut: statutSelect ? (statutSelect.value || 'Actif') : 'Actif'
           };
           const r = await fetch('/api/sites', { method: 'POST', headers: await buildHeaders(true), credentials: 'same-origin', body: JSON.stringify(payload) });

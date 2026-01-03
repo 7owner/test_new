@@ -75,197 +75,79 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
       }
 
-            // Variable declarations for new inputs
+      // Variable declarations for new inputs
+      const siteSearchInput = document.getElementById('site-search-input');
+      const siteIdHidden = document.getElementById('site_id');
+      const siteSuggestionsContainer = document.getElementById('site-suggestions');
 
-            const clientSearchInput = document.getElementById('client-search-input');
+      const doeSearchInput = document.getElementById('doe-search-input');
+      const doeIdHidden = document.getElementById('doe_id');
+      const doeSuggestionsContainer = document.getElementById('doe-suggestions');
 
-            const clientIdHidden = document.getElementById('client_id');
+      const affaireSearchInput = document.getElementById('affaire-search-input');
+      const affaireIdHidden = document.getElementById('affaire_id');
+      const affaireSuggestionsContainer = document.getElementById('affaire-suggestions');
 
-            const clientSuggestionsContainer = document.getElementById('client-suggestions');
+      const responsableSearchInput = document.getElementById('responsable-search-input');
+      const responsableIdHidden = document.getElementById('responsable');
+      const responsableSuggestionsContainer = document.getElementById('responsable-suggestions');
 
-      
+      const doeDetailsDiv = document.getElementById('doe-details');
+      const doeTitleSpan = document.getElementById('doe-title');
+      const doeDescriptionSpan = document.getElementById('doe-description');
+      const viewDoeBtn = document.getElementById('view-doe-btn');
+      const siteCard = document.getElementById('site-card');
+      const siteViewLink = document.getElementById('site-view-link');
 
-            const contratSearchInput = document.getElementById('contrat-search-input');
+      // Setup autocompletes
+      setupAutocomplete(siteSearchInput, siteIdHidden, siteSuggestionsContainer, '/api/sites', 'nom_site', 'id'); // Site no longer filtered by client
+      setupAutocomplete(doeSearchInput, doeIdHidden, doeSuggestionsContainer, '/api/does', 'titre', 'id', { site_id: siteIdHidden.value }); // DOE can be filtered by site
+      setupAutocomplete(affaireSearchInput, affaireIdHidden, affaireSuggestionsContainer, '/api/affaires', 'nom_affaire', 'id');
+      setupAutocomplete(responsableSearchInput, responsableIdHidden, responsableSuggestionsContainer, '/api/agents', (item) => `${item.prenom} ${item.nom} (${item.matricule})`, 'matricule');
 
-            const contratIdHidden = document.getElementById('contrat_id');
-
-            const contratSuggestionsContainer = document.getElementById('contrat-suggestions');
-
-      
-
-            const siteSearchInput = document.getElementById('site-search-input');
-
-            const siteIdHidden = document.getElementById('site_id');
-
-            const siteSuggestionsContainer = document.getElementById('site-suggestions');
-
-      
-
-            const doeSearchInput = document.getElementById('doe-search-input');
-
-            const doeIdHidden = document.getElementById('doe_id');
-
-            const doeSuggestionsContainer = document.getElementById('doe-suggestions');
-
-      
-
-            const affaireSearchInput = document.getElementById('affaire-search-input');
-
-            const affaireIdHidden = document.getElementById('affaire_id');
-
-            const affaireSuggestionsContainer = document.getElementById('affaire-suggestions');
-
-      
-
-            const responsableSearchInput = document.getElementById('responsable-search-input');
-
-            const responsableIdHidden = document.getElementById('responsable');
-
-            const responsableSuggestionsContainer = document.getElementById('responsable-suggestions');
+      // Update filters and preview on change
+      siteIdHidden.addEventListener('change', () => {
+        // Re-initialize DOE autocomplete with new site_id filter
+        setupAutocomplete(doeSearchInput, doeIdHidden, doeSuggestionsContainer, '/api/does', 'titre', 'id', { site_id: siteIdHidden.value });
+        // Clear DOE selection
+        doeSearchInput.value = '';
+        doeIdHidden.value = '';
+        doeDetailsDiv.classList.add('d-none'); // Hide DOE details
+        updateSitePreview(); // Update site preview based on selected site
+      });
 
       
 
-      
-
-            const doeDetailsDiv = document.getElementById('doe-details');
-
-            const doeTitleSpan = document.getElementById('doe-title');
-
-            const doeDescriptionSpan = document.getElementById('doe-description');
-
-            const viewDoeBtn = document.getElementById('view-doe-btn');
-
-            const siteCard = document.getElementById('site-card');
-
-            const siteViewLink = document.getElementById('site-view-link');
-
-      
-
-            // Setup autocompletes
-
-            setupAutocomplete(clientSearchInput, clientIdHidden, clientSuggestionsContainer, '/api/clients', 'nom_client', 'id');
-
-            setupAutocomplete(contratSearchInput, contratIdHidden, contratSuggestionsContainer, '/api/contrats', 'titre', 'id', { client_id: clientIdHidden.value }); // Contract can be filtered by client
-
-            setupAutocomplete(siteSearchInput, siteIdHidden, siteSuggestionsContainer, '/api/sites', 'nom_site', 'id', { client_id: clientIdHidden.value }); // Site can be filtered by client
-
-            setupAutocomplete(doeSearchInput, doeIdHidden, doeSuggestionsContainer, '/api/does', 'titre', 'id', { site_id: siteIdHidden.value }); // DOE can be filtered by site
-
-            setupAutocomplete(affaireSearchInput, affaireIdHidden, affaireSuggestionsContainer, '/api/affaires', 'nom_affaire', 'id');
-
-            setupAutocomplete(responsableSearchInput, responsableIdHidden, responsableSuggestionsContainer, '/api/agents', (item) => `${item.prenom} ${item.nom} (${item.matricule})`, 'matricule');
-
-      
-
-            // Update filters and preview on change
-
-            clientIdHidden.addEventListener('change', () => {
-
-              // Re-initialize Contract and Site autocompletes with new client_id filter
-
-              setupAutocomplete(contratSearchInput, contratIdHidden, contratSuggestionsContainer, '/api/contrats', 'titre', 'id', { client_id: clientIdHidden.value });
-
-              setupAutocomplete(siteSearchInput, siteIdHidden, siteSuggestionsContainer, '/api/sites', 'nom_site', 'id', { client_id: clientIdHidden.value });
-
-              // Clear selections
-
-              contratSearchInput.value = '';
-
-              contratIdHidden.value = '';
-
-              siteSearchInput.value = '';
-
-              siteIdHidden.value = '';
-
-              doeSearchInput.value = '';
-
-              doeIdHidden.value = '';
-
-              affaireSearchInput.value = '';
-
-              affaireIdHidden.value = '';
-
-              doeDetailsDiv.classList.add('d-none');
-
-              siteCard.classList.add('d-none');
-
-            });
-
-      
-
-            siteIdHidden.addEventListener('change', () => {
-
-              // Re-initialize DOE autocomplete with new site_id filter
-
-              setupAutocomplete(doeSearchInput, doeIdHidden, doeSuggestionsContainer, '/api/does', 'titre', 'id', { site_id: siteIdHidden.value });
-
-              // Clear DOE selection
-
-              doeSearchInput.value = '';
-
-              doeIdHidden.value = '';
-
-              doeDetailsDiv.classList.add('d-none'); // Hide DOE details
-
-              updateSitePreview(); // Update site preview based on selected site
-
-            });
-
-      
-
-            doeIdHidden.addEventListener('change', () => {
-
-              const selDoeId = doeIdHidden.value;
-
-              if (selDoeId) {
-
-                fetch(`/api/does/${selDoeId}/relations`, { headers, credentials: 'same-origin' })
-
+      doeIdHidden.addEventListener('change', () => {
+        const selDoeId = doeIdHidden.value;
+        if (selDoeId) {
+          fetch(`/api/does/${selDoeId}/relations`, { headers, credentials: 'same-origin' })
+            .then(res => res.json())
+            .then(data => {
+              const doe = data?.doe || data || {};
+              if (doe.affaire_id) {
+                fetch(`/api/affaires/${doe.affaire_id}`, { headers, credentials: 'same-origin' })
                   .then(res => res.json())
-
-                  .then(data => {
-
-                    if (data && data.affaire_id) {
-
-                      // Pre-fill affaire based on selected DOE's affaire_id
-
-                      fetch(`/api/affaires/${data.affaire_id}`, { headers, credentials: 'same-origin' })
-
-                        .then(res => res.json())
-
-                        .then(affaire => {
-
-                          if (affaire) {
-
-                            affaireSearchInput.value = affaire.nom_affaire;
-
-                            affaireIdHidden.value = affaire.id;
-
-                          }
-
-                        });
-
+                  .then(affaire => {
+                    if (affaire) {
+                      affaireSearchInput.value = affaire.nom_affaire;
+                      affaireIdHidden.value = affaire.id;
                     }
-
-                    // Display DOE details
-
-                    doeTitleSpan.textContent = data.titre || '';
-
-                    doeDescriptionSpan.textContent = data.description || '';
-
-                    viewDoeBtn.href = `doe-view.html?id=${selDoeId}`;
-
-                    doeDetailsDiv.classList.remove('d-none');
-
                   });
-
-              } else {
-
-                doeDetailsDiv.classList.add('d-none');
-
               }
-
+              if (doe.site_id) {
+                siteIdHidden.value = doe.site_id;
+                updateSitePreview();
+              }
+              doeTitleSpan.textContent = doe.titre || '';
+              doeDescriptionSpan.textContent = doe.description || '';
+              viewDoeBtn.href = `doe-view.html?id=${selDoeId}`;
+              doeDetailsDiv.classList.remove('d-none');
             });
+        } else {
+          doeDetailsDiv.classList.add('d-none');
+        }
+      });
 
       
 
@@ -381,61 +263,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       
 
-            // Initial check for site_id in URL for pre-filling site and updating preview
-
-            const urlParams = new URLSearchParams(location.search);
-
-            const siteParam = urlParams.get('site_id');
-
-            if (siteParam) {
-
-              // Fetch site details to pre-fill search input and hidden ID
-
-              fetch(`/api/sites/${siteParam}`, { headers, credentials: 'same-origin' })
-
-                .then(res => res.json())
-
-                .then(siteData => {
-
-                  if (siteData) {
-
-                    siteSearchInput.value = siteData.nom_site;
-
-                    siteIdHidden.value = siteData.id;
-
-                    updateSitePreview();
-
-                    // Trigger change on client ID if site has a client
-
-                    if (siteData.client_id) {
-
-                      fetch(`/api/clients/${siteData.client_id}`, { headers, credentials: 'same-origin' })
-
-                        .then(res => res.json())
-
-                        .then(clientData => {
-
-                          if (clientData) {
-
-                            clientSearchInput.value = clientData.nom_client;
-
-                            clientIdHidden.value = clientData.id;
-
-                            clientIdHidden.dispatchEvent(new Event('change')); // Trigger client change for contract/site filters
-
-                          }
-
-                        });
-
-                    }
-
-                  }
-
-                })
-
-                .catch(error => console.error('Error pre-filling site from URL:', error));
-
-            }
+            
 
       
 
@@ -445,11 +273,13 @@ document.addEventListener('DOMContentLoaded', async function() {
       const form = document.getElementById('ticket-new-form');
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (!doeIdHidden.value || !affaireIdHidden.value) {
+          alert('DOE et Affaire sont obligatoires pour créer un ticket.');
+          return;
+        }
         const payload = {
           titre: (document.getElementById('titre')?.value || '').trim() || null,
           description: (document.getElementById('description')?.value || '').trim() || null,
-          client_id: Number(clientIdHidden.value) || null,
-          contrat_id: Number(contratIdHidden.value) || null,
           site_id: Number(siteIdHidden.value) || null,
           doe_id: Number(doeIdHidden.value) || null,
           affaire_id: Number(affaireIdHidden.value) || null,
@@ -464,8 +294,6 @@ document.addEventListener('DOMContentLoaded', async function() {
           payload.date_debut = dd ? new Date(dd).toISOString() : null;
           payload.date_fin = df ? new Date(df).toISOString() : null;
         } catch(_) { payload.date_debut = payload.date_debut || null; payload.date_fin = payload.date_fin || null; }
-
-        if (!payload.client_id) { alert('Veuillez sélectionner un client.'); return; }
 
         try {
           const r = await fetch('/api/tickets', { method:'POST', headers, credentials:'same-origin', body: JSON.stringify(payload) });
