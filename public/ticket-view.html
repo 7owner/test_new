@@ -424,12 +424,12 @@
           </div>
           <div class="row g-3">
             <div class="col-md-6">
-              <label for="intervention-date-debut" class="form-label fw-bold">Date début</label>
-              <input type="date" id="intervention-date-debut" class="form-control" required>
+              <label for="intervention-date-debut" class="form-label fw-bold">Date et heure de début</label>
+              <input type="datetime-local" id="intervention-date-debut" class="form-control" required>
             </div>
             <div class="col-md-6">
               <label for="intervention-date-fin" class="form-label fw-bold">Date fin (optionnel)</label>
-              <input type="date" id="intervention-date-fin" class="form-control">
+              <input type="datetime-local" id="intervention-date-fin" class="form-control">
             </div>
           </div>
           <input type="hidden" id="intervention-status" value="En_attente">
@@ -1185,11 +1185,21 @@
           if (interventionForm) {
             interventionForm.addEventListener('submit', async (e) => {
               e.preventDefault();
+              const ddRaw = (document.getElementById('intervention-date-debut')?.value || '').trim();
+              const dfRaw = (document.getElementById('intervention-date-fin')?.value || '').trim();
+              if (!ddRaw) {
+                alert('La date/heure de début est obligatoire.');
+                return;
+              }
+              let dateDebutIso = null; let dateFinIso = null;
+              try { dateDebutIso = new Date(ddRaw).toISOString(); } catch(_) { dateDebutIso = null; }
+              if (dfRaw) { try { dateFinIso = new Date(dfRaw).toISOString(); } catch(_) { dateFinIso = null; } }
+
               const payload = {
                 titre: document.getElementById('intervention-titre').value,
                 description: document.getElementById('intervention-description').value,
-                date_debut: document.getElementById('intervention-date-debut').value,
-                date_fin: document.getElementById('intervention-date-fin').value || null,
+                date_debut: dateDebutIso,
+                date_fin: dateFinIso,
                 ticket_id: ticketId,
                 status: 'En_attente'
               };
