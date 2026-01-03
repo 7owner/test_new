@@ -12,22 +12,22 @@ document.addEventListener('DOMContentLoaded', async function() {
       // Autocomplete setup function
       function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey, idKey, extraParams = {}) {
         let timeout;
-        let hasSelection = false;
+        let selectedLabel = '';
+        let selectedId = '';
         const getLabel = (item) => (typeof displayKey === 'function') ? displayKey(item) : (item?.[displayKey] || '');
         const getId = (item) => (typeof idKey === 'function') ? idKey(item) : (item?.[idKey] ?? '');
         const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
 
         searchInput.addEventListener('input', () => {
-          hasSelection = false;
           clearTimeout(timeout);
           const query = searchInput.value.trim();
           if (query.length < 2) {
             suggestionsContainer.innerHTML = '';
-            if (!searchInput.dataset.selectedLabel) {
+            // Si l'utilisateur efface réellement le champ, on réinitialise la sélection
+            if (query.length === 0) {
               hiddenInput.value = '';
-            } else {
-              // Rétablir la sélection existante si on n'a pas vraiment effacé
-              searchInput.value = searchInput.dataset.selectedLabel;
+              selectedLabel = '';
+              selectedId = '';
             }
             return;
           }
@@ -78,13 +78,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ev.preventDefault();
                 const label = getLabel(item) || '';
                 const val = getId(item) || '';
-                console.log('[autocomplete select]', fetchUrl, { label, val });
+                selectedLabel = label;
+                selectedId = val;
                 searchInput.value = label;
                 hiddenInput.value = val;
-                searchInput.dataset.selectedLabel = label;
-                searchInput.dataset.selectedId = val;
                 suggestionsContainer.innerHTML = '';
-                hasSelection = true;
                 searchInput.dispatchEvent(new Event('change'));
                 hiddenInput.dispatchEvent(new Event('change'));
                 setTimeout(() => { searchInput.blur(); searchInput.value = label; }, 0);
@@ -103,11 +101,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Clear hidden input if search input is cleared
         searchInput.addEventListener('change', () => {
-            if (!hasSelection && !searchInput.value) {
-              hiddenInput.value = '';
-              delete searchInput.dataset.selectedLabel;
-              delete searchInput.dataset.selectedId;
-            }
+          // Si le champ est vidé manuellement, on efface la sélection
+          if (!searchInput.value.trim()) {
+            hiddenInput.value = '';
+            selectedLabel = '';
+            selectedId = '';
+          } else if (selectedLabel) {
+            // Assure que la valeur affichée reste celle de la sélection
+            searchInput.value = selectedLabel;
+          }
         });
       }
 
