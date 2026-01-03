@@ -214,6 +214,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                     if (siteViewLink) { siteViewLink.href = `site-view.html?id=${site.id || currentSiteId}`; }
 
+                    // Renseigne le champ de recherche avec le nom du site quand il provient du DOE
+                    const siteLabel = site.nom_site || `Site #${site.id || currentSiteId}`;
+                    if (siteSearchInput) {
+                      siteSearchInput.value = siteLabel;
+                    }
+
                     document.getElementById('site-name').textContent = site.nom_site || `Site #${site.id || currentSiteId}`;
 
                     document.getElementById('site-client').textContent = site.nom_client || 'Non assigné';
