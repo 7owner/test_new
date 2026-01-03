@@ -129,6 +129,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       const viewDoeBtn = document.getElementById('view-doe-btn');
       const siteCard = document.getElementById('site-card');
       const siteViewLink = document.getElementById('site-view-link');
+      let siteUpdateLocked = false;
 
       // Setup autocompletes
       setupAutocomplete(siteSearchInput, siteIdHidden, siteSuggestionsContainer, '/api/sites', 'nom_site', 'id'); // Site no longer filtered by client
@@ -138,10 +139,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       // Update filters and preview on change
       siteIdHidden.addEventListener('change', () => {
-        // Clear DOE selection et aperçu
-        doeSearchInput.value = '';
-        doeIdHidden.value = '';
-        doeDetailsDiv.classList.add('d-none'); // Hide DOE details
+        if (!siteUpdateLocked) {
+          // Clear DOE selection et aperçu seulement si changement manuel
+          doeSearchInput.value = '';
+          doeIdHidden.value = '';
+          doeDetailsDiv.classList.add('d-none'); // Hide DOE details
+        }
         updateSitePreview(); // Update site preview based on selected site
       });
 
@@ -165,8 +168,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                   });
               }
               if (doe.site_id) {
+                siteUpdateLocked = true;
                 siteIdHidden.value = doe.site_id;
-                siteIdHidden.dispatchEvent(new Event('change')); // Dispatch change event
+                siteIdHidden.dispatchEvent(new Event('change')); // Dispatch change event sans reset DOE
+                siteUpdateLocked = false;
               }
               doeTitleSpan.textContent = doe.titre || '';
               doeDescriptionSpan.textContent = doe.description || '';
