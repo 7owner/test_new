@@ -915,7 +915,13 @@
               </div>
               <div class="text-end">
                 <div class="small text-muted mb-1">Temps écoulé: ${interElapsed || '—'}</div>
-                <a href="intervention-view.html?id=${inter.id}" class="btn btn-sm btn-info me-1"><i class="bi bi-eye"></i> Voir</a>
+                <div class="btn-group">
+                  <a href="intervention-view.html?id=${inter.id}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i> Voir</a>
+                  ${isAdmin ? `
+                    <button class="btn btn-sm btn-warning cancel-inter" data-id="${inter.id}"><i class="bi bi-slash-circle"></i> Annuler</button>
+                    <button class="btn btn-sm btn-danger delete-inter" data-id="${inter.id}"><i class="bi bi-trash"></i> Supprimer</button>
+                  ` : ''}
+                </div>
               </div>
             </div>`;
           list.appendChild(el);
@@ -964,6 +970,44 @@
         renderResponsables(responsables);
         renderAgents(agentsAssignes);
         await loadMaterielsSection(interventionsCache);
+        // Actions annuler/supprimer intervention (admin)
+        const interListEl = document.getElementById('ticket-interventions-list');
+        if (interListEl) {
+          interListEl.addEventListener('click', async (ev) => {
+            const btn = ev.target.closest('button.cancel-inter, button.delete-inter');
+            if (!btn) return;
+            const id = btn.getAttribute('data-id');
+            if (!id) return;
+            if (btn.classList.contains('cancel-inter')) {
+              if (!confirm('Annuler cette intervention ?')) return;
+              try {
+                await fetch(`/api/interventions/${id}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json', ...headers },
+                  credentials: 'same-origin',
+                  body: JSON.stringify({ status: 'Annulee', date_fin: new Date().toISOString() })
+                });
+                alert('Intervention annulée.');
+                location.reload();
+              } catch (e) {
+                alert('Erreur lors de l’annulation: ' + e.message);
+              }
+            } else if (btn.classList.contains('delete-inter')) {
+              if (!confirm('Supprimer définitivement cette intervention ?')) return;
+              try {
+                await fetch(`/api/interventions/${id}`, {
+                  method: 'DELETE',
+                  headers: { ...headers },
+                  credentials: 'same-origin'
+                });
+                alert('Intervention supprimée.');
+                location.reload();
+              } catch (e) {
+                alert('Erreur lors de la suppression: ' + e.message);
+              }
+            }
+          });
+        }
         // Inline recap in main card
         const inlineResp = document.getElementById('inline-responsables');
         const inlineAg = document.getElementById('inline-agents');
