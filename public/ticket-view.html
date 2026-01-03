@@ -918,8 +918,8 @@
                 <div class="btn-group">
                   <a href="intervention-view.html?id=${inter.id}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i> Voir</a>
                   ${isAdmin ? `
+                    <a class="btn btn-sm btn-secondary edit-inter" href="intervention-view.html?id=${inter.id}#edit"><i class="bi bi-pencil-square"></i> Modifier</a>
                     <button class="btn btn-sm btn-warning cancel-inter" data-id="${inter.id}"><i class="bi bi-slash-circle"></i> Annuler</button>
-                    <button class="btn btn-sm btn-danger delete-inter" data-id="${inter.id}"><i class="bi bi-trash"></i> Supprimer</button>
                   ` : ''}
                 </div>
               </div>
@@ -980,30 +980,23 @@
             if (!id) return;
             if (btn.classList.contains('cancel-inter')) {
               if (!confirm('Annuler cette intervention ?')) return;
+              const motif = prompt('Motif d’annulation (obligatoire) :');
+              if (!motif || !motif.trim()) return;
+              const inter = (interventionsCache || []).find(i => String(i.id) === String(id)) || {};
+              const newDesc = inter.description
+                ? `${inter.description}\n[Annulation] ${motif.trim()}`
+                : `[Annulation] ${motif.trim()}`;
               try {
                 await fetch(`/api/interventions/${id}`, {
                   method: 'PATCH',
                   headers: { 'Content-Type': 'application/json', ...headers },
                   credentials: 'same-origin',
-                  body: JSON.stringify({ status: 'Annulee', date_fin: new Date().toISOString() })
+                  body: JSON.stringify({ status: 'Termine', date_fin: new Date().toISOString(), description: newDesc })
                 });
                 alert('Intervention annulée.');
                 location.reload();
               } catch (e) {
                 alert('Erreur lors de l’annulation: ' + e.message);
-              }
-            } else if (btn.classList.contains('delete-inter')) {
-              if (!confirm('Supprimer définitivement cette intervention ?')) return;
-              try {
-                await fetch(`/api/interventions/${id}`, {
-                  method: 'DELETE',
-                  headers: { ...headers },
-                  credentials: 'same-origin'
-                });
-                alert('Intervention supprimée.');
-                location.reload();
-              } catch (e) {
-                alert('Erreur lors de la suppression: ' + e.message);
               }
             }
           });
