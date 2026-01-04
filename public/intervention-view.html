@@ -212,50 +212,48 @@
         <div class="col-md-6">
           <div class="p-3 bg-light border rounded h-100">
             <h6 class="fw-semibold mb-3">Descriptif</h6>
-            <div class="small text-muted mb-2">Nombre d'heures intervention</div>
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <input type="text" class="form-control form-control-sm" value="10h" readonly>
-              <span>= 10h</span>
-            </div>
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <input type="text" class="form-control form-control-sm" value="10h" readonly>
-              <span>= 10h</span>
-            </div>
-            <div class="fw-bold mb-3">Nombre d'heures Total = 20h</div>
-            <div class="small text-muted mb-2">Matériel</div>
+            <div class="small text-muted mb-1">Heures d'intervention (calcul automatique si début/fin connus)</div>
+            <input type="number" step="0.25" min="0" class="form-control form-control-sm mb-2" id="facture-hours-input" value="0">
+            <div class="small text-muted">Durée calculée : <span id="facture-hours-auto">0 h</span></div>
+            <hr>
+            <div class="small text-muted mb-2">Matériel validé</div>
             <ul class="list-unstyled small mb-2" id="facture-mat-list">
               <li class="text-muted">Aucun matériel validé.</li>
             </ul>
-            <div class="fw-bold">Matériel Total <span id="facture-mat-total">0€</span></div>
+            <div class="fw-bold">Matériel Total HT : <span id="facture-mat-total">0€</span></div>
           </div>
         </div>
         <div class="col-md-6">
           <div class="p-3 bg-light border rounded h-100">
             <h6 class="fw-semibold mb-3">Comptabilité</h6>
             <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
-              <span>Heures intervention Total = 20h x</span>
-              <input type="text" class="form-control form-control-sm" value="65" style="max-width:80px;">
+              <span>Heures intervention</span>
+              <input type="number" id="facture-rate" class="form-control form-control-sm" style="max-width:90px;" value="65"> <span>€/h</span>
             </div>
-            <div class="fw-bold mb-2">Tarif total heures = 1300€ HT</div>
+            <div class="fw-bold mb-2">Total heures HT : <span id="facture-hours-total">0€</span></div>
             <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
-              <span>Tarif total Matériel = 45€ HT x</span>
-              <input type="text" class="form-control form-control-sm" value="20%" style="max-width:80px;">
-              <input type="text" class="form-control form-control-sm" value="9€" style="max-width:80px;">
-              <span>= 54€ HT</span>
+              <span>Majoration matériel</span>
+              <input type="number" id="facture-mat-taux" class="form-control form-control-sm" style="max-width:90px;" value="0"> <span>%</span>
             </div>
+            <div class="fw-bold mb-2">Total matériel HT : <span id="facture-mat-total-ht">0€</span></div>
             <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
               <span>Déplacement</span>
-              <input type="text" class="form-control form-control-sm" value="4" style="max-width:60px;">
-              <input type="text" class="form-control form-control-sm" value="40€" style="max-width:80px;">
-              <span>= 160€ HT</span>
+              <input type="number" id="facture-depl-qty" class="form-control form-control-sm" style="max-width:70px;" value="0"> 
+              <input type="number" id="facture-depl-pu" class="form-control form-control-sm" style="max-width:90px;" value="0"> <span>€</span>
             </div>
             <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
               <span>Divers</span>
-              <input type="text" class="form-control form-control-sm" value="40€" style="max-width:80px;">
+              <input type="number" id="facture-divers" class="form-control form-control-sm" style="max-width:100px;" value="0"> <span>€</span>
             </div>
-            <div class="fw-semibold">Montant total</div>
+            <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
+              <span>TVA</span>
+              <input type="number" id="facture-tva" class="form-control form-control-sm" style="max-width:90px;" value="20"> <span>%</span>
+            </div>
+            <div class="fw-semibold mt-3">Montant total</div>
             <div class="small">
-              1300 + 54 + 160 = <strong>1514€ HT</strong> x <input type="text" class="form-control form-control-sm d-inline-block" value="20%" style="max-width:80px;"> = 1816,8 TTC = 302,8 TVA
+              <div>Total HT : <strong id="facture-total-ht">0€</strong></div>
+              <div>TVA : <span id="facture-total-tva">0€</span></div>
+              <div>Total TTC : <strong id="facture-total-ttc">0€</strong></div>
             </div>
           </div>
         </div>
@@ -581,6 +579,8 @@ document.addEventListener('DOMContentLoaded', async function () {
   const factureBtn = document.getElementById('toggle-facture-btn');
   let demandesCache = [];
   let eventsCache = [];
+  let factureMatTotalValue = 0;
+  let factureHoursAuto = 0;
 
 
   let ticketId = null;
@@ -728,6 +728,40 @@ document.addEventListener('DOMContentLoaded', async function () {
     `;
   }
 
+  // Calculs facture
+  function renderFactureTotals() {
+    const hours = parseFloat(factureHoursInput?.value || '0') || 0;
+    const rate = parseFloat(factureRateInput?.value || '0') || 0;
+    const matTaux = parseFloat(factureMatTauxInput?.value || '0') || 0;
+    const deplQty = parseFloat(factureDeplQtyInput?.value || '0') || 0;
+    const deplPu  = parseFloat(factureDeplPuInput?.value || '0') || 0;
+    const divers  = parseFloat(factureDiversInput?.value || '0') || 0;
+    const tva     = parseFloat(factureTvaInput?.value || '0') || 0;
+
+    const totalHeures = hours * rate;
+    const totalMatHT  = factureMatTotalValue + (factureMatTotalValue * (matTaux/100));
+    const totalDepl   = deplQty * deplPu;
+    const totalHT     = totalHeures + totalMatHT + totalDepl + divers;
+    const totalTVA    = totalHT * (tva/100);
+    const totalTTC    = totalHT + totalTVA;
+
+    if (factureHoursTotalEl) factureHoursTotalEl.textContent = `${totalHeures.toFixed(2)}€`;
+    if (factureMatTotalHtEl) factureMatTotalHtEl.textContent = `${totalMatHT.toFixed(2)}€`;
+    if (factureTotalHtEl) factureTotalHtEl.textContent = `${totalHT.toFixed(2)}€`;
+    if (factureTotalTvaEl) factureTotalTvaEl.textContent = `${totalTVA.toFixed(2)}€`;
+    if (factureTotalTtcEl) factureTotalTtcEl.textContent = `${totalTTC.toFixed(2)}€`;
+  }
+
+  function wireFactureInputs() {
+    const inputs = [
+      factureHoursInput, factureRateInput, factureMatTauxInput,
+      factureDeplQtyInput, factureDeplPuInput, factureDiversInput, factureTvaInput
+    ];
+    inputs.forEach(inp => {
+      if (inp) inp.addEventListener('input', renderFactureTotals);
+    });
+  }
+
   // Matériels pour facture (liste validée)
   const factureMatList = document.getElementById('facture-mat-list');
   const factureMatTotal = document.getElementById('facture-mat-total');
@@ -736,6 +770,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (!materielsCache || !materielsCache.length) {
       factureMatList.innerHTML = '<li class="text-muted">Aucun matériel validé.</li>';
       factureMatTotal.textContent = '0€';
+      factureMatTotalValue = 0;
+      renderFactureTotals();
       return;
     }
     let total = 0;
@@ -749,7 +785,9 @@ document.addEventListener('DOMContentLoaded', async function () {
       li.innerHTML = `${m.designation || m.reference || 'Matériel'}${m.reference ? ' ('+m.reference+')' : ''} — ${q || 1} × ${pu ? (pu.toFixed(2) + '€') : 'N/A'}${lineTotal ? ' = ' + lineTotal.toFixed(2) + '€' : ''}`;
       factureMatList.appendChild(li);
     });
+    factureMatTotalValue = total;
     factureMatTotal.textContent = `${total.toFixed(2)}€`;
+    renderFactureTotals();
   }
 
   // Toggle facture body
@@ -1291,6 +1329,8 @@ document.addEventListener('DOMContentLoaded', async function () {
 
       fetchAndDisplayTicketRelations();
       await loadDemandes();
+      wireFactureInputs();
+      renderFactureTotals();
 
     } catch (e) {
       console.error('Erreur chargement initial', e);
@@ -1556,3 +1596,17 @@ document.addEventListener('DOMContentLoaded', async function () {
 </script>
 </body>
 </html>
+  // Inputs facture
+  const factureHoursInput = document.getElementById('facture-hours-input');
+  const factureHoursAutoEl = document.getElementById('facture-hours-auto');
+  const factureRateInput = document.getElementById('facture-rate');
+  const factureMatTauxInput = document.getElementById('facture-mat-taux');
+  const factureDeplQtyInput = document.getElementById('facture-depl-qty');
+  const factureDeplPuInput = document.getElementById('facture-depl-pu');
+  const factureDiversInput = document.getElementById('facture-divers');
+  const factureTvaInput = document.getElementById('facture-tva');
+  const factureHoursTotalEl = document.getElementById('facture-hours-total');
+  const factureMatTotalHtEl = document.getElementById('facture-mat-total-ht');
+  const factureTotalHtEl = document.getElementById('facture-total-ht');
+  const factureTotalTvaEl = document.getElementById('facture-total-tva');
+  const factureTotalTtcEl = document.getElementById('facture-total-ttc');
