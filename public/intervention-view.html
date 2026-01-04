@@ -223,12 +223,10 @@
             </div>
             <div class="fw-bold mb-3">Nombre d'heures Total = 20h</div>
             <div class="small text-muted mb-2">Matériel</div>
-            <ul class="list-unstyled small mb-2">
-              <li>Matériel xxx 15€</li>
-              <li>Matériel xxx 15€</li>
-              <li>Matériel xxx 15€</li>
+            <ul class="list-unstyled small mb-2" id="facture-mat-list">
+              <li class="text-muted">Aucun matériel validé.</li>
             </ul>
-            <div class="fw-bold">Matériel Total 45€</div>
+            <div class="fw-bold">Matériel Total <span id="facture-mat-total">0€</span></div>
           </div>
         </div>
         <div class="col-md-6">
@@ -728,6 +726,30 @@ document.addEventListener('DOMContentLoaded', async function () {
         <tbody>${rows}</tbody>
       </table>
     `;
+  }
+
+  // Matériels pour facture (liste validée)
+  const factureMatList = document.getElementById('facture-mat-list');
+  const factureMatTotal = document.getElementById('facture-mat-total');
+  function renderFactureMateriels() {
+    if (!factureMatList || !factureMatTotal) return;
+    if (!materielsCache || !materielsCache.length) {
+      factureMatList.innerHTML = '<li class="text-muted">Aucun matériel validé.</li>';
+      factureMatTotal.textContent = '0€';
+      return;
+    }
+    let total = 0;
+    factureMatList.innerHTML = '';
+    materielsCache.forEach(m => {
+      const q = Number(m.quantite) || 0;
+      const pu = Number(m.prix_achat) || 0;
+      const lineTotal = q * pu;
+      total += lineTotal;
+      const li = document.createElement('li');
+      li.innerHTML = `${m.designation || m.reference || 'Matériel'}${m.reference ? ' ('+m.reference+')' : ''} — ${q || 1} × ${pu ? (pu.toFixed(2) + '€') : 'N/A'}${lineTotal ? ' = ' + lineTotal.toFixed(2) + '€' : ''}`;
+      factureMatList.appendChild(li);
+    });
+    factureMatTotal.textContent = `${total.toFixed(2)}€`;
   }
 
   // Toggle facture body
@@ -1249,6 +1271,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       if (Array.isArray(rel.materiels)) {
         materielsCache = rel.materiels;
         renderMateriels(materielFilter ? materielFilter.value : '');
+        renderFactureMateriels();
       }
 
       try {
@@ -1340,6 +1363,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       if (!materielsCache.length) loadMateriels();
       else renderMateriels(materielFilter ? materielFilter.value : '');
       renderMaterielsInline();
+      renderFactureMateriels();
     });
   }
   if (materielFilter) {
