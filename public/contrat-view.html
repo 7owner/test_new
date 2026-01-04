@@ -12,18 +12,49 @@
 <body class="app-bg p-3">
   <div class="card mb-3 shadow-sm">
     <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start gap-3">
-                  <div>
-                    <h4 class="mb-1" id="titre">Contrat</h4>
-                    <div class="text-muted small">Période</div>
-                    <div class="fw-semibold mb-2"><span id="date-debut">-</span> &rarr; <span id="date-fin">-</span></div>
-                    <div id="feedback" class="small"></div>
-                  </div>
-                  <div>
-                    <button class="btn btn-primary btn-sm me-2" id="open-new-contrat" data-bs-toggle="modal" data-bs-target="#createContratModal"><i class="bi bi-plus-circle me-1"></i>Créer un contrat</button>
-                    <button class="btn btn-warning btn-sm" id="edit-contrat-btn"><i class="bi bi-pencil me-1"></i>Modifier</button>
-                  </div>
-                </div>    </div>
+      <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+        <div>
+          <h4 class="mb-1" id="titre">Contrat</h4>
+          <div class="text-muted small">Période</div>
+          <div class="fw-semibold mb-2"><span id="date-debut">-</span> &rarr; <span id="date-fin">-</span></div>
+          <div id="feedback" class="small"></div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm" id="open-new-contrat" data-bs-toggle="modal" data-bs-target="#createContratModal"><i class="bi bi-plus-circle me-1"></i>Créer un contrat</button>
+          <button class="btn btn-warning btn-sm" id="edit-contrat-btn"><i class="bi bi-pencil me-1"></i>Modifier</button>
+        </div>
+      </div>
+      <div class="row g-3 mt-3">
+        <div class="col-md-6">
+          <div class="card h-100 border-0 bg-light shadow-sm d-none" id="client-card">
+            <div class="card-header bg-gradient" style="background:linear-gradient(135deg,#2563eb,#6366f1);color:#fff;">
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="fw-semibold">Client associé</div>
+                <a class="btn btn-light btn-sm" id="client-view-link" target="_blank" rel="noopener">Ouvrir</a>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="fw-semibold" id="client-name">-</div>
+              <div class="small text-muted" id="client-email"></div>
+              <div class="small text-muted" id="client-contact"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card h-100 border-0 bg-light shadow-sm">
+            <div class="card-header bg-gradient" style="background:linear-gradient(135deg,#10b981,#0ea5e9);color:#fff;">
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="fw-semibold">Associations liées</div>
+                <span class="badge bg-light text-dark" id="asso-count">0</span>
+              </div>
+            </div>
+            <div class="card-body" id="associations-body">
+              <div class="text-muted small">Aucune association liée.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="card shadow-sm">
@@ -161,6 +192,13 @@
       const createSiteFeedback = document.getElementById('create-site-feedback');
       const siteSelect = document.getElementById('site-select');
       const createSiteForm = document.getElementById('create-site-form');
+      const clientCard = document.getElementById('client-card');
+      const clientName = document.getElementById('client-name');
+      const clientEmail = document.getElementById('client-email');
+      const clientContact = document.getElementById('client-contact');
+      const clientViewLink = document.getElementById('client-view-link');
+      const associationsBody = document.getElementById('associations-body');
+      const assoCount = document.getElementById('asso-count');
       if (!id) { feedback.className='text-danger'; feedback.textContent='ID manquant'; return; }
       const token = localStorage.getItem('token');
       const headers = { 'Authorization': token? `Bearer ${token}` : '' };
@@ -177,10 +215,42 @@
       const saveContratBtn = document.getElementById('save-contrat-btn');
       let agentMap = new Map();
 
+      async function renderClient(clientId) {
+        if (!clientId || !clientCard) { clientCard?.classList.add('d-none'); return; }
+        try {
+          const c = await api(`/api/clients/${clientId}`);
+          clientName.textContent = c.nom_client || `Client #${clientId}`;
+          clientEmail.textContent = c.email || '';
+          clientContact.textContent = c.telephone || '';
+          if (clientViewLink) clientViewLink.href = `/client-view.html?id=${clientId}`;
+          clientCard.classList.remove('d-none');
+        } catch {
+          clientCard?.classList.add('d-none');
+        }
+      }
+
+      function renderAssociations(list = []) {
+        if (!associationsBody) return;
+        associationsBody.innerHTML = '';
+        if (!list.length) {
+          associationsBody.innerHTML = '<div class="text-muted small">Aucune association liée.</div>';
+        } else {
+          list.forEach(a => {
+            const el = document.createElement('div');
+            el.className = 'p-2 border rounded mb-2 bg-white';
+            el.innerHTML = `<div class="fw-semibold">${a.titre || 'Association'}</div>
+              <div class="small text-muted">${a.email_comptabilite || ''}</div>`;
+            associationsBody.appendChild(el);
+          });
+        }
+        if (assoCount) assoCount.textContent = `${list.length}`;
+      }
+
       try {
         const contrat = await api(`/api/contrats/${id}`);
         const sites = await api(`/api/contrats/${id}/sites`);
         const agents = await api('/api/agents').catch(() => []);
+        const associations = await api('/api/associations').catch(() => []);
 
         // cache agents par matricule pour éviter les undefined
         agentMap = new Map();
@@ -191,6 +261,8 @@
         document.getElementById('titre').textContent = contrat.titre || 'Contrat';
         document.getElementById('date-debut').textContent = contrat.date_debut ? new Date(contrat.date_debut).toLocaleDateString() : '—';
         document.getElementById('date-fin').textContent = contrat.date_fin ? new Date(contrat.date_fin).toLocaleDateString() : '—';
+        renderClient(contrat.client_id);
+        renderAssociations((associations || []).filter(a => Number(a.contrat_id) === Number(id)));
 
         renderSitesGrid(sites);
       } catch (err) {

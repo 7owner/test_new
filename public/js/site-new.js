@@ -7,10 +7,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!form) return;
       const saveBtn = document.getElementById('save-site-btn');
 
-      // Client Autocomplete
+      // Client Autocomplete + preview
       const clientSearchInput = document.getElementById('client-search-input');
       const clientIdHidden = document.getElementById('client_id');
       const clientSuggestionsContainer = document.getElementById('client-suggestions');
+      const clientCard = document.getElementById('client-card');
+      const clientName = document.getElementById('client-name');
+      const clientEmail = document.getElementById('client-email');
+      const clientContact = document.getElementById('client-contact');
+      const clientViewLink = document.getElementById('client-view-link');
 
       // Responsable Autocomplete
       const responsableSearchInput = document.getElementById('responsable-search-input');
@@ -62,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
 
             // Autocomplete setup function (persist selection)
-            function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrlOrFn, displayKey, idKey, options = {}) {
+            function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrlOrFn, displayKey, idKey, options = {}, onSelect=null) {
               let timeout;
               let selectedLabel = '';
               let selectedId = '';
@@ -119,6 +124,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                       hiddenInput.value = selectedId;
                       suggestionsContainer.innerHTML = '';
                       searchInput.dispatchEvent(new Event('change'));
+                      if (typeof onSelect === 'function') {
+                        try { onSelect(item); } catch(_) {}
+                      }
                     });
                     suggestionsContainer.appendChild(itemElement);
                   });
@@ -146,7 +154,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Initialize autocompletes
       if (clientSearchInput && clientIdHidden && clientSuggestionsContainer) {
-        setupAutocomplete(clientSearchInput, clientIdHidden, clientSuggestionsContainer, '/api/clients', 'nom_client', 'id');
+        setupAutocomplete(
+          clientSearchInput,
+          clientIdHidden,
+          clientSuggestionsContainer,
+          '/api/clients',
+          'nom_client',
+          'id',
+          { minChars: 2 },
+          (item) => { if (item && item.id) renderClientPreview(item.id, item); }
+        );
+        if (clientIdHidden.value) renderClientPreview(clientIdHidden.value);
       }
       if (responsableSearchInput && responsableMatriculeHidden && responsableSuggestionsContainer) {
         setupAutocomplete(responsableSearchInput, responsableMatriculeHidden, responsableSuggestionsContainer, '/api/agents', 'nom_complet', 'matricule');
@@ -217,6 +235,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         toggleNew.dispatchEvent(new Event('change'));
       }
 
+      async function renderClientPreview(clientId, fallbackData=null) {
+        if (!clientId || !clientCard) { if (clientCard) clientCard.classList.add('d-none'); return; }
+        if (fallbackData) {
+          clientName.textContent = fallbackData.nom_client || `Client #${clientId}`;
+          clientEmail.textContent = fallbackData.email || '';
+          clientContact.textContent = fallbackData.telephone || '';
+          if (clientViewLink) clientViewLink.href = `/client-view.html?id=${clientId}`;
+          clientCard.classList.remove('d-none');
+        }
+        try {
+          const h = await buildHeaders(false);
+          const res = await fetch(`/api/clients/${clientId}/relations`, { headers: h, credentials: 'same-origin' });
+          if (!res.ok) throw new Error('Client introuvable');
+          const data = await res.json();
+          const c = data.client || data || {};
+          clientName.textContent = c.nom_client || `Client #${clientId}`;
+          clientEmail.textContent = c.email || '';
+          clientContact.textContent = c.telephone || '';
+          if (clientViewLink) clientViewLink.href = `/client-view.html?id=${clientId}`;
+          clientCard.classList.remove('d-none');
+        } catch (e) {
+          clientCard.classList.add('d-none');
+        }
+      }
+
       // Submit
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -225,7 +268,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let adresse_id = (adresseIdHidden && !adresseIdHidden.disabled) ? (Number(adresseIdHidden.value) || null) : null;
         const commentaire = (document.getElementById('commentaire')?.value || '').trim() || null;
         if (!nom_site) { alert('Veuillez renseigner le nom du site.'); return; }
-        if (!clientIdHidden.value) { alert('Veuillez sélectionner un client.'); return; }
+        // Le client est facultatif selon la logique métier
 
         if (toggleNew && toggleNew.checked) {
           const libelle = (document.getElementById('addr_libelle')?.value || '').trim() || null;
@@ -245,15 +288,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (!adresse_id) { alert('Veuillez sélectionner ou créer une adresse.'); return; }
         try {
-          const payload = {
-            nom_site,
-            adresse_id,
-            commentaire,
-            client_id: Number(clientIdHidden.value) || null,
-            responsable_matricule: responsableMatriculeHidden.value || null,
-            association_id: Number(associationIdHidden.value) || null,
-            statut: statutSelect ? (statutSelect.value || 'Actif') : 'Actif'
-          };
+            const payload = {
+              nom_site,
+              adresse_id,
+              commentaire,
+              client_id: Number(clientIdHidden.value) || null,
+              responsable_matricule: responsableMatriculeHidden.value || null,
+              association_id: Number(associationIdHidden.value) || null,
+              statut: statutSelect ? (statutSelect.value || 'Actif') : 'Actif'
+            };
           const r = await fetch('/api/sites', { method: 'POST', headers: await buildHeaders(true), credentials: 'same-origin', body: JSON.stringify(payload) });
           const data = await r.json().catch(()=>null);
           if (!r.ok) throw new Error((data && data.error) || `HTTP ${r.status}`);

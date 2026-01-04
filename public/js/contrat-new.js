@@ -135,6 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const clientName = document.getElementById('client-name');
       const clientEmail = document.getElementById('client-email');
       const clientContact = document.getElementById('client-contact');
+      const clientViewLink = document.getElementById('client-view-link');
 
       const form = document.getElementById('contrat-new-form');
       const titreInput = document.getElementById('titre');
@@ -145,12 +146,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Initialize autocomplete for client
       if (clientSearchInput && clientIdHidden && clientSuggestionsContainer) {
         setupAutocomplete(clientSearchInput, clientIdHidden, clientSuggestionsContainer, '/api/clients', 'nom_client', 'id', {}, (item)=> {
-          if (item && item.id) renderClientPreview(item.id);
+          if (item && item.id) {
+            // Affiche instantanément avec les infos disponibles, puis rafraîchit via fetch
+            renderClientPreview(item.id, item);
+          }
         });
       }
 
-      async function renderClientPreview(clientId) {
+      async function renderClientPreview(clientId, fallbackData = null) {
         if (!clientId || !clientCard) { if (clientCard) clientCard.classList.add('d-none'); return; }
+        // Premier affichage avec les données déjà disponibles
+        if (fallbackData) {
+          clientName.textContent = fallbackData.nom_client || `Client #${clientId}`;
+          clientEmail.textContent = fallbackData.email || '';
+          clientContact.textContent = fallbackData.telephone || '';
+          if (clientViewLink) clientViewLink.href = `/client-view.html?id=${clientId}`;
+          clientCard.classList.remove('d-none');
+        }
         try {
           const h = await buildHeaders(false);
           const res = await fetch(`/api/clients/${clientId}/relations`, { headers: h, credentials: 'same-origin' });
@@ -160,6 +172,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           clientName.textContent = c.nom_client || `Client #${clientId}`;
           clientEmail.textContent = c.email || '';
           clientContact.textContent = c.telephone || '';
+          if (clientViewLink) clientViewLink.href = `/client-view.html?id=${clientId}`;
           clientCard.classList.remove('d-none');
         } catch (e) {
           clientCard.classList.add('d-none');
@@ -168,6 +181,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       clientIdHidden?.addEventListener('change', () => renderClientPreview(clientIdHidden.value));
       clientSearchInput?.addEventListener('change', () => renderClientPreview(clientIdHidden.value));
+      // Si la valeur est déjà préremplie (ex: depuis une redirection), afficher la carte immédiatement
+      if (clientIdHidden?.value) renderClientPreview(clientIdHidden.value);
 
       // Submit form
       form.addEventListener('submit', async (e) => {

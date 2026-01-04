@@ -20,7 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const token = localStorage.getItem('token');
       try {
         const r = await fetch('/api/factures', { headers: { 'Authorization': `Bearer ${token}` } });
-        if (!r.ok) return; const factures = await r.json();
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const factures = await r.json();
         if (factureListDiv) {
           factureListDiv.innerHTML = '';
           factures.forEach(f => {
@@ -40,8 +41,12 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>`;
             factureListDiv.appendChild(el);
           });
+          if (!factures.length) factureListDiv.innerHTML = '<div class="text-muted">Aucune facture enregistrée.</div>';
         }
-      } catch(e){ console.error('Error fetching factures:', e); }
+      } catch(e){
+        console.error('Error fetching factures:', e);
+        if (factureListDiv) factureListDiv.innerHTML = '<div class="text-danger">Erreur de chargement des factures.</div>';
+      }
     }
     if (addFactureForm) {
       addFactureForm.addEventListener('submit', async (ev) => {

@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const contratCard = document.getElementById('contrat-card');
   const contratTitle = document.getElementById('contrat-title');
   const contratDates = document.getElementById('contrat-dates');
+  const contratViewLink = document.getElementById('contrat-view-link');
 
   function showMsg(text, type) { if (!feedback) return; feedback.className = `alert alert-${type||'info'}`; feedback.textContent = text; feedback.classList.remove('d-none'); } 
 
@@ -134,18 +135,20 @@ document.addEventListener('DOMContentLoaded', () => {
           const res = await fetch(`/api/contrats/${cid}`, { headers });
           if (!res.ok) throw new Error('Contrat introuvable');
           const c = await res.json();
-          contratTitle.textContent = c.titre || `Contrat #${cid}`;
-          const dd = c.date_debut ? new Date(c.date_debut).toLocaleDateString() : '';
-          const df = c.date_fin ? new Date(c.date_fin).toLocaleDateString() : '';
-          contratDates.textContent = dd ? `Début: ${dd}${df ? ' — Fin: ' + df : ''}` : '';
-          contratCard.classList.remove('d-none');
-        } catch (e) {
-          contratCard.classList.add('d-none');
-        }
-      }
+      contratTitle.textContent = c.titre || `Contrat #${cid}`;
+      const dd = c.date_debut ? new Date(c.date_debut).toLocaleDateString() : '';
+      const df = c.date_fin ? new Date(c.date_fin).toLocaleDateString() : '';
+      contratDates.textContent = dd ? `Début: ${dd}${df ? ' — Fin: ' + df : ''}` : '';
+      if (contratViewLink) contratViewLink.href = `/contrat-view.html?id=${cid}`;
+      contratCard.classList.remove('d-none');
+    } catch (e) {
+      contratCard.classList.add('d-none');
+    }
+  }
 
-      contratIdHidden?.addEventListener('change', ()=> renderContratPreview(contratIdHidden.value));
-      contratSearchInput?.addEventListener('change', ()=> renderContratPreview(contratIdHidden.value));
+  contratIdHidden?.addEventListener('change', ()=> renderContratPreview(contratIdHidden.value));
+  contratSearchInput?.addEventListener('change', ()=> renderContratPreview(contratIdHidden.value));
+  if (contratIdHidden?.value) renderContratPreview(contratIdHidden.value);
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault();

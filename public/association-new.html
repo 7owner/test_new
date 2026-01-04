@@ -9,9 +9,14 @@
 </head>
 <body>
   <div class="container p-4">
-    <div class="card mb-3 d-none" id="contrat-card">
+    <div class="card mb-3 shadow-sm d-none" id="contrat-card">
+      <div class="card-header" style="background:linear-gradient(135deg,#10b981,#0ea5e9);color:#fff;">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="fw-semibold" id="contrat-title">Contrat</div>
+          <a class="btn btn-light btn-sm" id="contrat-view-link" target="_blank" rel="noopener">Voir le contrat</a>
+        </div>
+      </div>
       <div class="card-body">
-        <h6 class="mb-1" id="contrat-title">Contrat</h6>
         <div class="small text-muted" id="contrat-dates"></div>
       </div>
     </div>
@@ -24,11 +29,11 @@
         <label for="email_comptabilite" class="form-label">Email de comptabilité</label>
         <input type="email" class="form-control" id="email_comptabilite">
       </div>
-      <div class="mb-3">
+      <div class="mb-3 position-relative">
         <label for="contrat-search-input" class="form-label">Contrat (optionnel)</label>
         <input type="text" class="form-control" id="contrat-search-input" placeholder="Rechercher un contrat" autocomplete="off">
         <input type="hidden" id="contrat_id">
-        <div id="contrat-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
+        <div id="contrat-suggestions" class="list-group position-absolute w-100" style="z-index: 100; max-height: 260px; overflow-y: auto;"></div>
       </div>
       
       <hr class="my-4">
