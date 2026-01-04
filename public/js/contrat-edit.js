@@ -26,8 +26,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         return h;
       }
 
-      // Autocomplete setup function (copied from contrat-new.js for consistency)
-      function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey, idKey, extraParams = {}) {
+      // Autocomplete setup function (identique à contrat-new)
+      function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey, idKey, extraParams = {}, onSelect = null) {
         let timeout;
         let hasSelection = false;
         const getLabel = (item) => (typeof displayKey === 'function') ? displayKey(item) : (item?.[displayKey] || '');
@@ -94,7 +94,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ev.preventDefault();
                 const label = getLabel(item) || '';
                 const val = getId(item) || '';
-                console.log('[autocomplete select]', fetchUrl, { label, val });
                 searchInput.value = label;
                 hiddenInput.value = val;
                 searchInput.dataset.selectedLabel = label;
@@ -104,6 +103,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Trigger change event for dynamic updates
                 searchInput.dispatchEvent(new Event('change'));
                 hiddenInput.dispatchEvent(new Event('change'));
+                if (typeof onSelect === 'function') {
+                  try { onSelect(item); } catch(_) {}
+                }
                 // Force blur/focusout to keep value
                 searchInput.blur();
                 setTimeout(() => searchInput.value = label, 0);
@@ -122,7 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           }, 100); // Allow click event to fire
         });
 
-        // Clear hidden input if search input is cleared
+        // Clear hidden input if search input is cleared, otherwise persist selection
         searchInput.addEventListener('change', () => {
             if (!hasSelection && !searchInput.value) {
               hiddenInput.value = '';

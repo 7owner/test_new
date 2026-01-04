@@ -28,10 +28,10 @@
         <div class="col-md-6">
           <div class="card h-100 border-0 bg-light shadow-sm d-none" id="client-card">
             <div class="card-header bg-gradient" style="background:linear-gradient(135deg,#2563eb,#6366f1);color:#fff;">
-              <div class="d-flex justify-content-between align-items-center">
-                <div class="fw-semibold">Client associé</div>
-                <a class="btn btn-light btn-sm" id="client-view-link" target="_blank" rel="noopener">Ouvrir</a>
-              </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="fw-semibold">Client associé</div>
+              <button class="btn btn-light btn-sm" id="client-view-btn" type="button">Ouvrir</button>
+            </div>
             </div>
             <div class="card-body">
               <div class="fw-semibold" id="client-name">-</div>
@@ -183,6 +183,20 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Modal client -->
+  <div class="modal fade" id="clientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Voir Client</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0">
+          <iframe id="clientFrame" src="about:blank" style="width:100%;height:80vh;border:none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       const params = new URLSearchParams(location.search);
@@ -196,7 +210,10 @@
       const clientName = document.getElementById('client-name');
       const clientEmail = document.getElementById('client-email');
       const clientContact = document.getElementById('client-contact');
-      const clientViewLink = document.getElementById('client-view-link');
+      const clientViewBtn = document.getElementById('client-view-btn');
+      const clientModalEl = document.getElementById('clientModal');
+      const clientModal = clientModalEl ? new bootstrap.Modal(clientModalEl) : null;
+      const clientFrame = document.getElementById('clientFrame');
       const associationsBody = document.getElementById('associations-body');
       const assoCount = document.getElementById('asso-count');
       if (!id) { feedback.className='text-danger'; feedback.textContent='ID manquant'; return; }
@@ -222,7 +239,12 @@
           clientName.textContent = c.nom_client || `Client #${clientId}`;
           clientEmail.textContent = c.email || '';
           clientContact.textContent = c.telephone || '';
-          if (clientViewLink) clientViewLink.href = `/client-view.html?id=${clientId}`;
+          if (clientFrame && clientModal && clientViewBtn) {
+            clientViewBtn.onclick = () => {
+              clientFrame.src = `/client-view.html?id=${clientId}`;
+              clientModal.show();
+            };
+          }
           clientCard.classList.remove('d-none');
         } catch {
           clientCard?.classList.add('d-none');
