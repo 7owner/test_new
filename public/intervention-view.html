@@ -240,6 +240,7 @@
               <span>Déplacement</span>
               <input type="number" id="facture-depl-qty" class="form-control form-control-sm" style="max-width:70px;" value="0"> 
               <input type="number" id="facture-depl-pu" class="form-control form-control-sm" style="max-width:90px;" value="0"> <span>€</span>
+              <span class="fw-semibold" id="facture-depl-total">= 0€ HT</span>
             </div>
             <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
               <span>Divers</span>
@@ -584,6 +585,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const factureMatTauxInput = document.getElementById('facture-mat-taux') || null;
   const factureDeplQtyInput = document.getElementById('facture-depl-qty') || null;
   const factureDeplPuInput = document.getElementById('facture-depl-pu') || null;
+  const factureDeplTotalEl = document.getElementById('facture-depl-total') || null;
   const factureDiversInput = document.getElementById('facture-divers') || null;
   const factureTvaInput = document.getElementById('facture-tva') || null;
   const factureHoursTotalEl = document.getElementById('facture-hours-total') || null;
@@ -760,6 +762,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     const totalTVA    = totalHT * (tva/100);
     const totalTTC    = totalHT + totalTVA;
 
+    if (factureDeplTotalEl) factureDeplTotalEl.textContent = `= ${totalDepl.toFixed(2)}€ HT`;
     if (factureHoursTotalEl) factureHoursTotalEl.textContent = `${totalHeures.toFixed(2)}€`;
     if (factureMatTotalHtEl) factureMatTotalHtEl.textContent = `${totalMatHT.toFixed(2)}€`;
     if (factureTotalHtEl) factureTotalHtEl.textContent = `${totalHT.toFixed(2)}€`;
