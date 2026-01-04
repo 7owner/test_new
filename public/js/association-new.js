@@ -12,13 +12,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function showMsg(text, type) { if (!feedback) return; feedback.className = `alert alert-${type||'info'}`; feedback.textContent = text; feedback.classList.remove('d-none'); } 
 
-      // Autocomplete setup function (copied from contrat-new.js for consistency)
-      function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey, idKey, extraParams = {}) {
-        let timeout;
-        let hasSelection = false;
-        const getLabel = (item) => (typeof displayKey === 'function') ? displayKey(item) : (item?.[displayKey] || '');
-        const getId = (item) => (typeof idKey === 'function') ? idKey(item) : (item?.[idKey] ?? '');
-        const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+  // Autocomplete setup function (copied from contrat-new.js for consistency)
+  function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey, idKey, extraParams = {}, onSelect = null) {
+    let timeout;
+    let hasSelection = false;
+    const getLabel = (item) => (typeof displayKey === 'function') ? displayKey(item) : (item?.[displayKey] || '');
+    const getId = (item) => (typeof idKey === 'function') ? idKey(item) : (item?.[idKey] ?? '');
+    const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
 
         searchInput.addEventListener('input', () => {
           hasSelection = false;
@@ -88,6 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Trigger change event for dynamic updates
                 searchInput.dispatchEvent(new Event('change'));
                 hiddenInput.dispatchEvent(new Event('change'));
+                if (typeof onSelect === 'function') {
+                  try { onSelect(item); } catch(_) {}
+                }
                 // Force blur/focusout to keep value
                 searchInput.blur();
                 setTimeout(() => searchInput.value = label, 0);
@@ -120,7 +123,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Initialize autocomplete for contract
       if (contratSearchInput && contratIdHidden && contratSuggestionsContainer) {
-        setupAutocomplete(contratSearchInput, contratIdHidden, contratSuggestionsContainer, '/api/contrats', 'titre', 'id');
+        setupAutocomplete(contratSearchInput, contratIdHidden, contratSuggestionsContainer, '/api/contrats', 'titre', 'id', {}, (item)=>{
+          if (item && item.id) renderContratPreview(item.id);
+        });
       }
 
       async function renderContratPreview(cid) {

@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // Autocomplete setup function (copied from ticket-new.js for consistency)
-      function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey, idKey, extraParams = {}) {
+      function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey, idKey, extraParams = {}, onSelect = null) {
         let timeout;
         let hasSelection = false;
         const getLabel = (item) => (typeof displayKey === 'function') ? displayKey(item) : (item?.[displayKey] || '');
@@ -99,6 +99,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Trigger change event for dynamic updates
                 searchInput.dispatchEvent(new Event('change'));
                 hiddenInput.dispatchEvent(new Event('change'));
+                if (typeof onSelect === 'function') {
+                  try { onSelect(item); } catch (_) {}
+                }
                 // Force blur/focusout to keep value
                 searchInput.blur();
                 setTimeout(() => searchInput.value = label, 0);
@@ -141,7 +144,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Initialize autocomplete for client
       if (clientSearchInput && clientIdHidden && clientSuggestionsContainer) {
-        setupAutocomplete(clientSearchInput, clientIdHidden, clientSuggestionsContainer, '/api/clients', 'nom_client', 'id');
+        setupAutocomplete(clientSearchInput, clientIdHidden, clientSuggestionsContainer, '/api/clients', 'nom_client', 'id', {}, (item)=> {
+          if (item && item.id) renderClientPreview(item.id);
+        });
       }
 
       async function renderClientPreview(clientId) {
