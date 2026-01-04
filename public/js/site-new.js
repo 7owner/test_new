@@ -7,25 +7,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!form) return;
       const saveBtn = document.getElementById('save-site-btn');
 
-      // Client Autocomplete + preview
-      const clientSearchInput = document.getElementById('client-search-input');
-      const clientIdHidden = document.getElementById('client_id');
-      const clientSuggestionsContainer = document.getElementById('client-suggestions');
-      const clientCard = document.getElementById('client-card');
-      const clientName = document.getElementById('client-name');
-      const clientEmail = document.getElementById('client-email');
-      const clientContact = document.getElementById('client-contact');
-      const clientViewLink = document.getElementById('client-view-link');
+      // Association Autocomplete + preview
+      const associationSearchInput = document.getElementById('association-search-input');
+      const associationIdHidden = document.getElementById('association_id');
+      const associationSuggestionsContainer = document.getElementById('association-suggestions');
+      const associationCard = document.getElementById('association-card');
+      const associationTitle = document.getElementById('association-title');
+      const associationEmail = document.getElementById('association-email');
+      const associationAdresse = document.getElementById('association-adresse');
+      const associationViewLink = document.getElementById('association-view-link');
 
       // Responsable Autocomplete
       const responsableSearchInput = document.getElementById('responsable-search-input');
       const responsableMatriculeHidden = document.getElementById('responsable_matricule');
       const responsableSuggestionsContainer = document.getElementById('responsable-suggestions');
-
-      // Association Autocomplete
-      const associationSearchInput = document.getElementById('association-search-input');
-      const associationIdHidden = document.getElementById('association_id');
-      const associationSuggestionsContainer = document.getElementById('association-suggestions');
 
       // Adresse Autocomplete
       const adresseSearchInput = document.getElementById('adresse-search-input');
@@ -153,36 +148,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       
 
       // Initialize autocompletes
-      if (clientSearchInput && clientIdHidden && clientSuggestionsContainer) {
-        setupAutocomplete(
-          clientSearchInput,
-          clientIdHidden,
-          clientSuggestionsContainer,
-          '/api/clients',
-          'nom_client',
-          'id',
-          { minChars: 2 },
-          (item) => { if (item && item.id) renderClientPreview(item.id, item); }
-        );
-        if (clientIdHidden.value) renderClientPreview(clientIdHidden.value);
-      }
       if (responsableSearchInput && responsableMatriculeHidden && responsableSuggestionsContainer) {
         setupAutocomplete(responsableSearchInput, responsableMatriculeHidden, responsableSuggestionsContainer, '/api/agents', 'nom_complet', 'matricule');
       }
-      // Association: filtrée par client si sélectionné
       if (associationSearchInput && associationIdHidden && associationSuggestionsContainer) {
         setupAutocomplete(
           associationSearchInput,
           associationIdHidden,
           associationSuggestionsContainer,
-          () => {
-            const clientId = clientIdHidden.value || null;
-            return clientId ? `/api/clients/${clientId}/associations` : '/api/associations';
-          },
+          '/api/associations',
           'titre',
           'id',
-          { minChars: 1 }
+          { minChars: 1 },
+          (item)=>{ if (item && item.id) renderAssociationPreview(item.id, item); }
         );
+        if (associationIdHidden.value) renderAssociationPreview(associationIdHidden.value);
       }
 
             if (adresseSearchInput && adresseIdHidden && adresseSuggestionsContainer) {
@@ -235,28 +215,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         toggleNew.dispatchEvent(new Event('change'));
       }
 
-      async function renderClientPreview(clientId, fallbackData=null) {
-        if (!clientId || !clientCard) { if (clientCard) clientCard.classList.add('d-none'); return; }
+      async function renderAssociationPreview(associationId, fallbackData=null) {
+        if (!associationId || !associationCard) { if (associationCard) associationCard.classList.add('d-none'); return; }
         if (fallbackData) {
-          clientName.textContent = fallbackData.nom_client || `Client #${clientId}`;
-          clientEmail.textContent = fallbackData.email || '';
-          clientContact.textContent = fallbackData.telephone || '';
-          if (clientViewLink) clientViewLink.href = `/client-view.html?id=${clientId}`;
-          clientCard.classList.remove('d-none');
+          associationTitle.textContent = fallbackData.titre || `Association #${associationId}`;
+          associationEmail.textContent = fallbackData.email_comptabilite || '';
+          associationAdresse.textContent = '';
+          if (associationViewLink) associationViewLink.href = `/association-view.html?id=${associationId}`;
+          associationCard.classList.remove('d-none');
         }
         try {
           const h = await buildHeaders(false);
-          const res = await fetch(`/api/clients/${clientId}/relations`, { headers: h, credentials: 'same-origin' });
-          if (!res.ok) throw new Error('Client introuvable');
-          const data = await res.json();
-          const c = data.client || data || {};
-          clientName.textContent = c.nom_client || `Client #${clientId}`;
-          clientEmail.textContent = c.email || '';
-          clientContact.textContent = c.telephone || '';
-          if (clientViewLink) clientViewLink.href = `/client-view.html?id=${clientId}`;
-          clientCard.classList.remove('d-none');
+          const res = await fetch(`/api/associations/${associationId}`, { headers: h, credentials: 'same-origin' });
+          if (!res.ok) throw new Error('Association introuvable');
+          const a = await res.json();
+          associationTitle.textContent = a.titre || `Association #${associationId}`;
+          associationEmail.textContent = a.email_comptabilite || '';
+          const adr = [a.ligne1, a.code_postal, a.ville].filter(Boolean).join(' ');
+          associationAdresse.textContent = adr;
+          if (associationViewLink) associationViewLink.href = `/association-view.html?id=${associationId}`;
+          associationCard.classList.remove('d-none');
         } catch (e) {
-          clientCard.classList.add('d-none');
+          associationCard.classList.add('d-none');
         }
       }
 
@@ -268,7 +248,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let adresse_id = (adresseIdHidden && !adresseIdHidden.disabled) ? (Number(adresseIdHidden.value) || null) : null;
         const commentaire = (document.getElementById('commentaire')?.value || '').trim() || null;
         if (!nom_site) { alert('Veuillez renseigner le nom du site.'); return; }
-        // Le client est facultatif selon la logique métier
+        // Le client est facultatif
 
         if (toggleNew && toggleNew.checked) {
           const libelle = (document.getElementById('addr_libelle')?.value || '').trim() || null;
@@ -292,7 +272,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               nom_site,
               adresse_id,
               commentaire,
-              client_id: Number(clientIdHidden.value) || null,
+              client_id: null,
               responsable_matricule: responsableMatriculeHidden.value || null,
               association_id: Number(associationIdHidden.value) || null,
               statut: statutSelect ? (statutSelect.value || 'Actif') : 'Actif'
