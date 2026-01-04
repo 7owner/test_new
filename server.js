@@ -3643,7 +3643,7 @@ app.patch('/api/interventions/:id', authenticateToken, authorizeAdmin, async (re
 
   if (!fields.length) return res.status(400).json({ error: 'Aucun champ à mettre à jour' });
 
-  const sql = `UPDATE intervention SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${values.length + 1} RETURNING *`;
+  const sql = `UPDATE intervention SET ${fields.join(', ')} WHERE id = $${values.length + 1} RETURNING *`;
   values.push(id);
 
   try {
