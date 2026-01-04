@@ -1320,16 +1320,21 @@ app.get('/api/interventions/:id/relations', authenticateToken, async (req, res) 
       "FROM intervention_materiel im JOIN materiel m ON m.id = im.materiel_id WHERE im.intervention_id=$1 ORDER BY im.id DESC",
       [id]
     )).rows;
-    const materielsViaDemande = (await pool.query(
-      `SELECT DISTINCT m.id as materiel_id, m.reference, m.designation, m.categorie, m.fabricant, m.prix_achat,
-              COALESCE(gdm.quantite_demandee, dm.quantite, 1) AS quantite,
-              m.commentaire, m.commande_status
-       FROM demande_materiel dm
-       JOIN gestion_demande_materiel gdm ON gdm.demande_materiel_id = dm.id
-       JOIN materiel m ON m.id = gdm.materiel_id
-       WHERE dm.intervention_id=$1 OR dm.ticket_id = $2`,
-      [id, ticketId || null]
-    )).rows;
+    let materielsViaDemande = [];
+    if (ticket) {
+      const ticketId = ticket.id;
+      const viaReq = await pool.query(
+        `SELECT DISTINCT m.id as materiel_id, m.reference, m.designation, m.categorie, m.fabricant, m.prix_achat,
+                COALESCE(gdm.quantite_demandee, dm.quantite, 1) AS quantite,
+                m.commentaire, m.commande_status
+         FROM demande_materiel dm
+         JOIN gestion_demande_materiel gdm ON gdm.demande_materiel_id = dm.id
+         JOIN materiel m ON m.id = gdm.materiel_id
+         WHERE dm.intervention_id=$1 OR dm.ticket_id = $2`,
+        [id, ticketId]
+      );
+      materielsViaDemande = viaReq.rows;
+    }
     const materiels = [...materielsDirect];
     materielsViaDemande.forEach(mv => {
       if (!materiels.find(md => md.materiel_id === mv.materiel_id)) materiels.push(mv);
