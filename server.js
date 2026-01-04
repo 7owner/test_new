@@ -2256,6 +2256,26 @@ app.get('/api/associations', authenticateToken, async (req, res) => {
     }
 });
 
+// Associations liées à un contrat (via les sites associés)
+app.get('/api/contrats/:id/associations', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query(`
+            SELECT DISTINCT a.*, ad.ligne1, ad.code_postal, ad.ville
+            FROM association a
+            LEFT JOIN adresse ad ON a.adresse_id = ad.id
+            JOIN association_site ats ON ats.association_id = a.id
+            JOIN contrat_site_association csa ON csa.site_id = ats.site_id
+            WHERE csa.contrat_id = $1
+            ORDER BY a.created_at DESC
+        `, [id]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching associations for contract:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // Get a single association
 app.get('/api/associations/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;

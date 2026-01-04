@@ -250,7 +250,7 @@
         const contrat = await api(`/api/contrats/${id}`);
         const sites = await api(`/api/contrats/${id}/sites`);
         const agents = await api('/api/agents').catch(() => []);
-        const associations = await api('/api/associations').catch(() => []);
+        const associations = await api(`/api/contrats/${id}/associations`).catch(() => []);
 
         // cache agents par matricule pour éviter les undefined
         agentMap = new Map();
@@ -262,7 +262,7 @@
         document.getElementById('date-debut').textContent = contrat.date_debut ? new Date(contrat.date_debut).toLocaleDateString() : '—';
         document.getElementById('date-fin').textContent = contrat.date_fin ? new Date(contrat.date_fin).toLocaleDateString() : '—';
         renderClient(contrat.client_id);
-        renderAssociations((associations || []).filter(a => Number(a.contrat_id) === Number(id)));
+        renderAssociations(associations || []);
 
         renderSitesGrid(sites);
       } catch (err) {
