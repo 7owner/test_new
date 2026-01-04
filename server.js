@@ -1404,7 +1404,14 @@ app.get('/api/demandes-materiel', authenticateToken, async (req, res) => {
     if (intervention_id) { where.push(`intervention_id = $${idx++}`); params.push(intervention_id); }
     if (statut) { where.push(`statut = $${idx++}`); params.push(statut); }
     const r = await pool.query(
-      `SELECT * FROM demande_materiel ${where.length ? 'WHERE '+where.join(' AND ') : ''} ORDER BY created_at DESC`,
+      `SELECT dm.*,
+              i.titre AS intervention_titre,
+              t.titre AS ticket_titre
+       FROM demande_materiel dm
+       LEFT JOIN intervention i ON dm.intervention_id = i.id
+       LEFT JOIN ticket t ON dm.ticket_id = t.id
+       ${where.length ? 'WHERE '+where.join(' AND ') : ''}
+       ORDER BY dm.created_at DESC`,
       params
     );
     res.json(r.rows);
