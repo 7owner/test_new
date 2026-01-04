@@ -1406,7 +1406,19 @@ app.get('/api/demandes-materiel', authenticateToken, async (req, res) => {
     const r = await pool.query(
       `SELECT dm.*,
               i.titre AS intervention_titre,
-              t.titre AS ticket_titre
+              t.titre AS ticket_titre,
+              (
+                SELECT json_agg(json_build_object(
+                  'id', m.id,
+                  'reference', m.reference,
+                  'designation', m.designation,
+                  'commande_status', m.commande_status,
+                  'quantite', gdm.quantite_demandee
+                ))
+                FROM gestion_demande_materiel gdm
+                JOIN materiel m ON m.id = gdm.materiel_id
+                WHERE gdm.demande_materiel_id = dm.id
+              ) AS materiels
        FROM demande_materiel dm
        LEFT JOIN intervention i ON dm.intervention_id = i.id
        LEFT JOIN ticket t ON dm.ticket_id = t.id
@@ -1595,7 +1607,17 @@ app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) =
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'A commander'::commande_status_type) RETURNING *`,
         [item.titre, item.reference, item.designation, item.categorie, item.fabricant, item.fournisseur, item.remise_fournisseur, item.classe_materiel, item.prix_achat, item.commentaire, item.metier]
       );
-      return res.status(201).json(r.rows[0]);
+      const created = r.rows[0];
+      // liaison éventuelle à une demande
+      if (req.body.demande_materiel_id) {
+        await pool.query(
+          `INSERT INTO gestion_demande_materiel (demande_materiel_id, materiel_id, quantite_demandee)
+           VALUES ($1,$2,COALESCE($3,1))
+           ON CONFLICT (demande_materiel_id, materiel_id) DO UPDATE SET quantite_demandee = EXCLUDED.quantite_demandee`,
+          [req.body.demande_materiel_id, created.id, req.body.quantite_demandee || 1]
+        );
+      }
+      return res.status(201).json(created);
     }
 
     // 2) Création manuelle (pas de catalogue)
@@ -1611,7 +1633,9 @@ app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) =
       prix_achat,
       commentaire,
       metier,
-      commande_status
+      commande_status,
+      demande_materiel_id,
+      quantite_demandee
     } = req.body;
 
     if (!reference || !designation) {
@@ -1623,7 +1647,16 @@ app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) =
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, COALESCE($12::commande_status_type,'A commander')) RETURNING *`,
       [titre || designation, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, commande_status]
     );
-    return res.status(201).json(r.rows[0]);
+    const created = r.rows[0];
+    if (demande_materiel_id) {
+      await pool.query(
+        `INSERT INTO gestion_demande_materiel (demande_materiel_id, materiel_id, quantite_demandee)
+         VALUES ($1,$2,COALESCE($3,1))
+         ON CONFLICT (demande_materiel_id, materiel_id) DO UPDATE SET quantite_demandee = EXCLUDED.quantite_demandee`,
+        [demande_materiel_id, created.id, quantite_demandee || 1]
+      );
+    }
+    return res.status(201).json(created);
 
   } catch (e) { 
       console.error('Error creating materiel order from catalogue:', e); 
