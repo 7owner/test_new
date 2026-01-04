@@ -90,7 +90,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               itemElement.type = 'button';
               itemElement.classList.add('list-group-item', 'list-group-item-action');
               itemElement.textContent = getLabel(item);
-              itemElement.addEventListener('click', () => {
+              itemElement.addEventListener('mousedown', (ev) => {
+                ev.preventDefault();
                 const label = getLabel(item) || '';
                 const val = getId(item) || '';
                 console.log('[autocomplete select]', fetchUrl, { label, val });
@@ -115,6 +116,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchInput.addEventListener('blur', () => {
           setTimeout(() => {
             suggestionsContainer.innerHTML = '';
+            if (searchInput.dataset.selectedLabel && searchInput.value.trim().length < 2) {
+              searchInput.value = searchInput.dataset.selectedLabel;
+            }
           }, 100); // Allow click event to fire
         });
 
@@ -124,6 +128,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               hiddenInput.value = '';
               delete searchInput.dataset.selectedLabel;
               delete searchInput.dataset.selectedId;
+            } else if (searchInput.dataset.selectedLabel) {
+              searchInput.value = searchInput.dataset.selectedLabel;
+              hiddenInput.value = searchInput.dataset.selectedId || hiddenInput.value;
             }
         });
       }
