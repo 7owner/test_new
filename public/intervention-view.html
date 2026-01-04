@@ -577,6 +577,20 @@ document.addEventListener('DOMContentLoaded', async function () {
   const factureCard = document.getElementById('facture-card');
   const factureBody = document.getElementById('facture-body');
   const factureBtn = document.getElementById('toggle-facture-btn');
+  // Inputs facture (sécurisés avec fallback null)
+  const factureHoursInput = document.getElementById('facture-hours-input') || null;
+  const factureHoursAutoEl = document.getElementById('facture-hours-auto') || null;
+  const factureRateInput = document.getElementById('facture-rate') || null;
+  const factureMatTauxInput = document.getElementById('facture-mat-taux') || null;
+  const factureDeplQtyInput = document.getElementById('facture-depl-qty') || null;
+  const factureDeplPuInput = document.getElementById('facture-depl-pu') || null;
+  const factureDiversInput = document.getElementById('facture-divers') || null;
+  const factureTvaInput = document.getElementById('facture-tva') || null;
+  const factureHoursTotalEl = document.getElementById('facture-hours-total') || null;
+  const factureMatTotalHtEl = document.getElementById('facture-mat-total-ht') || null;
+  const factureTotalHtEl = document.getElementById('facture-total-ht') || null;
+  const factureTotalTvaEl = document.getElementById('facture-total-tva') || null;
+  const factureTotalTtcEl = document.getElementById('facture-total-ttc') || null;
   let demandesCache = [];
   let eventsCache = [];
   let factureMatTotalValue = 0;
@@ -1613,17 +1627,3 @@ document.addEventListener('DOMContentLoaded', async function () {
 </script>
 </body>
 </html>
-  // Inputs facture
-  const factureHoursInput = document.getElementById('facture-hours-input') || null;
-  const factureHoursAutoEl = document.getElementById('facture-hours-auto') || null;
-  const factureRateInput = document.getElementById('facture-rate') || null;
-  const factureMatTauxInput = document.getElementById('facture-mat-taux') || null;
-  const factureDeplQtyInput = document.getElementById('facture-depl-qty') || null;
-  const factureDeplPuInput = document.getElementById('facture-depl-pu') || null;
-  const factureDiversInput = document.getElementById('facture-divers') || null;
-  const factureTvaInput = document.getElementById('facture-tva') || null;
-  const factureHoursTotalEl = document.getElementById('facture-hours-total') || null;
-  const factureMatTotalHtEl = document.getElementById('facture-mat-total-ht') || null;
-  const factureTotalHtEl = document.getElementById('facture-total-ht') || null;
-  const factureTotalTvaEl = document.getElementById('facture-total-tva') || null;
-  const factureTotalTtcEl = document.getElementById('facture-total-ttc') || null;
