@@ -5602,6 +5602,7 @@ app.post('/api/conversations/new', authenticateToken, async (req, res) => {
 app.get('/api/conversations', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
+        const isAdmin = Array.isArray(req.user?.roles) && req.user.roles.includes('ROLE_ADMIN');
         const { search, site, client: clientName } = req.query;
         
         let query = `
@@ -5620,8 +5621,12 @@ app.get('/api/conversations', authenticateToken, async (req, res) => {
             LEFT JOIN client cl ON dc.client_id = cl.id
         `;
         
-        const params = [userId];
-        const conditions = [`(m.sender_id = $1 OR m.receiver_id = $1)`];
+        const params = [];
+        const conditions = [];
+        if (!isAdmin) {
+            params.push(userId);
+            conditions.push(`(m.sender_id = $${params.length} OR m.receiver_id = $${params.length})`);
+        }
 
         if (site) {
             params.push(`%${site}%`);
