@@ -1603,8 +1603,8 @@ app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) =
       }
 
       const r = await pool.query(
-      `INSERT INTO materiel (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, commande_status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'A commander'::commande_status_type) RETURNING *`,
+        `INSERT INTO materiel (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, commande_status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'A commander'::commande_status_type) RETURNING *`,
         [item.titre, item.reference, item.designation, item.categorie, item.fabricant, item.fournisseur, item.remise_fournisseur, item.classe_materiel, item.prix_achat, item.commentaire, item.metier]
       );
       const created = r.rows[0];
@@ -1616,6 +1616,7 @@ app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) =
            ON CONFLICT (demande_materiel_id, materiel_id) DO UPDATE SET quantite_demandee = EXCLUDED.quantite_demandee`,
           [req.body.demande_materiel_id, created.id, req.body.quantite_demandee || 1]
         );
+        await linkMaterielToDemande(req.body.demande_materiel_id, created.id, req.body.quantite_demandee || 1);
       }
       return res.status(201).json(created);
     }
@@ -1655,6 +1656,7 @@ app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) =
          ON CONFLICT (demande_materiel_id, materiel_id) DO UPDATE SET quantite_demandee = EXCLUDED.quantite_demandee`,
         [demande_materiel_id, created.id, quantite_demandee || 1]
       );
+      await linkMaterielToDemande(demande_materiel_id, created.id, quantite_demandee || 1);
     }
     return res.status(201).json(created);
 
@@ -3650,6 +3652,32 @@ async function syncInterventionEvents(interventionRow) {
         [interventionRow.id, m, titre, desc, dateDebut, dateFinPrevue, statutEvent]
       );
     }
+  }
+}
+
+// Helper: lier un matériel créé à une demande (et donc à l'intervention associée)
+async function linkMaterielToDemande(demandeMaterielId, materielId, quantite) {
+  if (!demandeMaterielId || !materielId) return;
+  // récupérer la demande pour connaître l'intervention
+  const dRes = await pool.query('SELECT id, intervention_id, quantite FROM demande_materiel WHERE id=$1', [demandeMaterielId]);
+  const demande = dRes.rows[0];
+  if (!demande || !demande.intervention_id) return;
+  const qty = quantite || demande.quantite || 1;
+  // Upsert dans intervention_materiel
+  const existing = await pool.query(
+    'SELECT id FROM intervention_materiel WHERE intervention_id=$1 AND materiel_id=$2 LIMIT 1',
+    [demande.intervention_id, materielId]
+  );
+  if (existing.rows.length) {
+    await pool.query(
+      'UPDATE intervention_materiel SET quantite=$1 WHERE id=$2',
+      [qty, existing.rows[0].id]
+    );
+  } else {
+    await pool.query(
+      'INSERT INTO intervention_materiel (intervention_id, materiel_id, quantite) VALUES ($1,$2,$3)',
+      [demande.intervention_id, materielId, qty]
+    );
   }
 }
 
