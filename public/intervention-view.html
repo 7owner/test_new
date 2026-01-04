@@ -578,6 +578,9 @@ document.addEventListener('DOMContentLoaded', async function () {
   const demandeQuantiteInput = document.getElementById('demande-quantite');
   const demandeSubmitBtn = document.getElementById('demande-submit-btn');
   const finishInterBtn = document.getElementById('finish-inter-btn');
+  const factureCard = document.getElementById('facture-card');
+  const factureBody = document.getElementById('facture-body');
+  const factureBtn = document.getElementById('toggle-facture-btn');
   let demandesCache = [];
   let eventsCache = [];
 
@@ -725,6 +728,16 @@ document.addEventListener('DOMContentLoaded', async function () {
         <tbody>${rows}</tbody>
       </table>
     `;
+  }
+
+  // Toggle facture body
+  if (factureBtn) {
+    factureBtn.addEventListener('click', () => {
+      if (!factureBody) return;
+      const isHidden = factureBody.style.display === 'none' || factureBody.style.display === '';
+      factureBody.style.display = isHidden ? 'block' : 'none';
+      factureBtn.innerHTML = isHidden ? '<i class="bi bi-eye-slash"></i> Masquer' : '<i class="bi bi-eye"></i> Voir';
+    });
   }
 
   // --- Material Request / Catalog Logic ---
@@ -1197,6 +1210,11 @@ document.addEventListener('DOMContentLoaded', async function () {
       if (elapsedEl)elapsedEl.textContent = elapsed;
       if (headerStatusText) headerStatusText.textContent = statusText;
       if (headerTitle) headerTitle.textContent = it.titre || it.description || `Intervention #${it.id || ''}`;
+
+      // Afficher la carte facture si déjà clôturée
+      if (it.date_fin && factureCard) {
+        factureCard.classList.remove('d-none');
+      }
 
       if (ticketLinkEl) {
         if (ticketId) {
