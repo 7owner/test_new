@@ -175,7 +175,11 @@ async function initializeDatabase() {
 // Initialize DB schema on startup (non-fatal if it fails)
 initializeDatabase();
 
+// Ensure additional schema coherence
+ensureInterventionEventSchema().catch(e => console.warn('ensureInterventionEventSchema warning:', e.message));
+
 // Ensure core reference data (agents coherent with users) on startup
+ensureAgentsCoherent().catch(e => console.warn('ensureAgentsCoherent warning:', e.message));
 async function ensureAgentsCoherent() {
   const client = await pool.connect();
   try {
@@ -3652,6 +3656,21 @@ async function syncInterventionEvents(interventionRow) {
         [interventionRow.id, m, titre, desc, dateDebut, dateFinPrevue, statutEvent]
       );
     }
+  }
+}
+
+// Ensure intervention_event has statut column (for legacy schemas)
+async function ensureInterventionEventSchema() {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      ALTER TABLE intervention_event
+      ADD COLUMN IF NOT EXISTS statut intervention_event_statut DEFAULT 'Planifie'
+    `);
+  } catch (e) {
+    console.warn('ensureInterventionEventSchema failed:', e.message);
+  } finally {
+    client.release();
   }
 }
 
