@@ -12,16 +12,18 @@
 <body class="app-bg p-3">
   <div class="card mb-3 shadow-sm">
     <div class="card-body">
-      <div class="d-flex justify-content-between align-items-start gap-3">
-        <div>
-          <h4 class="mb-1" id="titre">Contrat</h4>
-          <div class="text-muted small">Période</div>
-          <div class="fw-semibold mb-2"><span id="date-debut">-</span> &rarr; <span id="date-fin">-</span></div>
-          <div id="feedback" class="small"></div>
-        </div>
-        <button class="btn btn-primary btn-sm" id="open-new-contrat"><i class="bi bi-plus-circle me-1"></i>Créer un contrat</button>
-      </div>
-    </div>
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                  <div>
+                    <h4 class="mb-1" id="titre">Contrat</h4>
+                    <div class="text-muted small">Période</div>
+                    <div class="fw-semibold mb-2"><span id="date-debut">-</span> &rarr; <span id="date-fin">-</span></div>
+                    <div id="feedback" class="small"></div>
+                  </div>
+                  <div>
+                    <button class="btn btn-primary btn-sm me-2" id="open-new-contrat" data-bs-toggle="modal" data-bs-target="#createContratModal"><i class="bi bi-plus-circle me-1"></i>Créer un contrat</button>
+                    <button class="btn btn-warning btn-sm" id="edit-contrat-btn"><i class="bi bi-pencil me-1"></i>Modifier</button>
+                  </div>
+                </div>    </div>
   </div>
 
   <div class="card shadow-sm">
@@ -119,6 +121,21 @@
     </div>
   </div>
 
+  <!-- Create Contrat Modal (New) -->
+  <div class="modal fade" id="createContratModal" tabindex="-1" aria-labelledby="createContratModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createContratModalLabel">Créer un nouveau Contrat</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="createContratFrame" src="/contrat-new.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
@@ -161,7 +178,6 @@
         document.getElementById('date-fin').textContent = contrat.date_fin ? new Date(contrat.date_fin).toLocaleDateString() : '—';
 
         renderSitesGrid(sites);
-        await loadAllSites();
       } catch (err) {
         feedback.className = 'text-danger';
         feedback.textContent = err.message || 'Erreur de chargement';
@@ -179,51 +195,30 @@
         });
       }
 
-      if (openContratBtn && contratModal) {
-        openContratBtn.addEventListener('click', () => {
-          contratFeedback.classList.add('d-none');
-          contratFeedback.textContent = '';
-          document.getElementById('contrat-titre').value = '';
-          document.getElementById('contrat-debut').value = '';
-          document.getElementById('contrat-fin').value = '';
-          document.getElementById('contrat-comment').value = '';
-          document.getElementById('contrat-client').value = '';
-          contratModal.show();
+      const createContratModal = document.getElementById('createContratModal');
+      if (createContratModal) {
+        createContratModal.addEventListener('hidden.bs.modal', async () => {
+          // Assuming the new contrat has been created, reload sites for this contract
+          await reloadLinkedSites();
+          await loadAllSites();
+        });
+      }
+      
+      const editContratBtn = document.getElementById('edit-contrat-btn');
+      if (editContratBtn) {
+        editContratBtn.addEventListener('click', () => {
+          const editContratModal = new bootstrap.Modal(document.getElementById('editContratModal'));
+          const editContratFrame = document.getElementById('editContratFrame');
+          editContratFrame.src = `/contrat-edit.html?id=${id}`;
+          editContratModal.show();
         });
       }
 
-      async function createContrat() {
-        const titre = document.getElementById('contrat-titre').value.trim();
-        const date_debut = document.getElementById('contrat-debut').value || null;
-        const date_fin = document.getElementById('contrat-fin').value || null;
-        const commentaire = document.getElementById('contrat-comment').value.trim();
-        const client_id = document.getElementById('contrat-client').value ? Number(document.getElementById('contrat-client').value) : undefined;
-        if (!titre) {
-          contratFeedback.className = 'alert alert-warning';
-          contratFeedback.textContent = 'Le titre est requis.';
-          contratFeedback.classList.remove('d-none');
-          return;
-        }
-        try {
-          await api('/api/contrats', {
-            method: 'POST',
-            body: JSON.stringify({ titre, date_debut, date_fin, commentaire, client_id })
-          });
-          contratFeedback.className = 'alert alert-success';
-          contratFeedback.textContent = 'Contrat créé.';
-          contratFeedback.classList.remove('d-none');
-          setTimeout(() => contratModal.hide(), 700);
-        } catch (e) {
-          contratFeedback.className = 'alert alert-danger';
-          contratFeedback.textContent = e.message || 'Erreur lors de la création';
-          contratFeedback.classList.remove('d-none');
-        }
-      }
+      // The old contratModal (for sub-contracts or internal creation) and its logic should be removed/repurposed.
+      // For now, removing the direct button event listener that was using it.
 
-      if (saveContratBtn && contratModal) {
-        saveContratBtn.addEventListener('click', createContrat);
-      }
-
+      // Old createContrat function and saveContratBtn logic is also removed.
+      
       // --- Gestion des sites (associer / créer) ---
       function renderSitesGrid(sites) {
         const grid = document.getElementById('sites-grid');
