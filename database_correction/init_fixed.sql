@@ -308,6 +308,15 @@ CREATE TABLE IF NOT EXISTS demande_materiel (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS gestion_demande_materiel (
+    id SERIAL PRIMARY KEY,
+    demande_materiel_id BIGINT NOT NULL REFERENCES demande_materiel(id) ON DELETE CASCADE,
+    materiel_id BIGINT NOT NULL REFERENCES materiel(id) ON DELETE CASCADE,
+    quantite_demandee INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (demande_materiel_id, materiel_id)
+);
+
 CREATE TABLE IF NOT EXISTS materiel_catalogue (
     id SERIAL PRIMARY KEY,
     titre TEXT,
