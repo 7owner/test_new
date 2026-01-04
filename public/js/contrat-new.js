@@ -53,8 +53,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (params[key]) url.searchParams.append(key, params[key]);
               }
 
+              const hdrs = await buildHeaders(false);
               const response = await fetch(url.toString(), {
-                headers: { ...headers, 'Cache-Control': 'no-cache' },
+                headers: { ...hdrs, 'Cache-Control': 'no-cache' },
                 credentials: 'same-origin',
                 cache: 'no-store'
               });
@@ -127,6 +128,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const clientSearchInput = document.getElementById('client-search-input');
       const clientIdHidden = document.getElementById('client_id');
       const clientSuggestionsContainer = document.getElementById('client-suggestions');
+      const clientCard = document.getElementById('client-card');
+      const clientName = document.getElementById('client-name');
+      const clientEmail = document.getElementById('client-email');
+      const clientContact = document.getElementById('client-contact');
 
       const form = document.getElementById('contrat-new-form');
       const titreInput = document.getElementById('titre');
@@ -138,6 +143,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (clientSearchInput && clientIdHidden && clientSuggestionsContainer) {
         setupAutocomplete(clientSearchInput, clientIdHidden, clientSuggestionsContainer, '/api/clients', 'nom_client', 'id');
       }
+
+      async function renderClientPreview(clientId) {
+        if (!clientId || !clientCard) { if (clientCard) clientCard.classList.add('d-none'); return; }
+        try {
+          const h = await buildHeaders(false);
+          const res = await fetch(`/api/clients/${clientId}/relations`, { headers: h, credentials: 'same-origin' });
+          if (!res.ok) throw new Error('Client introuvable');
+          const data = await res.json();
+          const c = data.client || data || {};
+          clientName.textContent = c.nom_client || `Client #${clientId}`;
+          clientEmail.textContent = c.email || '';
+          clientContact.textContent = c.telephone || '';
+          clientCard.classList.remove('d-none');
+        } catch (e) {
+          clientCard.classList.add('d-none');
+        }
+      }
+
+      clientIdHidden?.addEventListener('change', () => renderClientPreview(clientIdHidden.value));
+      clientSearchInput?.addEventListener('change', () => renderClientPreview(clientIdHidden.value));
 
       // Submit form
       form.addEventListener('submit', async (e) => {

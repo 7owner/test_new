@@ -1,13 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
-      const form = document.getElementById('new-association-form');
-      const feedback = document.getElementById('feedback');
-      const token = localStorage.getItem('token');
-      const headers = { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
+  const form = document.getElementById('new-association-form');
+  const feedback = document.getElementById('feedback');
+  const token = localStorage.getItem('token');
+  const headers = { 
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+  const contratCard = document.getElementById('contrat-card');
+  const contratTitle = document.getElementById('contrat-title');
+  const contratDates = document.getElementById('contrat-dates');
 
-      function showMsg(text, type) { if (!feedback) return; feedback.className = `alert alert-${type||'info'}`; feedback.textContent = text; feedback.classList.remove('d-none'); } 
+  function showMsg(text, type) { if (!feedback) return; feedback.className = `alert alert-${type||'info'}`; feedback.textContent = text; feedback.classList.remove('d-none'); } 
 
       // Autocomplete setup function (copied from contrat-new.js for consistency)
       function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey, idKey, extraParams = {}) {
@@ -120,6 +123,25 @@ document.addEventListener('DOMContentLoaded', () => {
         setupAutocomplete(contratSearchInput, contratIdHidden, contratSuggestionsContainer, '/api/contrats', 'titre', 'id');
       }
 
+      async function renderContratPreview(cid) {
+        if (!cid || !contratCard) { if (contratCard) contratCard.classList.add('d-none'); return; }
+        try {
+          const res = await fetch(`/api/contrats/${cid}`, { headers });
+          if (!res.ok) throw new Error('Contrat introuvable');
+          const c = await res.json();
+          contratTitle.textContent = c.titre || `Contrat #${cid}`;
+          const dd = c.date_debut ? new Date(c.date_debut).toLocaleDateString() : '';
+          const df = c.date_fin ? new Date(c.date_fin).toLocaleDateString() : '';
+          contratDates.textContent = dd ? `Début: ${dd}${df ? ' — Fin: ' + df : ''}` : '';
+          contratCard.classList.remove('d-none');
+        } catch (e) {
+          contratCard.classList.add('d-none');
+        }
+      }
+
+      contratIdHidden?.addEventListener('change', ()=> renderContratPreview(contratIdHidden.value));
+      contratSearchInput?.addEventListener('change', ()=> renderContratPreview(contratIdHidden.value));
+
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         feedback.innerHTML = '';
@@ -188,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   console.warn('Unable to refresh parent associations:', err);
                 }
             }
-          }, 2000);
+          }, 500);
 
         } catch (error) {
           showMsg(error.message, 'danger');
