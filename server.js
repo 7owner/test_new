@@ -2592,6 +2592,7 @@ app.get('/api/clients/:id/relations', authenticateToken, async (req, res) => {
     if (!c) return res.status(404).json({ error: 'Not found' });
     const sites = (await pool.query('SELECT * FROM site WHERE client_id=$1 ORDER BY id DESC', [id])).rows;
     const demandes = (await pool.query('SELECT d.*, s.nom_site FROM demande_client d LEFT JOIN site s ON s.id=d.site_id WHERE d.client_id=$1 ORDER BY d.created_at DESC', [id])).rows;
+    const contrats = (await pool.query('SELECT id, titre, date_debut, date_fin FROM contrat WHERE client_id=$1 ORDER BY created_at DESC', [id])).rows;
     const representants = (await pool.query(`
       SELECT
         cr.id AS client_representant_id,
@@ -2607,7 +2608,7 @@ app.get('/api/clients/:id/relations', authenticateToken, async (req, res) => {
       WHERE cr.client_id = $1
       ORDER BY COALESCE(cr.nom, a.nom, u.email)
     `, [id])).rows;
-    res.json({ client: c, sites, demandes, representants });
+    res.json({ client: c, sites, demandes, contrats, representants });
   } catch (err) {
     console.error('Error fetching client relations:', err);
     res.status(500).json({ error: 'Internal Server Error' });
