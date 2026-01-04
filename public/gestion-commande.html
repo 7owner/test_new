@@ -107,6 +107,10 @@
               <label class="form-label">Remise (%)</label>
               <input type="number" step="0.01" class="form-control" id="new-remise" placeholder="0">
             </div>
+            <div class="col-md-3">
+              <label class="form-label">Quantité</label>
+              <input type="number" min="1" step="1" class="form-control" id="new-quantite" placeholder="1">
+            </div>
             <div class="col-md-6">
               <label class="form-label">Statut commande</label>
               <select class="form-select" id="new-status">
@@ -250,6 +254,8 @@
       const newOrderModal = newOrderModalEl ? new bootstrap.Modal(newOrderModalEl) : null;
       const newOrderError = document.getElementById('new-order-error');
       const newOrderSave = document.getElementById('new-order-save');
+      let linkedDemandeId = null;
+      let linkedDemandeQty = null;
       const newFields = {
         reference: document.getElementById('new-ref'),
         designation: document.getElementById('new-designation'),
@@ -258,6 +264,7 @@
         fournisseur: document.getElementById('new-fournisseur'),
         prix: document.getElementById('new-prix'),
         remise: document.getElementById('new-remise'),
+        quantite: document.getElementById('new-quantite'),
         status: document.getElementById('new-status'),
         commentaire: document.getElementById('new-commentaire')
       };
@@ -392,8 +399,11 @@
                     <div class="d-flex flex-wrap gap-1 mt-1">${interInfo} ${ticketInfo}</div>
                     <div class="mt-2">${linkedMateriels}</div>
                   </div>
-                  <div class="form-check">
-                    <input class="form-check-input demande-check" type="checkbox" data-id="${d.id}" ${d.commande_complete ? 'checked' : ''}>
+                  <div class="d-flex flex-column align-items-end gap-2">
+                    <div class="form-check">
+                      <input class="form-check-input demande-check" type="checkbox" data-id="${d.id}" ${d.commande_complete ? 'checked' : ''}>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary btn-create-order" data-id="${d.id}" title="Créer une commande"><i class="bi bi-plus-circle"></i></button>
                   </div>
                 </div>
                 <div class="card-footer bg-light d-flex justify-content-between align-items-center">
@@ -436,6 +446,9 @@
         newOrderBtn.addEventListener('click', () => {
           Object.values(newFields).forEach(input => { if (input) input.value = ''; });
           if (newFields.status) newFields.status.value = 'A commander';
+          if (newFields.quantite) newFields.quantite.value = '1';
+          linkedDemandeId = null;
+          linkedDemandeQty = null;
           if (newOrderError) newOrderError.classList.add('d-none');
           newOrderModal.show();
         });
@@ -452,7 +465,9 @@
             prix_achat: newFields.prix?.value ? Number(newFields.prix.value) : null,
             remise_fournisseur: newFields.remise?.value ? Number(newFields.remise.value) : null,
             commande_status: newFields.status?.value || 'A commander',
-            commentaire: newFields.commentaire?.value?.trim() || null
+            commentaire: newFields.commentaire?.value?.trim() || null,
+            quantite_demandee: newFields.quantite?.value ? Number(newFields.quantite.value) : 1,
+            demande_materiel_id: linkedDemandeId || null
           };
           if (!body.reference || !body.designation) {
             if (newOrderError) {
@@ -469,6 +484,8 @@
             });
             newOrderModal.hide();
             loadOrders();
+            // rafraîchir les demandes pour voir le lien
+            loadDemandes();
           } catch (e) {
             if (newOrderError) {
               newOrderError.textContent = e.message;
@@ -481,6 +498,29 @@
           }
         });
       }
+      // Lier demande -> nouvelle commande pré-remplie
+      demandesContainer?.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('.btn-create-order');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        const d = demandes.find(x => String(x.id) === String(id));
+        if (!d || !newOrderModal) return;
+        linkedDemandeId = d.id;
+        linkedDemandeQty = d.quantite || 1;
+        if (newOrderError) newOrderError.classList.add('d-none');
+        // Préfill
+        if (newFields.reference) newFields.reference.value = d.titre ? `DM-${d.id}` : '';
+        if (newFields.designation) newFields.designation.value = d.titre || '';
+        if (newFields.categorie) newFields.categorie.value = '';
+        if (newFields.fabricant) newFields.fabricant.value = '';
+        if (newFields.fournisseur) newFields.fournisseur.value = '';
+        if (newFields.prix) newFields.prix.value = '';
+        if (newFields.remise) newFields.remise.value = '';
+        if (newFields.quantite) newFields.quantite.value = linkedDemandeQty;
+        if (newFields.status) newFields.status.value = 'A commander';
+        if (newFields.commentaire) newFields.commentaire.value = d.commentaire || '';
+        newOrderModal.show();
+      });
 
       function showFeedback(msg, isError = true) {
           feedback.className = `alert ${isError ? 'alert-danger' : 'alert-success'}`;
