@@ -1747,8 +1747,41 @@ app.post('/api/interventions/:id/materiels', authenticateToken, authorizeAdmin, 
 // List materiels for an intervention
 app.get('/api/interventions/:id/materiels', authenticateToken, async (req, res) => {
   try {
-    const r = await pool.query("SELECT im.id, m.id as materiel_id, m.reference, m.designation, m.categorie, m.fabricant, m.prix_achat, im.quantite, im.commentaire FROM intervention_materiel im JOIN materiel m ON m.id = im.materiel_id WHERE im.intervention_id=$1 ORDER BY im.id DESC", [req.params.id]);
-    res.json(r.rows);
+    const interventionId = req.params.id;
+    // retrouver ticket pour fallback demande->ticket
+    const it = (await pool.query('SELECT ticket_id FROM intervention WHERE id=$1', [interventionId])).rows[0];
+    const ticketId = it ? it.ticket_id : null;
+
+    const direct = (await pool.query(
+      `SELECT im.id, m.id as materiel_id, m.reference, m.designation, m.categorie, m.fabricant, m.prix_achat, im.quantite, im.commentaire, m.commande_status
+       FROM intervention_materiel im
+       JOIN materiel m ON m.id = im.materiel_id
+       WHERE im.intervention_id=$1
+       ORDER BY im.id DESC`,
+      [interventionId]
+    )).rows;
+
+    let viaDemande = [];
+    if (ticketId) {
+      const r2 = await pool.query(
+        `SELECT DISTINCT m.id as materiel_id, m.reference, m.designation, m.categorie, m.fabricant, m.prix_achat,
+                COALESCE(gdm.quantite_demandee, dm.quantite, 1) AS quantite,
+                m.commentaire, m.commande_status
+         FROM demande_materiel dm
+         JOIN gestion_demande_materiel gdm ON gdm.demande_materiel_id = dm.id
+         JOIN materiel m ON m.id = gdm.materiel_id
+         WHERE dm.intervention_id=$1 OR dm.ticket_id = $2`,
+        [interventionId, ticketId]
+      );
+      viaDemande = r2.rows;
+    }
+
+    const all = [...direct];
+    viaDemande.forEach(mv => {
+      if (!all.find(d => d.materiel_id === mv.materiel_id)) all.push(mv);
+    });
+
+    res.json(all);
   } catch (e) { console.error('Error fetching intervention materiels:', e); res.status(500).json({ error: 'Internal Server Error' }); }
 });
 
