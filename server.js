@@ -3659,14 +3659,21 @@ async function syncInterventionEvents(interventionRow) {
 async function linkMaterielToDemande(demandeMaterielId, materielId, quantite) {
   if (!demandeMaterielId || !materielId) return;
   // récupérer la demande pour connaître l'intervention
-  const dRes = await pool.query('SELECT id, intervention_id, quantite FROM demande_materiel WHERE id=$1', [demandeMaterielId]);
+  const dRes = await pool.query('SELECT id, intervention_id, ticket_id, quantite FROM demande_materiel WHERE id=$1', [demandeMaterielId]);
   const demande = dRes.rows[0];
-  if (!demande || !demande.intervention_id) return;
+  if (!demande) return;
+  let interventionId = demande.intervention_id;
+  // fallback: si pas d'intervention attachée à la demande, prendre la dernière intervention du ticket
+  if (!interventionId && demande.ticket_id) {
+    const iRes = await pool.query('SELECT id FROM intervention WHERE ticket_id=$1 ORDER BY date_debut DESC NULLS LAST, id DESC LIMIT 1', [demande.ticket_id]);
+    if (iRes.rows[0]) interventionId = iRes.rows[0].id;
+  }
+  if (!interventionId) return;
   const qty = quantite || demande.quantite || 1;
   // Upsert dans intervention_materiel
   const existing = await pool.query(
     'SELECT id FROM intervention_materiel WHERE intervention_id=$1 AND materiel_id=$2 LIMIT 1',
-    [demande.intervention_id, materielId]
+    [interventionId, materielId]
   );
   if (existing.rows.length) {
     await pool.query(
@@ -3676,7 +3683,7 @@ async function linkMaterielToDemande(demandeMaterielId, materielId, quantite) {
   } else {
     await pool.query(
       'INSERT INTO intervention_materiel (intervention_id, materiel_id, quantite) VALUES ($1,$2,$3)',
-      [demande.intervention_id, materielId, qty]
+       [interventionId, materielId, qty]
     );
   }
 }
