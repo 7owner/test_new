@@ -57,8 +57,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (params[key]) url.searchParams.append(key, params[key]);
               }
 
+              const hdrs = await buildHeaders(false);
               const response = await fetch(url.toString(), {
-                headers: { ...headers, 'Cache-Control': 'no-cache' },
+                headers: { ...hdrs, 'Cache-Control': 'no-cache' },
                 credentials: 'same-origin',
                 cache: 'no-store'
               });

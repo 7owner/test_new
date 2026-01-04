@@ -18,11 +18,11 @@
         <div id="msg" class="d-none"></div>
         <form id="contrat-edit-form" class="row g-3">
           <!-- Client Search Input -->
-          <div class="col-12">
+          <div class="col-12 position-relative">
             <label for="client-search-input" class="form-label">Client</label>
             <input type="text" class="form-control" id="client-search-input" placeholder="Rechercher un client" autocomplete="off">
             <input type="hidden" id="client_id">
-            <div id="client-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
+            <div id="client-suggestions" class="list-group position-absolute w-100" style="z-index: 2000; max-height: 260px; overflow-y: auto; top:100%; left:0;"></div>
           </div>
 
           <div class="col-12">
