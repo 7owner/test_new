@@ -1314,7 +1314,26 @@ app.get('/api/interventions/:id/relations', authenticateToken, async (req, res) 
     const rendezvous = (await pool.query('SELECT * FROM rendezvous WHERE intervention_id=$1 ORDER BY date_rdv DESC, id DESC', [id])).rows;
     const documents = (await pool.query("SELECT * FROM documents_repertoire WHERE cible_type='Intervention' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
     const images = (await pool.query("SELECT id, nom_fichier, type_mime FROM images WHERE cible_type='Intervention' AND cible_id=$1 ORDER BY id DESC", [id])).rows;
-    const materiels = (await pool.query("SELECT im.id, m.id as materiel_id, m.reference, m.designation, m.categorie, m.fabricant, m.prix_achat, im.quantite, im.commentaire FROM intervention_materiel im JOIN materiel m ON m.id = im.materiel_id WHERE im.intervention_id=$1 ORDER BY im.id DESC", [id])).rows;
+    // Materiels liés directement + ceux liés via une demande pour ce ticket/intervention
+    const materielsDirect = (await pool.query(
+      "SELECT im.id, m.id as materiel_id, m.reference, m.designation, m.categorie, m.fabricant, m.prix_achat, im.quantite, im.commentaire, m.commande_status " +
+      "FROM intervention_materiel im JOIN materiel m ON m.id = im.materiel_id WHERE im.intervention_id=$1 ORDER BY im.id DESC",
+      [id]
+    )).rows;
+    const materielsViaDemande = (await pool.query(
+      `SELECT DISTINCT m.id as materiel_id, m.reference, m.designation, m.categorie, m.fabricant, m.prix_achat,
+              COALESCE(gdm.quantite_demandee, dm.quantite, 1) AS quantite,
+              m.commentaire, m.commande_status
+       FROM demande_materiel dm
+       JOIN gestion_demande_materiel gdm ON gdm.demande_materiel_id = dm.id
+       JOIN materiel m ON m.id = gdm.materiel_id
+       WHERE dm.intervention_id=$1 OR dm.ticket_id = $2`,
+      [id, ticketId || null]
+    )).rows;
+    const materiels = [...materielsDirect];
+    materielsViaDemande.forEach(mv => {
+      if (!materiels.find(md => md.materiel_id === mv.materiel_id)) materiels.push(mv);
+    });
 
     const assigned_agent = intervention.ticket_agent_id
       ? (await pool.query(
