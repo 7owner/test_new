@@ -53,6 +53,7 @@
         <thead>
           <tr>
             <th>Titre</th>
+            <th>Client</th>
             <th>Début</th>
             <th>Fin</th>
             <th>Sites liés</th>
@@ -155,7 +156,7 @@
           if (preselectAssociationId) associationFilter.value = preselectAssociationId;
           applyFilters();
         } catch (e) {
-          tableBody.innerHTML = '<tr><td colspan="6" class="text-danger">Erreur de chargement.</td></tr>';
+          tableBody.innerHTML = '<tr><td colspan="7" class="text-danger">Erreur de chargement.</td></tr>';
         }
       }
 
@@ -168,7 +169,10 @@
         if (end) end.setHours(23,59,59,999);
 
         const rows = (contrats || []).filter(c => {
-          const matchTerm = c.titre && c.titre.toLowerCase().includes(term);
+          const matchTerm = (
+            (c.titre && c.titre.toLowerCase().includes(term)) ||
+            (c.nom_client && c.nom_client.toLowerCase().includes(term))
+          );
           const deb = c.date_debut ? new Date(c.date_debut) : null;
           if (start && deb && deb < start) return false;
           if (end && deb && deb > end) return false;
@@ -184,7 +188,7 @@
       function render(rows) {
         tableBody.innerHTML = '';
         if (!rows.length) {
-          tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Aucun contrat trouvé.</td></tr>';
+          tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Aucun contrat trouvé.</td></tr>';
           return;
         }
         rows.forEach(c => {
@@ -199,6 +203,7 @@
 
           tr.innerHTML = `
             <td>${c.titre || ''}</td>
+            <td>${c.nom_client || '<span class="text-muted">—</span>'}</td>
             <td>${formatDate(c.date_debut)}</td>
             <td>${formatDate(c.date_fin) || '—'}</td>
             <td>${siteNames}</td>

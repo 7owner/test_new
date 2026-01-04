@@ -2086,6 +2086,7 @@ app.get('/api/contrats', authenticateToken, async (req, res) => {
         const result = await pool.query(`
             SELECT 
                 c.*,
+                cl.nom_client,
                 COALESCE(
                     (SELECT json_agg(json_build_object('id', s.id, 'nom_site', s.nom_site))
                      FROM contrat_site_association csa JOIN site s ON csa.site_id = s.id
@@ -2099,11 +2100,12 @@ app.get('/api/contrats', authenticateToken, async (req, res) => {
                         FROM contrat_site_association csa
                         JOIN association_site asi ON csa.site_id = asi.site_id
                         JOIN association asso ON asi.association_id = asso.id
-                        WHERE csa.contrat_id = c.id
+                     WHERE csa.contrat_id = c.id
                      ) AS unique_asso),
                     '[]'::json
                 ) AS associations
             FROM contrat c
+            LEFT JOIN client cl ON cl.id = c.client_id
             ORDER BY c.created_at DESC
         `);
         res.json(result.rows);
