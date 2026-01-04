@@ -1591,8 +1591,8 @@ app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) =
       }
 
       const r = await pool.query(
-        `INSERT INTO materiel (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, commande_status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'A commander') RETURNING *`,
+      `INSERT INTO materiel (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, commande_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'A commander'::commande_status_type) RETURNING *`,
         [item.titre, item.reference, item.designation, item.categorie, item.fabricant, item.fournisseur, item.remise_fournisseur, item.classe_materiel, item.prix_achat, item.commentaire, item.metier]
       );
       return res.status(201).json(r.rows[0]);
@@ -1620,7 +1620,7 @@ app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) =
 
     const r = await pool.query(
       `INSERT INTO materiel (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, commande_status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, COALESCE($12,'A commander')) RETURNING *`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, COALESCE($12::commande_status_type,'A commander')) RETURNING *`,
       [titre || designation, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, commande_status]
     );
     return res.status(201).json(r.rows[0]);
