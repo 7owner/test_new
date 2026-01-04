@@ -201,6 +201,70 @@
     </div>
   </div>
 
+  <!-- ✅ Facture / récap coût -->
+  <div class="main-card d-none" id="facture-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h4 class="mb-0 d-flex align-items-center"><i class="bi bi-receipt me-2"></i>Facture intervention</h4>
+      <button class="btn btn-sm btn-outline-light" id="toggle-facture-btn"><i class="bi bi-eye"></i> Voir</button>
+    </div>
+    <div class="card-body p-4" id="facture-body" style="display:none;">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="p-3 bg-light border rounded h-100">
+            <h6 class="fw-semibold mb-3">Descriptif</h6>
+            <div class="small text-muted mb-2">Nombre d'heures intervention</div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <input type="text" class="form-control form-control-sm" value="10h" readonly>
+              <span>= 10h</span>
+            </div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <input type="text" class="form-control form-control-sm" value="10h" readonly>
+              <span>= 10h</span>
+            </div>
+            <div class="fw-bold mb-3">Nombre d'heures Total = 20h</div>
+            <div class="small text-muted mb-2">Matériel</div>
+            <ul class="list-unstyled small mb-2">
+              <li>Matériel xxx 15€</li>
+              <li>Matériel xxx 15€</li>
+              <li>Matériel xxx 15€</li>
+            </ul>
+            <div class="fw-bold">Matériel Total 45€</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="p-3 bg-light border rounded h-100">
+            <h6 class="fw-semibold mb-3">Comptabilité</h6>
+            <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
+              <span>Heures intervention Total = 20h x</span>
+              <input type="text" class="form-control form-control-sm" value="65" style="max-width:80px;">
+            </div>
+            <div class="fw-bold mb-2">Tarif total heures = 1300€ HT</div>
+            <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
+              <span>Tarif total Matériel = 45€ HT x</span>
+              <input type="text" class="form-control form-control-sm" value="20%" style="max-width:80px;">
+              <input type="text" class="form-control form-control-sm" value="9€" style="max-width:80px;">
+              <span>= 54€ HT</span>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
+              <span>Déplacement</span>
+              <input type="text" class="form-control form-control-sm" value="4" style="max-width:60px;">
+              <input type="text" class="form-control form-control-sm" value="40€" style="max-width:80px;">
+              <span>= 160€ HT</span>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
+              <span>Divers</span>
+              <input type="text" class="form-control form-control-sm" value="40€" style="max-width:80px;">
+            </div>
+            <div class="fw-semibold">Montant total</div>
+            <div class="small">
+              1300 + 54 + 160 = <strong>1514€ HT</strong> x <input type="text" class="form-control form-control-sm d-inline-block" value="20%" style="max-width:80px;"> = 1816,8 TTC = 302,8 TVA
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ✅ Demandes de matériel -->
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -515,6 +579,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const demandeSubmitBtn = document.getElementById('demande-submit-btn');
   const finishInterBtn = document.getElementById('finish-inter-btn');
   let demandesCache = [];
+  let eventsCache = [];
 
 
   let ticketId = null;
@@ -634,6 +699,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Planning des événements (par agent)
   const eventsListEl = document.getElementById('events-list');
   function renderEvents(events = []) {
+    eventsCache = events || [];
     if (!eventsListEl) return;
     if (!events.length) {
       eventsListEl.innerHTML = '<div class="text-muted small">Aucun événement planifié.</div>';
@@ -1085,6 +1151,15 @@ document.addEventListener('DOMContentLoaded', async function () {
         const btn = e.target.closest('.del-agent');
         if (btn) removeAgent(btn.dataset.m);
       });
+      // resync events après changement d'agents/responsables
+      if (interventionId) {
+        try {
+          const events = await fetchJSON(`/api/interventions/${interventionId}/events/sync`, { method: 'POST' });
+          renderEvents(events || []);
+        } catch (e) {
+          console.warn('Sync events après mise à jour des agents/responsables échouée', e);
+        }
+      }
     } catch (e) {
       console.error('Error fetching ticket relations:', e);
     }
@@ -1317,7 +1392,22 @@ document.addEventListener('DOMContentLoaded', async function () {
           body: JSON.stringify({ date_fin: nowIso, status: 'Termine' })
         });
         alert('Intervention clôturée.');
-        location.reload();
+        // re-synchroniser les événements
+        try {
+          const events = await fetchJSON(`/api/interventions/${interventionId}/events/sync`, { method: 'POST' });
+          renderEvents(events || []);
+        } catch (e) {
+          console.warn('Sync events après clôture échouée', e);
+        }
+        // Afficher la carte facture
+        const factureCard = document.getElementById('facture-card');
+        const factureBtn = document.getElementById('toggle-facture-btn');
+        if (factureCard) factureCard.classList.remove('d-none');
+        if (factureBtn) {
+          factureBtn.classList.add('btn-primary');
+          factureBtn.click();
+        }
+        // Pas de reload forcé pour garder l'état d'affichage
       } catch (e) {
         alert('Échec de la clôture: ' + e.message);
       }

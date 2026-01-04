@@ -3494,6 +3494,21 @@ app.get('/api/interventions/:id/events', authenticateToken, async (req, res) => 
   }
 });
 
+// Resynchroniser les événements d'intervention (admin)
+app.post('/api/interventions/:id/events/sync', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const interRes = await pool.query('SELECT * FROM intervention WHERE id=$1', [id]);
+    if (!interRes.rows.length) return res.status(404).json({ error: 'Intervention not found' });
+    await syncInterventionEvents(interRes.rows[0]);
+    const rows = (await pool.query('SELECT * FROM intervention_event WHERE intervention_id=$1 ORDER BY agent_matricule', [id])).rows;
+    res.json(rows);
+  } catch (err) {
+    console.error('Error syncing intervention events:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // Get a single intervention by ID
 app.get('/api/interventions/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
