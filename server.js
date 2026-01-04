@@ -1580,25 +1580,51 @@ app.get('/api/materiels/:id/relations', authenticateToken, async (req, res) => {
 // Create materiel (order) from a catalogue item (admin)
 app.post('/api/materiels', authenticateToken, authorizeAdmin, async (req, res) => {
   const { catalogue_id } = req.body;
-  if (!catalogue_id) {
-      return res.status(400).json({ error: 'catalogue_id is required to create an order.' });
-  }
 
   try {
-    // 1. Fetch the item from the catalogue
-    const catalogueItemResult = await pool.query('SELECT * FROM materiel_catalogue WHERE id = $1', [catalogue_id]);
-    const item = catalogueItemResult.rows[0];
-    if (!item) {
-        return res.status(404).json({ error: 'Catalogue item not found.' });
+    if (catalogue_id) {
+      // 1) Création depuis le catalogue (logique existante)
+      const catalogueItemResult = await pool.query('SELECT * FROM materiel_catalogue WHERE id = $1', [catalogue_id]);
+      const item = catalogueItemResult.rows[0];
+      if (!item) {
+          return res.status(404).json({ error: 'Catalogue item not found.' });
+      }
+
+      const r = await pool.query(
+        `INSERT INTO materiel (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, commande_status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'A commander') RETURNING *`,
+        [item.titre, item.reference, item.designation, item.categorie, item.fabricant, item.fournisseur, item.remise_fournisseur, item.classe_materiel, item.prix_achat, item.commentaire, item.metier]
+      );
+      return res.status(201).json(r.rows[0]);
     }
 
-    // 2. Create a new order record in 'materiel' table by copying the data
+    // 2) Création manuelle (pas de catalogue)
+    const {
+      titre,
+      reference,
+      designation,
+      categorie,
+      fabricant,
+      fournisseur,
+      remise_fournisseur,
+      classe_materiel,
+      prix_achat,
+      commentaire,
+      metier,
+      commande_status
+    } = req.body;
+
+    if (!reference || !designation) {
+      return res.status(400).json({ error: 'Référence et désignation sont obligatoires.' });
+    }
+
     const r = await pool.query(
       `INSERT INTO materiel (titre, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, commande_status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'A commander') RETURNING *`,
-      [item.titre, item.reference, item.designation, item.categorie, item.fabricant, item.fournisseur, item.remise_fournisseur, item.classe_materiel, item.prix_achat, item.commentaire, item.metier]
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, COALESCE($12,'A commander')) RETURNING *`,
+      [titre || designation, reference, designation, categorie, fabricant, fournisseur, remise_fournisseur, classe_materiel, prix_achat, commentaire, metier, commande_status]
     );
-    res.status(201).json(r.rows[0]);
+    return res.status(201).json(r.rows[0]);
+
   } catch (e) { 
       console.error('Error creating materiel order from catalogue:', e); 
       res.status(500).json({ error: 'Internal Server Error' }); 
