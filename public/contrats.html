@@ -250,6 +250,8 @@
       }
 
       loadContrats();
+      // Exposer pour l'iframe de création afin de rafraîchir après création
+      window.loadContrats = loadContrats;
     });
   </script>
 </body>

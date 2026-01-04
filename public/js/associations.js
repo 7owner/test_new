@@ -130,4 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (viewContractModal) {
         viewContractModal.addEventListener('hidden.bs.modal', loadAssociations);
       }
+
+      // Exposer pour l'iframe de création afin de rafraîchir la liste après création
+      window.loadAssociations = loadAssociations;
     });
