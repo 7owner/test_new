@@ -284,7 +284,7 @@
           if (file) {
             // upload immédiat du nouveau fichier (image ou doc)
             const created = await uploadDocument(file, {
-              titre: (attTitleInput?.value || file.name || 'Fichier'),
+              titre: (attTitleInput?.value || ''),
               commentaire: newComment || file.type || ''
             });
             // remplacer l'ancienne entrée par la nouvelle
@@ -294,7 +294,6 @@
             attachments[currentEditIndex].commentaire_image = newComment;
             if (attTitleInput?.value) {
               attachments[currentEditIndex].titre = attTitleInput.value;
-              attachments[currentEditIndex].nom_fichier = attTitleInput.value;
             }
             // Patch meta côté API si on dispose d'un id
             const target = attachments[currentEditIndex];

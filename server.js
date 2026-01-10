@@ -4056,6 +4056,46 @@ app.patch('/api/rendus/:id', authenticateToken, async (req, res) => { // authori
         console.error(`Error updating rendu ${renduId}:`, err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
+});
+
+// Delete a Rendu and its associated images
+app.delete('/api/rendus/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id: renduId } = req.params;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Find and delete associated images
+        const imagesToDelete = await client.query(
+            "SELECT id FROM images WHERE cible_type = 'RenduIntervention' AND cible_id = $1",
+            [renduId]
+        );
+        for (const img of imagesToDelete.rows) {
+            await client.query('DELETE FROM images WHERE id = $1', [img.id]);
+        }
+
+        // 2. Delete entries in the join table (rendu_intervention_image)
+        // This might cascade automatically if FK is set with ON DELETE CASCADE, but explicit is safer
+        await client.query('DELETE FROM rendu_intervention_image WHERE rendu_intervention_id = $1', [renduId]);
+
+        // 3. Delete the rendu_intervention record
+        const result = await client.query('DELETE FROM rendu_intervention WHERE id = $1 RETURNING id', [renduId]);
+
+        if (result.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Rendu not found' });
+        }
+
+        await client.query('COMMIT');
+        res.status(204).send(); // No Content
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(`Error deleting rendu ${renduId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    } finally {
+        client.release();
+    }
 });app.get('/api/rendezvous', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT rendezvous.*, intervention.description as intervention_description, site.nom_site as site_nom FROM rendezvous JOIN intervention ON rendezvous.intervention_id = intervention.id JOIN site ON rendezvous.site_id = site.id ORDER BY rendezvous.date_rdv ASC');
