@@ -897,6 +897,11 @@
         const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
         const res = await fetch(path, { credentials: 'same-origin', headers: authHeaders });
         if (!res.ok) throw new Error('fetch failed');
+        const contentType = res.headers.get('Content-Type') || '';
+        if (!contentType.toLowerCase().startsWith('image/')) {
+          // Ne pas encoder du HTML/PDF : garder l'URL d'origine pour éviter un data:image avec une page HTML
+          return path || placeholder;
+        }
         const blob = await res.blob();
         return await new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -905,7 +910,7 @@
           reader.readAsDataURL(blob);
         });
       } catch (_) {
-        return path || placeholder; // fallback to original URL or pixel
+        return path || placeholder; // fallback to original URL ou pixel
       }
     };
 
