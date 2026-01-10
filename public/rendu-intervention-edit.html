@@ -119,8 +119,8 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label">Nom du fichier</label>
-            <input type="text" class="form-control" id="att-name-input" readonly>
+            <label class="form-label">Titre / Nom du fichier</label>
+            <input type="text" class="form-control" id="att-title-input" placeholder="Titre de la pièce jointe">
           </div>
           <div class="mb-3">
             <label class="form-label">Commentaire</label>
@@ -166,7 +166,7 @@
       const addFileInput = document.getElementById('add-file-input');
       const attModalEl = document.getElementById('attachmentModal');
       const attModal = attModalEl ? new bootstrap.Modal(attModalEl) : null;
-      const attNameInput = document.getElementById('att-name-input');
+      const attTitleInput = document.getElementById('att-title-input');
       const attCommentInput = document.getElementById('att-comment-input');
       const attFileInput = document.getElementById('att-file-input');
       const saveAttBtn = document.getElementById('save-att-btn');
@@ -247,40 +247,45 @@
           if (currentEditIndex === null) return;
           const att = attachments[currentEditIndex];
           if (!att) return;
-          const newComment = attCommentInput ? attCommentInput.value : att.commentaire_image;
-          const file = attFileInput && attFileInput.files && attFileInput.files[0];
-          try {
-            if (file) {
-              // upload immédiat du nouveau fichier
-              const base64 = await toBase64(file);
-              const payload = {
-                base64,
-                nom_fichier: file.name,
-                nature: newComment || file.type || 'Document',
-                type_mime: file.type || 'application/octet-stream',
-                cible_type: 'RenduIntervention',
-                cible_id: renduId
-              };
-              const res = await fetch('/api/documents', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...headers },
-                body: JSON.stringify(payload)
-              });
-              const data = await res.json().catch(()=> ({}));
-              if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-              attachments[currentEditIndex] = {
-                kind: file.type.startsWith('image/') ? 'image' : 'doc',
-                url: `/api/documents/${data.id || ''}/view`,
-                nom_fichier: file.name,
-                commentaire_image: payload.nature || 'Document',
-                type: 'Upload'
-              };
-            } else {
-              attachments[currentEditIndex].commentaire_image = newComment;
+        const newComment = attCommentInput ? attCommentInput.value : att.commentaire_image;
+        const file = attFileInput && attFileInput.files && attFileInput.files[0];
+        try {
+          if (file) {
+            // upload immédiat du nouveau fichier
+            const base64 = await toBase64(file);
+            const payload = {
+              base64,
+              nom_fichier: file.name,
+              nature: newComment || file.type || 'Document',
+              type_mime: file.type || 'application/octet-stream',
+              cible_type: 'RenduIntervention',
+              cible_id: renduId
+            };
+            const res = await fetch('/api/documents', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...headers },
+              body: JSON.stringify(payload)
+            });
+            const data = await res.json().catch(()=> ({}));
+            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+            attachments[currentEditIndex] = {
+              kind: file.type.startsWith('image/') ? 'image' : 'doc',
+              url: `/api/documents/${data.id || ''}/view`,
+              nom_fichier: file.name,
+              commentaire_image: payload.nature || 'Document',
+              titre: (attTitleInput?.value || file.name || 'Fichier'),
+              type: 'Upload'
+            };
+          } else {
+            attachments[currentEditIndex].commentaire_image = newComment;
+            if (attTitleInput?.value) {
+              attachments[currentEditIndex].titre = attTitleInput.value;
+              attachments[currentEditIndex].nom_fichier = attTitleInput.value;
             }
-            refreshAttachments();
-            if (attModal) attModal.hide();
-          } catch (e) {
+          }
+          refreshAttachments();
+          if (attModal) attModal.hide();
+        } catch (e) {
             console.error(e);
             alert(`Échec de l'ajout du fichier: ${e.message}`);
           } finally {
@@ -310,7 +315,7 @@
         currentEditIndex = idx;
         const att = attachments[idx];
         if (!att || !attModal) return;
-        if (attNameInput) attNameInput.value = att.nom_fichier || '';
+        if (attTitleInput) attTitleInput.value = att.titre || att.nom_fichier || '';
         if (attCommentInput) attCommentInput.value = att.commentaire_image || '';
         if (attFileInput) attFileInput.value = '';
         attModal.show();
@@ -323,7 +328,7 @@
         const src  = filterSource?.value || '';
         const kind = filterKind?.value || '';
         const filtered = attachments.filter(att => {
-          const txt = `${att.nom_fichier||''} ${att.commentaire_image||''}`.toLowerCase();
+          const txt = `${att.titre||att.nom_fichier||''} ${att.commentaire_image||''}`.toLowerCase();
           const matchTerm = !term || txt.includes(term);
           const matchSrc  = !src || att.type === src;
           const matchKind = !kind || att.kind === kind;
@@ -338,14 +343,17 @@
           card.onclick = () => openEditModal(idx);
           const prev = document.createElement('div');
           prev.className = 'attachment-preview' + (att.kind === 'doc' ? ' doc-preview' : '');
-          prev.innerHTML = att.kind === 'image' ? `<img src="${att.url}" alt="${att.nom_fichier}">` : '<i class="bi bi-file-earmark-text"></i>';
+          prev.innerHTML = att.kind === 'image'
+            ? `<img src="${att.url}" alt="${att.nom_fichier || att.titre || ''}">`
+            : '<i class="bi bi-file-earmark-text"></i>';
           const info = document.createElement('div');
           info.className = 'attachment-info';
           info.innerHTML = `
+            <div class="fw-semibold">${att.titre || att.nom_fichier || 'Fichier'}</div>
             <div class="attachment-comment">${att.commentaire_image || 'Aucun commentaire'}</div>
             <div class="attachment-meta">
               <span class="badge badge-source bg-secondary">${att.type || 'Upload'}</span>
-              <span><i class="bi bi-file-earmark"></i> ${att.nom_fichier || 'Fichier'}</span>
+              <span><i class="bi bi-file-earmark"></i> ${att.nom_fichier || att.titre || 'Fichier'}</span>
             </div>`;
           card.append(prev, info);
           col.append(card);
@@ -386,6 +394,7 @@
           kind: 'image',
           url: `/api/images/${img.id}/view`,
           nom_fichier: img.nom_fichier,
+          titre: img.titre || img.nom_fichier,
           commentaire_image: img.commentaire_image,
           type: 'Image'
         }));
@@ -393,6 +402,7 @@
           kind: 'doc',
           url: `/api/documents/${doc.id}/view`,
           nom_fichier: doc.nom_fichier,
+          titre: doc.titre || doc.nom_fichier,
           commentaire_image: doc.nature || 'Document',
           type: 'Document'
         }));
@@ -402,6 +412,7 @@
             kind,
             url: `/api/attachments/${att.id}/view`,
             nom_fichier: att.file_name,
+            titre: att.titre || att.file_name,
             commentaire_image: `PJ message: ${(att.message || '').substring(0,50)}...`,
             type: 'Message'
           });
