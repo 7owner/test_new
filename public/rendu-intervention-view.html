@@ -484,7 +484,7 @@
                 kind: 'image',
                 url: `/api/images/${img.id}/view`,
                 nom_fichier: img.nom_fichier,
-                titre: img.titre || img.nom_fichier,
+                titre: img.titre || '',
                 commentaire_image: img.commentaire_image,
                 type: 'Image'
             });
@@ -495,7 +495,7 @@
                 kind: detectKind(doc.type_mime, doc.nom_fichier),
                 url: `/api/documents/${doc.id}/view`,
                 nom_fichier: doc.nom_fichier,
-                titre: doc.titre || doc.nom_fichier,
+                titre: doc.titre || '',
                 commentaire_image: doc.nature || 'Document',
                 type: 'Document'
             });
@@ -507,7 +507,7 @@
                 kind: kind,
                 url: `/api/attachments/${msgAtt.id}/view`,
                 nom_fichier: msgAtt.file_name,
-                titre: msgAtt.titre || msgAtt.file_name,
+                titre: msgAtt.titre || '',
                 commentaire_image: `Pièce jointe du message: "${(msgAtt.message || '').substring(0, 50)}..."`,
                 type: 'Message'
             });

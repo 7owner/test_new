@@ -502,7 +502,7 @@
       const kind = filterKind?.value || '';
 
       const filtered = attachments.filter((att) => {
-        const txt = `${att.nom_fichier||''} ${att.commentaire_image||''}`.toLowerCase();
+        const txt = `${att.titre||''} ${att.nom_fichier||''} ${att.commentaire_image||''}`.toLowerCase();
         const matchTerm = !term || txt.includes(term);
         const matchSrc = !src || att.type === src;
         const matchKind = !kind || att.kind === kind;
@@ -675,8 +675,7 @@
     const att = attachments[currentEditIndex];
     
     const titleVal = document.getElementById('edit-title').value.trim();
-    att.titre = titleVal;
-    if (titleVal) att.nom_fichier = titleVal;
+    att.titre = titleVal || att.nom_fichier;
     att.commentaire_image = document.getElementById('edit-comment').value;
     
     const fileInput = document.getElementById('edit-file-input');
@@ -789,7 +788,7 @@
               type,
               cible_id: id,
               nom_fichier: item.nom_fichier,
-              titre: item.nom_fichier,
+              titre: item.titre || '',
               commentaire_image: item.commentaire_image || item.commentaire || '',
               url: `/api/${endpoint}/${item.id}/view`,
               kind: endpoint === 'images' ? 'image' : 'doc'
@@ -808,16 +807,16 @@
           m.attachments.forEach(att => {
             const path = String(att.file_path || '');
             const url = path ? '/' + path.replace(/^public\//, '') : '';
-            const name = att.file_name || path.split('/').pop() || 'Pièce jointe';
-            const mime = att.type_mime || '';
-            const lower = name.toLowerCase();
+          const name = att.file_name || path.split('/').pop() || 'Pièce jointe';
+          const mime = att.type_mime || '';
+          const lower = name.toLowerCase();
             const kind = (mime && mime.startsWith('image/')) || /\.(png|jpe?g|gif|webp)$/i.test(lower) ? 'image' : 'doc';
             attachments.push({
               id: att.id || `conv-${demandeId}-${name}`,
               type: 'Message',
               cible_id: demandeId,
               nom_fichier: name,
-              titre: name,
+              titre: att.titre || '',
               commentaire_image: att.commentaire || m.message || '',
               url,
               kind,
