@@ -599,13 +599,57 @@ document.addEventListener('DOMContentLoaded', async function () {
   }
 
   // Toggle rendus
-  if (rendusToggleBtn && rendusBody) {
-    rendusToggleBtn.addEventListener('click', () => {
-      const hidden = rendusBody.style.display === 'none';
-      rendusBody.style.display = hidden ? 'block' : 'none';
-      rendusToggleBtn.innerHTML = hidden ? '<i class="bi bi-eye-slash"></i> Masquer' : '<i class="bi bi-eye"></i> Voir';
-    });
-  }
+      if (rendusToggleBtn && rendusBody) {
+        rendusToggleBtn.addEventListener('click', () => {
+          const hidden = rendusBody.style.display === 'none';
+          rendusBody.style.display = hidden ? 'block' : 'none';
+          rendusToggleBtn.innerHTML = hidden ? '<i class="bi bi-eye-slash"></i> Masquer' : '<i class="bi bi-eye"></i> Voir';
+        });
+      }
+      // Téléchargement rapide des rendus (bouton HTML sur la carte)
+      rendusList?.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.download-rendu-btn');
+        if (!btn) return;
+        const rid = btn.dataset.rid;
+        if (!rid) return;
+        try {
+          // Charger les détails du rendu pour récupérer resume/images
+          const rel = await fetchJSON(`/api/rendus/${rid}/relations`);
+          const rendu = rel?.rendu || rel || {};
+          const imgs = [];
+          (rel?.images || []).forEach(img => imgs.push({ ...img, kind:'image', url: `/api/images/${img.id}/view` }));
+          // Enrichir les métadonnées
+          const metaReport = await window.fetchInterventionMeta({
+            interventionId: rendu.intervention_id,
+            ticketId: rendu.ticket_id,
+            siteId: rendu.site_id,
+            associationId: rendu.association_id,
+            clientId: rendu.client_id,
+            contractId: rendu.contrat_id,
+            token
+          });
+          metaReport.dateStr = new Date().toLocaleDateString('fr-FR');
+          const resumeHtml = rendu.resume ? marked.parse(rendu.resume) : '';
+          const htmlString = await window.buildInterventionReportHTML({
+            meta: metaReport,
+            images: imgs,
+            resumeHtml,
+            token
+          });
+          const blob = new Blob([htmlString], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `rendu-${rid}.html`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          console.error(err);
+          alert(`Échec du téléchargement du rendu: ${err.message}`);
+        }
+      });
   // Toggle documents
   if (docsToggleBtn && docsBody) {
     docsToggleBtn.addEventListener('click', () => {
@@ -1272,6 +1316,9 @@ document.addEventListener('DOMContentLoaded', async function () {
             <a href="rendu-intervention-edit.html?id=${r.id}" class="btn btn-sm btn-outline-secondary">
               <i class="bi bi-pencil me-1"></i>Éditer
             </a>
+            <button type="button" class="btn btn-sm btn-outline-success download-rendu-btn" data-rid="${r.id}">
+              <i class="bi bi-download me-1"></i>HTML
+            </button>
           </div>
         </div>`;
       rendusList.appendChild(card);
