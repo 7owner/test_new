@@ -788,7 +788,7 @@
               type,
               cible_id: id,
               nom_fichier: item.nom_fichier,
-              titre: item.titre || '',
+              titre: item.titre || item.nom_fichier,
               commentaire_image: item.commentaire_image || item.commentaire || '',
               url: `/api/${endpoint}/${item.id}/view`,
               kind: endpoint === 'images' ? 'image' : 'doc'
@@ -816,7 +816,7 @@
               type: 'Message',
               cible_id: demandeId,
               nom_fichier: name,
-              titre: att.titre || '',
+              titre: att.titre || name,
               commentaire_image: att.commentaire || m.message || '',
               url,
               kind,

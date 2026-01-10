@@ -536,7 +536,7 @@
 
                 const prev = document.createElement('div');
                 prev.className = 'attachment-preview';
-                const displayTitle = att.titre || att.commentaire_image || att.nom_fichier || 'Fichier';
+                const displayTitle = att.titre || att.nom_fichier || 'Fichier';
                 if (att.kind === 'image') {
                   prev.innerHTML = `<a href="${att.url}" target="_blank"><img src="${att.url}" alt="${displayTitle}"></a>`;
                 } else {
