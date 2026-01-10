@@ -812,7 +812,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (!rid) return;
         if (!confirm('Supprimer ce rendu ?')) return;
         try {
-          const resp = await fetch(`/api/rendus/${rid}`, { method:'DELETE', headers });
+          let resp = await fetch(`/api/rendus/${rid}`, { method:'DELETE', headers, credentials:'same-origin' });
+          if (!resp.ok && resp.status === 404) {
+            // tentative fallback si l'API expose un endpoint alternatif
+            resp = await fetch(`/api/rendus/${rid}/delete`, { method:'POST', headers, credentials:'same-origin' });
+          }
           if (!resp.ok) {
             const err = await resp.json().catch(()=>({}));
             throw new Error(err.error || `HTTP ${resp.status}`);
