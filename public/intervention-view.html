@@ -806,6 +806,24 @@ document.addEventListener('DOMContentLoaded', async function () {
   ensureReportHelpers().catch(()=>{});
       // Téléchargement rapide des rendus (bouton HTML sur la carte)
       rendusList?.addEventListener('click', async (e) => {
+      const delBtn = e.target.closest('.delete-rendu-btn');
+      if (delBtn) {
+        const rid = delBtn.dataset.rid;
+        if (!rid) return;
+        if (!confirm('Supprimer ce rendu ?')) return;
+        try {
+          const resp = await fetch(`/api/rendus/${rid}`, { method:'DELETE', headers });
+          if (!resp.ok) {
+            const err = await resp.json().catch(()=>({}));
+            throw new Error(err.error || `HTTP ${resp.status}`);
+          }
+          const rendus = await fetchJSON(`/api/interventions/${interventionId}/rendus`);
+          renderRendus(rendus || []);
+        } catch (err) {
+          alert(`Échec de la suppression du rendu: ${err.message}`);
+        }
+        return;
+      }
       const btn = e.target.closest('.download-rendu-btn');
       if (!btn) return;
       const rid = btn.dataset.rid;
@@ -1531,6 +1549,9 @@ document.addEventListener('DOMContentLoaded', async function () {
             </a>
             <button type="button" class="btn btn-sm btn-outline-success download-rendu-btn" data-rid="${r.id}">
               <i class="bi bi-download me-1"></i>HTML
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger delete-rendu-btn" data-rid="${r.id}">
+              <i class="bi bi-trash me-1"></i>Supprimer
             </button>
           </div>
         </div>`;
