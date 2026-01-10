@@ -195,8 +195,9 @@
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
       <h4 class="mb-0 d-flex align-items-center"><i class="bi bi-calendar-event me-2"></i>Planning des agents</h4>
+      <button class="btn btn-sm btn-outline-light" id="toggle-planning-btn"><i class="bi bi-eye"></i> Voir</button>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body p-4" id="planning-body">
       <div id="events-list" class="table-responsive"></div>
     </div>
   </div>
@@ -569,6 +570,8 @@ document.addEventListener('DOMContentLoaded', async function () {
   const inlineAg = document.getElementById('inline-agents');
   const inlineAddResp = document.getElementById('inline-add-resp');
   const inlineAddAgent = document.getElementById('inline-add-agent');
+  const planningBody = document.getElementById('planning-body');
+  const planningToggleBtn = document.getElementById('toggle-planning-btn');
   const demandesList = document.getElementById('demandes-materiel-list');
   const demandeTitreInput = document.getElementById('demande-titre');
   const demandeCommentaireInput = document.getElementById('demande-commentaire');
@@ -597,6 +600,15 @@ document.addEventListener('DOMContentLoaded', async function () {
   let eventsCache = [];
   let factureMatTotalValue = 0;
   let factureHoursAuto = 0;
+
+  // Toggle planning card
+  if (planningToggleBtn && planningBody) {
+    planningToggleBtn.addEventListener('click', () => {
+      const hidden = planningBody.style.display === 'none';
+      planningBody.style.display = hidden ? 'block' : 'none';
+      planningToggleBtn.innerHTML = hidden ? '<i class="bi bi-eye-slash"></i> Masquer' : '<i class="bi bi-eye"></i> Voir';
+    });
+  }
 
 
   let ticketId = null;
