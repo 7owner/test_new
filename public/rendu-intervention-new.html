@@ -891,6 +891,23 @@
 
     // Télécharger en HTML (rapport)
     const downloadHtmlBtn = document.getElementById('download-html-btn');
+    const fetchAsDataUrl = async (path) => {
+      const placeholder = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAn8B9W/2zXMAAAAASUVORK5CYII=';
+      try {
+        const res = await fetch(path, { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('fetch failed');
+        const blob = await res.blob();
+        return await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (_) {
+        return placeholder; // fallback to transparent pixel to éviter ERR_FILE_NOT_FOUND
+      }
+    };
+
     if (downloadHtmlBtn) {
       downloadHtmlBtn.addEventListener('click', async () => {
         // Inclure uniquement les images
@@ -899,16 +916,20 @@
         const resumeText = (mainResumeEditor ? mainResumeEditor.value() : (document.getElementById('resume')?.value || '')).trim();
         const commentText = resumeText ? (typeof marked !== 'undefined' ? marked.parse(resumeText) : resumeText) : '<em>Aucun résumé</em>';
 
+        // Logo embarqué en data URL si possible
+        const logoSrc = await fetchAsDataUrl('/logo_logicielle.png');
+
         // Construire le HTML (basé sur rapport-intervention-template)
         let imagesHtml = '';
-        images.forEach(img => {
+        for (const img of images) {
+          const imgSrc = await fetchAsDataUrl(img.url || '');
           imagesHtml += `
             <div class="bloc">
-              <img src="${img.url || ''}" alt="${img.nom_fichier || 'Image'}">
+              <img src="${imgSrc || ''}" alt="${img.nom_fichier || 'Image'}">
               <p><b>${img.nom_fichier || 'Image'}</b></p>
               <p>${img.commentaire_image || ''}</p>
             </div>`;
-        });
+        }
 
         const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -932,7 +953,7 @@
 </head>
 <body>
   <div class="header">
-    <img src="/logo_logicielle.png" alt="Logo" style="width:160px;height:auto;">
+    <img src="${logoSrc}" alt="Logo" style="width:160px;height:auto;">
     <h1>Client : ${meta.client}</h1>
   </div>
   <div class="date"><p><b>Date :</b> ${dateStr}</p></div>
