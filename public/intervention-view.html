@@ -1495,8 +1495,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   }
 
-  function renderRendus(rendus = []) {
-    if (!rendusList) return;
+ function renderRendus(rendus = []) {
+   if (!rendusList) return;
     if (!rendus.length) {
       rendusList.innerHTML = '<p class="text-muted mb-0">Aucun rendu enregistré pour cette intervention.</p>';
       return;

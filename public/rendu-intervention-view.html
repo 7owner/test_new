@@ -151,6 +151,11 @@
       let printTemplate = null;
       let ticketIdRef = null;
       let siteIdRef = null;
+      const detectKind = (mime = '', name = '') => {
+        const lowerName = (name || '').toLowerCase();
+        if ((mime && mime.startsWith('image/')) || /\.(png|jpe?g|gif|webp|bmp)$/i.test(lowerName)) return 'image';
+        return 'doc';
+      };
       const ensureReportHelpers = async () => {
         if (window.fetchInterventionMeta && window.buildInterventionReportHTML) return;
         // Inline fallback definitions if the external script n'est pas exécuté (ex: rendu injecté en modal)
@@ -473,7 +478,7 @@
 
         (documents || []).forEach(doc => {
             attachments.push({
-                kind: 'doc',
+                kind: detectKind(doc.type_mime, doc.nom_fichier),
                 url: `/api/documents/${doc.id}/view`,
                 nom_fichier: doc.nom_fichier,
                 commentaire_image: doc.nature || 'Document',
@@ -482,7 +487,7 @@
         });
 
         (message_attachments || []).forEach(msgAtt => {
-            const kind = (msgAtt.file_type && msgAtt.file_type.startsWith('image/')) ? 'image' : 'doc';
+            const kind = detectKind(msgAtt.file_type, msgAtt.file_name);
             attachments.push({
                 kind: kind,
                 url: `/api/attachments/${msgAtt.id}/view`,
