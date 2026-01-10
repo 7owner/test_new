@@ -582,6 +582,8 @@ CREATE TABLE IF NOT EXISTS documents_repertoire (
     id SERIAL PRIMARY KEY,
     cible_type doc_cible_type,
     cible_id BIGINT,
+    titre VARCHAR(255),
+    commentaire TEXT,
     nature doc_nature DEFAULT 'Document',
     nom_fichier VARCHAR(255),
     type_mime VARCHAR(100),

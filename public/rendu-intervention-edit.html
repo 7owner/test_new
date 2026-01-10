@@ -473,7 +473,7 @@
           url: `/api/documents/${doc.id}/view`,
           nom_fichier: doc.nom_fichier,
           titre: doc.titre || doc.nom_fichier,
-          commentaire_image: doc.nature || 'Document',
+          commentaire_image: doc.commentaire_image || doc.commentaire || doc.nature || 'Document',
           type: 'Document',
           type_mime: doc.type_mime || ''
         }));
