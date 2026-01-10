@@ -1114,11 +1114,13 @@ document.addEventListener('DOMContentLoaded', async function () {
         inlineResp.textContent = 'Aucun responsable';
         return;
       }
+      const link = (mat) => `<a href="/agent-view.html?matricule=${encodeURIComponent(mat)}" class="text-decoration-none text-reset">${mat}</a>`;
       inlineResp.innerHTML = responsables.map(r => {
         const label = r.matricule || r.agent_matricule || r.nom || 'Resp';
+        const anchor = link(label);
         return isAdmin
-          ? `<span class="badge bg-secondary me-1 d-inline-flex align-items-center gap-1">${label}<button class="btn btn-xs btn-link p-0 text-white del-resp" data-m="${label}"><i class="bi bi-x-lg"></i></button></span>`
-          : `<span class="badge bg-secondary me-1">${label}</span>`;
+          ? `<span class="badge bg-secondary me-1 d-inline-flex align-items-center gap-1">${anchor}<button class="btn btn-xs btn-link p-0 text-white del-resp" data-m="${label}"><i class="bi bi-x-lg"></i></button></span>`
+          : `<a class="badge bg-secondary me-1 text-decoration-none text-reset" href="/agent-view.html?matricule=${encodeURIComponent(label)}">${label}</a>`;
       }).join(' ');
     };
 
@@ -1132,8 +1134,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     responsables.forEach(r => {
       const li = document.createElement('li');
       li.className = 'list-group-item d-flex justify-content-between align-items-center';
-      li.innerHTML = `<span>${r.prenom || ''} ${r.nom || ''} (${r.matricule || r.agent_matricule || ''})${r.role ? ' - ' + r.role : ''}</span>` +
-                     (isAdmin ? `<button class="btn btn-sm btn-outline-danger del-resp" data-m="${r.matricule || r.agent_matricule || ''}"><i class="bi bi-x-lg"></i></button>` : '');
+      const mat = r.matricule || r.agent_matricule || '';
+      const label = `${r.prenom || ''} ${r.nom || ''} (${mat})${r.role ? ' - ' + r.role : ''}`;
+      const link = mat ? `<a href="/agent-view.html?matricule=${encodeURIComponent(mat)}" class="text-decoration-none text-reset">${label}</a>` : label;
+      li.innerHTML = `<span>${link}</span>` +
+                     (isAdmin ? `<button class="btn btn-sm btn-outline-danger del-resp" data-m="${mat}"><i class="bi bi-x-lg"></i></button>` : '');
       responsablesList.appendChild(li);
     });
   }
@@ -1146,11 +1151,13 @@ document.addEventListener('DOMContentLoaded', async function () {
         inlineAg.textContent = 'Aucun agent';
         return;
       }
+      const link = (mat) => `<a href="/agent-view.html?matricule=${encodeURIComponent(mat)}" class="text-decoration-none text-reset">${mat}</a>`;
       inlineAg.innerHTML = agents.map(a => {
         const label = a.agent_matricule || a.matricule || a.nom || 'Agent';
+        const anchor = link(label);
         return isAdmin
-          ? `<span class="badge bg-light text-dark me-1 d-inline-flex align-items-center gap-1">${label}<button class="btn btn-xs btn-link p-0 text-dark del-agent" data-m="${label}"><i class="bi bi-x-lg"></i></button></span>`
-          : `<span class="badge bg-light text-dark me-1">${label}</span>`;
+          ? `<span class="badge bg-light text-dark me-1 d-inline-flex align-items-center gap-1">${anchor}<button class="btn btn-xs btn-link p-0 text-dark del-agent" data-m="${label}"><i class="bi bi-x-lg"></i></button></span>`
+          : `<a class="badge bg-light text-dark me-1 text-decoration-none" href="/agent-view.html?matricule=${encodeURIComponent(label)}">${label}</a>`;
       }).join(' ');
     };
 
@@ -1164,8 +1171,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     agents.forEach(a => {
       const li = document.createElement('li');
       li.className = 'list-group-item d-flex justify-content-between align-items-center';
-      li.innerHTML = `<span>${a.prenom || ''} ${a.nom || ''} (${a.agent_matricule || a.matricule || ''})</span>` +
-                     (isAdmin ? `<button class="btn btn-sm btn-outline-danger del-agent" data-m="${a.agent_matricule || a.matricule || ''}"><i class="bi bi-x-lg"></i></button>` : '');
+      const mat = a.agent_matricule || a.matricule || '';
+      const label = `${a.prenom || ''} ${a.nom || ''} (${mat})`;
+      const link = mat ? `<a href="/agent-view.html?matricule=${encodeURIComponent(mat)}" class="text-decoration-none text-reset">${label}</a>` : label;
+      li.innerHTML = `<span>${link}</span>` +
+                     (isAdmin ? `<button class="btn btn-sm btn-outline-danger del-agent" data-m="${mat}"><i class="bi bi-x-lg"></i></button>` : '');
       agentsList.appendChild(li);
     });
   }
