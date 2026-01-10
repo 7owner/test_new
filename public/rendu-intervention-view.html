@@ -484,6 +484,7 @@
                 kind: 'image',
                 url: `/api/images/${img.id}/view`,
                 nom_fichier: img.nom_fichier,
+                titre: img.titre || img.nom_fichier,
                 commentaire_image: img.commentaire_image,
                 type: 'Image'
             });
@@ -494,6 +495,7 @@
                 kind: detectKind(doc.type_mime, doc.nom_fichier),
                 url: `/api/documents/${doc.id}/view`,
                 nom_fichier: doc.nom_fichier,
+                titre: doc.titre || doc.nom_fichier,
                 commentaire_image: doc.nature || 'Document',
                 type: 'Document'
             });
@@ -546,7 +548,7 @@
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <div class="badge bg-primary badge-source">${att.type}</div>
                     </div>
-                    <div class="fw-semibold">${att.nom_fichier || 'Fichier'}</div>
+                    <div class="fw-semibold">${att.titre || att.nom_fichier || 'Fichier'}</div>
                     <div class="attachment-comment">${marked.parse(att.commentaire_image || 'Aucun commentaire')}</div>
                 `;
                 card.append(prev, info);

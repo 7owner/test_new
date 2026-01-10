@@ -381,7 +381,7 @@
         const att = attachments[idx];
         if (!att || !attModal) return;
         if (attFilenameDisplay) attFilenameDisplay.textContent = att.nom_fichier || '(fichier)';
-        if (attTitleInput) attTitleInput.value = att.titre || '';
+        if (attTitleInput) attTitleInput.value = att.titre || att.nom_fichier || '';
         if (attCommentInput) attCommentInput.value = att.commentaire_image || '';
         if (attFileInput) attFileInput.value = '';
         attModal.show();
