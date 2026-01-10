@@ -373,6 +373,9 @@
       contrat: 'Non renseigné',
       intervention: 'Rendu intervention',
     };
+    let ticketIdRef = null;
+    let siteIdRef = null;
+    let associationIdRef = null;
 
     const grid = document.getElementById('attachments-grid');
     const countBadge = document.getElementById('attachments-count');
@@ -746,6 +749,7 @@
         if (rel.association.client_nom) meta.client = rel.association.client_nom;
         if (rel.association.contrat_titre) meta.contrat = rel.association.contrat_titre;
         if (rel.association.contrat && rel.association.contrat.titre) meta.contrat = rel.association.contrat.titre;
+        if (rel.association.id) associationIdRef = rel.association.id;
       }
 
       // Fallback direct via l'intervention si dispo
@@ -773,6 +777,8 @@
           meta.contrat = ticketData.association.contrat_titre || meta.contrat;
         }
       }
+      ticketIdRef = ticketId;
+      siteIdRef = siteId;
 
       // Charger images et documents
       const loadItems = async (type, id, endpoint) => {
@@ -909,10 +915,13 @@
         }));
         const resumeMd = (mainResumeEditor ? mainResumeEditor.value() : (document.getElementById('resume')?.value || '')).trim();
         const resumeHtml = resumeMd ? (typeof marked !== 'undefined' ? marked.parse(resumeMd) : resumeMd) : '';
-        const metaForReport = {
-          ...meta,
-          dateStr: new Date().toLocaleDateString('fr-FR'),
-        };
+        const metaForReport = await window.fetchInterventionMeta({
+          interventionId,
+          ticketId: ticketIdRef,
+          siteId: siteIdRef,
+          token
+        });
+        metaForReport.dateStr = new Date().toLocaleDateString('fr-FR');
         const html = await window.buildInterventionReportHTML({
           meta: metaForReport,
           images,

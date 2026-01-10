@@ -102,4 +102,69 @@
   }
 
   window.buildInterventionReportHTML = buildInterventionReportHTML;
+  // Helper optionnel pour enrichir les libellés à partir des API
+  async function fetchInterventionMeta({ interventionId, ticketId, siteId, token }) {
+    const safeMeta = {
+      client: 'Non renseigné',
+      site: 'Non renseigné',
+      contrat: 'Non renseigné',
+      intervention: interventionId || 'Rendu intervention',
+    };
+
+    const fetchJSON = async (url) => {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(url, { headers, credentials: 'same-origin' });
+      if (!res.ok) return null;
+      return res.json();
+    };
+
+    try {
+      if (interventionId) {
+        const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
+        if (rel?.ticket) {
+          ticketId = ticketId || rel.ticket.id || rel.ticket.ticket_id;
+          siteId = siteId || rel.ticket.site_id;
+          safeMeta.client = rel.ticket.nom_client || safeMeta.client;
+          safeMeta.site = rel.ticket.nom_site || safeMeta.site;
+          safeMeta.intervention = rel.ticket.titre || safeMeta.intervention;
+          safeMeta.contrat = rel.ticket.contrat_titre || safeMeta.contrat;
+        }
+        if (rel?.site?.nom_site) safeMeta.site = rel.site.nom_site;
+        if (rel?.intervention?.titre) safeMeta.intervention = rel.intervention.titre;
+        if (rel?.contrat?.titre) safeMeta.contrat = rel.contrat.titre;
+        if (rel?.association) {
+          safeMeta.client = rel.association.client_nom || safeMeta.client;
+          safeMeta.contrat = rel.association.contrat_titre || safeMeta.contrat;
+        }
+      }
+
+      if (ticketId) {
+        const rel = await fetchJSON(`/api/tickets/${ticketId}/relations`);
+        if (rel?.ticket) {
+          safeMeta.client = rel.ticket.nom_client || safeMeta.client;
+          safeMeta.site = rel.ticket.nom_site || safeMeta.site;
+          safeMeta.intervention = rel.ticket.titre || safeMeta.intervention;
+          safeMeta.contrat = rel.ticket.contrat_titre || safeMeta.contrat;
+        }
+        if (rel?.association) {
+          safeMeta.client = rel.association.client_nom || safeMeta.client;
+          safeMeta.contrat = rel.association.contrat_titre || safeMeta.contrat;
+        }
+      }
+
+      if (siteId && (safeMeta.site === 'Non renseigné' || safeMeta.client === 'Non renseigné')) {
+        const site = await fetchJSON(`/api/sites/${siteId}`);
+        if (site) {
+          if (site.nom_site) safeMeta.site = site.nom_site;
+          if (site.nom_client) safeMeta.client = site.nom_client;
+        }
+      }
+    } catch (_) {
+      // on garde les valeurs existantes en cas d'erreur
+    }
+
+    return safeMeta;
+  }
+
+  window.fetchInterventionMeta = fetchInterventionMeta;
 })();
