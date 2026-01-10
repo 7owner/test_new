@@ -151,6 +151,14 @@
       let printTemplate = null;
       let ticketIdRef = null;
       let siteIdRef = null;
+      const loadHelperScript = () => new Promise((resolve, reject) => {
+        if (window.fetchInterventionMeta) return resolve();
+        const s = document.createElement('script');
+        s.src = '/js/rapport-intervention.js';
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('Impossible de charger rapport-intervention.js'));
+        document.head.appendChild(s);
+      });
 
       const fetchJSON = async (url) => {
         const response = await fetch(url, { headers });
@@ -171,6 +179,10 @@
       const buildAndDownloadHtml = async () => {
         if (!currentRendu) return alert('Rendu non chargé.');
         try {
+          await loadHelperScript();
+          if (!window.fetchInterventionMeta || !window.buildInterventionReportHTML) {
+            throw new Error('Helper rapport indisponible');
+          }
           const resumeHtml = currentRendu.resume ? marked.parse(currentRendu.resume) : '';
           // Préparer les pièces jointes (images converties en data URL)
           const imgs = attachments
