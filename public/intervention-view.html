@@ -1265,9 +1265,14 @@ document.addEventListener('DOMContentLoaded', async function () {
             <div class="markdown-body small mb-2">${renderMd(resumeSnippet || '*Aucun résumé.*')}</div>
             <div class="text-muted small">${attachmentsCount} pièce(s) jointe(s)</div>
           </div>
-          <a href="rendu-intervention-view.html?id=${r.id}" class="btn btn-sm btn-outline-primary ms-3">
-            <i class="bi bi-eye me-1"></i>Voir
-          </a>
+          <div class="d-flex flex-column gap-2 ms-3">
+            <a href="rendu-intervention-view.html?id=${r.id}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-eye me-1"></i>Voir
+            </a>
+            <a href="rendu-intervention-edit.html?id=${r.id}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-pencil me-1"></i>Éditer
+            </a>
+          </div>
         </div>`;
       rendusList.appendChild(card);
     });
