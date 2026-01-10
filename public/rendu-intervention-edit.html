@@ -299,6 +299,7 @@
             attachments[currentEditIndex].commentaire_image = newComment;
             if (attTitleInput?.value) {
               attachments[currentEditIndex].titre = attTitleInput.value;
+              attachments[currentEditIndex].nom_fichier = attTitleInput.value;
             }
             // Patch meta côté API si on dispose d'un id
             const target = attachments[currentEditIndex];
