@@ -271,11 +271,7 @@
             <!-- Colonne droite : Commentaire -->
             <div class="col-md-7">
               <div class="mb-3">
-                <label class="form-label fw-bold">Nom du fichier</label>
-                <div class="form-control bg-light" id="edit-filename" aria-label="Nom du fichier" readonly></div>
-              </div>
-              <div class="mb-3">
-                <label class="form-label fw-bold">Titre de la pièce (facultatif)</label>
+                <label class="form-label fw-bold">Titre / Nom du fichier</label>
                 <input type="text" class="form-control" id="edit-title" placeholder="Ex: Dalle GTB couloir">
               </div>
               <div class="mb-3">
@@ -640,8 +636,7 @@
       }
 
   // Remplir le modal
-  document.getElementById('edit-filename').textContent = att.nom_fichier || '(fichier)';
-  document.getElementById('edit-title').value = att.titre || '';
+  document.getElementById('edit-title').value = att.titre || att.nom_fichier || '';
   document.getElementById('edit-comment').value = att.commentaire_image || '';
       
       // Aperçu
@@ -681,6 +676,7 @@
     
     const titleVal = document.getElementById('edit-title').value.trim();
     att.titre = titleVal;
+    if (titleVal) att.nom_fichier = titleVal;
     att.commentaire_image = document.getElementById('edit-comment').value;
     
     const fileInput = document.getElementById('edit-file-input');
