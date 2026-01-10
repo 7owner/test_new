@@ -556,7 +556,7 @@
       const kind = sourceKind?.value || '';
 
       const filtered = attachments.filter(att => {
-        const txt = `${att.nom_fichier||''} ${att.commentaire_image||''}`.toLowerCase();
+        const txt = `${att.titre||att.nom_fichier||''} ${att.commentaire_image||''}`.toLowerCase();
         const matchTerm = !term || txt.includes(term);
         const matchSrc = !src || att.type === src;
         const matchKind = !kind 
@@ -907,12 +907,15 @@
               await fetch(endpoint + id, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({
-                  titre: titre || undefined,
-                  nom_fichier: undefined,
-                  commentaire_image: commentaire || undefined,
-                  nature: kind === 'doc' ? (commentaire || undefined) : undefined
-                })
+                body: JSON.stringify(kind === 'doc'
+                  ? {
+                      titre: titre || undefined,
+                      commentaire: commentaire || undefined
+                    }
+                  : {
+                      titre: titre || undefined,
+                      commentaire_image: commentaire || undefined
+                    })
               });
             } catch (_) { /* silencieux */ }
           };

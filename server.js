@@ -830,7 +830,7 @@ app.get('/api/documents/:id', authenticateToken, async (req, res) => {
 // Upload document via JSON base64 and save to disk
 app.post('/api/documents', authenticateToken, async (req, res) => {
   try {
-    const { cible_type, cible_id, nom_fichier, type_mime, base64, auteur_matricule } = req.body || {};
+    const { cible_type, cible_id, nom_fichier, type_mime, base64, auteur_matricule, titre, commentaire } = req.body || {};
     let { nature } = req.body || {}; // Keep it mutable
 
     if (!cible_type || !cible_id || !nom_fichier) {
@@ -879,9 +879,9 @@ app.post('/api/documents', authenticateToken, async (req, res) => {
       chemin_fichier = relPath.replace(/\\/g, '/');
     }
     const result = await pool.query(
-      `INSERT INTO documents_repertoire (cible_type, cible_id, nature, nom_fichier, type_mime, taille_octets, chemin_fichier, checksum_sha256, auteur_matricule)
-       VALUES ($1,$2,$3::doc_nature,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [cible_type, cible_id, nature, nom_fichier, type_mime || null, taille_octets, chemin_fichier, checksum_sha256, auteur_matricule || null]
+      `INSERT INTO documents_repertoire (cible_type, cible_id, nature, nom_fichier, type_mime, taille_octets, chemin_fichier, checksum_sha256, auteur_matricule, titre, commentaire)
+       VALUES ($1,$2,$3::doc_nature,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+      [cible_type, cible_id, nature, nom_fichier, type_mime || null, taille_octets, chemin_fichier, checksum_sha256, auteur_matricule || null, titre || null, commentaire || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -893,11 +893,11 @@ app.post('/api/documents', authenticateToken, async (req, res) => {
 // Update document metadata (no file move)
 app.put('/api/documents/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
-  const { cible_type, cible_id, nature, nom_fichier, type_mime } = req.body;
+  const { cible_type, cible_id, nature, nom_fichier, type_mime, titre, commentaire } = req.body;
   try {
     const result = await pool.query(
-      'UPDATE documents_repertoire SET cible_type=$1, cible_id=$2, nature=$3, nom_fichier=$4, type_mime=$5 WHERE id=$6 RETURNING *',
-      [cible_type, cible_id, nature, nom_fichier, type_mime || null, id]
+      'UPDATE documents_repertoire SET cible_type=$1, cible_id=$2, nature=$3, nom_fichier=$4, type_mime=$5, titre=COALESCE($6,titre), commentaire=COALESCE($7,commentaire) WHERE id=$8 RETURNING *',
+      [cible_type, cible_id, nature, nom_fichier, type_mime || null, titre || null, commentaire || null, id]
     );
     if (!result.rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);
@@ -4272,11 +4272,14 @@ app.get('/api/documents', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/documents', authenticateToken, async (req, res) => {
-    const { nom_fichier, cible_type, cible_id, nature, type_mime } = req.body;
+    // Variante simplifiée (utilisée par certaines pages legacy) avec enregistrement des champs titre/commentaire
+    const { nom_fichier, cible_type, cible_id, nature, type_mime, titre, commentaire } = req.body;
     try {
         const result = await pool.query(
-            'INSERT INTO documents_repertoire (nom_fichier, cible_type, cible_id, nature, type_mime) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [nom_fichier, cible_type, cible_id, nature, type_mime]
+            `INSERT INTO documents_repertoire (nom_fichier, cible_type, cible_id, nature, type_mime, titre, commentaire)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             RETURNING *`,
+            [nom_fichier, cible_type, cible_id, nature || 'Document', type_mime || null, titre || null, commentaire || null]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -4286,12 +4289,21 @@ app.post('/api/documents', authenticateToken, async (req, res) => {
 });
 
 app.put('/api/documents/:id', authenticateToken, async (req, res) => {
+    // Variante legacy d'update en incluant titre/commentaire
     const { id } = req.params;
-    const { nom_fichier, cible_type, cible_id, nature, type_mime } = req.body;
+    const { nom_fichier, cible_type, cible_id, nature, type_mime, titre, commentaire } = req.body;
     try {
         const result = await pool.query(
-            'UPDATE documents_repertoire SET nom_fichier = $1, cible_type = $2, cible_id = $3, nature = $4, type_mime = $5 WHERE id = $6 RETURNING *',
-            [nom_fichier, cible_type, cible_id, nature, type_mime, id]
+            `UPDATE documents_repertoire
+             SET nom_fichier = $1,
+                 cible_type = $2,
+                 cible_id = $3,
+                 nature = $4,
+                 type_mime = $5,
+                 titre = COALESCE($6, titre),
+                 commentaire = COALESCE($7, commentaire)
+             WHERE id = $8 RETURNING *`,
+            [nom_fichier, cible_type, cible_id, nature, type_mime, titre, commentaire, id]
         );
         if (result.rows.length > 0) {
             res.json(result.rows[0]);

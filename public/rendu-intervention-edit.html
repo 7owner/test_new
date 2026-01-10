@@ -250,7 +250,8 @@
           payload.commentaire_image = commentaire || '';
           if (titre) payload.titre = titre;
         } else {
-          payload.nature = commentaire || file.type || 'Document';
+          payload.nature = file.type || 'Document';
+          payload.commentaire = commentaire || '';
           if (titre) payload.titre = titre;
         }
 
@@ -315,8 +316,8 @@
                     : {
                         titre: target.titre || target.nom_fichier,
                         nom_fichier: target.nom_fichier,
-                        nature: target.commentaire_image || target.nature || 'Document',
-                        commentaire_image: target.commentaire_image
+                        nature: target.nature || 'Document',
+                        commentaire: target.commentaire_image
                       })
                 });
               } catch (_) {
