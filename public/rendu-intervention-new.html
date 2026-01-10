@@ -157,9 +157,6 @@
         <button class="btn btn-outline-primary btn-sm" id="download-html-btn">
           <i class="bi bi-download"></i> Télécharger HTML
         </button>
-        <button class="btn btn-primary btn-sm" onclick="window.print()">
-          <i class="bi bi-printer"></i> Imprimer
-        </button>
       </div>
     </div>
 
@@ -167,15 +164,6 @@
     <div class="card mb-4">
       <div class="card-body">
         <form id="rendu-form" novalidate>
-          <!-- Valeur -->
-          <div class="mb-4">
-            <label class="form-label fw-bold">Valeur de l'intervention</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-currency-euro"></i></span>
-              <input type="text" class="form-control" id="valeur" placeholder="Ex: 1500">
-            </div>
-          </div>
-
           <!-- Résumé (Markdown + preview) -->
           <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -407,6 +395,8 @@
     const filterSearch = document.getElementById('filter-search');
     const filterSource = document.getElementById('filter-source');
     const filterKind = document.getElementById('filter-kind');
+    const resumeInput = document.getElementById('resume');
+    const resumePreview = document.getElementById('resume-preview');
     const sourceSearch = document.getElementById('source-search');
     const sourceFilter = document.getElementById('source-filter');
     const sourceKind = document.getElementById('source-kind');
@@ -437,6 +427,15 @@
         });
       }
     };
+
+    // Preview du résumé principal
+    const updateResumePreview = () => {
+      if (!resumePreview) return;
+      const txt = resumeInput?.value || '';
+      resumePreview.innerHTML = txt ? (typeof marked !== 'undefined' ? marked.parse(txt) : txt) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+    };
+    resumeInput?.addEventListener('input', updateResumePreview);
+    updateResumePreview();
 
     // Fonction pour créer une card de pièce jointe
     const createAttachmentCard = (att, index) => {
@@ -873,28 +872,19 @@
       e.preventDefault();
       
       const fd = new FormData();
-      fd.append('valeur', document.getElementById('valeur').value || '');
       
-      // Construire le résumé complet avec toutes les pièces jointes
-      let fullResume = '## Pièces jointes\n\n';
+      // Résumé simple (sans concaténer les pièces jointes dans le texte)
+      const resumeText = (resumeInput?.value || '').trim();
+      fd.append('resume', resumeText);
       
-      attachments.forEach((att, idx) => {
-        if (att.commentaire_image) {
-          fullResume += `### ${att.nom_fichier}\n${att.commentaire_image}\n\n`;
-        }
-        if (att.note) {
-          fullResume += `${att.note}\n\n`;
-        }
-        
-        // Ajouter les nouveaux fichiers
+      // Ajouter uniquement les nouveaux fichiers et leurs métadonnées
+      attachments.forEach((att) => {
         if (att.isNew && att.file) {
           fd.append('image_files[]', att.file);
           fd.append('image_commentaires[]', att.commentaire_image || '');
           fd.append('image_notes[]', att.note || '');
         }
       });
-      
-      fd.append('resume', fullResume);
 
       try {
         const res = await fetch(`/api/interventions/${interventionId}/rendus`, {

@@ -38,27 +38,13 @@
         <button class="btn btn-outline-success btn-sm" id="download-html-btn"><i class="bi bi-download"></i> Télécharger (HTML)</button>
         <button class="btn btn-outline-primary btn-sm" id="edit-meta-btn"><i class="bi bi-pencil"></i> Modifier</button>
         <button class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
-        <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer</button>
       </div>
     </div>
 
-    <div class="row g-3 mb-3">
-      <div class="col-lg-4">
-        <div class="card">
-          <div class="card-body">
-            <h6 class="text-uppercase text-muted small mb-2">Valeur</h6>
-            <div id="view_valeur" class="fs-5 fw-semibold">—</div>
-            <div class="text-muted small">Montant estimé</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-8">
-        <div class="card h-100">
-          <div class="card-body">
-            <h6 class="text-uppercase text-muted small mb-2">Résumé</h6>
-            <div id="view_resume" class="small">—</div>
-          </div>
-        </div>
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="text-uppercase text-muted small mb-2">Résumé</h6>
+        <div id="view_resume" class="small">—</div>
       </div>
     </div>
 
@@ -95,14 +81,10 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Modifier la valeur et le résumé</h5>
+          <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Modifier le résumé</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label fw-semibold" for="edit-valeur-input">Valeur</label>
-            <input type="text" class="form-control" id="edit-valeur-input" placeholder="Ex: 1500€">
-          </div>
           <div class="row g-3">
               <div class="col-lg-6">
                 <label class="form-label fw-semibold" for="edit-resume-input">Résumé (Markdown)</label>
@@ -147,7 +129,6 @@
       const grid = document.getElementById('attachments-grid');
       const countBadge = document.getElementById('attachments-count');
       const resumeEl = document.getElementById('view_resume');
-      const valeurEl = document.getElementById('view_valeur');
       const interEl = document.getElementById('intervention-id');
       const backInterBtn = document.getElementById('back-to-intervention-btn');
       const newRenduBtn = document.getElementById('open-rendu-new-btn');
@@ -158,7 +139,6 @@
       const messagesGrid = document.getElementById('messages-grid');
       const editModalEl = document.getElementById('editMetaModal');
       const editModal = new bootstrap.Modal(editModalEl);
-      const editValeurInput = document.getElementById('edit-valeur-input');
       const editResumeInput = document.getElementById('edit-resume-input');
       const editResumePreview = document.getElementById('edit-resume-preview');
       const downloadBtn = document.getElementById('download-html-btn');
@@ -199,7 +179,6 @@
           const titre = currentRendu.titre || `Rendu intervention #${currentRendu.intervention_id || renduId}`;
           doc.getElementById('p-title')?.textContent = titre;
           doc.getElementById('p-meta')?.textContent = `Intervention #${currentRendu.intervention_id || '-'} • Rendu #${currentRendu.id || renduId}`;
-          doc.getElementById('p-valeur')?.textContent = `Valeur : ${currentRendu.valeur || 'Non spécifiée'}`;
           const resumeHtml = currentRendu.resume ? marked.parse(currentRendu.resume) : '<em>Aucun résumé.</em>';
           const resumeBody = doc.getElementById('p-resume-body');
           if (resumeBody) resumeBody.innerHTML = resumeHtml;
@@ -259,11 +238,10 @@
 
 
         // Populate summary cards
-        const updateDisplay = (valeur, resume) => {
-          valeurEl.textContent = valeur || 'Non spécifiée';
+        const updateDisplay = (resume) => {
           resumeEl.innerHTML = resume ? marked.parse(resume) : '<span class="text-muted">Aucun résumé.</span>';
         };
-        updateDisplay(rendu.valeur, rendu.resume);
+        updateDisplay(rendu.resume);
 
         const updatePreview = () => {
           const text = editResumeEditor ? editResumeEditor.value() : (editResumeInput.value || '');
@@ -285,7 +263,6 @@
               });
               editResumeEditor.codemirror.on('change', updatePreview);
             }
-            editValeurInput.value = currentRendu.valeur || '';
             if (editResumeEditor) {
               editResumeEditor.value(currentRendu.resume || '');
             } else {
@@ -302,7 +279,6 @@
           if (saving) return;
           saving = true;
           const payload = {
-            valeur: editValeurInput.value.trim(),
             resume: editResumeEditor ? editResumeEditor.value() : (editResumeInput.value || '')
           };
           try {
@@ -317,7 +293,7 @@
             }
             const data = await resp.json().catch(() => payload);
             currentRendu = data.rendu || { ...currentRendu, ...payload };
-            updateDisplay(currentRendu.valeur, currentRendu.resume);
+            updateDisplay(currentRendu.resume);
             editModal.hide();
           } catch (err) {
             alert(`Erreur lors de la mise à jour : ${err.message}`);
