@@ -103,7 +103,7 @@
 
   window.buildInterventionReportHTML = buildInterventionReportHTML;
   // Helper optionnel pour enrichir les libellés à partir des API
-  async function fetchInterventionMeta({ interventionId, ticketId, siteId, token }) {
+  async function fetchInterventionMeta({ interventionId, ticketId, siteId, associationId, token }) {
     const safeMeta = {
       client: 'Non renseigné',
       site: 'Non renseigné',
@@ -120,10 +120,20 @@
 
     try {
       if (interventionId) {
+        // 1) Essayer l'endpoint intervention direct pour récupérer ticket/site/titre
+        const interData = await fetchJSON(`/api/interventions/${interventionId}`);
+        if (interData) {
+          if (interData.titre) safeMeta.intervention = interData.titre;
+          if (interData.ticket_id) ticketId = ticketId || interData.ticket_id;
+          if (interData.site_id) siteId = siteId || interData.site_id;
+          if (interData.association_id) associationId = associationId || interData.association_id;
+        }
+        // 2) Relations intervention
         const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
         if (rel?.ticket) {
           ticketId = ticketId || rel.ticket.id || rel.ticket.ticket_id;
           siteId = siteId || rel.ticket.site_id;
+          associationId = associationId || rel.ticket.association_id;
           safeMeta.client = rel.ticket.nom_client || safeMeta.client;
           safeMeta.site = rel.ticket.nom_site || safeMeta.site;
           safeMeta.intervention = rel.ticket.titre || safeMeta.intervention;
@@ -133,6 +143,7 @@
         if (rel?.intervention?.titre) safeMeta.intervention = rel.intervention.titre;
         if (rel?.contrat?.titre) safeMeta.contrat = rel.contrat.titre;
         if (rel?.association) {
+          associationId = associationId || rel.association.id;
           safeMeta.client = rel.association.client_nom || safeMeta.client;
           safeMeta.contrat = rel.association.contrat_titre || safeMeta.contrat;
         }
@@ -145,8 +156,11 @@
           safeMeta.site = rel.ticket.nom_site || safeMeta.site;
           safeMeta.intervention = rel.ticket.titre || safeMeta.intervention;
           safeMeta.contrat = rel.ticket.contrat_titre || safeMeta.contrat;
+          if (!siteId && rel.ticket.site_id) siteId = rel.ticket.site_id;
+          if (!associationId && rel.ticket.association_id) associationId = rel.ticket.association_id;
         }
         if (rel?.association) {
+          associationId = associationId || rel.association.id;
           safeMeta.client = rel.association.client_nom || safeMeta.client;
           safeMeta.contrat = rel.association.contrat_titre || safeMeta.contrat;
         }
@@ -157,6 +171,15 @@
         if (site) {
           if (site.nom_site) safeMeta.site = site.nom_site;
           if (site.nom_client) safeMeta.client = site.nom_client;
+        }
+      }
+
+      if (associationId && (safeMeta.client === 'Non renseigné' || safeMeta.contrat === 'Non renseigné')) {
+        const asso = await fetchJSON(`/api/associations/${associationId}`);
+        if (asso) {
+          if (asso.nom) safeMeta.client = asso.nom;
+          if (asso.client_nom) safeMeta.client = asso.client_nom;
+          if (asso.contrat_titre) safeMeta.contrat = asso.contrat_titre;
         }
       }
     } catch (_) {

@@ -149,6 +149,8 @@
       let attachments = [];
       let messages = [];
       let printTemplate = null;
+      let ticketIdRef = null;
+      let siteIdRef = null;
 
       const fetchJSON = async (url) => {
         const response = await fetch(url, { headers });
@@ -171,22 +173,17 @@
         try {
           const resumeHtml = currentRendu.resume ? marked.parse(currentRendu.resume) : '';
           // Préparer les pièces jointes (images converties en data URL)
-          const imgs = [];
-          for (const att of attachments) {
-            if (att.kind === 'image') {
-              imgs.push({
-                ...att,
-                url: att.url || att.previewUrl || ''
-              });
-            }
-          }
-          const metaReport = {
-            client: currentRendu.client_nom || 'Non renseigné',
-            site: currentRendu.site_nom || 'Non renseigné',
-            contrat: currentRendu.contrat_titre || 'Non renseigné',
-            intervention: currentRendu.intervention_titre || currentRendu.intervention_id || `#${renduId}`,
-            dateStr: new Date().toLocaleDateString('fr-FR')
-          };
+          const imgs = attachments
+            .filter(att => att.kind === 'image')
+            .map(att => ({ ...att, url: att.url || att.previewUrl || '' }));
+
+          const metaReport = await window.fetchInterventionMeta({
+            interventionId: currentRendu.intervention_id || renduId,
+            ticketId: ticketIdRef,
+            siteId: siteIdRef,
+            token
+          });
+          metaReport.dateStr = new Date().toLocaleDateString('fr-FR');
           const htmlString = await window.buildInterventionReportHTML({
             meta: metaReport,
             images: imgs,
@@ -287,6 +284,10 @@
             saving = false;
           }
         });
+
+        // IDs for meta enrichment
+        ticketIdRef = rendu.ticket_id || null;
+        siteIdRef = rendu.site_id || null;
 
         // Process and render attachments
         (images || []).forEach(img => {
