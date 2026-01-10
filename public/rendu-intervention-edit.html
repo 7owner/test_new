@@ -133,6 +133,7 @@
           </div>
         </div>
         <div class="modal-footer">
+          <button type="button" class="btn btn-danger me-auto" id="delete-att-btn"><i class="bi bi-trash"></i> Supprimer</button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
           <button type="button" class="btn btn-primary" id="save-att-btn"><i class="bi bi-check"></i> Enregistrer</button>
         </div>
@@ -170,6 +171,7 @@
       const attCommentInput = document.getElementById('att-comment-input');
       const attFileInput = document.getElementById('att-file-input');
       const saveAttBtn = document.getElementById('save-att-btn');
+      const deleteAttBtn = document.getElementById('delete-att-btn');
 
       let interventionId = null;
       let attachments = [];
@@ -313,6 +315,28 @@
             alert(`Échec de l'ajout du fichier: ${e.message}`);
           } finally {
             if (attFileInput) attFileInput.value = '';
+          }
+        });
+      }
+
+      // Suppression d'une pièce jointe
+      if (deleteAttBtn) {
+        deleteAttBtn.addEventListener('click', async () => {
+          if (currentEditIndex === null) return;
+          const att = attachments[currentEditIndex];
+          if (!att) return;
+          if (!confirm('Supprimer cette pièce jointe ?')) return;
+          try {
+            if (att.id) {
+              const endpoint = att.kind === 'image' ? '/api/images/' : '/api/documents/';
+              await fetch(endpoint + att.id, { method: 'DELETE', headers });
+            }
+            attachments.splice(currentEditIndex, 1);
+            refreshAttachments();
+            attModal?.hide();
+          } catch (err) {
+            console.error(err);
+            alert(`Échec de la suppression: ${err.message}`);
           }
         });
       }
