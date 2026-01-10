@@ -156,6 +156,19 @@
         if ((mime && mime.startsWith('image/')) || /\.(png|jpe?g|gif|webp|bmp)$/i.test(lowerName)) return 'image';
         return 'doc';
       };
+      // Nettoyer les pièces jointes orphelines (documents 404)
+      const validateAttachments = async (list) => {
+        const checks = await Promise.all(list.map(async (att) => {
+          if (att.url && att.kind === 'doc') {
+            try {
+              const res = await fetch(att.url, { method: 'HEAD', headers });
+              return res.ok;
+            } catch (_) { return false; }
+          }
+          return true;
+        }));
+        return list.filter((_, idx) => checks[idx]);
+      };
       const ensureReportHelpers = async () => {
         if (window.fetchInterventionMeta && window.buildInterventionReportHTML) return;
         // Inline fallback definitions if the external script n'est pas exécuté (ex: rendu injecté en modal)
@@ -503,7 +516,8 @@
               });
             }
         });
-        
+        attachments = await validateAttachments(attachments);
+
         countBadge.textContent = `${attachments.length} pièce(s)`;
         grid.innerHTML = '';
         if (!attachments.length) {

@@ -178,6 +178,20 @@
       let currentEditIndex = null;
       let mainResumeEditor = null;
 
+      // Vérifie qu'un lien /view répond (pour nettoyer les entrées orphelines 404)
+      const validateAttachments = async (list) => {
+        const checks = await Promise.all(list.map(async (att) => {
+          if (att.url && att.kind === 'doc') {
+            try {
+              const res = await fetch(att.url, { method: 'HEAD', headers });
+              return res.ok;
+            } catch (_) { return false; }
+          }
+          return true;
+        }));
+        return list.filter((_, idx) => checks[idx]);
+      };
+
       // Éditeur markdown (résumé détaillé)
       if (typeof EasyMDE !== 'undefined') {
         mainResumeEditor = new EasyMDE({
@@ -470,6 +484,7 @@
             type_mime: att.file_type || ''
           });
         });
+        attachments = await validateAttachments(attachments);
         refreshAttachments();
       };
 
