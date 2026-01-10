@@ -174,7 +174,6 @@
           const attHtml = attachments.length
             ? attachments.map(att => {
                 const comment = escapeHtml(att.commentaire_image || 'Aucun commentaire');
-                const noteHtml = att.note ? marked.parse(att.note) : '';
                 const preview = att.kind === 'image'
                   ? `<div style="margin:6px 0;"><img src="${att.url}" alt="${escapeHtml(att.nom_fichier || '')}" style="width:100%;border-radius:6px;"></div>`
                   : '';
@@ -184,7 +183,6 @@
                     <div style="font-size:12px;color:#666;">${escapeHtml(att.type || 'Pièce jointe')}</div>
                     ${preview}
                     <div style="margin:6px 0;">${comment}</div>
-                    ${noteHtml ? `<div style="margin:6px 0;">${noteHtml}</div>` : ''}
                     <div style="font-size:12px;"><a href="${att.url}" target="_blank" rel="noopener">Ouvrir</a></div>
                   </div>`;
               }).join('')
@@ -316,8 +314,7 @@
                 url: `/api/images/${img.id}/view`,
                 nom_fichier: img.nom_fichier,
                 commentaire_image: img.commentaire_image,
-                type: 'Image',
-                note: img.note || ''
+                type: 'Image'
             });
         });
 
@@ -327,8 +324,7 @@
                 url: `/api/documents/${doc.id}/view`,
                 nom_fichier: doc.nom_fichier,
                 commentaire_image: doc.nature || 'Document',
-                type: 'Document',
-                note: doc.note || ''
+                type: 'Document'
             });
         });
 
@@ -339,8 +335,7 @@
                 url: `/api/attachments/${msgAtt.id}/view`,
                 nom_fichier: msgAtt.file_name,
                 commentaire_image: `Pièce jointe du message: "${(msgAtt.message || '').substring(0, 50)}..."`,
-                type: 'Message',
-                note: msgAtt.note || msgAtt.message || ''
+                type: 'Message'
             });
             if (msgAtt.message) {
               messages.push({
@@ -381,7 +376,6 @@
                     </div>
                     <div class="fw-semibold">${att.nom_fichier || 'Fichier'}</div>
                     <div class="attachment-comment">${marked.parse(att.commentaire_image || 'Aucun commentaire')}</div>
-                    ${att.note ? `<div class="mt-2 small text-muted">Résumé : ${marked.parse(att.note)}</div>` : ''}
                 `;
                 card.append(prev, info);
                 col.append(card);

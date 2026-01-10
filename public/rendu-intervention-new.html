@@ -167,19 +167,14 @@
           <!-- Résumé (Markdown + preview) -->
           <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Résumé</h5>
-              <small class="text-muted">Markdown autorisé</small>
+              <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Résumé détaillé (Markdown)</h5>
+              <small class="text-muted">Utilisez Markdown pour un résumé détaillé</small>
             </div>
-            <div class="row g-3">
-              <div class="col-lg-6">
-                <textarea class="form-control" id="resume" rows="10" placeholder="Saisissez le résumé en Markdown..."></textarea>
-              </div>
-              <div class="col-lg-6">
-                <div class="border rounded p-3 bg-light" style="min-height: 240px;" id="resume-preview">
-                  <em class="text-muted">Le résumé apparaîtra ici...</em>
-                </div>
-              </div>
+            <textarea class="form-control" id="resume" rows="10" placeholder="Rédigez un résumé détaillé en Markdown..."></textarea>
+            <div class="border rounded p-3 bg-light mt-2" style="min-height: 200px;" id="resume-preview">
+              <em class="text-muted">Le résumé apparaîtra ici...</em>
             </div>
+            <div class="form-text">Prévisualisation du résumé</div>
           </div>
 
           <!-- Section Pièces jointes -->
@@ -194,7 +189,7 @@
             </p>
             <div class="row g-2 align-items-center mb-3">
               <div class="col-md-4">
-                <input type="text" class="form-control form-control-sm" id="filter-search" placeholder="Rechercher (nom, commentaire, note)...">
+                <input type="text" class="form-control form-control-sm" id="filter-search" placeholder="Rechercher (nom, commentaire)...">
               </div>
               <div class="col-md-4">
                 <select class="form-select form-select-sm" id="filter-source">
@@ -273,7 +268,7 @@
             </div>
           </div>
 
-            <!-- Colonne droite : Commentaire et résumé -->
+            <!-- Colonne droite : Commentaire -->
             <div class="col-md-7">
               <div class="mb-3">
                 <label class="form-label fw-bold">Titre de la pièce (facultatif)</label>
@@ -284,22 +279,6 @@
                 <textarea class="form-control" id="edit-comment" rows="4" 
                   placeholder="Ajoutez un commentaire sur cette pièce jointe..."></textarea>
                 <div class="form-text">Commentaire court visible sur la carte</div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label fw-bold">
-                  Résumé détaillé (Markdown)
-                  <i class="bi bi-info-circle text-muted" title="Pour les commentaires longs"></i>
-                </label>
-                <textarea id="edit-resume" class="form-control resume-editor"></textarea>
-                <div class="form-text">Utilisez Markdown pour un résumé détaillé (optionnel)</div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label fw-bold">Aperçu du résumé</label>
-                <div id="edit-resume-preview" class="border rounded p-3 bg-light" style="min-height: 100px;">
-                  <em class="text-muted">Le résumé apparaîtra ici...</em>
-                </div>
               </div>
             </div>
           </div>
@@ -385,8 +364,8 @@
     let attachments = [];
     let currentEditIndex = -1;
     let editModal = null;
-    let resumeEditor = null;
     let sourcesModal = null; // modal instance lazily created
+    let mainResumeEditor = null;
     let meta = {
       client: 'Non renseigné',
       site: 'Non renseigné',
@@ -407,39 +386,33 @@
     const sourcesList = document.getElementById('sources-list');
     const sourcesEmpty = document.getElementById('sources-empty');
 
-    // Initialisation de l'éditeur Markdown dans le modal
-    const initResumeEditor = () => {
-      if (!resumeEditor) {
-        resumeEditor = new EasyMDE({
-          element: document.getElementById('edit-resume'),
+    // Initialisation de l'éditeur Markdown principal (résumé)
+    const initMainResumeEditor = () => {
+      if (!mainResumeEditor && typeof EasyMDE !== 'undefined') {
+        mainResumeEditor = new EasyMDE({
+          element: document.getElementById('resume'),
           spellChecker: false,
           forceSync: true,
           placeholder: "Rédigez un résumé détaillé en Markdown...",
           toolbar: ["bold", "italic", "heading", "|", "quote", "unordered-list", "ordered-list", "|", "link", "preview"],
           status: false,
-          minHeight: "200px"
+          minHeight: "180px"
         });
-
-        resumeEditor.codemirror.on('change', () => {
-          const preview = document.getElementById('edit-resume-preview');
-          const text = resumeEditor.value();
-          if (text) {
-            preview.innerHTML = marked.parse(text);
-          } else {
-            preview.innerHTML = '<em class="text-muted">Le résumé apparaîtra ici...</em>';
-          }
+        mainResumeEditor.codemirror.on('change', () => {
+          const txt = mainResumeEditor.value();
+          resumePreview.innerHTML = txt ? marked.parse(txt) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
         });
       }
     };
 
     // Preview du résumé principal
+    // Preview du résumé principal (fallback si EasyMDE indisponible)
     const updateResumePreview = () => {
       if (!resumePreview) return;
-      const txt = resumeInput?.value || '';
+      const txt = mainResumeEditor ? mainResumeEditor.value() : (resumeInput?.value || '');
       resumePreview.innerHTML = txt ? (typeof marked !== 'undefined' ? marked.parse(txt) : txt) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
     };
     resumeInput?.addEventListener('input', updateResumePreview);
-    updateResumePreview();
 
     // Fonction pour créer une card de pièce jointe
     const createAttachmentCard = (att, index) => {
@@ -525,7 +498,7 @@
       const kind = filterKind?.value || '';
 
       const filtered = attachments.filter((att) => {
-        const txt = `${att.nom_fichier||''} ${att.commentaire_image||''} ${att.note||''}`.toLowerCase();
+        const txt = `${att.nom_fichier||''} ${att.commentaire_image||''}`.toLowerCase();
         const matchTerm = !term || txt.includes(term);
         const matchSrc = !src || att.type === src;
         const matchKind = !kind || att.kind === kind;
@@ -556,7 +529,6 @@
         cible_id: '',
         nom_fichier: 'Nouveau fichier',
         commentaire_image: '',
-        note: '',
         url: '',
         previewUrl: '',
         isNew: true
@@ -580,7 +552,7 @@
       const kind = sourceKind?.value || '';
 
       const filtered = attachments.filter(att => {
-        const txt = `${att.nom_fichier||''} ${att.commentaire_image||''} ${att.note||''}`.toLowerCase();
+        const txt = `${att.nom_fichier||''} ${att.commentaire_image||''}`.toLowerCase();
         const matchTerm = !term || txt.includes(term);
         const matchSrc = !src || att.type === src;
         const matchKind = !kind 
@@ -636,7 +608,6 @@
             const target = attachments[currentEditIndex];
             target.nom_fichier = att.nom_fichier;
             target.commentaire_image = att.commentaire_image;
-            target.note = att.note;
             target.type = att.type;
             target.kind = att.kind;
             target.url = att.url;
@@ -659,13 +630,10 @@
       if (!editModal) {
         editModal = new bootstrap.Modal(document.getElementById('editModal'));
       }
-      
-      initResumeEditor();
-      
+
       // Remplir le modal
       document.getElementById('edit-title').value = att.titre || att.nom_fichier || '';
       document.getElementById('edit-comment').value = att.commentaire_image || '';
-      resumeEditor.value(att.note || '');
       
       // Aperçu
       const previewContainer = document.getElementById('edit-preview');
@@ -708,7 +676,6 @@
         att.nom_fichier = titleVal;
       }
       att.commentaire_image = document.getElementById('edit-comment').value;
-      att.note = resumeEditor.value();
       
       const fileInput = document.getElementById('edit-file-input');
       if (fileInput.files.length > 0) {
@@ -805,7 +772,6 @@
               nom_fichier: item.nom_fichier,
               titre: item.nom_fichier,
               commentaire_image: item.commentaire_image || item.commentaire || '',
-              note: item.note || '',
               url: `/api/${endpoint}/${item.id}/view`,
               kind: endpoint === 'images' ? 'image' : 'doc'
             });
@@ -834,7 +800,6 @@
               nom_fichier: name,
               titre: name,
               commentaire_image: att.commentaire || m.message || '',
-              note: '',
               url,
               kind,
               isNew: false,
@@ -864,7 +829,6 @@
           nom_fichier: 'Exemple photo',
           titre: 'Exemple photo',
           commentaire_image: 'Commentaire exemple',
-          note: 'Résumé markdown exemple',
           url: 'data:image/svg+xml,%3Csvg%20width%3D%22400%22%20height%3D%22250%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20250%22%20preserveAspectRatio%3D%22none%22%3E%3Cdefs%3E%3Cstyle%20type%3D%22text%2Fcss%22%3E%23holder_16b2e1b10a5%20text%20%7B%20fill%3Argba(255%2C255%2C255%2C.75)%3Bfont-weight%3Anormal%3Bfont-family%3AHelvetica%2C%20monospace%3Bfont-size%3A20pt%20%7D%20%3C%2Fstyle%3E%3C%2Fdefs%3E%3Cg%20id%3D%22holder_16b2e1b10a5%22%3E%3Crect%20width%3D%22400%22%20height%3D%22250%22%20fill%3D%22%23868e96%22%3E%3C%2Frect%3E%3Cg%3E%3Ctext%20x%3D%22148.5%22%20y%3D%22133.6%22%3EPhoto%20exemple%3C%2Ftext%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E',
           kind: 'image'
         });
@@ -875,7 +839,6 @@
           nom_fichier: 'Doc exemple',
           titre: 'Doc exemple',
           commentaire_image: 'Description du document',
-          note: 'Note en markdown',
           url: 'https://example.com/doc.pdf',
           kind: 'doc'
         });
@@ -892,7 +855,7 @@
       const fd = new FormData();
       
       // Résumé simple (sans concaténer les pièces jointes dans le texte)
-      const resumeText = (resumeInput?.value || '').trim();
+      const resumeText = (mainResumeEditor ? mainResumeEditor.value() : (resumeInput?.value || '')).trim();
       fd.append('resume', resumeText);
       
       // Ajouter uniquement les nouveaux fichiers et leurs métadonnées
@@ -900,7 +863,6 @@
         if (att.isNew && att.file) {
           fd.append('image_files[]', att.file);
           fd.append('image_commentaires[]', att.commentaire_image || '');
-          fd.append('image_notes[]', att.note || '');
           fd.append('image_titles[]', att.titre || att.nom_fichier || '');
         }
       });
@@ -929,7 +891,7 @@
         // Inclure uniquement les images
         const images = attachments.filter(att => att.kind === 'image');
         const dateStr = new Date().toLocaleDateString('fr-FR');
-        const resumeText = (document.getElementById('resume')?.value || '').trim();
+        const resumeText = (mainResumeEditor ? mainResumeEditor.value() : (document.getElementById('resume')?.value || '')).trim();
         const commentText = resumeText || '—';
 
         // Construire le HTML (basé sur rapport-intervention-template)
@@ -940,7 +902,6 @@
               <img src="${img.url || ''}" alt="${img.nom_fichier || 'Image'}">
               <p><b>${img.nom_fichier || 'Image'}</b></p>
               <p>${img.commentaire_image || ''}</p>
-              <p>${img.note || ''}</p>
             </div>`;
         });
 
@@ -1013,6 +974,8 @@
     });
 
     // Initialisation
+    initMainResumeEditor();
+    updateResumePreview();
     loadAttachments();
 
     // Filtres
