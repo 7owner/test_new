@@ -735,6 +735,7 @@
         meta.client = rel.ticket.nom_client || rel.ticket.client_nom || rel.ticket.client || meta.client;
         meta.intervention = rel.ticket.titre || rel.ticket.ticket_titre || meta.intervention;
         meta.site = rel.ticket.nom_site || meta.site;
+        if (rel.ticket.contrat_titre) meta.contrat = rel.ticket.contrat_titre;
       }
       if (rel?.demande && !demandeId) demandeId = rel.demande.id || rel.demande.demande_id;
       if (rel?.site) siteId = siteId || rel.site.id || rel.site.site_id;
@@ -763,6 +764,14 @@
         const ticketData = await fetchJSON(`/api/tickets/${ticketId}`);
         if (ticketData?.demande_id && !demandeId) demandeId = ticketData.demande_id;
         if (ticketData?.site_id && !siteId) siteId = ticketData.site_id;
+        if (ticketData?.nom_client) meta.client = ticketData.nom_client;
+        if (ticketData?.nom_site) meta.site = ticketData.nom_site;
+        if (ticketData?.titre) meta.intervention = ticketData.titre;
+        if (ticketData?.contrat_titre) meta.contrat = ticketData.contrat_titre;
+        if (ticketData?.association) {
+          meta.client = ticketData.association.client_nom || meta.client;
+          meta.contrat = ticketData.association.contrat_titre || meta.contrat;
+        }
       }
 
       // Charger images et documents
