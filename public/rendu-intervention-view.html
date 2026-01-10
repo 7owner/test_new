@@ -7,6 +7,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+  <script src="/js/rapport-intervention.js"></script>
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=2"></script>
   <style>
@@ -168,50 +169,20 @@
       const buildAndDownloadHtml = async () => {
         if (!currentRendu) return alert('Rendu non chargé.');
         try {
-          const titre = currentRendu.titre || `Rendu intervention #${currentRendu.intervention_id || renduId}`;
-          const dateStr = new Date().toLocaleDateString('fr-FR');
-          const resumeHtml = currentRendu.resume ? marked.parse(currentRendu.resume) : '<em>Aucun résumé.</em>';
-          const attHtml = attachments.length
-            ? attachments.map(att => {
-                const comment = escapeHtml(att.commentaire_image || 'Aucun commentaire');
-                const preview = att.kind === 'image'
-                  ? `<div style="margin:6px 0;"><img src="${att.url}" alt="${escapeHtml(att.nom_fichier || '')}" style="width:100%;border-radius:6px;"></div>`
-                  : '';
-                return `
-                  <div style="border:1px solid #ddd;border-radius:6px;padding:10px;margin-bottom:10px;">
-                    <h4 style="margin:4px 0;">${escapeHtml(att.nom_fichier || 'Fichier')}</h4>
-                    <div style="font-size:12px;color:#666;">${escapeHtml(att.type || 'Pièce jointe')}</div>
-                    ${preview}
-                    <div style="margin:6px 0;">${comment}</div>
-                    <div style="font-size:12px;"><a href="${att.url}" target="_blank" rel="noopener">Ouvrir</a></div>
-                  </div>`;
-              }).join('')
-            : '<div style="color:#777;">Aucune pièce jointe.</div>';
-
-          const htmlString = `<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>${escapeHtml(titre)}</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 24px; background:#f9f9f9; }
-    .card { background:#fff; border-radius:12px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,0.08); margin-bottom:16px; }
-    h1 { font-size:20px; color:#2A61B3; margin:0 0 8px; }
-    .meta { color:#666; font-size:12px; margin-bottom:12px; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>${escapeHtml(titre)}</h1>
-    <div class="meta">Intervention #${escapeHtml(currentRendu.intervention_id || '-')} • Rendu #${escapeHtml(currentRendu.id || renduId)} • ${dateStr}</div>
-    <div>${resumeHtml}</div>
-  </div>
-  <div class="card">
-    <h2 style="margin:0 0 10px;">Pièces jointes</h2>
-    ${attHtml}
-  </div>
-</body>
-</html>`;
+          const resumeHtml = currentRendu.resume ? marked.parse(currentRendu.resume) : '';
+          const metaReport = {
+            client: currentRendu.client_nom || 'Non renseigné',
+            site: currentRendu.site_nom || 'Non renseigné',
+            contrat: currentRendu.contrat_titre || 'Non renseigné',
+            intervention: currentRendu.intervention_titre || currentRendu.intervention_id || `#${renduId}`,
+            dateStr: new Date().toLocaleDateString('fr-FR')
+          };
+          const htmlString = await window.buildInterventionReportHTML({
+            meta: metaReport,
+            images: attachments,
+            resumeHtml,
+            token
+          });
 
           const blob = new Blob([htmlString], { type: 'text/html' });
           const url = URL.createObjectURL(blob);
