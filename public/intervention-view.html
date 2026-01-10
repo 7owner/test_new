@@ -297,36 +297,17 @@
         <i class="bi bi-journal-text me-2"></i>Rendus d'intervention
       </h4>
       <div class="d-flex gap-2">
-        <button type="button" class="btn btn-light btn-sm" id="request-materiel-btn">
-          <i class="bi bi-box-seam me-1"></i>Demander du matériel
-        </button>
+        <button type="button" class="btn btn-sm btn-outline-light" id="toggle-rendus-btn"><i class="bi bi-eye"></i> Voir</button>
         <a href="#" class="btn btn-light btn-sm" id="add-rendu-btn">
           <i class="bi bi-plus-circle me-1"></i>Ajouter un rendu
         </a>
       </div>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body p-4" id="rendus-body">
       <div id="rendu-intervention-list"></div>
       <button type="button" class="btn btn-outline-gradient mt-3 d-none" id="show-materiels-btn">
         <i class="bi bi-box-seam me-1"></i> Voir matériels utilisés
       </button>
-    </div>
-  </div>
-
-  <!-- ✅ Commandes / matériels liés -->
-  <div class="main-card">
-    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <h4 class="mb-0 d-flex align-items-center">
-        <i class="bi bi-box-seam me-2"></i>Commandes matériel
-      </h4>
-      <div class="d-flex gap-2">
-        <button type="button" class="btn btn-light btn-sm" id="inline-request-materiel-btn">
-          <i class="bi bi-plus-circle me-1"></i>Demander du matériel
-        </button>
-      </div>
-    </div>
-    <div class="card-body p-4" id="materiels-inline-list">
-      <div class="text-muted">Chargement...</div>
     </div>
   </div>
 
@@ -377,13 +358,16 @@
 
   <!-- ✅ Documents associés -->
   <div class="main-card">
-    <div class="card-header-gradient d-flex justify-content-between align-items-center">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
       <span><i class="bi bi-folder2-open me-2"></i>Documents associés</span>
-      <button id="add-document-btn" class="btn btn-light btn-sm">
-        <i class="bi bi-plus-circle me-1"></i>Ajouter un document
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-light" id="toggle-docs-btn"><i class="bi bi-eye"></i> Voir</button>
+        <button id="add-document-btn" class="btn btn-light btn-sm">
+          <i class="bi bi-plus-circle me-1"></i>Ajouter un document
+        </button>
+      </div>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body p-4" id="docs-body">
       <div id="documents-list"></div>
     </div>
   </div>
@@ -556,7 +540,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const materielFilter = document.getElementById('materiel-filter');
 
   // New elements for material request modal
-  const requestMaterielBtn = document.getElementById('request-materiel-btn');
+  const requestMaterielBtn = document.getElementById('request-materiel-btn'); // removed button, kept for safety (null)
   const requestMaterielModalEl = document.getElementById('requestMaterielModal');
   const requestMaterielModalInstance = requestMaterielModalEl ? new bootstrap.Modal(requestMaterielModalEl) : null;
   const requestMaterielSearch = document.getElementById('request-materiel-search');
@@ -565,7 +549,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const requestMaterielEmpty = document.getElementById('request-materiel-empty');
   const addSelectedMaterielsBtn = document.getElementById('add-selected-materiels-btn');
   const materielsInlineList = document.getElementById('materiels-inline-list');
-  const inlineRequestBtn = document.getElementById('inline-request-materiel-btn');
+  const inlineRequestBtn = document.getElementById('inline-request-materiel-btn'); // removed card, will be null
   const inlineResp = document.getElementById('inline-responsables');
   const inlineAg = document.getElementById('inline-agents');
   const inlineAddResp = document.getElementById('inline-add-resp');
@@ -596,6 +580,10 @@ document.addEventListener('DOMContentLoaded', async function () {
   const factureTotalHtEl = document.getElementById('facture-total-ht') || null;
   const factureTotalTvaEl = document.getElementById('facture-total-tva') || null;
   const factureTotalTtcEl = document.getElementById('facture-total-ttc') || null;
+  const rendusBody = document.getElementById('rendus-body');
+  const rendusToggleBtn = document.getElementById('toggle-rendus-btn');
+  const docsBody = document.getElementById('docs-body');
+  const docsToggleBtn = document.getElementById('toggle-docs-btn');
   let demandesCache = [];
   let eventsCache = [];
   let factureMatTotalValue = 0;
@@ -607,6 +595,23 @@ document.addEventListener('DOMContentLoaded', async function () {
       const hidden = planningBody.style.display === 'none';
       planningBody.style.display = hidden ? 'block' : 'none';
       planningToggleBtn.innerHTML = hidden ? '<i class="bi bi-eye-slash"></i> Masquer' : '<i class="bi bi-eye"></i> Voir';
+    });
+  }
+
+  // Toggle rendus
+  if (rendusToggleBtn && rendusBody) {
+    rendusToggleBtn.addEventListener('click', () => {
+      const hidden = rendusBody.style.display === 'none';
+      rendusBody.style.display = hidden ? 'block' : 'none';
+      rendusToggleBtn.innerHTML = hidden ? '<i class="bi bi-eye-slash"></i> Masquer' : '<i class="bi bi-eye"></i> Voir';
+    });
+  }
+  // Toggle documents
+  if (docsToggleBtn && docsBody) {
+    docsToggleBtn.addEventListener('click', () => {
+      const hidden = docsBody.style.display === 'none';
+      docsBody.style.display = hidden ? 'block' : 'none';
+      docsToggleBtn.innerHTML = hidden ? '<i class="bi bi-eye-slash"></i> Masquer' : '<i class="bi bi-eye"></i> Voir';
     });
   }
 
