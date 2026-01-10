@@ -614,10 +614,15 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (!rid) return;
         try {
           // Charger les détails du rendu pour récupérer resume/images
-          const rel = await fetchJSON(`/api/rendus/${rid}/relations`);
-          const rendu = rel?.rendu || rel || {};
+          let rel = null;
+          try { rel = await fetchJSON(`/api/rendus/${rid}/relations`); } catch (_) {}
+          let rendu = rel?.rendu || rel || null;
+          if (!rendu) {
+            // fallback simple
+            rendu = await fetchJSON(`/api/rendus/${rid}`);
+          }
           const imgs = [];
-          (rel?.images || []).forEach(img => imgs.push({ ...img, kind:'image', url: `/api/images/${img.id}/view` }));
+          (rel?.images || rendu?.images || []).forEach(img => imgs.push({ ...img, kind:'image', url: `/api/images/${img.id}/view` }));
           // Enrichir les métadonnées
           const metaReport = await window.fetchInterventionMeta({
             interventionId: rendu.intervention_id,
@@ -742,7 +747,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   };
 
   async function fetchJSON(url, opts = {}) {
-    const res = await fetch(url, { ...opts, headers: { ...headers, ...opts.headers } });
+    const res = await fetch(url, { credentials: 'same-origin', ...opts, headers: { ...headers, ...opts.headers } });
     if (!res.ok) {
       if (res.status === 401 || res.status === 403) {
         location.href = '/login.html';
