@@ -897,9 +897,6 @@
         const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
         const res = await fetch(path, { credentials: 'same-origin', headers: authHeaders });
         if (!res.ok) throw new Error('fetch failed');
-        const contentType = res.headers.get('Content-Type') || '';
-        // Si ce n'est pas une image, renvoyer l'URL brute pour éviter d'embarquer une page HTML
-        if (!contentType.startsWith('image/')) return path || placeholder;
         const blob = await res.blob();
         return await new Promise((resolve, reject) => {
           const reader = new FileReader();
