@@ -462,7 +462,7 @@
           kind: (img.type_mime && img.type_mime.startsWith('image/')) ? 'image' : 'image',
           url: `/api/images/${img.id}/view`,
           nom_fichier: img.nom_fichier,
-          titre: img.titre || '',
+          titre: img.titre || img.nom_fichier,
           commentaire_image: img.commentaire_image,
           type: 'Image',
           type_mime: img.type_mime || ''
@@ -472,7 +472,7 @@
           kind: (doc.type_mime && doc.type_mime.startsWith('image/')) ? 'image' : 'doc',
           url: `/api/documents/${doc.id}/view`,
           nom_fichier: doc.nom_fichier,
-          titre: doc.titre || '',
+          titre: doc.titre || doc.nom_fichier,
           commentaire_image: doc.nature || 'Document',
           type: 'Document',
           type_mime: doc.type_mime || ''
@@ -484,7 +484,7 @@
             kind,
             url: `/api/attachments/${att.id}/view`,
             nom_fichier: att.file_name,
-            titre: att.titre || '',
+            titre: att.titre || att.file_name,
             commentaire_image: `PJ message: ${(att.message || '').substring(0,50)}...`,
             type: 'Message',
             type_mime: att.file_type || ''
