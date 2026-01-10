@@ -168,47 +168,54 @@
       const buildAndDownloadHtml = async () => {
         if (!currentRendu) return alert('Rendu non chargé.');
         try {
-          if (!printTemplate) {
-            const resp = await fetch('/partials/rendu-print.html');
-            if (!resp.ok) throw new Error('Impossible de charger le modèle HTML.');
-            printTemplate = await resp.text();
-          }
-
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(printTemplate, 'text/html');
           const titre = currentRendu.titre || `Rendu intervention #${currentRendu.intervention_id || renduId}`;
-          doc.getElementById('p-title')?.textContent = titre;
-          doc.getElementById('p-meta')?.textContent = `Intervention #${currentRendu.intervention_id || '-'} • Rendu #${currentRendu.id || renduId}`;
+          const dateStr = new Date().toLocaleDateString('fr-FR');
           const resumeHtml = currentRendu.resume ? marked.parse(currentRendu.resume) : '<em>Aucun résumé.</em>';
-          const resumeBody = doc.getElementById('p-resume-body');
-          if (resumeBody) resumeBody.innerHTML = resumeHtml;
-
-          const attContainer = doc.getElementById('p-attachments');
-          if (attContainer) {
-            if (!attachments.length) {
-              attContainer.innerHTML = '<div class="meta">Aucune pièce jointe.</div>';
-            } else {
-              attContainer.innerHTML = attachments.map(att => {
+          const attHtml = attachments.length
+            ? attachments.map(att => {
                 const comment = escapeHtml(att.commentaire_image || 'Aucun commentaire');
                 const noteHtml = att.note ? marked.parse(att.note) : '';
                 const preview = att.kind === 'image'
                   ? `<div style="margin:6px 0;"><img src="${att.url}" alt="${escapeHtml(att.nom_fichier || '')}" style="width:100%;border-radius:6px;"></div>`
                   : '';
                 return `
-                  <div class="attachment">
-                    <h4>${escapeHtml(att.nom_fichier || 'Fichier')}</h4>
-                    <div class="meta">${escapeHtml(att.type || 'Pièce jointe')}</div>
+                  <div style="border:1px solid #ddd;border-radius:6px;padding:10px;margin-bottom:10px;">
+                    <h4 style="margin:4px 0;">${escapeHtml(att.nom_fichier || 'Fichier')}</h4>
+                    <div style="font-size:12px;color:#666;">${escapeHtml(att.type || 'Pièce jointe')}</div>
                     ${preview}
-                    <div class="comment">${comment}</div>
-                    ${noteHtml ? `<div class="comment">${noteHtml}</div>` : ''}
-                    <div class="meta"><a href="${att.url}" target="_blank" rel="noopener">Ouvrir</a></div>
-                  </div>
-                `;
-              }).join('');
-            }
-          }
+                    <div style="margin:6px 0;">${comment}</div>
+                    ${noteHtml ? `<div style="margin:6px 0;">${noteHtml}</div>` : ''}
+                    <div style="font-size:12px;"><a href="${att.url}" target="_blank" rel="noopener">Ouvrir</a></div>
+                  </div>`;
+              }).join('')
+            : '<div style="color:#777;">Aucune pièce jointe.</div>';
 
-          const blob = new Blob([doc.documentElement.outerHTML], { type: 'text/html' });
+          const htmlString = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(titre)}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; background:#f9f9f9; }
+    .card { background:#fff; border-radius:12px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,0.08); margin-bottom:16px; }
+    h1 { font-size:20px; color:#2A61B3; margin:0 0 8px; }
+    .meta { color:#666; font-size:12px; margin-bottom:12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>${escapeHtml(titre)}</h1>
+    <div class="meta">Intervention #${escapeHtml(currentRendu.intervention_id || '-')} • Rendu #${escapeHtml(currentRendu.id || renduId)} • ${dateStr}</div>
+    <div>${resumeHtml}</div>
+  </div>
+  <div class="card">
+    <h2 style="margin:0 0 10px;">Pièces jointes</h2>
+    ${attHtml}
+  </div>
+</body>
+</html>`;
+
+          const blob = new Blob([htmlString], { type: 'text/html' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;

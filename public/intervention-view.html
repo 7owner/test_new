@@ -1248,7 +1248,14 @@ document.addEventListener('DOMContentLoaded', async function () {
     rendus.forEach(r => {
       const card = document.createElement('div');
       card.className = 'card card-body mb-2';
-      const resumeFull = r.resume || '';
+      const cleanResume = (txt = '') => {
+        let t = txt || '';
+        const marker = /pi[eè]ces\s+jointes/i;
+        const idx = t.search(marker);
+        if (idx >= 0) t = t.substring(0, idx);
+        return t.trim();
+      };
+      const resumeFull = cleanResume(r.resume || '');
       const resumeSnippet = resumeFull.length > 200 ? resumeFull.substring(0, 200) + '…' : resumeFull;
       const attachmentsCount = Array.isArray(r.images) ? r.images.length : (r.attachments_count || 0);
       card.innerHTML = `
