@@ -835,8 +835,14 @@ document.addEventListener('DOMContentLoaded', async function () {
             contractId: rendu.contrat_id,
             token
           });
+          // Fallback avec les valeurs déjà présentes sur le rendu si toujours manquantes
+          if (rendu.client_nom && metaReport.client === 'Non renseigné') metaReport.client = rendu.client_nom;
+          if (rendu.site_nom && metaReport.site === 'Non renseigné') metaReport.site = rendu.site_nom;
+          if (rendu.contrat_titre && metaReport.contrat === 'Non renseigné') metaReport.contrat = rendu.contrat_titre;
+          if (rendu.intervention_titre && metaReport.intervention === 'Rendu intervention') metaReport.intervention = rendu.intervention_titre;
+
           metaReport.dateStr = new Date().toLocaleDateString('fr-FR');
-          const resumeHtml = rendu.resume ? marked.parse(rendu.resume) : '';
+          const resumeHtml = rendu.resume ? marked.parse(rendu.resume) : '<em>Aucun résumé</em>';
           const htmlString = await window.buildInterventionReportHTML({
             meta: metaReport,
             images: imgs,
