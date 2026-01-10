@@ -170,6 +170,16 @@
         if (!currentRendu) return alert('Rendu non chargé.');
         try {
           const resumeHtml = currentRendu.resume ? marked.parse(currentRendu.resume) : '';
+          // Préparer les pièces jointes (images converties en data URL)
+          const imgs = [];
+          for (const att of attachments) {
+            if (att.kind === 'image') {
+              imgs.push({
+                ...att,
+                url: att.url || att.previewUrl || ''
+              });
+            }
+          }
           const metaReport = {
             client: currentRendu.client_nom || 'Non renseigné',
             site: currentRendu.site_nom || 'Non renseigné',
@@ -179,7 +189,7 @@
           };
           const htmlString = await window.buildInterventionReportHTML({
             meta: metaReport,
-            images: attachments,
+            images: imgs,
             resumeHtml,
             token
           });

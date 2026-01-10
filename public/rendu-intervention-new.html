@@ -894,7 +894,10 @@
     const downloadHtmlBtn = document.getElementById('download-html-btn');
     if (downloadHtmlBtn) {
       downloadHtmlBtn.addEventListener('click', async () => {
-        const images = attachments.filter(att => att.kind === 'image');
+        const images = attachments.filter(att => att.kind === 'image').map(att => ({
+          ...att,
+          url: att.url || att.previewUrl || ''
+        }));
         const resumeMd = (mainResumeEditor ? mainResumeEditor.value() : (document.getElementById('resume')?.value || '')).trim();
         const resumeHtml = resumeMd ? (typeof marked !== 'undefined' ? marked.parse(resumeMd) : resumeMd) : '';
         const metaForReport = {
