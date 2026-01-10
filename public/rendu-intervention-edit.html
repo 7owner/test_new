@@ -214,32 +214,47 @@
         reader.readAsDataURL(file);
       });
 
-      const uploadDocument = async (file) => {
+      // Upload générique (image => /api/images, sinon /api/documents) en conservant titre/commentaire
+      const uploadDocument = async (file, { titre = '', commentaire = '' } = {}) => {
+        const isImage = file.type && file.type.startsWith('image/');
         const base64 = await toBase64(file);
         const payload = {
           base64,
           nom_fichier: file.name,
-          nature: file.type || 'Document',
-          type_mime: file.type || 'application/octet-stream',
+          type_mime: file.type || (isImage ? 'image/png' : 'application/octet-stream'),
           cible_type: 'RenduIntervention',
           cible_id: renduId
         };
-        const res = await fetch('/api/documents', {
+        if (isImage) {
+          payload.commentaire_image = commentaire || '';
+          if (titre) payload.titre = titre;
+        } else {
+          payload.nature = commentaire || file.type || 'Document';
+          if (titre) payload.titre = titre;
+        }
+
+        const endpoint = isImage ? '/api/images' : '/api/documents';
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...headers },
           body: JSON.stringify(payload)
         });
         const data = await res.json().catch(()=> ({}));
         if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-        // Ajoute dans la grille locale
-        attachments.push({
-          kind: file.type.startsWith('image/') ? 'image' : 'doc',
-          url: `/api/documents/${data.id || ''}/view`,
+
+        const created = {
+          id: data.id,
+          kind: isImage ? 'image' : 'doc',
+          url: `${endpoint}/${data.id || ''}/view`,
           nom_fichier: file.name,
-          commentaire_image: payload.nature || 'Document',
-          type: 'Upload'
-        });
+          titre: titre || file.name,
+          commentaire_image: isImage ? (commentaire || '') : (commentaire || 'Document'),
+          type: 'Upload',
+          type_mime: payload.type_mime
+        };
+        attachments.push(created);
         refreshAttachments();
+        return created;
       };
 
       if (saveAttBtn) {
@@ -247,40 +262,48 @@
           if (currentEditIndex === null) return;
           const att = attachments[currentEditIndex];
           if (!att) return;
-        const newComment = attCommentInput ? attCommentInput.value : att.commentaire_image;
-        const file = attFileInput && attFileInput.files && attFileInput.files[0];
-        try {
+          const newComment = attCommentInput ? attCommentInput.value : att.commentaire_image;
+          const file = attFileInput && attFileInput.files && attFileInput.files[0];
+          try {
           if (file) {
-            // upload immédiat du nouveau fichier
-            const base64 = await toBase64(file);
-            const payload = {
-              base64,
-              nom_fichier: file.name,
-              nature: newComment || file.type || 'Document',
-              type_mime: file.type || 'application/octet-stream',
-              cible_type: 'RenduIntervention',
-              cible_id: renduId
-            };
-            const res = await fetch('/api/documents', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', ...headers },
-              body: JSON.stringify(payload)
-            });
-            const data = await res.json().catch(()=> ({}));
-            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-            attachments[currentEditIndex] = {
-              kind: file.type.startsWith('image/') ? 'image' : 'doc',
-              url: `/api/documents/${data.id || ''}/view`,
-              nom_fichier: file.name,
-              commentaire_image: payload.nature || 'Document',
+            // upload immédiat du nouveau fichier (image ou doc)
+            const created = await uploadDocument(file, {
               titre: (attTitleInput?.value || file.name || 'Fichier'),
-              type: 'Upload'
-            };
+              commentaire: newComment || file.type || ''
+            });
+            // remplacer l'ancienne entrée par la nouvelle
+            attachments.splice(currentEditIndex, 1, created);
+            refreshAttachments();
           } else {
             attachments[currentEditIndex].commentaire_image = newComment;
             if (attTitleInput?.value) {
               attachments[currentEditIndex].titre = attTitleInput.value;
               attachments[currentEditIndex].nom_fichier = attTitleInput.value;
+            }
+            // Patch meta côté API si on dispose d'un id
+            const target = attachments[currentEditIndex];
+            if (target.id) {
+              const endpoint = target.kind === 'image' ? '/api/images/' : '/api/documents/';
+              try {
+                await fetch(endpoint + target.id, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json', ...headers },
+                  body: JSON.stringify(target.kind === 'image'
+                    ? {
+                        titre: target.titre || target.nom_fichier,
+                        nom_fichier: target.nom_fichier,
+                        commentaire_image: target.commentaire_image
+                      }
+                    : {
+                        titre: target.titre || target.nom_fichier,
+                        nom_fichier: target.nom_fichier,
+                        nature: target.commentaire_image || target.nature || 'Document',
+                        commentaire_image: target.commentaire_image
+                      })
+                });
+              } catch (_) {
+                // en cas d'échec, on garde les valeurs locales (affichage) mais l'API restera inchangée
+              }
             }
           }
           refreshAttachments();
@@ -391,30 +414,36 @@
 
         attachments = [];
         (images || []).forEach(img => attachments.push({
-          kind: 'image',
+          id: img.id,
+          kind: (img.type_mime && img.type_mime.startsWith('image/')) ? 'image' : 'image',
           url: `/api/images/${img.id}/view`,
           nom_fichier: img.nom_fichier,
           titre: img.titre || img.nom_fichier,
           commentaire_image: img.commentaire_image,
-          type: 'Image'
+          type: 'Image',
+          type_mime: img.type_mime || ''
         }));
         (documents || []).forEach(doc => attachments.push({
-          kind: 'doc',
+          id: doc.id,
+          kind: (doc.type_mime && doc.type_mime.startsWith('image/')) ? 'image' : 'doc',
           url: `/api/documents/${doc.id}/view`,
           nom_fichier: doc.nom_fichier,
           titre: doc.titre || doc.nom_fichier,
           commentaire_image: doc.nature || 'Document',
-          type: 'Document'
+          type: 'Document',
+          type_mime: doc.type_mime || ''
         }));
         (message_attachments || []).forEach(att => {
           const kind = (att.file_type || '').startsWith('image/') ? 'image' : 'doc';
           attachments.push({
+            id: att.id,
             kind,
             url: `/api/attachments/${att.id}/view`,
             nom_fichier: att.file_name,
             titre: att.titre || att.file_name,
             commentaire_image: `PJ message: ${(att.message || '').substring(0,50)}...`,
-            type: 'Message'
+            type: 'Message',
+            type_mime: att.file_type || ''
           });
         });
         refreshAttachments();
