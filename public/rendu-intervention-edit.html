@@ -39,7 +39,6 @@
       <h1 class="h4 mb-0"><i class="bi bi-file-text me-2"></i>Modifier un rendu d'intervention</h1>
       <div class="d-flex gap-2 no-print">
         <button class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
-        <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer</button>
       </div>
     </div>
 
@@ -47,16 +46,8 @@
       <div class="card-body">
         <form id="rendu-edit-form" novalidate>
           <div class="mb-4">
-            <label class="form-label fw-bold">Valeur de l'intervention</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-currency-euro"></i></span>
-              <input type="text" class="form-control" id="valeur" placeholder="Ex: 1500">
-            </div>
-          </div>
-
-          <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Résumé</h5>
+              <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Résumé détaillé (Markdown)</h5>
               <small class="text-muted">Markdown autorisé</small>
             </div>
             <div class="row g-3">
@@ -85,7 +76,7 @@
             <p class="text-muted small mb-3">Cliquez sur une carte pour ouvrir la pièce jointe. Ajoutez de nouveaux fichiers via le bouton + (redirigé vers l’éditeur avancé).</p>
             <div class="row g-2 align-items-center mb-3">
               <div class="col-md-4">
-                <input type="text" class="form-control form-control-sm" id="filter-search" placeholder="Rechercher (nom, commentaire, note)...">
+                <input type="text" class="form-control form-control-sm" id="filter-search" placeholder="Rechercher (nom, commentaire)...">
               </div>
               <div class="col-md-4">
                 <select class="form-select form-select-sm" id="filter-source">
@@ -162,7 +153,6 @@
 
       const headers = { 'Authorization': 'Bearer '+token, 'Content-Type': 'application/json' };
       const form = document.getElementById('rendu-edit-form');
-      const valeurInput = document.getElementById('valeur');
       const resumeInput = document.getElementById('resume');
       const resumePreview = document.getElementById('resume-preview');
       const attachmentsGrid = document.getElementById('attachments-grid');
@@ -184,6 +174,29 @@
       let interventionId = null;
       let attachments = [];
       let currentEditIndex = null;
+      let mainResumeEditor = null;
+
+      // Éditeur markdown (résumé détaillé)
+      if (typeof EasyMDE !== 'undefined') {
+        mainResumeEditor = new EasyMDE({
+          element: resumeInput,
+          spellChecker: false,
+          forceSync: true,
+          placeholder: 'Rédigez un résumé détaillé en Markdown...',
+          toolbar: ['bold','italic','heading','|','quote','unordered-list','ordered-list','|','link','preview'],
+          status: false,
+          minHeight: '180px'
+        });
+        mainResumeEditor.codemirror.on('change', () => {
+          const txt = mainResumeEditor.value();
+          resumePreview.innerHTML = txt ? marked.parse(txt) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+        });
+      } else {
+        resumeInput.addEventListener('input', () => {
+          const text = resumeInput.value;
+          resumePreview.innerHTML = text ? marked.parse(text) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+        });
+      }
 
       const fetchJSON = async (url) => {
         const res = await fetch(url, { headers });
@@ -224,8 +237,7 @@
           url: `/api/documents/${data.id || ''}/view`,
           nom_fichier: file.name,
           commentaire_image: payload.nature || 'Document',
-          type: 'Upload',
-          note: ''
+          type: 'Upload'
         });
         refreshAttachments();
       };
@@ -261,8 +273,7 @@
                 url: `/api/documents/${data.id || ''}/view`,
                 nom_fichier: file.name,
                 commentaire_image: payload.nature || 'Document',
-                type: 'Upload',
-                note: att.note || ''
+                type: 'Upload'
               };
             } else {
               attachments[currentEditIndex].commentaire_image = newComment;
@@ -312,7 +323,7 @@
         const src  = filterSource?.value || '';
         const kind = filterKind?.value || '';
         const filtered = attachments.filter(att => {
-          const txt = `${att.nom_fichier||''} ${att.commentaire_image||''} ${att.note||''}`.toLowerCase();
+          const txt = `${att.nom_fichier||''} ${att.commentaire_image||''}`.toLowerCase();
           const matchTerm = !term || txt.includes(term);
           const matchSrc  = !src || att.type === src;
           const matchKind = !kind || att.kind === kind;
@@ -360,9 +371,13 @@
       const loadData = async () => {
         const { rendu, images, documents, message_attachments } = await fetchJSON(`/api/rendus/${renduId}`);
         interventionId = rendu.intervention_id;
-        valeurInput.value = rendu.valeur || '';
-        resumeInput.value = rendu.resume || '';
-        resumePreview.innerHTML = rendu.resume ? marked.parse(rendu.resume) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+        if (mainResumeEditor) {
+          mainResumeEditor.value(rendu.resume || '');
+          resumePreview.innerHTML = rendu.resume ? marked.parse(rendu.resume) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+        } else {
+          resumeInput.value = rendu.resume || '';
+          resumePreview.innerHTML = rendu.resume ? marked.parse(rendu.resume) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+        }
         cancelBtn.href = `intervention-view.html?id=${interventionId}`;
         backBtn.onclick = () => location.href = `intervention-view.html?id=${interventionId}`;
 
@@ -372,16 +387,14 @@
           url: `/api/images/${img.id}/view`,
           nom_fichier: img.nom_fichier,
           commentaire_image: img.commentaire_image,
-          type: 'Image',
-          note: img.note || ''
+          type: 'Image'
         }));
         (documents || []).forEach(doc => attachments.push({
           kind: 'doc',
           url: `/api/documents/${doc.id}/view`,
           nom_fichier: doc.nom_fichier,
           commentaire_image: doc.nature || 'Document',
-          type: 'Document',
-          note: doc.note || ''
+          type: 'Document'
         }));
         (message_attachments || []).forEach(att => {
           const kind = (att.file_type || '').startsWith('image/') ? 'image' : 'doc';
@@ -390,8 +403,7 @@
             url: `/api/attachments/${att.id}/view`,
             nom_fichier: att.file_name,
             commentaire_image: `PJ message: ${(att.message || '').substring(0,50)}...`,
-            type: 'Message',
-            note: att.note || att.message || ''
+            type: 'Message'
           });
         });
         refreshAttachments();
@@ -407,12 +419,24 @@
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const payload = { valeur: valeurInput.value || '', resume: resumeInput.value || '' };
-        try {
-          const res = await fetch(`/api/rendus/${renduId}`, { method:'PUT', headers, body: JSON.stringify(payload) });
+        const resumeVal = mainResumeEditor ? mainResumeEditor.value() : (resumeInput.value || '');
+        const payload = { resume: resumeVal };
+        const trySave = async (method) => {
+          const res = await fetch(`/api/rendus/${renduId}`, { method, headers, body: JSON.stringify(payload) });
           if (!res.ok) {
             const err = await res.json().catch(()=>({}));
             throw new Error(err.error || `HTTP ${res.status}`);
+          }
+        };
+        try {
+          try {
+            await trySave('PATCH');
+          } catch (_) {
+            try {
+              await trySave('PUT');
+            } catch (_) {
+              await trySave('POST');
+            }
           }
           alert('Rendu mis à jour avec succès');
           if (interventionId) location.href = `intervention-view.html?id=${interventionId}`; else location.href='interventions.html';
