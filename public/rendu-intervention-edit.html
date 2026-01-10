@@ -268,7 +268,7 @@
           kind: isImage ? 'image' : 'doc',
           url: `${endpoint}/${data.id || ''}/view`,
           nom_fichier: file.name,
-          titre: titre || file.name,
+          titre: titre || '',
           commentaire_image: isImage ? (commentaire || '') : (commentaire || 'Document'),
           type: 'Nouveau',
           type_mime: payload.type_mime
@@ -297,10 +297,7 @@
             refreshAttachments();
           } else {
             attachments[currentEditIndex].commentaire_image = newComment;
-            if (attTitleInput?.value) {
-              attachments[currentEditIndex].titre = attTitleInput.value;
-              attachments[currentEditIndex].nom_fichier = attTitleInput.value;
-            }
+            attachments[currentEditIndex].titre = attTitleInput?.value || '';
             // Patch meta côté API si on dispose d'un id
             const target = attachments[currentEditIndex];
             if (target.id) {

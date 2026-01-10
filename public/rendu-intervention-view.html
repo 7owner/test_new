@@ -495,7 +495,7 @@
                 kind: detectKind(doc.type_mime, doc.nom_fichier),
                 url: `/api/documents/${doc.id}/view`,
                 nom_fichier: doc.nom_fichier,
-                titre: doc.titre || doc.nom_fichier || '',
+                titre: (doc.titre ?? '') || doc.nom_fichier || '',
                 commentaire_image: doc.commentaire_image || doc.commentaire || doc.nature || 'Document',
                 type: 'Document'
             });
@@ -507,7 +507,7 @@
                 kind: kind,
                 url: `/api/attachments/${msgAtt.id}/view`,
                 nom_fichier: msgAtt.file_name,
-                titre: msgAtt.titre || msgAtt.file_name,
+                titre: (msgAtt.titre ?? '') || msgAtt.file_name,
                 commentaire_image: `Pièce jointe du message: "${(msgAtt.message || '').substring(0, 50)}..."`,
                 type: 'Message'
             });

@@ -675,7 +675,7 @@
     const att = attachments[currentEditIndex];
     
     const titleVal = document.getElementById('edit-title').value.trim();
-    att.titre = titleVal || att.nom_fichier;
+    att.titre = titleVal || '';
     att.commentaire_image = document.getElementById('edit-comment').value;
     
     const fileInput = document.getElementById('edit-file-input');
@@ -788,8 +788,8 @@
               type,
               cible_id: id,
               nom_fichier: item.nom_fichier,
-              titre: item.titre || item.nom_fichier,
-              commentaire_image: item.commentaire_image || item.commentaire || '',
+              titre: (item.titre ?? ''),
+              commentaire_image: item.commentaire_image || item.commentaire || item.nature || '',
               url: `/api/${endpoint}/${item.id}/view`,
               kind: endpoint === 'images' ? 'image' : 'doc'
             });
@@ -816,7 +816,7 @@
               type: 'Message',
               cible_id: demandeId,
               nom_fichier: name,
-            titre: att.titre || name,
+            titre: att.titre ?? '',
             commentaire_image: att.commentaire_image || att.commentaire || m.message || '',
             url,
             kind,
@@ -893,7 +893,64 @@
         });
         
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        
+
+        // Tenter de patcher les titres/commentaires des fichiers créés (alignement entre écrans)
+        const patchCreatedAttachments = async (created) => {
+          if (!created) return;
+          // Préparer index local par nom_fichier
+          const newFiles = attachments.filter(att => att.isNew && att.file);
+          const findLocal = (nom) => newFiles.find(a => a.file?.name === nom || a.nom_fichier === nom);
+          const patchOne = async (id, kind, titre, commentaire) => {
+            if (!id) return;
+            const endpoint = kind === 'doc' ? '/api/documents/' : '/api/images/';
+            try {
+              await fetch(endpoint + id, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                  titre: titre || undefined,
+                  nom_fichier: undefined,
+                  commentaire_image: commentaire || undefined,
+                  nature: kind === 'doc' ? (commentaire || undefined) : undefined
+                })
+              });
+            } catch (_) { /* silencieux */ }
+          };
+
+          // Si la réponse contient directement les images/documents créés
+          if (created.images || created.documents) {
+            (created.images || []).forEach(img => {
+              const local = findLocal(img.nom_fichier);
+              if (local) patchOne(img.id, 'image', local.titre || local.nom_fichier, local.commentaire_image);
+            });
+            (created.documents || []).forEach(doc => {
+              const local = findLocal(doc.nom_fichier);
+              if (local) patchOne(doc.id, 'doc', local.titre || local.nom_fichier, local.commentaire_image);
+            });
+            return;
+          }
+
+          // Sinon si un rendu est retourné, recharger ses relations pour récupérer les ids
+          if (created.id || created.rendu?.id) {
+            const rid = created.id || created.rendu.id;
+            try {
+              const rel = await fetch(`/api/rendus/${rid}/relations`, { headers: { 'Authorization': `Bearer ${token}` }, credentials: 'same-origin' })
+                .then(r => r.ok ? r.json() : null);
+              (rel?.images || []).forEach(img => {
+                const local = findLocal(img.nom_fichier);
+                if (local) patchOne(img.id, 'image', local.titre || local.nom_fichier, local.commentaire_image);
+              });
+              (rel?.documents || []).forEach(doc => {
+                const local = findLocal(doc.nom_fichier);
+                if (local) patchOne(doc.id, 'doc', local.titre || local.nom_fichier, local.commentaire_image);
+              });
+            } catch (_) {}
+          }
+        };
+
+        const payload = await res.json().catch(() => null);
+        await patchCreatedAttachments(payload);
+
         alert('Rendu enregistré avec succès !');
         location.href = `intervention-view.html?id=${interventionId}`;
       } catch (err) {
