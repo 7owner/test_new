@@ -103,7 +103,7 @@
 
   window.buildInterventionReportHTML = buildInterventionReportHTML;
   // Helper optionnel pour enrichir les libellés à partir des API
-  async function fetchInterventionMeta({ interventionId, ticketId, siteId, associationId, token }) {
+  async function fetchInterventionMeta({ interventionId, ticketId, siteId, associationId, clientId, contractId, token }) {
     const safeMeta = {
       client: 'Non renseigné',
       site: 'Non renseigné',
@@ -127,6 +127,8 @@
           if (interData.ticket_id) ticketId = ticketId || interData.ticket_id;
           if (interData.site_id) siteId = siteId || interData.site_id;
           if (interData.association_id) associationId = associationId || interData.association_id;
+          if (interData.client_id) clientId = clientId || interData.client_id;
+          if (interData.contrat_id) contractId = contractId || interData.contrat_id;
         }
         // 2) Relations intervention
         const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
@@ -134,6 +136,8 @@
           ticketId = ticketId || rel.ticket.id || rel.ticket.ticket_id;
           siteId = siteId || rel.ticket.site_id;
           associationId = associationId || rel.ticket.association_id;
+          clientId = clientId || rel.ticket.client_id;
+          contractId = contractId || rel.ticket.contrat_id;
           safeMeta.client = rel.ticket.nom_client || safeMeta.client;
           safeMeta.site = rel.ticket.nom_site || safeMeta.site;
           safeMeta.intervention = rel.ticket.titre || safeMeta.intervention;
@@ -144,6 +148,8 @@
         if (rel?.contrat?.titre) safeMeta.contrat = rel.contrat.titre;
         if (rel?.association) {
           associationId = associationId || rel.association.id;
+          clientId = clientId || rel.association.client_id;
+          contractId = contractId || rel.association.contrat_id;
           safeMeta.client = rel.association.client_nom || safeMeta.client;
           safeMeta.contrat = rel.association.contrat_titre || safeMeta.contrat;
         }
@@ -152,6 +158,8 @@
       if (ticketId) {
         const rel = await fetchJSON(`/api/tickets/${ticketId}/relations`);
         if (rel?.ticket) {
+          clientId = clientId || rel.ticket.client_id;
+          contractId = contractId || rel.ticket.contrat_id;
           safeMeta.client = rel.ticket.nom_client || safeMeta.client;
           safeMeta.site = rel.ticket.nom_site || safeMeta.site;
           safeMeta.intervention = rel.ticket.titre || safeMeta.intervention;
@@ -161,6 +169,8 @@
         }
         if (rel?.association) {
           associationId = associationId || rel.association.id;
+          clientId = clientId || rel.association.client_id;
+          contractId = contractId || rel.association.contrat_id;
           safeMeta.client = rel.association.client_nom || safeMeta.client;
           safeMeta.contrat = rel.association.contrat_titre || safeMeta.contrat;
         }
@@ -171,6 +181,9 @@
         if (site) {
           if (site.nom_site) safeMeta.site = site.nom_site;
           if (site.nom_client) safeMeta.client = site.nom_client;
+          if (site.client_id) clientId = clientId || site.client_id;
+          if (site.association_id) associationId = associationId || site.association_id;
+          if (site.contrat_id) contractId = contractId || site.contrat_id;
         }
       }
 
@@ -180,7 +193,22 @@
           if (asso.nom) safeMeta.client = asso.nom;
           if (asso.client_nom) safeMeta.client = asso.client_nom;
           if (asso.contrat_titre) safeMeta.contrat = asso.contrat_titre;
+          if (asso.client_id) clientId = clientId || asso.client_id;
+          if (asso.contrat_id) contractId = contractId || asso.contrat_id;
         }
+      }
+
+      if (clientId && safeMeta.client === 'Non renseigné') {
+        const client = await fetchJSON(`/api/clients/${clientId}`);
+        if (client) {
+          if (client.nom) safeMeta.client = client.nom;
+          if (client.contrat_titre) safeMeta.contrat = client.contrat_titre;
+          if (client.contrat_id) contractId = contractId || client.contrat_id;
+        }
+      }
+      if (contractId && safeMeta.contrat === 'Non renseigné') {
+        const contrat = await fetchJSON(`/api/contrats/${contractId}`);
+        if (contrat && contrat.titre) safeMeta.contrat = contrat.titre;
       }
     } catch (_) {
       // on garde les valeurs existantes en cas d'erreur
