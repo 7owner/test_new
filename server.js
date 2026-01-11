@@ -907,6 +907,32 @@ app.put('/api/documents/:id', authenticateToken, authorizeAdmin, async (req, res
   }
 });
 
+// Patch document meta (titre/commentaire) without requiring all fields
+app.patch('/api/documents/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { titre = null, commentaire = null, nom_fichier = null, nature = null, cible_type = null, cible_id = null, type_mime = null } = req.body || {};
+  try {
+    const result = await pool.query(
+      `UPDATE documents_repertoire
+       SET titre = COALESCE($1, titre),
+           commentaire = COALESCE($2, commentaire),
+           nom_fichier = COALESCE($3, nom_fichier),
+           nature = COALESCE($4, nature),
+           cible_type = COALESCE($5, cible_type),
+           cible_id = COALESCE($6, cible_id),
+           type_mime = COALESCE($7, type_mime)
+       WHERE id = $8
+       RETURNING *`,
+      [titre, commentaire, nom_fichier, nature, cible_type, cible_id, type_mime, id]
+    );
+    if (!result.rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error patching document:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // Stream document
 app.get('/api/documents/:id/view', authenticateToken, async (req, res) => {
   const { id } = req.params;
@@ -1057,6 +1083,35 @@ app.post('/api/images', authenticateToken, authorizeAdmin, async (req, res) => {
     }
   } catch (err) {
     console.error('Error uploading image:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Update image meta (commentaire) and propagate titre/commentaire to documents if linked
+app.patch('/api/images/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { commentaire_image = null, titre = null } = req.body || {};
+  try {
+    const imgResult = await pool.query('UPDATE images SET commentaire_image = COALESCE($1, commentaire_image) WHERE id = $2 RETURNING *', [commentaire_image, id]);
+    const img = imgResult.rows[0];
+    if (!img) return res.status(404).json({ error: 'Not found' });
+
+    // Propager vers documents_repertoire si une entrée existe pour ce fichier/rendu
+    try {
+      await pool.query(
+        `UPDATE documents_repertoire
+         SET titre = COALESCE($1, titre),
+             commentaire = COALESCE($2, commentaire)
+         WHERE cible_type = $3 AND cible_id = $4 AND nom_fichier = $5`,
+        [titre, commentaire_image, img.cible_type || 'RenduIntervention', img.cible_id, img.nom_fichier]
+      );
+    } catch (e) {
+      console.warn('Image patch propagate to documents failed:', e.message);
+    }
+
+    res.json(img);
+  } catch (err) {
+    console.error('Error updating image:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -3871,7 +3926,10 @@ app.delete('/api/interventions/:id', authenticateToken, authorizeAdmin, async (r
 // Create a Rendu for an Intervention
 app.post('/api/interventions/:id/rendus', authenticateToken, authorizeAdmin, renduUpload.array('image_files[]'), async (req, res) => {
     const { id: interventionId } = req.params;
-    const { valeur, resume, image_commentaires, image_notes } = req.body;
+    const { valeur, resume, image_commentaires, image_notes, image_titles } = req.body;
+    const commentairesArr = Array.isArray(image_commentaires) ? image_commentaires : (image_commentaires ? [image_commentaires] : []);
+    const notesArr = Array.isArray(image_notes) ? image_notes : (image_notes ? [image_notes] : []);
+    const titlesArr = Array.isArray(image_titles) ? image_titles : (image_titles ? [image_titles] : []);
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -3887,9 +3945,10 @@ app.post('/api/interventions/:id/rendus', authenticateToken, authorizeAdmin, ren
         if (req.files && req.files.length > 0) {
             for (let i = 0; i < req.files.length; i++) {
                 const file = req.files[i];
-                const commentaire = (image_commentaires && image_commentaires[i]) ? image_commentaires[i] : null;
-                const note = (image_notes && image_notes[i]) ? image_notes[i] : null;
+                const commentaire = commentairesArr[i] || null;
+                const note = notesArr[i] || null;
                 const fullComment = [commentaire, note].filter(Boolean).join('\\n\\n');
+                const titre = titlesArr[i] || null;
 
                 // Insert into images table
                 const imageResult = await client.query(
@@ -3903,6 +3962,13 @@ app.post('/api/interventions/:id/rendus', authenticateToken, authorizeAdmin, ren
                 await client.query(
                     'INSERT INTO rendu_intervention_image (rendu_intervention_id, image_id) VALUES ($1, $2)',
                     [renduId, imageId]
+                );
+
+                // Enregistrer aussi dans documents_repertoire pour conserver titre/commentaire
+                await client.query(
+                  `INSERT INTO documents_repertoire (cible_type, cible_id, nature, nom_fichier, type_mime, taille_octets, titre, commentaire)
+                   VALUES ('RenduIntervention', $1, 'Document', $2, $3, $4, $5, $6)`,
+                  [renduId, file.originalname, file.mimetype, file.size, titre || file.originalname, commentaire || null]
                 );
             }
         }
@@ -3952,15 +4018,21 @@ app.get('/api/rendus/:id', authenticateToken, async (req, res) => {
             WHERE rii.rendu_intervention_id = $1
             ORDER BY i.id DESC
         `, [id]);
-        const images = imagesResult.rows;
-        
-        // Fetch associated documents (if any are linked via cible_type/cible_id)
+        // Fetch associated documents (if any are linked via cible_type/cible_id) to récupérer titre/commentaire
         const documentsResult = await pool.query(
             "SELECT * FROM documents_repertoire WHERE cible_type = 'RenduIntervention' AND cible_id = $1 ORDER BY id DESC",
             [id]
         );
+        // Associer des titres/commentaires éventuels depuis documents_repertoire (même cible, même nom de fichier)
         const documents = documentsResult.rows;
+        const docMap = new Map((documents || []).map(d => [d.nom_fichier, d]));
+        const images = imagesResult.rows.map(img => {
+            const doc = docMap.get(img.nom_fichier);
+            return doc ? { ...img, titre: doc.titre || doc.nom_fichier, commentaire_image: img.commentaire_image || doc.commentaire } : img;
+        });
         
+        // documents already fetched above
+
         // Fetch related message attachments for context
         let message_attachments = [];
         try {

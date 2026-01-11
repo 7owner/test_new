@@ -465,16 +465,21 @@
           type: 'Image',
           type_mime: img.type_mime || ''
         }));
-        (documents || []).forEach(doc => attachments.push({
-          id: doc.id,
-          kind: (doc.type_mime && doc.type_mime.startsWith('image/')) ? 'image' : 'doc',
-          url: `/api/documents/${doc.id}/view`,
-          nom_fichier: doc.nom_fichier,
-          titre: doc.titre || doc.nom_fichier,
-          commentaire_image: doc.commentaire_image || doc.commentaire || doc.nature || 'Document',
-          type: 'Document',
-          type_mime: doc.type_mime || ''
-        }));
+        (documents || []).forEach(doc => {
+          const isImg = doc.type_mime && doc.type_mime.startsWith('image/');
+          // éviter les doublons si une image existe déjà pour le même nom
+          if (isImg && attachments.find(a => a.nom_fichier === doc.nom_fichier)) return;
+          attachments.push({
+            id: doc.id,
+            kind: isImg ? 'image' : 'doc',
+            url: doc.chemin_fichier ? `/${doc.chemin_fichier}` : `/api/documents/${doc.id}/view`,
+            nom_fichier: doc.nom_fichier,
+            titre: doc.titre || doc.nom_fichier,
+            commentaire_image: doc.commentaire_image || doc.commentaire || doc.nature || 'Document',
+            type: doc.cible_type || 'Document',
+            type_mime: doc.type_mime || ''
+          });
+        });
         (message_attachments || []).forEach(att => {
           const kind = (att.file_type || '').startsWith('image/') ? 'image' : 'doc';
           attachments.push({

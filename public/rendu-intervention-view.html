@@ -491,13 +491,15 @@
         });
 
         (documents || []).forEach(doc => {
+            const isImg = (doc.type_mime || '').startsWith('image/');
+            if (isImg && attachments.find(a => a.nom_fichier === doc.nom_fichier)) return;
             attachments.push({
                 kind: detectKind(doc.type_mime, doc.nom_fichier),
                 url: `/api/documents/${doc.id}/view`,
                 nom_fichier: doc.nom_fichier,
                 titre: (doc.titre ?? '') || doc.nom_fichier || '',
                 commentaire_image: doc.commentaire_image || doc.commentaire || doc.nature || 'Document',
-                type: 'Document'
+                type: doc.cible_type || 'Document'
             });
         });
 
