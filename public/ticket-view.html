@@ -297,11 +297,12 @@
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
       <span class="d-flex align-items-center gap-2"><i class="bi bi-building me-1"></i>Site associé</span>
       <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-light toggle-card-btn" data-target="#site-card-body"><i class="bi bi-eye"></i> Voir</button>
         <span class="badge bg-light text-dark" id="site-statut">-</span>
         <a id="site-view-link" class="btn btn-light btn-sm d-none" href="#"><i class="bi bi-eye"></i> Voir le site</a>
       </div>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body p-4" id="site-card-body">
       <div class="hero mb-3">
         <div class="d-flex justify-content-between align-items-start">
           <div>
@@ -345,11 +346,14 @@
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
       <span class="d-flex align-items-center gap-2"><i class="bi bi-box-seam me-1"></i>Matériels & commandes</span>
-      <button class="btn btn-light btn-sm d-none" id="add-materiel-btn">
-        <i class="bi bi-plus-circle me-1"></i>Ajouter un matériel
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-light toggle-card-btn" data-target="#materiels-card-body"><i class="bi bi-eye"></i> Voir</button>
+        <button class="btn btn-light btn-sm d-none" id="add-materiel-btn">
+          <i class="bi bi-plus-circle me-1"></i>Ajouter un matériel
+        </button>
+      </div>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body p-4" id="materiels-card-body">
       <div id="materiels-list">
         <div class="text-muted">Chargement...</div>
       </div>
@@ -1348,9 +1352,12 @@
                     </select>
                   ` : `<span class="badge bg-light text-dark">${status}</span>`}
                 </div>
-                <div class="d-flex justify-content-end mt-2">
+                <div class="d-flex justify-content-end mt-2 gap-2">
                   <a class="btn btn-sm btn-outline-primary" target="_blank" href="materiel-gestion.html?ref=${encodeURIComponent(m.reference || '')}">
                     <i class="bi bi-eye me-1"></i>Voir
+                  </a>
+                  <a class="btn btn-sm btn-outline-secondary" href="intervention-view.html?id=${m.intervention_id || m._intervention?.id || ''}">
+                    <i class="bi bi-arrow-left"></i>Retour intervention
                   </a>
                 </div>
               </div>
@@ -1390,14 +1397,27 @@
         });
       }
 
-      if (addMaterielBtn && materielModal) {
-        addMaterielBtn.addEventListener('click', () => {
-          populateInterventionSelect();
-          const form = document.getElementById('materiel-form');
-          if (form) form.reset();
-          materielModal.show();
-        });
-      }
+  if (addMaterielBtn && materielModal) {
+    addMaterielBtn.addEventListener('click', () => {
+      populateInterventionSelect();
+      const form = document.getElementById('materiel-form');
+      if (form) form.reset();
+      materielModal.show();
+    });
+  }
+
+  // Boutons toggle pour replier/afficher certaines cartes
+  document.querySelectorAll('.toggle-card-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetSel = btn.getAttribute('data-target');
+      if (!targetSel) return;
+      const target = document.querySelector(targetSel);
+      if (!target) return;
+      const hidden = target.style.display === 'none';
+      target.style.display = hidden ? '' : 'none';
+      btn.innerHTML = hidden ? '<i class="bi bi-eye-slash"></i> Masquer' : '<i class="bi bi-eye"></i> Voir';
+    });
+  });
 
       const saveMatBtn = document.getElementById('save-materiel-btn');
       if (saveMatBtn && materielModal) {
