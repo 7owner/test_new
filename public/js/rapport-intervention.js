@@ -176,14 +176,29 @@
         }
       }
 
-      if (siteId && (safeMeta.site === 'Non renseigné' || safeMeta.client === 'Non renseigné')) {
-        const site = await fetchJSON(`/api/sites/${siteId}`);
-        if (site) {
-          if (site.nom_site) safeMeta.site = site.nom_site;
-          if (site.nom_client) safeMeta.client = site.nom_client;
-          if (site.client_id) clientId = clientId || site.client_id;
-          if (site.association_id) associationId = associationId || site.association_id;
-          if (site.contrat_id) contractId = contractId || site.contrat_id;
+      if (siteId && (safeMeta.site === 'Non renseigné' || safeMeta.client === 'Non renseigné' || safeMeta.contrat === 'Non renseigné')) {
+        // relations pour remonter client/contrat via contrat_site_association
+        const siteRel = await fetchJSON(`/api/sites/${siteId}/relations`);
+        if (siteRel?.site) {
+          if (siteRel.site.nom_site) safeMeta.site = siteRel.site.nom_site;
+          if (siteRel.site.nom_client) safeMeta.client = siteRel.site.nom_client;
+          if (siteRel.site.client_id) clientId = clientId || siteRel.site.client_id;
+          if (siteRel.site.association_id) associationId = associationId || siteRel.site.association_id;
+        }
+        if (Array.isArray(siteRel?.contrats) && siteRel.contrats.length) {
+          const firstContrat = siteRel.contrats[0];
+          if (firstContrat.titre) safeMeta.contrat = firstContrat.titre;
+          if (firstContrat.id) contractId = contractId || firstContrat.id;
+        }
+        if (safeMeta.site === 'Non renseigné') {
+          const site = await fetchJSON(`/api/sites/${siteId}`);
+          if (site) {
+            if (site.nom_site) safeMeta.site = site.nom_site;
+            if (site.nom_client) safeMeta.client = site.nom_client;
+            if (site.client_id) clientId = clientId || site.client_id;
+            if (site.association_id) associationId = associationId || site.association_id;
+            if (site.contrat_id) contractId = contractId || site.contrat_id;
+          }
         }
       }
 
