@@ -838,15 +838,10 @@ document.addEventListener('DOMContentLoaded', async function () {
             throw new Error('Helper rapport indisponible');
           }
           // Charger les détails du rendu pour récupérer resume/images
-          let rel = null;
-          try { rel = await fetchJSON(`/api/rendus/${rid}/relations`); } catch (_) {}
-          let rendu = rel?.rendu || rel || null;
-          if (!rendu) {
-            // fallback simple
-            rendu = await fetchJSON(`/api/rendus/${rid}`);
-          }
+          const renduPayload = await fetchJSON(`/api/rendus/${rid}`);
+          const rendu = renduPayload?.rendu || renduPayload || {};
           const imgs = [];
-          (rel?.images || rendu?.images || []).forEach(img => imgs.push({ ...img, kind:'image', url: `/api/images/${img.id}/view` }));
+          (renduPayload?.images || []).forEach(img => imgs.push({ ...img, kind:'image', url: `/api/images/${img.id}/view` }));
           // Enrichir les métadonnées
           const metaReport = await window.fetchInterventionMeta({
             interventionId: rendu.intervention_id,
