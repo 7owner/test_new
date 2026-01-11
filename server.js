@@ -3990,7 +3990,22 @@ app.get('/api/interventions/:id/rendus', authenticateToken, async (req, res) => 
     const { id: interventionId } = req.params;
     try {
         const result = await pool.query(
-            'SELECT * FROM rendu_intervention WHERE intervention_id = $1 ORDER BY id DESC',
+            `SELECT r.*,
+                    COALESCE(imgs.cnt,0) + COALESCE(docs.cnt,0) AS attachments_count
+             FROM rendu_intervention r
+             LEFT JOIN (
+                SELECT rii.rendu_intervention_id, COUNT(*) AS cnt
+                FROM rendu_intervention_image rii
+                GROUP BY rii.rendu_intervention_id
+             ) imgs ON imgs.rendu_intervention_id = r.id
+             LEFT JOIN (
+                SELECT cible_id, COUNT(*) AS cnt
+                FROM documents_repertoire
+                WHERE cible_type='RenduIntervention'
+                GROUP BY cible_id
+             ) docs ON docs.cible_id = r.id
+             WHERE r.intervention_id = $1
+             ORDER BY r.id DESC`,
             [interventionId]
         );
         res.json(result.rows);
