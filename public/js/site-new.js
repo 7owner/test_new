@@ -68,6 +68,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               let selectedId = '';
               const minChars = options.minChars ?? 2;
               const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+              const getLabel = (item) => (typeof displayKey === 'function') ? displayKey(item) : (item?.[displayKey] || '');
+              const getId = (item) => (typeof idKey === 'function') ? idKey(item) : (item?.[idKey] ?? '');
 
               searchInput.addEventListener('input', () => {
                 clearTimeout(timeout);
@@ -101,20 +103,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 function displaySuggestions(items, queryStr) {
                   suggestionsContainer.innerHTML = '';
                   const qNorm = norm(queryStr);
-                  const filtered = (items || []).filter(it => norm(it?.[displayKey] || '').includes(qNorm));
+                  const filtered = (items || []).filter(it => norm(getLabel(it)).includes(qNorm));
                   if (!filtered.length) {
                     suggestionsContainer.innerHTML = '<div class="list-group-item">Aucun résultat.</div>';
                     return;
                   }
                   filtered.forEach(item => {
+                    const label = getLabel(item);
+                    const val = getId(item);
                     const itemElement = document.createElement('button');
                     itemElement.type = 'button';
                     itemElement.classList.add('list-group-item', 'list-group-item-action');
-                    itemElement.textContent = item[displayKey];
+                    itemElement.textContent = label;
                     itemElement.addEventListener('mousedown', (ev) => {
                       ev.preventDefault(); // évite le blur avant la sélection
-                      selectedLabel = item[displayKey] || '';
-                      selectedId = item[idKey] || '';
+                      selectedLabel = label || '';
+                      selectedId = val || '';
                       searchInput.value = selectedLabel;
                       hiddenInput.value = selectedId;
                       suggestionsContainer.innerHTML = '';
@@ -180,11 +184,36 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
             if (adresseSearchInput && adresseIdHidden && adresseSuggestionsContainer) {
-
+              const buildAdresseLabel = (a) => {
+                const parts = [a.libelle, a.ligne1, a.code_postal, a.ville, a.pays].filter(Boolean);
+                return parts.join(' • ');
+              };
               // This will fetch existing addresses for selection
+              setupAutocomplete(
+                adresseSearchInput,
+                adresseIdHidden,
+                adresseSuggestionsContainer,
+                '/api/adresses',
+                buildAdresseLabel,
+                'id',
+                { minChars: 1 }
+              );
 
-              setupAutocomplete(adresseSearchInput, adresseIdHidden, adresseSuggestionsContainer, '/api/adresses', 'libelle_complete', 'id');
-
+              // Préremplir les champs libres si une adresse est choisie
+              adresseSearchInput.addEventListener('change', async () => {
+                if (!adresseIdHidden.value) return;
+                try {
+                  const headers = await buildHeaders(false);
+                  const r = await fetch(`/api/adresses/${adresseIdHidden.value}`, { headers, credentials:'same-origin' });
+                  if (!r.ok) return;
+                  const adr = await r.json();
+                  document.getElementById('addr_libelle').value = adr.libelle || '';
+                  document.getElementById('addr_ligne1').value = adr.ligne1 || adr.adresse_ligne1 || '';
+                  document.getElementById('addr_code_postal').value = adr.code_postal || adr.adresse_code_postal || '';
+                  document.getElementById('addr_ville').value = adr.ville || adr.adresse_ville || '';
+                  document.getElementById('addr_pays').value = adr.pays || adr.adresse_pays || 'France';
+                } catch (_){}
+              });
             }
 
       
