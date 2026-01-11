@@ -280,11 +280,14 @@
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
       <span><i class="bi bi-wrench-adjustable me-2"></i>Interventions</span>
-      <button id="add-intervention-btn" class="btn btn-light btn-sm d-none" data-bs-toggle="modal" data-bs-target="#createInterventionModal">
-        <i class="bi bi-plus-circle me-1"></i>Ajouter
-      </button>
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-light toggle-card-btn" data-target="#interventions-card-body"><i class="bi bi-eye"></i> Voir</button>
+        <button id="add-intervention-btn" class="btn btn-light btn-sm d-none" data-bs-toggle="modal" data-bs-target="#createInterventionModal">
+          <i class="bi bi-plus-circle me-1"></i>Ajouter
+        </button>
+      </div>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body p-4" id="interventions-card-body">
       <h3 class="mb-3 fw-semibold"><i class="bi bi-list-task me-2"></i>Suivi des interventions</h3>
       <div id="ticket-interventions-list">
         <div class="loading-spinner"><div class="spinner-border text-primary"></div></div>
@@ -1351,14 +1354,6 @@
                       ${['', ...matStatusOptions].map(opt => `<option value="${opt}" ${opt===status?'selected':''}>${opt || '—'}</option>`).join('')}
                     </select>
                   ` : `<span class="badge bg-light text-dark">${status}</span>`}
-                </div>
-                <div class="d-flex justify-content-end mt-2 gap-2">
-                  <a class="btn btn-sm btn-outline-primary" target="_blank" href="materiel-gestion.html?ref=${encodeURIComponent(m.reference || '')}">
-                    <i class="bi bi-eye me-1"></i>Voir
-                  </a>
-                  <a class="btn btn-sm btn-outline-secondary" href="intervention-view.html?id=${m.intervention_id || m._intervention?.id || ''}">
-                    <i class="bi bi-arrow-left"></i>Retour intervention
-                  </a>
                 </div>
               </div>
             </div>

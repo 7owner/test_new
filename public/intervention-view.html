@@ -532,7 +532,6 @@ document.addEventListener('DOMContentLoaded', async function () {
   const responsablesList = document.getElementById('responsables-list');
   const agentsList = document.getElementById('agents-list');
   const downloadPpspsBtn = document.getElementById('download-ppsps-btn');
-  const backInlineBtn = document.getElementById('back-inline-btn');
   const documentsList = document.getElementById('documents-list');
   const responsableSelect = document.getElementById('responsable-select');
   const agentSelect = document.getElementById('agent-select');
@@ -558,7 +557,6 @@ document.addEventListener('DOMContentLoaded', async function () {
   const inlineAg = document.getElementById('inline-agents');
   const inlineAddResp = document.getElementById('inline-add-resp');
   const inlineAddAgent = document.getElementById('inline-add-agent');
-  const backInlineBtn = document.getElementById('back-inline-btn');
   const planningBody = document.getElementById('planning-body');
   const planningToggleBtn = document.getElementById('toggle-planning-btn');
   const demandesList = document.getElementById('demandes-materiel-list');
@@ -566,6 +564,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const demandeCommentaireInput = document.getElementById('demande-commentaire');
   const demandeQuantiteInput = document.getElementById('demande-quantite');
   const demandeSubmitBtn = document.getElementById('demande-submit-btn');
+  const backInlineBtn = document.getElementById('back-inline-btn');
   const finishInterBtn = document.getElementById('finish-inter-btn');
   const factureCard = document.getElementById('facture-card');
   const factureBody = document.getElementById('facture-body');
@@ -587,7 +586,6 @@ document.addEventListener('DOMContentLoaded', async function () {
   const factureTotalTtcEl = document.getElementById('facture-total-ttc') || null;
   const rendusBody = document.getElementById('rendus-body');
   const rendusToggleBtn = document.getElementById('toggle-rendus-btn');
-  const backInlineBtn = document.getElementById('back-inline-btn');
   const docsBody = document.getElementById('docs-body');
   const docsToggleBtn = document.getElementById('toggle-docs-btn');
   let demandesCache = [];
@@ -1834,9 +1832,6 @@ document.addEventListener('DOMContentLoaded', async function () {
   }
   if (downloadPpspsBtn) {
     downloadPpspsBtn.addEventListener('click', downloadPpsps);
-  }
-  if (backInlineBtn) {
-    backInlineBtn.addEventListener('click', (e) => { e.preventDefault(); history.back(); });
   }
   if (backInlineBtn) {
     backInlineBtn.addEventListener('click', (e) => { e.preventDefault(); history.back(); });
