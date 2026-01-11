@@ -21,78 +21,98 @@
   }
 
   async function initializeNavbar() {
-    await ensureSessionAndCsrf();
+    // ensureSessionAndCsrf doit aussi rediriger si 401/403
+    try {
+      await ensureSessionAndCsrf();
+    } catch (e) {
+      console.error('Session invalide', e);
+      return redirectLogin();
+    }
     
     // Populate logged-in user info and handle dynamic menu items
+    // Vérifie session : si token manquant/expiré ou réponse 401/403 sur ensureSessionAndCsrf, on redirige
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return redirectLogin();
+    }
+
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const email = payload.email || 'Utilisateur';
-        const matricule = payload.matricule || payload.sub;
-        const userId = payload.id;
-        
-        const userIconLink = document.getElementById('user-icon-link');
-        const userInfoContainer = document.querySelector('#user-info-container .text-secondary');
-        
-        if (userIconLink) userIconLink.setAttribute('title', email);
-        if (userInfoContainer) userInfoContainer.textContent = `Bienvenue`;
-        
-        if (matricule) {
-          userIconLink.dataset.matricule = matricule;
-          userIconLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            const modalEl = document.getElementById('navAgentModal');
-            const frame = document.getElementById('navAgentFrame');
-            if (modalEl && frame) {
-              frame.src = `/agent-view.html?matricule=${encodeURIComponent(matricule)}&embed=1&modal=1`;
-              const m = bootstrap.Modal.getOrCreateInstance(modalEl);
-              m.show();
-            } else {
-              // fallback navigation
-              window.location.href = `/agent-view.html?matricule=${encodeURIComponent(matricule)}`;
-            }
-          });
-        }
-
-        const roles = payload.roles || [];
-        const navList = document.querySelector('.offcanvas-body ul.navbar-nav');
-        if (navList) {
-          if (roles.includes('ROLE_CLIENT') && !navList.querySelector('a[href="/client-dashboard.html"]')) {
-            const li = document.createElement('li');
-            li.className = 'nav-item';
-            li.innerHTML = `<a class="nav-link" href="/client-dashboard.html"><i class="bi bi-person-workspace me-2"></i>Espace Client</a>`;
-            navList.appendChild(li);
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const email = payload.email || 'Utilisateur';
+      const matricule = payload.matricule || payload.sub;
+      const userId = payload.id;
+      
+      const userIconLink = document.getElementById('user-icon-link');
+      const userInfoContainer = document.querySelector('#user-info-container .text-secondary');
+      
+      if (userIconLink) userIconLink.setAttribute('title', email);
+      if (userInfoContainer) userInfoContainer.textContent = `Bienvenue`;
+      
+      if (matricule) {
+        userIconLink.dataset.matricule = matricule;
+        userIconLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          const modalEl = document.getElementById('navAgentModal');
+          const frame = document.getElementById('navAgentFrame');
+          if (modalEl && frame) {
+            frame.src = `/agent-view.html?matricule=${encodeURIComponent(matricule)}&embed=1&modal=1`;
+            const m = bootstrap.Modal.getOrCreateInstance(modalEl);
+            m.show();
+          } else {
+            // fallback navigation
+            window.location.href = `/agent-view.html?matricule=${encodeURIComponent(matricule)}`;
           }
-
-          if (!navList.querySelector('a[href="/messagerie.html"]')) {
-            const li = document.createElement('li');
-            li.className = 'nav-item';
-            li.innerHTML = `<a class="nav-link" href="/messagerie.html"><i class="bi bi-chat-dots-fill me-2"></i>Messagerie</a>`;
-            const dashboardLi = navList.querySelector('a[href="/dashboard.html"]')?.parentElement;
-            if (dashboardLi) {
-              dashboardLi.insertAdjacentElement('afterend', li);
-            } else {
-              navList.prepend(li);
-            }
-          }
-
-          // Active link
-          const currentPath = window.location.pathname;
-          navList.querySelectorAll('a.nav-link').forEach(a => {
-            a.classList.remove('active');
-            if (a.getAttribute('href') === currentPath) {
-              a.classList.add('active');
-            }
-          });
-        }
-
-        // Notifications (cloche) comme sur le dashboard
-        initNotifications(userId);
+        });
       }
+
+      const roles = payload.roles || [];
+      const navList = document.querySelector('.offcanvas-body ul.navbar-nav');
+      if (navList) {
+        if (roles.includes('ROLE_CLIENT') && !navList.querySelector('a[href="/client-dashboard.html"]')) {
+          const li = document.createElement('li');
+          li.className = 'nav-item';
+          li.innerHTML = `<a class="nav-link" href="/client-dashboard.html"><i class="bi bi-person-workspace me-2"></i>Espace Client</a>`;
+          navList.appendChild(li);
+        }
+
+        if (!navList.querySelector('a[href="/messagerie.html"]')) {
+          const li = document.createElement('li');
+          li.className = 'nav-item';
+          li.innerHTML = `<a class="nav-link" href="/messagerie.html"><i class="bi bi-chat-dots-fill me-2"></i>Messagerie</a>`;
+          const dashboardLi = navList.querySelector('a[href="/dashboard.html"]')?.parentElement;
+          if (dashboardLi) {
+            dashboardLi.insertAdjacentElement('afterend', li);
+          } else {
+            navList.prepend(li);
+          }
+        }
+
+        // Active link
+        const currentPath = window.location.pathname;
+        navList.querySelectorAll('a.nav-link').forEach(a => {
+          a.classList.remove('active');
+          if (a.getAttribute('href') === currentPath) {
+            a.classList.add('active');
+          }
+        });
+      }
+
+      // Notifications (cloche) comme sur le dashboard
+      initNotifications(userId);
     } catch (e) {
       console.error('Error setting up user-specific navbar elements:', e);
+      redirectLogin();
     }
+
+    // Wrapper fetch pour rediriger automatiquement si session expirée
+    const origFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const res = await origFetch(...args);
+      if (res.status === 401 || res.status === 403) {
+        redirectLogin();
+      }
+      return res;
+    };
     
     // Logout button
     const logoutLink = document.getElementById('logout-link');
@@ -114,6 +134,12 @@
     if (offcanvasElement) {
       new bootstrap.Offcanvas(offcanvasElement);
     }
+  }
+
+  function redirectLogin() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userRole');
+    window.location.href = '/login.html';
   }
 
   /**
@@ -249,5 +275,3 @@
     }
   }
 });
-
-
