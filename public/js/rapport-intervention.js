@@ -216,7 +216,7 @@
       if (clientId && safeMeta.client === 'Non renseigné') {
         const client = await fetchJSON(`/api/clients/${clientId}`);
         if (client) {
-          if (client.nom) safeMeta.client = client.nom;
+          if (client.nom_client || client.nom) safeMeta.client = client.nom_client || client.nom;
           if (client.contrat_titre) safeMeta.contrat = client.contrat_titre;
           if (client.contrat_id) contractId = contractId || client.contrat_id;
         }
