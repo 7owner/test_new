@@ -412,6 +412,22 @@
           const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('messagesModal'));
           modal.show();
         };
+        // Masquer la navbar du contenu messagerie embarqué
+        const messagesFrame = document.getElementById('messagesFrame');
+        if (messagesFrame) {
+          messagesFrame.addEventListener('load', () => {
+            try {
+              const doc = messagesFrame.contentDocument || messagesFrame.contentWindow?.document;
+              if (!doc) return;
+              ['#navbar-placeholder', 'header', 'nav', '.header', '.app-header', '.topbar'].forEach(sel => {
+                doc.querySelectorAll(sel).forEach(el => el.style.display = 'none');
+              });
+              if (doc.body) doc.body.style.paddingTop = '0';
+            } catch (e) {
+              console.warn('Impossible de masquer la nav dans la messagerie embarquée', e);
+            }
+          });
+        }
         if (msgBtn) msgBtn.addEventListener('click', openMessages);
         if (msgBtnHero) msgBtnHero.addEventListener('click', openMessages);
 
