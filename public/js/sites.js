@@ -76,8 +76,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`;
 
       const associatedAssociations = (site.associations || []).map(asso => {
-        const href = asso.id ? `association-view.html?id=${asso.id}` : '#';
-        return `<a class="badge bg-secondary me-1 text-decoration-none" ${asso.id ? `href="${href}" target="_blank" rel="noopener"` : ''}>${asso.titre}</a>`;
+        if (!asso.id) return `<span class="badge bg-secondary me-1">Sans ID</span>`;
+        return `<button type="button" class="badge bg-secondary me-1 border-0 assoc-link" data-id="${asso.id}" title="Voir l'association">${asso.titre}</button>`;
       }).join('');
 
       tr.innerHTML = `
@@ -142,6 +142,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       tableBody.addEventListener('click', (e) => {
         const viewBtn = e.target.closest('.view-site');
         const editBtn = e.target.closest('.edit-site');
+        const assocBtn = e.target.closest('.assoc-link');
         if (viewBtn) {
           const siteId = viewBtn.getAttribute('data-id');
           const viewSiteModal = document.getElementById('viewSiteModal');
@@ -159,6 +160,16 @@ document.addEventListener('DOMContentLoaded', async function() {
           if (editSiteModal && editSiteFrame) {
             editSiteFrame.src = `/site-edit.html?id=${siteId}`;
             const m = bootstrap.Modal.getOrCreateInstance(editSiteModal);
+            m.show();
+          }
+        }
+        if (assocBtn) {
+          const assocId = assocBtn.getAttribute('data-id');
+          const associationModal = document.getElementById('associationModal');
+          const associationFrame = document.getElementById('associationFrame');
+          if (associationModal && associationFrame && assocId) {
+            associationFrame.src = `/association-view.html?id=${assocId}`;
+            const m = bootstrap.Modal.getOrCreateInstance(associationModal);
             m.show();
           }
         }
