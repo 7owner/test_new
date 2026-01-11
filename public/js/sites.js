@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   function getAgentName(m) { const a=(apiAgents||[]).find(x=> String(x.matricule)===String(m)); return a? `${a.nom||''} ${a.prenom||''}`.trim() : 'Non assigné'; }
 
   async function load() {
-    tableBody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-3">Chargement...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="7" class="text-muted text-center py-3">Chargement...</td></tr>';
     const headers = token? { 'Authorization': `Bearer ${token}` } : {};
     const params = new URLSearchParams(window.location.search);
     const preselectAssociationId = params.get('association_id');
@@ -57,14 +57,14 @@ document.addEventListener('DOMContentLoaded', async function() {
       applyFilters();
     } catch (e) {
       console.error(e);
-      tableBody.innerHTML = '<tr><td colspan="8" class="text-danger text-center py-3">Erreur de chargement.</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="7" class="text-danger text-center py-3">Erreur de chargement.</td></tr>';
     }
   }
 
   function render(rows) {
     tableBody.innerHTML = '';
     if (countBadge) countBadge.textContent = `${rows.length} site(s)`;
-    if (!rows.length) { tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Aucun site trouvé.</td></tr>'; return; }
+    if (!rows.length) { tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Aucun site trouvé.</td></tr>'; return; }
     rows.forEach(site => {
       const tr = document.createElement('tr');
       const debut = fmt(site.date_debut); const fin = site.date_fin? fmt(site.date_fin) : 'En cours';
@@ -84,7 +84,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         <td>${associatedAssociations || '<span class="text-muted">—</span>'}</td> <!-- New column for associations -->
         <td><span class="badge ${hasTicket? 'bg-danger':'bg-success'}">${hasTicket? 'Oui':'Non'}</span></td>
         <td>${site.responsable_matricule? getAgentName(site.responsable_matricule): 'Non assigné'}</td>
-        <td><small>Début: ${debut||''}<br>Fin: ${fin||''}</small></td>
         <td class="d-flex gap-2 flex-wrap justify-content-center align-items-center">
           <button class="btn btn-sm btn-info view-site" data-id="${site.id}"><i class="bi bi-eye"></i></button>
           ${isAdmin ? `<button class="btn btn-sm btn-warning edit-site" data-id="${site.id}"><i class="bi bi-pencil"></i></button>` : ''}
