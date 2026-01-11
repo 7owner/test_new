@@ -3072,7 +3072,33 @@ app.put('/api/agents/:matricule', authenticateToken, authorizeAdmin, async (req,
             [nom, prenom, email, tel, agence_id, actif, admin, fonction, agence, matricule]
         );
         if (result.rows.length > 0) {
-            res.json(result.rows[0]);
+            const updatedAgent = result.rows[0];
+
+            // --- Synchronise roles dans la table users si l'agent a un compte lié ---
+            try {
+              // Cherche par user_id si présent, sinon par email
+              let userRow = null;
+              if (updatedAgent.user_id) {
+                const uRes = await pool.query('SELECT id, roles FROM users WHERE id = $1', [updatedAgent.user_id]);
+                userRow = uRes.rows[0];
+              } else if (email) {
+                const uRes = await pool.query('SELECT id, roles FROM users WHERE email = $1 LIMIT 1', [email]);
+                userRow = uRes.rows[0];
+              }
+
+              if (userRow) {
+                let roles = [];
+                try { roles = JSON.parse(userRow.roles || '[]'); } catch { roles = []; }
+                const hasAdmin = roles.includes('ROLE_ADMIN');
+                if (admin === true && !hasAdmin) roles.push('ROLE_ADMIN');
+                if (admin === false && hasAdmin) roles = roles.filter(r => r !== 'ROLE_ADMIN');
+                await pool.query('UPDATE users SET roles = $1 WHERE id = $2', [JSON.stringify(roles), userRow.id]);
+              }
+            } catch (syncErr) {
+              console.warn('Sync agent->users roles failed:', syncErr.message);
+            }
+
+            res.json(updatedAgent);
         } else {
             res.status(404).json({ error: 'Agent not found' });
         }
