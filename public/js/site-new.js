@@ -149,7 +149,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Initialize autocompletes
       if (responsableSearchInput && responsableMatriculeHidden && responsableSuggestionsContainer) {
-        setupAutocomplete(responsableSearchInput, responsableMatriculeHidden, responsableSuggestionsContainer, '/api/agents', 'nom_complet', 'matricule');
+        setupAutocomplete(
+          responsableSearchInput,
+          responsableMatriculeHidden,
+          responsableSuggestionsContainer,
+          '/api/agents',
+          (item) => {
+            const nom = item.nom || '';
+            const prenom = item.prenom || '';
+            const mat = item.matricule || '';
+            const full = `${prenom} ${nom}`.trim();
+            return `${full || mat} ${mat ? `(${mat})` : ''}`.trim();
+          },
+          'matricule',
+          { minChars: 1 }
+        );
       }
       if (associationSearchInput && associationIdHidden && associationSuggestionsContainer) {
         setupAutocomplete(
