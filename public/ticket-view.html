@@ -925,7 +925,7 @@
                 <div class="btn-group">
                   <a href="intervention-view.html?id=${inter.id}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i> Voir</a>
                   ${isAdmin ? `
-                    <a class="btn btn-sm btn-secondary edit-inter" href="intervention-view.html?id=${inter.id}#edit"><i class="bi bi-pencil-square"></i> Modifier</a>
+                    <a class="btn btn-sm btn-secondary edit-inter" href="intervention-edit.html?id=${inter.id}"><i class="bi bi-pencil-square"></i> Modifier</a>
                     <button class="btn btn-sm btn-warning cancel-inter" data-id="${inter.id}"><i class="bi bi-slash-circle"></i> Annuler</button>
                   ` : ''}
                 </div>
