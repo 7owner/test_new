@@ -106,7 +106,7 @@
         </div>
         <div class="modal-body">
           <!-- Embed sans navbar -->
-          <iframe src="/demandes-client-admin.html?embed=1" style="width: 100%; height: 80vh; border: none;"></iframe>
+          <iframe id="demandes-client-iframe" src="/demandes-client-admin.html?embed=1" style="width: 100%; height: 80vh; border: none;"></iframe>
         </div>
       </div>
     </div>
@@ -199,6 +199,21 @@
       const dateEndInput = document.getElementById('ticket-date-end');
       const filtersRow = document.getElementById('filters-row');
       const toggleFiltersBtn = document.getElementById('toggle-filters-btn');
+      // Masquer la navbar dans l'iframe des demandes client (modal)
+      const demandesIframe = document.getElementById('demandes-client-iframe');
+      if (demandesIframe) {
+        demandesIframe.addEventListener('load', () => {
+          try {
+            const doc = demandesIframe.contentDocument || demandesIframe.contentWindow?.document;
+            if (!doc) return;
+            // cible le placeholder nav ou toute nav/header éventuelle
+            const nav = doc.querySelector('#navbar-placeholder, nav, header');
+            if (nav) nav.style.display = 'none';
+          } catch (e) {
+            console.warn('Impossible de masquer la navbar de la modal demandes', e);
+          }
+        });
+      }
 
       function buildHeaders(json=false){
         const h = json? { 'Content-Type':'application/json' } : {};
