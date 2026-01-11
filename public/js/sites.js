@@ -75,7 +75,10 @@ document.addEventListener('DOMContentLoaded', async function() {
       const searchQuery = [site.ligne1, site.code_postal, site.ville, site.pays].filter(Boolean).join(', ');
       const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`;
 
-      const associatedAssociations = (site.associations || []).map(asso => `<span class="badge bg-secondary me-1">${asso.titre}</span>`).join('');
+      const associatedAssociations = (site.associations || []).map(asso => {
+        const href = asso.id ? `association-view.html?id=${asso.id}` : '#';
+        return `<a class="badge bg-secondary me-1 text-decoration-none" ${asso.id ? `href="${href}" target="_blank" rel="noopener"` : ''}>${asso.titre}</a>`;
+      }).join('');
 
       tr.innerHTML = `
         <td><strong>${site.nom_site||'Site'}</strong><br><small class="text-muted">ID: ${site.id}</small></td>
