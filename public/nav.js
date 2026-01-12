@@ -258,6 +258,13 @@
 
     try {
       const response = await fetch('/api/csrf-token', { credentials: 'same-origin', headers: { 'Authorization': `Bearer ${token}` } });
+      if (response.status === 401 || response.status === 403) {
+        return redirectLogin();
+      }
+      if (!response.ok) {
+        console.warn('CSRF token fetch failed with status', response.status);
+        return;
+      }
       const data = await response.json();
       const csrfToken = data.csrfToken;
       if (csrfToken) {
