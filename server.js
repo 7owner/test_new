@@ -3050,15 +3050,55 @@ app.get('/api/agents/:matricule', authenticateToken, async (req, res) => {
 
 app.post('/api/agents', authenticateToken, authorizeAdmin, async (req, res) => {
     const { matricule, nom, prenom, email, tel, agence_id, actif, admin } = req.body;
+    const client = await pool.connect();
     try {
-        const result = await pool.query(
-            'INSERT INTO agent (matricule, nom, prenom, email, tel, agence_id, actif, admin) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-            [matricule, nom, prenom, email, tel, agence_id, actif, admin]
+        await client.query('BEGIN');
+
+        // 1) Associer ou créer un user si email fourni
+        let userId = null;
+        if (email) {
+            const existingUser = await client.query('SELECT id, roles FROM users WHERE email = $1 LIMIT 1', [email]);
+            if (existingUser.rows.length) {
+                userId = existingUser.rows[0].id;
+                // Aligne les rôles si besoin
+                let roles = [];
+                try { roles = JSON.parse(existingUser.rows[0].roles || '[]'); } catch { roles = []; }
+                if (!roles.includes('ROLE_USER')) roles.push('ROLE_USER');
+                const hasAdmin = roles.includes('ROLE_ADMIN');
+                if (admin && !hasAdmin) roles.push('ROLE_ADMIN');
+                if (!admin && hasAdmin) roles = roles.filter(r => r !== 'ROLE_ADMIN');
+                await client.query('UPDATE users SET roles = $1 WHERE id = $2', [JSON.stringify(roles), userId]);
+            } else {
+                // Crée un user avec mot de passe par défaut
+                const pwdPlain = process.env.DEFAULT_USER_PASSWORD || 'changeme';
+                const hash = await bcrypt.hash(pwdPlain, 10);
+                let roles = ['ROLE_USER'];
+                if (admin) roles.push('ROLE_ADMIN');
+                const insUser = await client.query(
+                  'INSERT INTO users (email, roles, password) VALUES ($1, $2, $3) RETURNING id',
+                  [email, JSON.stringify(roles), hash]
+                );
+                userId = insUser.rows[0].id;
+            }
+        }
+
+        // 2) Crée l’agent
+        const result = await client.query(
+            'INSERT INTO agent (matricule, nom, prenom, email, tel, agence_id, actif, admin, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+            [matricule, nom, prenom, email, tel, agence_id, actif, admin, userId]
         );
+
+        await client.query('COMMIT');
         res.status(201).json(result.rows[0]);
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('Error creating agent:', err);
+        if (err.code === '23505') {
+          return res.status(409).json({ error: 'Matricule ou email déjà utilisé.' });
+        }
         res.status(500).json({ error: 'Internal Server Error' });
+    } finally {
+        client.release();
     }
 });
 
