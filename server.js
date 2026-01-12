@@ -3079,10 +3079,10 @@ app.put('/api/agents/:matricule', authenticateToken, authorizeAdmin, async (req,
               // Cherche par user_id si présent, sinon par email
               let userRow = null;
               if (updatedAgent.user_id) {
-                const uRes = await pool.query('SELECT id, roles FROM users WHERE id = $1', [updatedAgent.user_id]);
+                const uRes = await pool.query('SELECT id, roles, email FROM users WHERE id = $1', [updatedAgent.user_id]);
                 userRow = uRes.rows[0];
               } else if (email) {
-                const uRes = await pool.query('SELECT id, roles FROM users WHERE email = $1 LIMIT 1', [email]);
+                const uRes = await pool.query('SELECT id, roles, email FROM users WHERE email = $1 LIMIT 1', [email]);
                 userRow = uRes.rows[0];
               }
 
@@ -3092,10 +3092,24 @@ app.put('/api/agents/:matricule', authenticateToken, authorizeAdmin, async (req,
                 const hasAdmin = roles.includes('ROLE_ADMIN');
                 if (admin === true && !hasAdmin) roles.push('ROLE_ADMIN');
                 if (admin === false && hasAdmin) roles = roles.filter(r => r !== 'ROLE_ADMIN');
-                await pool.query('UPDATE users SET roles = $1 WHERE id = $2', [JSON.stringify(roles), userRow.id]);
+
+                // Mise à jour email si différent
+                if (email && email !== userRow.email) {
+                  try {
+                    await pool.query('UPDATE users SET email = $1, roles = $2 WHERE id = $3', [email, JSON.stringify(roles), userRow.id]);
+                  } catch (emailErr) {
+                    if (emailErr.code === '23505') {
+                      console.warn(`Email déjà utilisé, impossible de mettre à jour l'utilisateur lié à l'agent ${matricule}`);
+                    } else {
+                      throw emailErr;
+                    }
+                  }
+                } else {
+                  await pool.query('UPDATE users SET roles = $1 WHERE id = $2', [JSON.stringify(roles), userRow.id]);
+                }
               }
             } catch (syncErr) {
-              console.warn('Sync agent->users roles failed:', syncErr.message);
+              console.warn('Sync agent->users roles/email failed:', syncErr.message);
             }
 
             res.json(updatedAgent);
