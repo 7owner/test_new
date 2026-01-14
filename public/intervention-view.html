@@ -359,6 +359,22 @@
     </div>
   </div>
 
+  <!-- ✅ Représentants client -->
+  <div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <span class="d-flex align-items-center gap-2"><i class="bi bi-people-fill"></i>Représentants du client</span>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-light" id="toggle-reps-btn"><i class="bi bi-eye"></i> Voir</button>
+        <button class="btn btn-sm btn-light" id="add-rep-btn"><i class="bi bi-person-plus"></i> Ajouter</button>
+      </div>
+    </div>
+    <div class="card-body p-4" id="reps-body">
+      <div id="reps-list" class="row g-3">
+        <div class="text-muted">Aucun représentant.</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ✅ Documents associés -->
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -436,6 +452,42 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
         <button type="button" class="btn btn-gradient" id="save-responsable-btn">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Représentant -->
+<div class="modal fade" id="repModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="repModalTitle">Ajouter un représentant</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="rep-id">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nom</label>
+          <input type="text" class="form-control" id="rep-nom">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Email</label>
+          <input type="email" class="form-control" id="rep-email">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Téléphone</label>
+          <input type="text" class="form-control" id="rep-tel">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Fonction</label>
+          <input type="text" class="form-control" id="rep-fonction">
+        </div>
+        <div id="rep-feedback" class="small d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-gradient" id="save-rep-btn">Enregistrer</button>
       </div>
     </div>
   </div>
