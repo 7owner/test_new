@@ -2664,14 +2664,16 @@ app.get('/api/clients/:id/relations', authenticateToken, async (req, res) => {
       ORDER BY COALESCE(cr.nom, a.nom, u.email)
     `, [id])).rows;
     // Associations liées : direct par client_id ou via les contrats du client
-    const contratIds = contrats.map(ct => ct.id);
     const assocRows = (await pool.query(
-      `SELECT a.*, ct.titre AS contrat_titre
+      `SELECT DISTINCT a.*, ct.titre AS contrat_titre
        FROM association a
-       LEFT JOIN contrat ct ON ct.id = a.contrat_id
-       WHERE a.client_id = $1 OR ($2::int[] <> '{}' AND a.contrat_id = ANY($2::int[]))
+       LEFT JOIN association_site asi ON asi.association_id = a.id
+       LEFT JOIN site s ON s.id = asi.site_id
+       LEFT JOIN contrat_site_association csa ON csa.site_id = s.id
+       LEFT JOIN contrat ct ON ct.id = csa.contrat_id
+       WHERE s.client_id = $1 OR ct.client_id = $1
        ORDER BY a.id DESC`,
-      [id, contratIds]
+      [id]
     )).rows;
 
     res.json({ client: c, sites, demandes, contrats, representants, associations: assocRows });
