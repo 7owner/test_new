@@ -244,7 +244,7 @@
           <button class="btn btn-light btn-sm toggle-card-btn" data-target="contrats-body"><i class="bi bi-eye"></i> Voir</button>
         </div>
         <div class="mt-1">
-          <button class="btn btn-gradient btn-sm" id="openContratModal">
+          <button class="btn btn-gradient btn-sm" id="openContratModal" data-bs-toggle="modal" data-bs-target="#createContratModal">
             <i class="bi bi-plus-circle me-1"></i>Créer un contrat
           </button>
         </div>
@@ -342,23 +342,7 @@
     </div>
 
     <!-- Admin Actions -->
-    <div id="adminActions" class="main-card" style="display:none;">
-      <div class="card-header-custom d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-shield-lock me-2"></i>Actions Administrateur
-          <button class="btn btn-light btn-sm toggle-card-btn" data-target="admin-body"><i class="bi bi-eye"></i> Voir</button>
-        </div>
-      </div>
-      <div class="card-body p-4" id="admin-body">
-        <div class="admin-section text-center">
-          <h5 class="mb-3"><i class="bi bi-file-earmark-plus me-2"></i>Créer un contrat</h5>
-          <p class="text-muted mb-4">Générez un nouveau contrat lié à ce client.</p>
-          <button id="openContratModal" class="btn btn-gradient px-4" data-bs-toggle="modal" data-bs-target="#createContratModal">
-            <i class="bi bi-plus-circle me-2"></i>Créer un contrat
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- Section admin retirée -->
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
@@ -372,7 +356,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <iframe id="createContratFrame" src="/contrat-new.html?client_id=${id}" style="width: 100%; height: 80vh; border: none;"></iframe>
+          <iframe id="createContratFrame" src="about:blank" style="width: 100%; height: 80vh; border: none;"></iframe>
         </div>
       </div>
     </div>
@@ -528,6 +512,9 @@
       const contratFeedback = document.getElementById('contrat-feedback');
       const saveContratBtn = document.getElementById('save-contrat-btn');
       const saveEditRepBtn = document.getElementById('save-rep-btn');
+      const createContratModalEl = document.getElementById('createContratModal');
+      const createContratFrame = document.getElementById('createContratFrame');
+      const createContratBtn = document.getElementById('openContratModal');
       let currentRepEditing = null;
 
       // Gestion des boutons "Voir"/retracter pour les cartes
@@ -651,7 +638,6 @@
             </div>`);
 
         if (isAdmin) {
-          document.getElementById('adminActions').style.display = '';
           if (addRepBtn && repModal) addRepBtn.classList.remove('d-none');
         }
 
@@ -748,6 +734,13 @@
               editRepFeedback.className = 'small text-danger';
               editRepFeedback.textContent = err.message || 'Erreur lors de la mise à jour';
             }
+          });
+        }
+
+        // Modal contrat : charge l'iframe au clic
+        if (createContratModalEl && createContratFrame) {
+          createContratModalEl.addEventListener('show.bs.modal', () => {
+            createContratFrame.src = `/contrat-new.html?client_id=${encodeURIComponent(id)}`;
           });
         }
 
