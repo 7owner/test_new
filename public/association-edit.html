@@ -21,6 +21,12 @@
           <label for="email_comptabilite" class="form-label">Email de comptabilité</label>
           <input type="email" class="form-control" id="email_comptabilite">
         </div>
+        <div class="mb-3 position-relative">
+          <label for="client-search-input" class="form-label">Client (optionnel)</label>
+          <input type="text" class="form-control" id="client-search-input" placeholder="Rechercher un client" autocomplete="off">
+          <input type="hidden" id="client_id">
+          <div id="client-suggestions" class="list-group position-absolute w-100" style="z-index: 100; max-height: 260px; overflow-y: auto;"></div>
+        </div>
         <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
       </form>
       
@@ -100,8 +106,12 @@
       const agentListEl = document.getElementById('agents-list');
       const respSelectEl = document.getElementById('responsable-select');
       const agentSelectEl = document.getElementById('agent-select');
+      const clientSearchInput = document.getElementById('client-search-input');
+      const clientIdHidden = document.getElementById('client_id');
+      const clientSuggestionsContainer = document.getElementById('client-suggestions');
 
       let allAgents = [];
+      let allClients = [];
 
       async function fetchJSON(url, options = {}) {
         const res = await fetch(url, { headers, ...options });
@@ -111,6 +121,53 @@
         }
         return res.status === 204 ? null : res.json();
       }
+
+      // Autocomplete client
+      const setupAutocomplete = (searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey, idKey) => {
+        let timeout;
+        const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+        const getLabel = (item) => (typeof displayKey === 'function') ? displayKey(item) : (item?.[displayKey] || '');
+        const getId = (item) => (typeof idKey === 'function') ? idKey(item) : (item?.[idKey] ?? '');
+        searchInput.addEventListener('input', () => {
+          clearTimeout(timeout);
+          const query = searchInput.value.trim();
+          if (query.length < 1) {
+            suggestionsContainer.innerHTML = '';
+            hiddenInput.value = '';
+            return;
+          }
+          timeout = setTimeout(async () => {
+            try {
+              const res = await fetch(fetchUrl, { headers, credentials:'same-origin' });
+              const items = res.ok ? await res.json() : [];
+              const qNorm = norm(query);
+              const filtered = (items || []).filter(it => norm(getLabel(it)).includes(qNorm));
+              suggestionsContainer.innerHTML = '';
+              if (!filtered.length) {
+                suggestionsContainer.innerHTML = '<div class="list-group-item">Aucun résultat.</div>';
+                return;
+              }
+              filtered.forEach(item => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'list-group-item list-group-item-action';
+                btn.textContent = getLabel(item);
+                btn.addEventListener('click', () => {
+                  const label = getLabel(item) || '';
+                  const val = getId(item) || '';
+                  searchInput.value = label;
+                  hiddenInput.value = val;
+                  suggestionsContainer.innerHTML = '';
+                });
+                suggestionsContainer.appendChild(btn);
+              });
+            } catch (e) {
+              suggestionsContainer.innerHTML = '<div class="list-group-item list-group-item-danger">Erreur</div>';
+            }
+          }, 200);
+        });
+        searchInput.addEventListener('blur', ()=> setTimeout(()=> suggestionsContainer.innerHTML='', 100));
+      };
 
       function renderList(ulEl, items, nameProp, valueProp, removeCallback) {
         ulEl.innerHTML = '';
@@ -135,11 +192,17 @@
         try {
           const data = await fetchJSON(`/api/associations/${associationId}/relations`);
           const agentsData = await fetchJSON('/api/agents');
+          allClients = await fetchJSON('/api/clients');
           allAgents = agentsData || [];
 
           // Populate main form
           titreEl.value = data.association.titre;
           emailEl.value = data.association.email_comptabilite;
+          if (data.association.client_id) {
+            clientIdHidden.value = data.association.client_id;
+            const client = allClients.find(c => Number(c.id) === Number(data.association.client_id));
+            if (client && clientSearchInput) clientSearchInput.value = client.nom_client || client.nom || client.email || '';
+          }
           
           // Populate lists
           renderList(respListEl, data.responsables, 'nom', 'matricule', removeResponsable);
@@ -149,6 +212,16 @@
           const optionsHtml = allAgents.map(a => `<option value="${a.matricule}">${a.nom} ${a.prenom || ''}</option>`).join('');
           respSelectEl.innerHTML = optionsHtml;
           agentSelectEl.innerHTML = optionsHtml;
+          if (clientSearchInput && clientIdHidden && clientSuggestionsContainer) {
+            setupAutocomplete(
+              clientSearchInput,
+              clientIdHidden,
+              clientSuggestionsContainer,
+              '/api/clients',
+              (c) => `${c.nom_client || c.nom || c.email || ''} ${c.id ? '(#'+c.id+')' : ''}`,
+              'id'
+            );
+          }
           
           loadingEl.classList.add('d-none');
           mainContentEl.classList.remove('d-none');
@@ -162,7 +235,8 @@
         e.preventDefault();
         const payload = {
           titre: titreEl.value,
-          email_comptabilite: emailEl.value
+          email_comptabilite: emailEl.value,
+          client_id: Number(clientIdHidden.value) || null
         };
         try {
           await fetchJSON(`/api/associations/${associationId}`, { method: 'PUT', body: JSON.stringify(payload) });

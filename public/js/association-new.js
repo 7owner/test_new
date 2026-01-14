@@ -120,14 +120,29 @@ document.addEventListener('DOMContentLoaded', () => {
       // Variable declarations for contract autocomplete
       const contratSearchInput = document.getElementById('contrat-search-input');
       const contratIdHidden = document.getElementById('contrat_id');
-      const contratSuggestionsContainer = document.getElementById('contrat-suggestions');
+  const contratSuggestionsContainer = document.getElementById('contrat-suggestions');
+  const clientSearchInput = document.getElementById('client-search-input');
+  const clientIdHidden = document.getElementById('client_id');
+  const clientSuggestionsContainer = document.getElementById('client-suggestions');
 
       // Initialize autocomplete for contract
-      if (contratSearchInput && contratIdHidden && contratSuggestionsContainer) {
-        setupAutocomplete(contratSearchInput, contratIdHidden, contratSuggestionsContainer, '/api/contrats', 'titre', 'id', {}, (item)=>{
-          if (item && item.id) renderContratPreview(item.id);
-        });
-      }
+  if (contratSearchInput && contratIdHidden && contratSuggestionsContainer) {
+    setupAutocomplete(contratSearchInput, contratIdHidden, contratSuggestionsContainer, '/api/contrats', 'titre', 'id', {}, (item)=>{
+      if (item && item.id) renderContratPreview(item.id);
+    });
+  }
+
+  // Autocomplete client
+  if (clientSearchInput && clientIdHidden && clientSuggestionsContainer) {
+    setupAutocomplete(
+      clientSearchInput,
+      clientIdHidden,
+      clientSuggestionsContainer,
+      '/api/clients',
+      (item) => `${item.nom_client || item.nom || item.email || ''} ${item.id ? '(#'+item.id+')' : ''}`,
+      'id'
+    );
+  }
 
       async function renderContratPreview(cid) {
         if (!cid || !contratCard) { if (contratCard) contratCard.classList.add('d-none'); return; }
@@ -190,7 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
             titre: document.getElementById('titre').value,
             email_comptabilite: document.getElementById('email_comptabilite').value,
             adresse_id: adresseId,
-            contrat_id: Number(contratIdHidden.value) || null // Add contrat_id to payload
+            contrat_id: Number(contratIdHidden.value) || null, // Add contrat_id to payload
+            client_id: Number(clientIdHidden.value) || null
           };
           const assocRes = await fetch('/api/associations', {
             method: 'POST',
