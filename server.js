@@ -2663,7 +2663,18 @@ app.get('/api/clients/:id/relations', authenticateToken, async (req, res) => {
       WHERE cr.client_id = $1
       ORDER BY COALESCE(cr.nom, a.nom, u.email)
     `, [id])).rows;
-    res.json({ client: c, sites, demandes, contrats, representants });
+    // Associations liées : direct par client_id ou via les contrats du client
+    const contratIds = contrats.map(ct => ct.id);
+    const assocRows = (await pool.query(
+      `SELECT a.*, ct.titre AS contrat_titre
+       FROM association a
+       LEFT JOIN contrat ct ON ct.id = a.contrat_id
+       WHERE a.client_id = $1 OR ($2::int[] <> '{}' AND a.contrat_id = ANY($2::int[]))
+       ORDER BY a.id DESC`,
+      [id, contratIds]
+    )).rows;
+
+    res.json({ client: c, sites, demandes, contrats, representants, associations: assocRows });
   } catch (err) {
     console.error('Error fetching client relations:', err);
     res.status(500).json({ error: 'Internal Server Error' });
