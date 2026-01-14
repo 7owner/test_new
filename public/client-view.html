@@ -264,28 +264,9 @@
       </div>
     </div>
 
-    <!-- Sites and Demands Row -->
+    <!-- Demandes Row -->
     <div class="row g-4 mb-4">
-      <div class="col-lg-6">
-        <div class="main-card h-100">
-          <div class="card-header-custom d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center gap-2">
-              <i class="bi bi-building me-2"></i>Sites Associés
-              <button class="btn btn-light btn-sm toggle-card-btn" data-target="sites-body"><i class="bi bi-eye"></i> Voir</button>
-            </div>
-          </div>
-          <div class="card-body p-4" id="sites-body">
-            <div id="sites-container">
-              <div class="loading-spinner">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Chargement...</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-6">
+      <div class="col-lg-12">
         <div class="main-card h-100">
           <div class="card-header-custom d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-2">
@@ -654,18 +635,20 @@
 
         // Sites
         const sitesContainer = document.getElementById('sites-container');
-        sitesContainer.innerHTML = sites?.length ? '' : `
-          <div class="empty-state">
-            <i class="bi bi-building"></i><p>Aucun site</p>
-          </div>`;
-        sites?.forEach(s =>
-          sitesContainer.innerHTML += `
-            <div class="list-item-custom">
-              <strong>${s.nom_site || 'Site #' + s.id}</strong><br>
-              <a href="/site-view.html?id=${s.id}" class="btn btn-sm btn-outline-primary mt-2">
-                <i class="bi bi-eye"></i> Voir
-              </a>
-            </div>`);
+        if (sitesContainer) {
+          sitesContainer.innerHTML = sites?.length ? '' : `
+            <div class="empty-state">
+              <i class="bi bi-building"></i><p>Aucun site</p>
+            </div>`;
+          sites?.forEach(s =>
+            sitesContainer.innerHTML += `
+              <div class="list-item-custom">
+                <strong>${s.nom_site || 'Site #' + s.id}</strong><br>
+                <a href="/site-view.html?id=${s.id}" class="btn btn-sm btn-outline-primary mt-2">
+                  <i class="bi bi-eye"></i> Voir
+                </a>
+              </div>`);
+        }
 
         // Demandes
         const demandesContainer = document.getElementById('demandes-container');
