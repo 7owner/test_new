@@ -750,6 +750,7 @@
         if (res.status===401||res.status===403){ location.href='/login.html'; return; }
         const data = await res.json();
         if (!res.ok) throw new Error(data && data.error || `HTTP ${res.status}`);
+        console.log('[ticket-view] relations', { ticketId, interventions: data.interventions?.length, demandes: data.demandes?.length, site: data.site?.id });
         const t = data.ticket; if (!t) throw new Error('Not found');
         let demandeId = t.demande_id || null;
         if (!demandeId && Array.isArray(data.demandes) && data.demandes.length) {
@@ -934,6 +935,7 @@
             console.warn('Impossible de récupérer les interventions du ticket', err);
           }
         }
+        console.log('[ticket-view] interventionsCache', interventionsCache);
         const interToDisplay = interventionsCache;
         if (!interToDisplay.length) list.innerHTML = '<p class="text-muted">Aucune intervention associée.</p>';
         interToDisplay.forEach(inter => {
@@ -961,6 +963,7 @@
         });
 
         // Rapports d'intervention (liens vers les rendus téléchargeables)
+        console.log('[ticket-view] render reports with', interventionsCache.length);
         renderInterventionReports(interventionsCache);
 
         // Extract IDs for financial invoices
@@ -1248,7 +1251,9 @@
           if (associationId) params.append('association_id', associationId);
 
           const url = `/api/factures?${params.toString()}`;
+          console.log('[ticket-view] fetch factures financières', url);
           const factures = await fetchJSON(url);
+          console.log('[ticket-view] factures financières', factures);
           renderFinancialInvoices(factures || []);
         } catch (e) {
           console.error('Erreur chargement factures financières:', e);
