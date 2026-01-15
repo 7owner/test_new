@@ -1188,6 +1188,7 @@
           return;
         }
         facturesList.innerHTML = '';
+        console.log('[ticket-view] renderInterventionReports ->', interventions.length);
         interventions.forEach(inter => {
           const card = document.createElement('div');
           card.className = 'card card-body mb-2';
