@@ -924,17 +924,19 @@
         const list = document.getElementById('ticket-interventions-list'); list.innerHTML = '';
         const items = Array.isArray(data.interventions)? data.interventions : [];
         interventionsCache = items;
-        let extraLoaded = false;
         if (!interventionsCache.length && ticketId) {
           try {
             const extraInter = await fetchJSON(`/api/interventions?ticket_id=${ticketId}`);
-            if (Array.isArray(extraInter)) { interventionsCache = extraInter; extraLoaded = true; }
+            if (Array.isArray(extraInter)) {
+              interventionsCache = extraInter;
+            }
           } catch (err) {
             console.warn('Impossible de récupérer les interventions du ticket', err);
           }
         }
-        if (!items.length && !extraLoaded) list.innerHTML = '<p class="text-muted">Aucune intervention associée.</p>';
-        items.forEach(inter => {
+        const interToDisplay = interventionsCache;
+        if (!interToDisplay.length) list.innerHTML = '<p class="text-muted">Aucune intervention associée.</p>';
+        interToDisplay.forEach(inter => {
           const el = document.createElement('div'); el.className='card card-body mb-2';
           const interElapsed = inter.date_debut ? formatElapsed((inter.date_fin ? new Date(inter.date_fin).getTime() : Date.now()) - new Date(inter.date_debut).getTime()) : '';
           el.innerHTML = `
