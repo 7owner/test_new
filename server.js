@@ -5027,7 +5027,33 @@ app.delete('/api/achats/:id', authenticateToken, authorizeAdmin, async (req, res
 // -------------------- Factures --------------------
 app.get('/api/factures', authenticateToken, async (req, res) => {
   try {
-    const r = await pool.query("SELECT f.*, c.nom_client, af.nom_affaire FROM facture f LEFT JOIN client c ON f.client_id=c.id LEFT JOIN affaire af ON f.affaire_id=af.id ORDER BY f.id DESC");
+    const { client_id, affaire_id, association_id } = req.query;
+    const params = [];
+    const conditions = [];
+    let paramIndex = 1;
+
+    let sql = "SELECT f.*, c.nom_client, af.nom_affaire FROM facture f LEFT JOIN client c ON f.client_id=c.id LEFT JOIN affaire af ON f.affaire_id=af.id";
+
+    if (client_id) {
+      conditions.push(`f.client_id = $${paramIndex++}`);
+      params.push(client_id);
+    }
+    if (affaire_id) {
+      conditions.push(`f.affaire_id = $${paramIndex++}`);
+      params.push(affaire_id);
+    }
+    if (association_id) {
+      conditions.push(`f.association_id = $${paramIndex++}`);
+      params.push(association_id);
+    }
+
+    if (conditions.length > 0) {
+      sql += ` WHERE ${conditions.join(' AND ')}`;
+    }
+
+    sql += " ORDER BY f.id DESC";
+
+    const r = await pool.query(sql, params);
     res.json(r.rows);
   } catch (err) { console.error('Error fetching factures:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });

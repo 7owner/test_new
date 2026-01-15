@@ -295,14 +295,25 @@
     </div>
   </div>
 
-  <!-- Factures / Rapports d'intervention -->
+  <!-- Rapports d'intervention -->
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
-      <span class="d-flex align-items-center gap-2"><i class="bi bi-receipt me-1"></i>Factures d'intervention</span>
+      <span class="d-flex align-items-center gap-2"><i class="bi bi-file-earmark-text me-1"></i>Rapports d'interventions</span>
       <button class="btn btn-sm btn-light toggle-card-btn" data-target="#factures-card-body"><i class="bi bi-eye"></i> Voir</button>
     </div>
     <div class="card-body p-4" id="factures-card-body">
       <div id="factures-list" class="text-muted">Chargement...</div>
+    </div>
+  </div>
+
+  <!-- Factures Financières -->
+  <div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center">
+      <span class="d-flex align-items-center gap-2"><i class="bi bi-receipt me-1"></i>Factures Financières</span>
+      <button class="btn btn-sm btn-light toggle-card-btn" data-target="#financial-factures-card-body"><i class="bi bi-eye"></i> Voir</button>
+    </div>
+    <div class="card-body p-4" id="financial-factures-card-body">
+      <div id="financial-factures-list" class="text-muted">Chargement...</div>
     </div>
   </div>
 
@@ -947,8 +958,14 @@
           list.appendChild(el);
         });
 
-        // Factures / rapports d'intervention (liens vers les rendus téléchargeables)
-        renderFactures(interventionsCache);
+        // Rapports d'intervention (liens vers les rendus téléchargeables)
+        renderInterventionReports(interventionsCache);
+
+        // Extract IDs for financial invoices
+        const currentClientId = data.site?.client_id || data.client?.id || t.client_id;
+        const currentAffaireId = data.affaire?.id || t.affaire_id;
+        const currentAssociationId = data.ticket?.association_id || data.site?.association_id || data.affaire?.association_id; // Prioritize from ticket, then site, then affaire
+        loadFinancialInvoices(currentClientId, currentAffaireId, currentAssociationId);
 
         // Responsables et agents assignés
         const responsablesList = document.getElementById('responsables-list');
@@ -1156,36 +1173,86 @@
           // Agents : tous
           populateSelect(agentSelect);
 
-          // Carte factures / rapports d'intervention
-          function renderFactures(interventions = []) {
-            if (!facturesList) return;
-            if (!interventions.length) {
-              facturesList.innerHTML = '<div class="text-muted">Aucune intervention, aucune facture.</div>';
-              return;
-            }
-            facturesList.innerHTML = '';
-            interventions.forEach(inter => {
-              const card = document.createElement('div');
-              card.className = 'card card-body mb-2';
-              card.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                  <div>
-                    <div class="fw-semibold">${inter.titre || 'Intervention #${inter.id}'}</div>
-                    <div class="small text-muted">${inter.description || ''}</div>
-                  </div>
-                  <div class="d-flex gap-2">
-                    <a class="btn btn-sm btn-outline-primary" href="intervention-view.html?id=${inter.id}" target="_blank">
-                      <i class="bi bi-eye"></i> Voir
-                    </a>
-                    <a class="btn btn-sm btn-success" href="rendu-intervention-view.html?id=${inter.id}" target="_blank">
-                      <i class="bi bi-download"></i> Télécharger (HTML)
-                    </a>
-                  </div>
-                </div>
-              `;
-              facturesList.appendChild(card);
-            });
-          }
+      const financialFacturesList = document.getElementById('financial-factures-list');
+
+      // Renamed: Rapports d'intervention (liens vers les rendus téléchargeables)
+      function renderInterventionReports(interventions = []) {
+        if (!facturesList) return; // facturesList is 'factures-list' element
+        if (!interventions.length) {
+          facturesList.innerHTML = '<div class="text-muted">Aucune intervention, aucune facture.</div>';
+          return;
+        }
+        facturesList.innerHTML = '';
+        interventions.forEach(inter => {
+          const card = document.createElement('div');
+          card.className = 'card card-body mb-2';
+          card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div>
+                <div class="fw-semibold">${inter.titre || 'Intervention #${inter.id}'}</div>
+                <div class="small text-muted">${inter.description || ''}</div>
+              </div>
+              <div class="d-flex gap-2">
+                <a class="btn btn-sm btn-outline-primary" href="intervention-view.html?id=${inter.id}" target="_blank">
+                  <i class="bi bi-eye"></i> Voir
+                </a>
+                <a class="btn btn-sm btn-success" href="rendu-intervention-view.html?id=${inter.id}" target="_blank">
+                  <i class="bi bi-download"></i> Télécharger (HTML)
+                </a>
+              </div>
+            </div>
+          `;
+          facturesList.appendChild(card);
+        });
+      }
+
+      // New: Factures Financières
+      function renderFinancialInvoices(factures = []) {
+        if (!financialFacturesList) return;
+        if (!factures.length) {
+          financialFacturesList.innerHTML = '<div class="text-muted">Aucune facture financière liée.</div>';
+          return;
+        }
+        financialFacturesList.innerHTML = '';
+        factures.forEach(facture => {
+          const card = document.createElement('div');
+          card.className = 'card card-body mb-2';
+          card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div>
+                <div class="fw-semibold">Facture #${facture.id} - ${facture.nom_client || 'Client inconnu'}</div>
+                <div class="small text-muted">Affaire: ${facture.nom_affaire || 'N/A'}</div>
+                <div class="small text-muted">Montant HT: ${facture.montant_ht || '0.00'} € | Statut: ${facture.statut || 'N/A'}</div>
+              </div>
+              <div class="d-flex gap-2">
+                <a class="btn btn-sm btn-outline-primary" href="facture-view.html?id=${facture.id}" target="_blank">
+                  <i class="bi bi-eye"></i> Voir
+                </a>
+                <!-- Add download link if available -->
+              </div>
+            </div>
+          `;
+          financialFacturesList.appendChild(card);
+        });
+      }
+
+      async function loadFinancialInvoices(clientId, affaireId, associationId) {
+        if (!financialFacturesList) return;
+        financialFacturesList.innerHTML = '<div class="text-muted">Chargement des factures...</div>';
+        try {
+          const params = new URLSearchParams();
+          if (clientId) params.append('client_id', clientId);
+          if (affaireId) params.append('affaire_id', affaireId);
+          if (associationId) params.append('association_id', associationId);
+
+          const url = `/api/factures?${params.toString()}`;
+          const factures = await fetchJSON(url);
+          renderFinancialInvoices(factures || []);
+        } catch (e) {
+          console.error('Erreur chargement factures financières:', e);
+          financialFacturesList.innerHTML = '<div class="text-danger">Erreur de chargement des factures.</div>';
+        }
+      }
 
           const saveResponsableBtn = document.getElementById('save-responsable-btn');
           if (saveResponsableBtn && responsableSelect) {
