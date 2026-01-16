@@ -299,10 +299,10 @@
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
       <span class="d-flex align-items-center gap-2"><i class="bi bi-file-earmark-text me-1"></i>Rapports d'interventions</span>
-      <button class="btn btn-sm btn-light toggle-card-btn" data-target="#factures-card-body"><i class="bi bi-eye"></i> Voir</button>
+      <button class="btn btn-sm btn-light toggle-card-btn" data-target="#rapports-card-body"><i class="bi bi-eye"></i> Voir</button>
     </div>
-    <div class="card-body p-4" id="factures-card-body">
-      <div id="factures-list" class="text-muted">Chargement...</div>
+    <div class="card-body p-4" id="rapports-card-body">
+      <div id="rapports-list" class="text-muted">Chargement...</div>
     </div>
   </div>
 
@@ -742,7 +742,7 @@
       const addMaterielBtn = document.getElementById('add-materiel-btn');
       const materielModalEl = document.getElementById('materielModal');
       const materielModal = materielModalEl ? new bootstrap.Modal(materielModalEl) : null;
-      const facturesList = document.getElementById('factures-list');
+      const rapportsList = document.getElementById('rapports-list');
       const matStatusOptions = ['A commander','Commande','En livraison','Reçu','Installé'];
       let interventionsCache = [];
       try {
@@ -1180,14 +1180,14 @@
 
       const financialFacturesList = document.getElementById('financial-factures-list');
 
-      // Renamed: Rapports d'intervention (liens vers les rendus téléchargeables)
+      // Rapports d'intervention (liens vers les rendus téléchargeables)
       function renderInterventionReports(interventions = []) {
-        if (!facturesList) return; // facturesList is 'factures-list' element
+        if (!rapportsList) return;
         if (!interventions.length) {
-          facturesList.innerHTML = '<div class="text-muted">Aucune intervention, aucune facture.</div>';
+          rapportsList.innerHTML = '<div class="text-muted">Aucune intervention, aucune facture.</div>';
           return;
         }
-        facturesList.innerHTML = '';
+        rapportsList.innerHTML = '';
         console.log('[ticket-view] renderInterventionReports ->', interventions.length);
         interventions.forEach(inter => {
           const card = document.createElement('div');
@@ -1208,7 +1208,7 @@
               </div>
             </div>
           `;
-          facturesList.appendChild(card);
+          rapportsList.appendChild(card);
         });
       }
 
