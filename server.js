@@ -5032,7 +5032,21 @@ app.get('/api/factures', authenticateToken, async (req, res) => {
     const conditions = [];
     let paramIndex = 1;
 
-    let sql = "SELECT f.*, c.nom_client, af.nom_affaire FROM facture f LEFT JOIN client c ON f.client_id=c.id LEFT JOIN affaire af ON f.affaire_id=af.id";
+    let sql = `
+      SELECT
+          f.*,
+          c.nom_client,
+          af.nom_affaire,
+          t.id AS ticket_id,
+          t.titre AS ticket_titre,
+          i.id AS intervention_id,
+          i.titre AS intervention_titre
+      FROM facture f
+      LEFT JOIN client c ON f.client_id = c.id
+      LEFT JOIN affaire af ON f.affaire_id = af.id
+      LEFT JOIN ticket t ON t.affaire_id = af.id
+      LEFT JOIN intervention i ON i.ticket_id = t.id
+    `;
 
     if (client_id) {
       conditions.push(`f.client_id = $${paramIndex++}`);
@@ -5059,6 +5073,23 @@ app.get('/api/factures', authenticateToken, async (req, res) => {
 });
 app.get('/api/factures/:id', authenticateToken, async (req, res) => {
   const { id } = req.params; try { const r = await pool.query('SELECT * FROM facture WHERE id=$1', [id]); if (!r.rows[0]) return res.status(404).json({ error: 'Not found' }); res.json(r.rows[0]); } catch (err) { console.error('Error fetching facture:', err); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const r = await pool.query('SELECT * FROM facture WHERE id=$1', [id]);
+    const facture = r.rows[0];
+    if (!facture) return res.status(404).json({ error: 'Facture not found' });
+
+    // For now, send a JSON response. In a real application, you would generate a PDF or other report.
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="facture_${id}.json"`);
+    res.json({ message: "This is a placeholder for invoice download. Actual PDF generation would happen here.", facture });
+  } catch (err) {
+    console.error('Error downloading facture:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 app.post('/api/factures', authenticateToken, authorizeAdmin, async (req, res) => {
   try {

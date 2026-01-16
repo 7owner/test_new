@@ -26,18 +26,24 @@ document.addEventListener('DOMContentLoaded', () => {
           factureListDiv.innerHTML = '';
           factures.forEach(f => {
             const el = document.createElement('div');
-            el.className = 'card card-body flex items-center justify-between';
+            el.className = 'card card-body d-flex flex-row align-items-center justify-content-between mb-2'; // Adjusted for better layout
             const mht = (f.montant_ht!=null? Number(f.montant_ht).toFixed(2):'-');
             const tva = (f.tva!=null? Number(f.tva).toFixed(2):'-');
             const ttc = (f.montant_ttc!=null? Number(f.montant_ttc).toFixed(2):'-');
             el.innerHTML = `
               <div>
-                <div class="font-semibold">${f.reference || 'Sans ref.'}</div>
+                <div class="font-semibold">Facture #${f.id} - ${f.reference || 'Sans ref.'}</div>
                 <div class="text-sm text-slate-600">Statut: <span class="badge bg-secondary">${f.statut}</span> - Client: ${f.nom_client || ''}</div>
                 <div class="text-xs text-slate-500">HT: ${mht} - TVA: ${tva}% - TTC: ${ttc}</div>
+                ${f.nom_affaire ? `<div class="text-xs text-slate-500">Affaire: ${f.nom_affaire}</div>` : ''}
+                ${f.ticket_id ? `<div class="text-xs text-slate-500">Ticket: <a href="/ticket-view.html?id=${f.ticket_id}" target="_blank">${f.ticket_titre || '#' + f.ticket_id}</a></div>` : ''}
+                ${f.intervention_id ? `<div class="text-xs text-slate-500">Intervention: <a href="/intervention-view.html?id=${f.intervention_id}" target="_blank">${f.intervention_titre || '#' + f.intervention_id}</a></div>` : ''}
               </div>
-              <div>
-                <button class="btn btn-danger delete-facture-btn" data-id="${f.id}">Supprimer</button>
+              <div class="d-flex gap-2">
+                <a href="/facture-view.html?id=${f.id}" class="btn btn-sm btn-info" title="Voir"><i class="bi bi-eye"></i></a>
+                <a href="/facture-edit.html?id=${f.id}" class="btn btn-sm btn-warning" title="Modifier"><i class="bi bi-pencil"></i></a>
+                <a href="/api/factures/${f.id}/download" class="btn btn-sm btn-success" title="Télécharger" target="_blank"><i class="bi bi-download"></i></a>
+                <button class="btn btn-sm btn-danger delete-facture-btn" data-id="${f.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
               </div>`;
             factureListDiv.appendChild(el);
           });
