@@ -1210,6 +1210,7 @@
           `;
           rapportsList.appendChild(card);
         });
+        console.log('[ticket-view] rapports HTML updated');
       }
 
       // New: Factures Financières
@@ -1259,6 +1260,10 @@
         } catch (e) {
           console.error('Erreur chargement factures financières:', e);
           financialFacturesList.innerHTML = '<div class="text-danger">Erreur de chargement des factures.</div>';
+        } finally {
+          if (financialFacturesList && !financialFacturesList.innerHTML.trim()) {
+            financialFacturesList.innerHTML = '<div class="text-muted">Aucune facture financière liée.</div>';
+          }
         }
       }
 
