@@ -5078,14 +5078,61 @@ app.get('/api/factures/:id', authenticateToken, async (req, res) => {
 app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
-    const r = await pool.query('SELECT * FROM facture WHERE id=$1', [id]);
-    const facture = r.rows[0];
-    if (!facture) return res.status(404).json({ error: 'Facture not found' });
+    const r = await pool.query(
+      `SELECT f.*, c.nom_client, af.nom_affaire
+       FROM facture f
+       LEFT JOIN client c ON f.client_id = c.id
+       LEFT JOIN affaire af ON f.affaire_id = af.id
+       WHERE f.id=$1`,
+      [id]
+    );
+    const f = r.rows[0];
+    if (!f) return res.status(404).json({ error: 'Facture not found' });
 
-    // For now, send a JSON response. In a real application, you would generate a PDF or other report.
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="facture_${id}.json"`);
-    res.json({ message: "This is a placeholder for invoice download. Actual PDF generation would happen here.", facture });
+    const fmt = (v, suffix=' €') => v === null || v === undefined ? '—' : `${Number(v).toFixed(2)}${suffix}`;
+    const html = `<!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <title>Facture #${f.id}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 24px; background:#f7f7fb; color:#333; }
+        .card { background:#fff; border-radius:10px; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.08); }
+        h1 { margin:0 0 8px 0; color:#4a4fa3; }
+        .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:12px; margin-top:12px; }
+        .item { background:#f4f5ff; border-radius:8px; padding:10px 12px; }
+        .label { font-size:12px; color:#667; text-transform:uppercase; letter-spacing:0.5px; }
+        .value { font-weight:600; margin-top:4px; }
+        table { width:100%; border-collapse:collapse; margin-top:14px; }
+        th, td { border:1px solid #e5e7eb; padding:8px; font-size:14px; }
+        th { background:#eef0ff; text-align:left; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <h1>Facture #${f.id} ${f.reference ? '– '+f.reference : ''}</h1>
+        <div class="grid">
+          <div class="item"><div class="label">Client</div><div class="value">${f.nom_client || '—'}</div></div>
+          <div class="item"><div class="label">Affaire</div><div class="value">${f.nom_affaire || '—'}</div></div>
+          <div class="item"><div class="label">Date émission</div><div class="value">${f.date_emission ? new Date(f.date_emission).toLocaleDateString('fr-FR') : '—'}</div></div>
+          <div class="item"><div class="label">Date échéance</div><div class="value">${f.date_echeance ? new Date(f.date_echeance).toLocaleDateString('fr-FR') : '—'}</div></div>
+          <div class="item"><div class="label">Statut</div><div class="value">${f.statut || '—'}</div></div>
+        </div>
+        <table>
+          <thead><tr><th>Montant HT</th><th>TVA %</th><th>Montant TTC</th></tr></thead>
+          <tbody><tr>
+            <td>${fmt(f.montant_ht)}</td>
+            <td>${f.tva === null || f.tva === undefined ? '—' : Number(f.tva).toFixed(2)+' %'}</td>
+            <td>${fmt(f.montant_ttc)}</td>
+          </tr></tbody>
+        </table>
+      </div>
+    </body>
+    </html>`;
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="facture_${id}.html"`);
+    res.status(200).send(html);
   } catch (err) {
     console.error('Error downloading facture:', err);
     res.status(500).json({ error: 'Internal Server Error' });
