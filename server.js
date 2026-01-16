@@ -5089,7 +5089,70 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
     const f = r.rows[0];
     if (!f) return res.status(404).json({ error: 'Facture not found' });
 
-    const fmt = (v, suffix=' €') => v === null || v === undefined ? '—' : `${Number(v).toFixed(2)}${suffix}`;
+    // Si une intervention est liée, on récupère les infos nécessaires pour le détail facture
+    let intervention = null;
+    let materiels = [];
+    if (f.intervention_id) {
+      const intRes = await pool.query('SELECT * FROM intervention WHERE id=$1', [f.intervention_id]);
+      intervention = intRes.rows[0] || null;
+      const matRes = await pool.query(
+        `SELECT m.reference, m.designation, im.quantite, m.prix_achat
+         FROM intervention_materiel im
+         JOIN materiel m ON m.id = im.materiel_id
+         WHERE im.intervention_id=$1`,
+        [f.intervention_id]
+      );
+      materiels = matRes.rows || [];
+    }
+
+    const fmt = (v, suffix=' €') => v === null || v === undefined || Number.isNaN(Number(v)) ? '—' : `${Number(v).toFixed(2)}${suffix}`;
+
+    // Calculs “comme la carte” avec valeurs par défaut si non stockées
+    const rate = 65;
+    const matTaux = 0;
+    const deplQty = 0;
+    const deplPu  = 0;
+    const divers  = 0;
+    const tvaRate = f.tva !== null && f.tva !== undefined ? Number(f.tva) : 20;
+
+    // Heures auto à partir des dates intervention
+    let hoursAuto = 0;
+    if (intervention?.date_debut && intervention?.date_fin) {
+      const start = new Date(intervention.date_debut).getTime();
+      const end   = new Date(intervention.date_fin).getTime();
+      if (!Number.isNaN(start) && !Number.isNaN(end) && end > start) {
+        hoursAuto = (end - start) / 3600000; // en heures
+      }
+    }
+    const totalHeures = hoursAuto * rate;
+
+    const matTotal = materiels.reduce((acc, m) => {
+      const q = Number(m.quantite) || 0;
+      const pu = Number(m.prix_achat) || 0;
+      return acc + (q * pu);
+    }, 0);
+    const matMaj = matTotal * (matTaux/100);
+    const totalMatHT = matTotal + matMaj;
+
+    const totalDepl = deplQty * deplPu;
+    const totalHTCalc  = totalHeures + totalMatHT + totalDepl + divers;
+    const totalTVACalc = totalHTCalc * (tvaRate/100);
+    const totalTTCCalc = totalHTCalc + totalTVACalc;
+
+    // Préférence aux montants de la table facture si présents
+    const totalHT = f.montant_ht !== null && f.montant_ht !== undefined ? Number(f.montant_ht) : totalHTCalc;
+    const totalTTC = f.montant_ttc !== null && f.montant_ttc !== undefined ? Number(f.montant_ttc) : totalTTCCalc;
+    const totalTVA = totalTTC - totalHT;
+
+    const matListHtml = materiels.length
+      ? materiels.map(m => {
+          const q = Number(m.quantite) || 0;
+          const pu = Number(m.prix_achat) || 0;
+          const line = q * pu;
+          return `<li>${m.designation || m.reference || 'Matériel'}${m.reference ? ' ('+m.reference+')' : ''} — ${q || 1} × ${pu ? pu.toFixed(2)+'€' : 'N/A'}${line ? ' = '+line.toFixed(2)+'€' : ''}</li>`;
+        }).join('')
+      : '<li class="text-muted">Aucun matériel validé</li>';
+
     const html = `<!DOCTYPE html>
     <html lang="fr">
     <head>
@@ -5099,7 +5162,7 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
         body { font-family: Arial, sans-serif; margin: 24px; background:#f7f7fb; color:#333; }
         .card { background:#fff; border-radius:10px; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.08); }
         h1 { margin:0 0 8px 0; color:#4a4fa3; }
-        .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:12px; margin-top:12px; }
+        .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:12px; margin-top:12px; }
         .item { background:#f4f5ff; border-radius:8px; padding:10px 12px; }
         .label { font-size:12px; color:#667; text-transform:uppercase; letter-spacing:0.5px; }
         .value { font-weight:600; margin-top:4px; }
@@ -5117,13 +5180,51 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
           <div class="item"><div class="label">Date émission</div><div class="value">${f.date_emission ? new Date(f.date_emission).toLocaleDateString('fr-FR') : '—'}</div></div>
           <div class="item"><div class="label">Date échéance</div><div class="value">${f.date_echeance ? new Date(f.date_echeance).toLocaleDateString('fr-FR') : '—'}</div></div>
           <div class="item"><div class="label">Statut</div><div class="value">${f.statut || '—'}</div></div>
+          ${intervention ? `<div class="item"><div class="label">Intervention</div><div class="value">${intervention.titre || 'Intervention #'+intervention.id}</div></div>` : ''}
         </div>
+
+        <h3 style="margin-top:18px;">Descriptif</h3>
+        <div class="item" style="background:#fff; border:1px solid #e5e7eb;">
+          <div class="label">Heures d'intervention (auto)</div>
+          <div class="value">${hoursAuto.toFixed(2)} h</div>
+          <div class="label" style="margin-top:8px;">Matériel validé</div>
+          <ul>${matListHtml}</ul>
+          <div class="fw-bold">Matériel Total HT : ${fmt(matTotal)}</div>
+        </div>
+
+        <h3 style="margin-top:18px;">Comptabilité</h3>
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px,1fr));">
+          <div class="item">
+            <div class="label">Heures intervention</div>
+            <div class="value">${hoursAuto.toFixed(2)} h × ${rate.toFixed(2)} €/h</div>
+            <div class="label" style="margin-top:8px;">Total heures HT</div>
+            <div class="value">${fmt(totalHeures)}</div>
+          </div>
+          <div class="item">
+            <div class="label">Majoration matériel</div>
+            <div class="value">${matTaux}%</div>
+            <div class="label" style="margin-top:8px;">Total matériel HT</div>
+            <div class="value">${fmt(totalMatHT)}</div>
+          </div>
+          <div class="item">
+            <div class="label">Déplacement</div>
+            <div class="value">${deplQty} × ${fmt(deplPu,' €')} = ${fmt(totalDepl)}</div>
+            <div class="label" style="margin-top:8px;">Divers</div>
+            <div class="value">${fmt(divers)}</div>
+          </div>
+          <div class="item">
+            <div class="label">TVA</div>
+            <div class="value">${tvaRate.toFixed(2)} %</div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px;">Montant total</h3>
         <table>
-          <thead><tr><th>Montant HT</th><th>TVA %</th><th>Montant TTC</th></tr></thead>
+          <thead><tr><th>Total HT</th><th>TVA</th><th>Total TTC</th></tr></thead>
           <tbody><tr>
-            <td>${fmt(f.montant_ht)}</td>
-            <td>${f.tva === null || f.tva === undefined ? '—' : Number(f.tva).toFixed(2)+' %'}</td>
-            <td>${fmt(f.montant_ttc)}</td>
+            <td>${fmt(totalHT)}</td>
+            <td>${fmt(totalTVA)}</td>
+            <td>${fmt(totalTTC)}</td>
           </tr></tbody>
         </table>
       </div>
