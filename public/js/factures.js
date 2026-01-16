@@ -75,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const tva = f.tva !== undefined && f.tva !== null ? Number(f.tva).toFixed(2) + ' %' : '—';
       const ttc = formatAmount(f.montant_ttc);
       const statut = f.statut || 'N/A';
+      const hasAmounts = mht !== '—' || ttc !== '—';
       html += `
         <tr>
           <td>
@@ -99,7 +100,9 @@ document.addEventListener('DOMContentLoaded', () => {
               <a href="/facture-edit.html?id=${f.id}" class="btn btn-sm btn-outline-warning" title="Modifier"><i class="bi bi-pencil"></i></a>
               <a href="/api/factures/${f.id}/download" class="btn btn-sm btn-outline-success" title="Télécharger" target="_blank"><i class="bi bi-download"></i></a>
               <button class="btn btn-sm btn-outline-danger delete-facture-btn" data-id="${f.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
+              ${f.intervention_id ? `<a class="btn btn-sm btn-outline-info" title="Voir intervention" href="/intervention-view.html?id=${f.intervention_id}" target="_blank"><i class="bi bi-tools"></i></a>` : ''}
             </div>
+            ${!hasAmounts ? `<div class="small text-muted mt-1">Montants non renseignés dans la facture. Consulte l’intervention si besoin.</div>` : ''}
           </td>
         </tr>
       `;
