@@ -96,11 +96,11 @@ document.addEventListener('DOMContentLoaded', () => {
           </td>
           <td class="text-end">
             <div class="btn-group">
-              <a href="/facture-view.html?id=${f.id}" class="btn btn-sm btn-outline-primary" title="Voir"><i class="bi bi-eye"></i></a>
-              <a href="/facture-edit.html?id=${f.id}" class="btn btn-sm btn-outline-warning" title="Modifier"><i class="bi bi-pencil"></i></a>
+              <button class="btn btn-sm btn-outline-primary open-modal-btn" data-url="/facture-view.html?id=${f.id}" data-title="Facture #${f.id}" title="Voir"><i class="bi bi-eye"></i></button>
+              <button class="btn btn-sm btn-outline-warning open-modal-btn" data-url="/facture-edit.html?id=${f.id}" data-title="Modifier facture #${f.id}" title="Modifier"><i class="bi bi-pencil"></i></button>
               <a href="/api/factures/${f.id}/download" class="btn btn-sm btn-outline-success" title="Télécharger" target="_blank"><i class="bi bi-download"></i></a>
               <button class="btn btn-sm btn-outline-danger delete-facture-btn" data-id="${f.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
-              ${f.intervention_id ? `<a class="btn btn-sm btn-outline-info" title="Voir intervention" href="/intervention-view.html?id=${f.intervention_id}" target="_blank"><i class="bi bi-tools"></i></a>` : ''}
+              ${f.intervention_id ? `<button class="btn btn-sm btn-outline-info open-modal-btn" title="Voir intervention" data-url="/intervention-view.html?id=${f.intervention_id}" data-title="Intervention #${f.intervention_id}"><i class="bi bi-tools"></i></button>` : ''}
             </div>
             ${!hasAmounts ? `<div class="small text-muted mt-1">Montants non renseignés dans la facture. Consulte l’intervention si besoin.</div>` : ''}
           </td>
@@ -193,6 +193,18 @@ document.addEventListener('DOMContentLoaded', () => {
               else alert(`Suppression impossible (HTTP ${d.status})`);
             } catch(_){}
           }
+        }
+
+        const openBtn = ev.target.closest('.open-modal-btn');
+        if (openBtn) {
+          const url = openBtn.dataset.url;
+          const title = openBtn.dataset.title || 'Prévisualisation';
+          const frame = document.getElementById('factureModalFrame');
+          const modalTitle = document.getElementById('factureModalTitle');
+          if (frame) frame.src = url || 'about:blank';
+          if (modalTitle) modalTitle.textContent = title;
+          const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('factureModal'));
+          modal.show();
         }
       });
     }
