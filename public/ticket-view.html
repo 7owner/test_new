@@ -1182,7 +1182,10 @@
 
       // Rapports d'intervention (liens vers les rendus téléchargeables)
       function renderInterventionReports(interventions = []) {
-        if (!rapportsList) return;
+        if (!rapportsList) {
+          console.warn('[ticket-view] rapportsList introuvable');
+          return;
+        }
         if (!interventions.length) {
           rapportsList.innerHTML = '<div class="text-muted">Aucune intervention, aucune facture.</div>';
           return;
@@ -1210,6 +1213,9 @@
           `;
           rapportsList.appendChild(card);
         });
+        if (!rapportsList.innerHTML.trim()) {
+          rapportsList.innerHTML = '<div class="text-muted">Aucune intervention, aucune facture.</div>';
+        }
         console.log('[ticket-view] rapports HTML updated');
       }
 
