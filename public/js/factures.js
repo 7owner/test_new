@@ -96,13 +96,12 @@ document.addEventListener('DOMContentLoaded', () => {
           </td>
           <td class="text-end">
             <div class="btn-group">
-              <button class="btn btn-sm btn-outline-primary open-modal-btn" data-url="/facture-view.html?id=${f.id}" data-title="Facture #${f.id}" title="Voir"><i class="bi bi-eye"></i></button>
-              <button class="btn btn-sm btn-outline-warning open-modal-btn" data-url="/facture-edit.html?id=${f.id}" data-title="Modifier facture #${f.id}" title="Modifier"><i class="bi bi-pencil"></i></button>
+              ${f.intervention_id ? `<button class="btn btn-sm btn-outline-primary open-modal-btn" title="Voir intervention" data-url="/intervention-view.html?id=${f.intervention_id}" data-title="Intervention #${f.intervention_id}"><i class="bi bi-eye"></i></button>` : ''}
               <a href="/api/factures/${f.id}/download" class="btn btn-sm btn-outline-success" title="Télécharger" target="_blank"><i class="bi bi-download"></i></a>
               <button class="btn btn-sm btn-outline-danger delete-facture-btn" data-id="${f.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
-              ${f.intervention_id ? `<button class="btn btn-sm btn-outline-info open-modal-btn" title="Voir intervention" data-url="/intervention-view.html?id=${f.intervention_id}" data-title="Intervention #${f.intervention_id}"><i class="bi bi-tools"></i></button>` : ''}
             </div>
-            ${!hasAmounts ? `<div class="small text-muted mt-1">Montants non renseignés dans la facture. Consulte l’intervention si besoin.</div>` : ''}
+            ${!hasAmounts ? `<div class="small text-muted mt-1">Montants non renseignés dans la facture exposée par l’API. Consulte l’intervention si besoin.</div>` : ''}
+            ${!f.intervention_id ? `<div class="small text-muted">Aucune intervention liée pour affichage détaillé.</div>` : ''}
           </td>
         </tr>
       `;
