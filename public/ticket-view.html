@@ -1216,6 +1216,11 @@
         if (!rapportsList.innerHTML.trim()) {
           rapportsList.innerHTML = '<div class="text-muted">Aucune intervention, aucune facture.</div>';
         }
+        // Si le placeholder "Chargement..." est resté pour une raison quelconque (cache / DOM non monté),
+        // force une valeur par défaut pour éviter le blocage visuel.
+        if (rapportsList.textContent.trim().toLowerCase().includes('chargement')) {
+          rapportsList.innerHTML = '<div class="text-muted">Aucune intervention, aucune facture.</div>';
+        }
         console.log('[ticket-view] rapports HTML updated');
       }
 
@@ -1247,6 +1252,9 @@
           `;
           financialFacturesList.appendChild(card);
         });
+        if (financialFacturesList.textContent.trim().toLowerCase().includes('chargement')) {
+          financialFacturesList.innerHTML = '<div class="text-muted">Aucune facture financière liée.</div>';
+        }
       }
 
       async function loadFinancialInvoices(clientId, affaireId, associationId) {
