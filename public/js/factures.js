@@ -230,10 +230,22 @@ document.addEventListener('DOMContentLoaded', () => {
           const title = openBtn.dataset.title || 'Prévisualisation';
           const frame = document.getElementById('factureModalFrame');
           const modalTitle = document.getElementById('factureModalTitle');
-          if (frame) frame.src = url || 'about:blank';
-          if (modalTitle) modalTitle.textContent = title;
-          const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('factureModal'));
-          modal.show();
+          const modalEl = document.getElementById('factureModal');
+
+          if (!url) {
+            alert("Aucune intervention liée pour ouvrir la carte facture.");
+            return;
+          }
+
+          if (frame && modalEl) {
+            frame.src = url;
+            if (modalTitle) modalTitle.textContent = title;
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+          } else {
+            // Fallback si la modal/iframe n'est pas présente dans la page
+            window.open(url, '_blank');
+          }
         }
       });
     }
