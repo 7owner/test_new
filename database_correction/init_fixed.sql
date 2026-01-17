@@ -516,9 +516,26 @@ CREATE TABLE IF NOT EXISTS achat (
 
 CREATE TABLE IF NOT EXISTS facture (
     id SERIAL PRIMARY KEY,
+    intervention_id BIGINT REFERENCES intervention(id) ON DELETE SET NULL,
     client_id BIGINT REFERENCES client(id) ON DELETE SET NULL,
-    affaire_id BIGINT REFERENCES affaire(id) ON DELETE SET NULL,
     association_id INTEGER REFERENCES association(id) ON DELETE SET NULL,
+    reference VARCHAR(50),
+    date_emission DATE,
+    date_echeance DATE,
+    heures_saisies NUMERIC(12,2) DEFAULT 0,
+    heures_calculees NUMERIC(12,2) DEFAULT 0,
+    taux_horaire NUMERIC(10,2) DEFAULT 0,
+    total_heures_ht NUMERIC(12,2) DEFAULT 0,
+    taux_majoration_materiel NUMERIC(6,2) DEFAULT 0,
+    total_materiel_ht NUMERIC(12,2) DEFAULT 0,
+    deplacement_qte NUMERIC(10,2) DEFAULT 0,
+    deplacement_pu NUMERIC(10,2) DEFAULT 0,
+    divers_ht NUMERIC(12,2) DEFAULT 0,
+    tva_taux NUMERIC(6,2) DEFAULT 20,
+    total_deplacement_ht NUMERIC(12,2) DEFAULT 0,
+    total_tva NUMERIC(12,2) DEFAULT 0,
+    total_ht NUMERIC(12,2) DEFAULT 0,
+    total_ttc NUMERIC(12,2) DEFAULT 0,
     statut statut_facture DEFAULT 'Brouillon'
 );
 

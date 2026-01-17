@@ -5037,15 +5037,14 @@ app.get('/api/factures', authenticateToken, async (req, res) => {
           f.*,
           c.nom_client,
           af.nom_affaire,
-          t.id AS ticket_id,
-          t.titre AS ticket_titre,
+          asso.titre AS association_titre,
           i.id AS intervention_id,
           i.titre AS intervention_titre
       FROM facture f
       LEFT JOIN client c ON f.client_id = c.id
       LEFT JOIN affaire af ON f.affaire_id = af.id
-      LEFT JOIN ticket t ON t.affaire_id = af.id
-      LEFT JOIN intervention i ON i.ticket_id = t.id
+      LEFT JOIN association asso ON f.association_id = asso.id
+      LEFT JOIN intervention i ON f.intervention_id = i.id
     `;
 
     if (client_id) {
@@ -5241,21 +5240,72 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
 });
 app.post('/api/factures', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    let { reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id, association_id } = req.body;
+    let { reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id, association_id,
+      heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
+      deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id
+    } = req.body;
     if (montant_ht != null && tva != null && (montant_ttc == null)) {
       montant_ttc = Number(montant_ht) * (1 + Number(tva)/100);
     }
-    const r = await pool.query('INSERT INTO facture (reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id, association_id) VALUES ($1, COALESCE($2,\'Brouillon\'), $3,$4,$5,$6,$7,$8,$9,$10) RETURNING *', [reference||null, statut||null, montant_ht||null, tva||null, montant_ttc||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null]);
+    const r = await pool.query(
+      `INSERT INTO facture (
+        reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id, association_id,
+        heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
+        deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id
+      ) VALUES ($1, COALESCE($2,'Brouillon'), $3,$4,$5,$6,$7,$8,$9,$10, $11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24, $25) RETURNING *`,
+      [
+        reference||null, statut||null, montant_ht||null, tva||null, montant_ttc||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null,
+        heures_saisies||0, heures_calculees||0, taux_horaire||0, total_heures_ht||0, taux_majoration_materiel||0, total_materiel_ht||0,
+        deplacement_qte||0, deplacement_pu||0, divers_ht||0, tva_taux||20, total_deplacement_ht||0, total_tva||0, total_ht||0, total_ttc||0, intervention_id||null
+      ]
     res.status(201).json(r.rows[0]);
   } catch (err) { console.error('Error creating facture:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });
 app.put('/api/factures/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params; try {
-    let { reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id, association_id } = req.body;
+    let { reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id, association_id,
+      heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
+      deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id
+    } = req.body;
     if (montant_ht != null && tva != null && (montant_ttc == null)) {
       montant_ttc = Number(montant_ht) * (1 + Number(tva)/100);
     }
-    const r = await pool.query('UPDATE facture SET reference=$1, statut=COALESCE($2, statut), montant_ht=$3, tva=$4, montant_ttc=$5, date_emission=$6, date_echeance=$7, client_id=$8, affaire_id=$9, association_id=$10 WHERE id=$11 RETURNING *', [reference||null, statut||null, montant_ht||null, tva||null, montant_ttc||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null, id]);
+    const r = await pool.query(
+      `UPDATE facture SET
+        reference = COALESCE($1, reference),
+        statut = COALESCE($2, statut),
+        montant_ht = COALESCE($3, montant_ht),
+        tva = COALESCE($4, tva),
+        montant_ttc = COALESCE($5, montant_ttc),
+        date_emission = COALESCE($6, date_emission),
+        date_echeance = COALESCE($7, date_echeance),
+        client_id = COALESCE($8, client_id),
+        affaire_id = COALESCE($9, affaire_id),
+        association_id = COALESCE($10, association_id),
+        heures_saisies = COALESCE($11, heures_saisies),
+        heures_calculees = COALESCE($12, heures_calculees),
+        taux_horaire = COALESCE($13, taux_horaire),
+        total_heures_ht = COALESCE($14, total_heures_ht),
+        taux_majoration_materiel = COALESCE($15, taux_majoration_materiel),
+        total_materiel_ht = COALESCE($16, total_materiel_ht),
+        deplacement_qte = COALESCE($17, deplacement_qte),
+        deplacement_pu = COALESCE($18, deplacement_pu),
+        divers_ht = COALESCE($19, divers_ht),
+        tva_taux = COALESCE($20, tva_taux),
+        total_deplacement_ht = COALESCE($21, total_deplacement_ht),
+        total_tva = COALESCE($22, total_tva),
+        total_ht = COALESCE($23, total_ht),
+        total_ttc = COALESCE($24, total_ttc),
+        intervention_id = COALESCE($25, intervention_id)
+      WHERE id=$26 RETURNING *`,
+      [
+        reference||null, statut||null, montant_ht||null, tva||null, montant_ttc||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null,
+        heures_saisies||null, heures_calculees||null, taux_horaire||null, total_heures_ht||null, taux_majoration_materiel||null, total_materiel_ht||null,
+        deplacement_qte||null, deplacement_pu||null, divers_ht||null, tva_taux||null, total_deplacement_ht||null, total_tva||null, total_ht||null, total_ttc||null,
+        intervention_id||null,
+        id
+      ]
+    );
     res.json(r.rows[0] || null);
   } catch (err) { console.error('Error updating facture:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });

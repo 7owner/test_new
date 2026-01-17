@@ -1239,14 +1239,16 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
               <div>
                 <div class="fw-semibold">Facture #${facture.id} - ${facture.nom_client || 'Client inconnu'}</div>
-                <div class="small text-muted">Affaire: ${facture.nom_affaire || 'N/A'}</div>
-                <div class="small text-muted">Montant HT: ${facture.montant_ht || '0.00'} € | Statut: ${facture.statut || 'N/A'}</div>
+                <div class="small text-muted">Affaire: ${facture.nom_affaire || 'N/A'} ${facture.intervention_titre ? `| Intervention: ${facture.intervention_titre}` : ''}</div>
+                <div class="small text-muted">Montant HT: ${facture.total_ht || facture.montant_ht || '0.00'} € | Statut: ${facture.statut || 'N/A'}</div>
               </div>
               <div class="d-flex gap-2">
                 <a class="btn btn-sm btn-outline-primary" href="facture-view.html?id=${facture.id}" target="_blank">
                   <i class="bi bi-eye"></i> Voir
                 </a>
-                <!-- Add download link if available -->
+                <a class="btn btn-sm btn-success" href="/api/factures/${facture.id}/download" target="_blank" title="Télécharger la facture">
+                  <i class="bi bi-download"></i>
+                </a>
               </div>
             </div>
           `;

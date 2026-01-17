@@ -38,3 +38,8 @@ This project (`projet_var_v4`) is structured as a Node.js/Express.js application
 - **Styling**: Uses Bootstrap 5.3.3, Bootstrap Icons, and `custom.css`.
 
 To continue development, focus should be on implementing the Node.js/Express.js backend API endpoints to handle CRUD operations for Agents, Interventions, Sites, Passports, Formations, and Document uploads, connecting to a database (e.g., PostgreSQL as suggested by `pg` dependency in `package.json`).
+
+## Database Schema Updates
+
+- Added `intervention_id` column to the `facture` table.
+  `ALTER TABLE facture ADD COLUMN intervention_id BIGINT REFERENCES intervention(id) ON DELETE SET NULL;`

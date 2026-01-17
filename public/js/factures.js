@@ -75,7 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const tva = f.tva !== undefined && f.tva !== null ? Number(f.tva).toFixed(2) + ' %' : '—';
       const ttc = formatAmount(f.montant_ttc);
       const statut = f.statut || 'N/A';
-      const hasAmounts = mht !== '—' || ttc !== '—';
+      // const hasAmounts = mht !== '—' || ttc !== '—'; // Old check, not fully comprehensive
+      const hasAmounts = f.montant_ht !== null || f.total_ht !== null; // More robust check
+
       html += `
         <tr>
           <td>
@@ -85,9 +87,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${f.nom_client || '—'}</td>
           <td>${f.nom_affaire || '—'}</td>
           <td>
-            <div class="small">HT: ${mht}</div>
-            <div class="small">TVA: ${tva}</div>
-            <div class="small fw-semibold">TTC: ${ttc}</div>
+            <div class="small">HT: ${formatAmount(f.total_ht || f.montant_ht)}</div>
+            <div class="small">TVA: ${f.tva_taux !== undefined && f.tva_taux !== null ? Number(f.tva_taux).toFixed(2) + ' %' : '—'}</div>
+            <div class="small fw-semibold">TTC: ${formatAmount(f.total_ttc || f.montant_ttc)}</div>
           </td>
           <td>
             <div class="small">Émission: ${formatDate(f.date_emission)}</div>
@@ -96,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </td>
           <td class="text-end">
             <div class="btn-group">
-              ${f.intervention_id ? `<button class="btn btn-sm btn-outline-primary open-modal-btn" title="Voir intervention" data-url="/intervention-view.html?id=${f.intervention_id}" data-title="Intervention #${f.intervention_id}"><i class="bi bi-eye"></i></button>` : ''}
+              ${f.intervention_id ? `<button class="btn btn-sm btn-outline-primary open-modal-btn" title="Voir intervention" data-url="/intervention-view.html?id=${f.intervention_id}" data-title="${f.intervention_titre || 'Intervention #' + f.intervention_id}"><i class="bi bi-eye"></i></button>` : ''}
               <a href="/api/factures/${f.id}/download" class="btn btn-sm btn-outline-success" title="Télécharger" target="_blank"><i class="bi bi-download"></i></a>
               <button class="btn btn-sm btn-outline-danger delete-facture-btn" data-id="${f.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
             </div>
@@ -116,17 +118,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadClientsAffairesForFacture() {
     try {
-      const [cls, afs] = await Promise.all([
+      const [cls, afs, ints] = await Promise.all([
         fetch('/api/clients', { headers: headersAuth }),
         fetch('/api/affaires', { headers: headersAuth }),
+        fetch('/api/interventions', { headers: headersAuth }),
       ]);
       cacheClients = cls.ok ? await cls.json() : [];
       cacheAffaires = afs.ok ? await afs.json() : [];
+      const cacheInterventions = ints.ok ? await ints.json() : [];
+
       // Form selects
       const selC = document.getElementById('f_client');
       const selA = document.getElementById('f_affaire');
+      const selI = document.getElementById('f_intervention');
+
       if (selC) selC.innerHTML = '<option value="">(Aucun)</option>' + cacheClients.map(c=>`<option value="${c.id}">${c.nom_client || 'Client #' + c.id}</option>`).join('');
       if (selA) selA.innerHTML = '<option value="">(Aucune)</option>' + cacheAffaires.map(a=>`<option value="${a.id}">${a.nom_affaire || 'Affaire #' + a.id}</option>`).join('');
+      if (selI) selI.innerHTML = '<option value="">(Aucune)</option>' + cacheInterventions.map(i=>`<option value="${i.id}">${i.titre || 'Intervention #' + i.id}</option>`).join('');
       renderFilters();
     } catch(e){
       console.warn('Impossible de charger clients/affaires pour factures', e);
@@ -158,11 +166,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const payload = {
         reference: document.getElementById('f_reference').value || null,
         montant_ht: document.getElementById('f_montant_ht').value || null,
-        tva: document.getElementById('f_tva').value || null,
+        tva_taux: document.getElementById('f_tva_taux').value || null,
         date_emission: document.getElementById('f_date_emission').value || null,
         date_echeance: document.getElementById('f_date_echeance').value || null,
         client_id: document.getElementById('f_client').value || null,
         affaire_id: document.getElementById('f_affaire').value || null,
+        intervention_id: document.getElementById('f_intervention').value || null, // New field
+
+        // Detailed billing fields
+        heures_saisies: document.getElementById('f_heures_saisies').value || null,
+        heures_calculees: document.getElementById('f_heures_calculees').value || null,
+        taux_horaire: document.getElementById('f_taux_horaire').value || null,
+        total_heures_ht: document.getElementById('f_total_heures_ht').value || null,
+        taux_majoration_materiel: document.getElementById('f_taux_majoration_materiel').value || null,
+        total_materiel_ht: document.getElementById('f_total_materiel_ht').value || null,
+        deplacement_qte: document.getElementById('f_deplacement_qte').value || null,
+        deplacement_pu: document.getElementById('f_deplacement_pu').value || null,
+        divers_ht: document.getElementById('f_divers_ht').value || null,
+        total_deplacement_ht: document.getElementById('f_total_deplacement_ht').value || null,
+        total_tva: document.getElementById('f_total_tva').value || null,
+        total_ht: document.getElementById('f_total_ht').value || null,
+        total_ttc: document.getElementById('f_total_ttc').value || null,
       };
       try {
         const r = await fetch('/api/factures', {
