@@ -78,6 +78,13 @@ document.addEventListener('DOMContentLoaded', () => {
       // const hasAmounts = mht !== '—' || ttc !== '—'; // Old check, not fully comprehensive
       const hasAmounts = f.montant_ht !== null || f.total_ht !== null; // More robust check
 
+      const viewUrl = f.intervention_id
+        ? `/intervention-view.html?id=${f.intervention_id}`
+        : `/api/factures/${f.id}/download`;
+      const viewTitle = f.intervention_id
+        ? (f.intervention_titre || `Intervention #${f.intervention_id}`)
+        : `Facture #${f.id}`;
+
       html += `
         <tr>
           <td>
@@ -98,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </td>
           <td class="text-end">
             <div class="btn-group">
-              ${f.intervention_id ? `<button class="btn btn-sm btn-outline-primary open-modal-btn" title="Voir intervention" data-url="/intervention-view.html?id=${f.intervention_id}" data-title="${f.intervention_titre || 'Intervention #' + f.intervention_id}"><i class="bi bi-eye"></i></button>` : ''}
+              <button class="btn btn-sm btn-outline-primary open-modal-btn" title="Voir" data-url="${viewUrl}" data-title="${viewTitle}"><i class="bi bi-eye"></i></button>
               <a href="/api/factures/${f.id}/download" class="btn btn-sm btn-outline-success" title="Télécharger" target="_blank"><i class="bi bi-download"></i></a>
               <button class="btn btn-sm btn-outline-danger delete-facture-btn" data-id="${f.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
             </div>
