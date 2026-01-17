@@ -78,12 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // const hasAmounts = mht !== '—' || ttc !== '—'; // Old check, not fully comprehensive
       const hasAmounts = f.montant_ht !== null || f.total_ht !== null; // More robust check
 
-      const viewUrl = f.intervention_id
-        ? `/intervention-view.html?id=${f.intervention_id}`
-        : `/api/factures/${f.id}/download`;
-      const viewTitle = f.intervention_id
-        ? (f.intervention_titre || `Intervention #${f.intervention_id}`)
-        : `Facture #${f.id}`;
+      const viewUrl = f.intervention_id ? `/intervention-view.html?id=${f.intervention_id}` : null;
+      const viewTitle = f.intervention_id ? (f.intervention_titre || `Intervention #${f.intervention_id}`) : 'Intervention manquante';
 
       html += `
         <tr>
@@ -105,12 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
           </td>
           <td class="text-end">
             <div class="btn-group">
-              <button class="btn btn-sm btn-outline-primary open-modal-btn" title="Voir" data-url="${viewUrl}" data-title="${viewTitle}"><i class="bi bi-eye"></i></button>
+              ${viewUrl ? `<button class="btn btn-sm btn-outline-primary open-modal-btn" title="Voir l'intervention" data-url="${viewUrl}" data-title="${viewTitle}"><i class="bi bi-eye"></i></button>` : ''}
               <a href="/api/factures/${f.id}/download" class="btn btn-sm btn-outline-success" title="Télécharger" target="_blank"><i class="bi bi-download"></i></a>
               <button class="btn btn-sm btn-outline-danger delete-facture-btn" data-id="${f.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
             </div>
             ${!hasAmounts ? `<div class="small text-muted mt-1">Montants non renseignés dans la facture exposée par l’API. Consulte l’intervention si besoin.</div>` : ''}
-            ${!f.intervention_id ? `<div class="small text-muted">Aucune intervention liée pour affichage détaillé.</div>` : ''}
+            ${!f.intervention_id ? `<div class="small text-muted">Aucune intervention liée pour ouvrir la carte facture.</div>` : ''}
           </td>
         </tr>
       `;
