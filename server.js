@@ -5106,15 +5106,15 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
 
     const fmt = (v, suffix=' €') => v === null || v === undefined || Number.isNaN(Number(v)) ? '—' : `${Number(v).toFixed(2)}${suffix}`;
 
-    // Calculs “comme la carte” avec valeurs par défaut si non stockées
-    const rate = 65;
-    const matTaux = 0;
-    const deplQty = 0;
-    const deplPu  = 0;
-    const divers  = 0;
-    const tvaRate = f.tva !== null && f.tva !== undefined ? Number(f.tva) : 20;
+    // Récupération des valeurs stockées, sinon fallback calcul
+    const rate = f.taux_horaire != null ? Number(f.taux_horaire) : 65;
+    const matTaux = f.taux_majoration_materiel != null ? Number(f.taux_majoration_materiel) : 0;
+    const deplQty = f.deplacement_qte != null ? Number(f.deplacement_qte) : 0;
+    const deplPu  = f.deplacement_pu != null ? Number(f.deplacement_pu) : 0;
+    const divers  = f.divers_ht != null ? Number(f.divers_ht) : 0;
+    const tvaRate = f.tva_taux !== null && f.tva_taux !== undefined ? Number(f.tva_taux) : (f.tva !== null && f.tva !== undefined ? Number(f.tva) : 20);
 
-    // Heures auto à partir des dates intervention
+    // Heures auto à partir des dates intervention (fallback)
     let hoursAuto = 0;
     if (intervention?.date_debut && intervention?.date_fin) {
       const start = new Date(intervention.date_debut).getTime();
@@ -5123,25 +5123,30 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
         hoursAuto = (end - start) / 3600000; // en heures
       }
     }
-    const totalHeures = hoursAuto * rate;
+    const heuresSaisies = f.heures_saisies != null ? Number(f.heures_saisies) : null;
+    const heuresCalculees = f.heures_calculees != null ? Number(f.heures_calculees) : (hoursAuto || 0);
+    const heuresAffichees = heuresSaisies != null ? heuresSaisies : heuresCalculees;
+    const totalHeures = f.total_heures_ht != null ? Number(f.total_heures_ht) : (heuresAffichees * rate);
 
-    const matTotal = materiels.reduce((acc, m) => {
+    const matTotalBrut = materiels.reduce((acc, m) => {
       const q = Number(m.quantite) || 0;
       const pu = Number(m.prix_achat) || 0;
       return acc + (q * pu);
     }, 0);
-    const matMaj = matTotal * (matTaux/100);
-    const totalMatHT = matTotal + matMaj;
+    const matTotalStored = f.total_materiel_ht != null ? Number(f.total_materiel_ht) : null;
+    const matBase = matTotalStored != null ? matTotalStored : matTotalBrut;
+    const matMaj = matBase * (matTaux/100);
+    const totalMatHT = matBase + matMaj;
 
-    const totalDepl = deplQty * deplPu;
+    const totalDepl = f.total_deplacement_ht != null ? Number(f.total_deplacement_ht) : (deplQty * deplPu);
     const totalHTCalc  = totalHeures + totalMatHT + totalDepl + divers;
     const totalTVACalc = totalHTCalc * (tvaRate/100);
     const totalTTCCalc = totalHTCalc + totalTVACalc;
 
     // Préférence aux montants de la table facture si présents
-    const totalHT = f.montant_ht !== null && f.montant_ht !== undefined ? Number(f.montant_ht) : totalHTCalc;
-    const totalTTC = f.montant_ttc !== null && f.montant_ttc !== undefined ? Number(f.montant_ttc) : totalTTCCalc;
-    const totalTVA = totalTTC - totalHT;
+    const totalHT = f.total_ht != null ? Number(f.total_ht) : (f.montant_ht != null ? Number(f.montant_ht) : totalHTCalc);
+    const totalTTC = f.total_ttc != null ? Number(f.total_ttc) : (f.montant_ttc != null ? Number(f.montant_ttc) : totalTTCCalc);
+    const totalTVA = f.total_tva != null ? Number(f.total_tva) : (totalTTC - totalHT);
 
     const matListHtml = materiels.length
       ? materiels.map(m => {
@@ -5184,18 +5189,18 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
 
         <h3 style="margin-top:18px;">Descriptif</h3>
         <div class="item" style="background:#fff; border:1px solid #e5e7eb;">
-          <div class="label">Heures d'intervention (auto)</div>
-          <div class="value">${hoursAuto.toFixed(2)} h</div>
+          <div class="label">Heures d'intervention</div>
+          <div class="value">${heuresAffichees.toFixed(2)} h ${heuresSaisies != null ? '(saisies)' : '(auto)'} — Calcul auto : ${hoursAuto.toFixed(2)} h</div>
           <div class="label" style="margin-top:8px;">Matériel validé</div>
           <ul>${matListHtml}</ul>
-          <div class="fw-bold">Matériel Total HT : ${fmt(matTotal)}</div>
+          <div class="fw-bold">Matériel Total HT : ${fmt(matBase)}</div>
         </div>
 
         <h3 style="margin-top:18px;">Comptabilité</h3>
         <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px,1fr));">
           <div class="item">
             <div class="label">Heures intervention</div>
-            <div class="value">${hoursAuto.toFixed(2)} h × ${rate.toFixed(2)} €/h</div>
+            <div class="value">${heuresAffichees.toFixed(2)} h × ${rate.toFixed(2)} €/h</div>
             <div class="label" style="margin-top:8px;">Total heures HT</div>
             <div class="value">${fmt(totalHeures)}</div>
           </div>
@@ -5258,6 +5263,7 @@ app.post('/api/factures', authenticateToken, authorizeAdmin, async (req, res) =>
         heures_saisies||0, heures_calculees||0, taux_horaire||0, total_heures_ht||0, taux_majoration_materiel||0, total_materiel_ht||0,
         deplacement_qte||0, deplacement_pu||0, divers_ht||0, tva_taux||20, total_deplacement_ht||0, total_tva||0, total_ht||0, total_ttc||0, intervention_id||null
       ]
+    );
     res.status(201).json(r.rows[0]);
   } catch (err) { console.error('Error creating facture:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });
