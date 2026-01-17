@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const hasAmounts = f.montant_ht !== null || f.total_ht !== null; // More robust check
 
       const viewUrl = f.intervention_id ? `/intervention-view.html?id=${f.intervention_id}` : null;
-      const viewTitle = f.intervention_id ? (f.intervention_titre || `Intervention #${f.intervention_id}`) : 'Intervention manquante';
+      const viewTitle = f.intervention_id ? (f.intervention_titre || `Intervention #${f.intervention_id}`) : 'Intervention non liée';
 
       html += `
         <tr>
@@ -101,7 +101,10 @@ document.addEventListener('DOMContentLoaded', () => {
           </td>
           <td class="text-end">
             <div class="btn-group">
-              ${viewUrl ? `<button class="btn btn-sm btn-outline-primary open-modal-btn" title="Voir l'intervention" data-url="${viewUrl}" data-title="${viewTitle}"><i class="bi bi-eye"></i></button>` : ''}
+              ${viewUrl
+                ? `<button class="btn btn-sm btn-outline-primary open-modal-btn" title="Voir l'intervention" data-url="${viewUrl}" data-title="${viewTitle}"><i class="bi bi-eye"></i></button>`
+                : `<button class="btn btn-sm btn-outline-secondary" title="Aucune intervention liée" disabled><i class="bi bi-eye-slash"></i></button>`
+              }
               <a href="/api/factures/${f.id}/download" class="btn btn-sm btn-outline-success" title="Télécharger" target="_blank"><i class="bi bi-download"></i></a>
               <button class="btn btn-sm btn-outline-danger delete-facture-btn" data-id="${f.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
             </div>
