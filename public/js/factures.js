@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <table class="table align-middle">
         <thead>
           <tr>
+            <th>Titre</th>
             <th>Référence</th>
             <th>Client</th>
             <th>Affaire</th>
@@ -83,6 +84,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       html += `
         <tr>
+          <td>
+            <div class="fw-semibold">${f.titre || '—'}</div>
+          </td>
           <td>
             <div class="fw-semibold">${f.reference || 'Sans ref.'}</div>
             <div class="small text-muted">Facture #${f.id}</div>
@@ -171,6 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ev.preventDefault();
       const payload = {
         reference: document.getElementById('f_reference').value || null,
+        titre: document.getElementById('f_titre').value || null,
         montant_ht: document.getElementById('f_montant_ht').value || null,
         tva_taux: document.getElementById('f_tva_taux').value || null,
         date_emission: document.getElementById('f_date_emission').value || null,

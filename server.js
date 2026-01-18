@@ -5035,6 +5035,7 @@ app.get('/api/factures', authenticateToken, async (req, res) => {
     let sql = `
       SELECT
           f.*,
+          f.titre,
           c.nom_client,
           af.nom_affaire,
           asso.titre AS association_titre,
@@ -5245,7 +5246,7 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
 });
 app.post('/api/factures', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    let { reference, statut, date_emission, date_echeance, client_id, affaire_id, association_id,
+    let { titre, reference, statut, date_emission, date_echeance, client_id, affaire_id, association_id,
       heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
       deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id
     } = req.body;
@@ -5269,13 +5270,13 @@ app.post('/api/factures', authenticateToken, authorizeAdmin, async (req, res) =>
 
     const r = await pool.query(
       `INSERT INTO facture (
-        reference, statut, date_emission, date_echeance, client_id, affaire_id, association_id,
+        titre, reference, statut, date_emission, date_echeance, client_id, affaire_id, association_id,
         heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
         deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id
-      ) VALUES ($1, COALESCE($2::statut_facture,'Brouillon'::statut_facture), $3,$4,$5,$6,$7,
-                $8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING *`,
+      ) VALUES ($1, $2, COALESCE($3::statut_facture,'Brouillon'::statut_facture), $4,$5,$6,$7,$8,
+                $9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23) RETURNING *`,
       [
-        reference||null, statut||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null,
+        titre||null, reference||null, statut||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null,
         heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
         deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id||null
       ]
@@ -5285,38 +5286,39 @@ app.post('/api/factures', authenticateToken, authorizeAdmin, async (req, res) =>
 });
 app.put('/api/factures/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params; try {
-    let { reference, statut, date_emission, date_echeance, client_id, affaire_id, association_id,
+    let { titre, reference, statut, date_emission, date_echeance, client_id, affaire_id, association_id,
       heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
       deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id
     } = req.body;
     const num = (v) => (v === undefined || v === null || Number.isNaN(Number(v)) ? null : Number(v));
     const r = await pool.query(
       `UPDATE facture SET
-        reference = COALESCE($1, reference),
-        statut = COALESCE($2::statut_facture, statut),
-        date_emission = COALESCE($3, date_emission),
-        date_echeance = COALESCE($4, date_echeance),
-        client_id = COALESCE($5, client_id),
-        affaire_id = COALESCE($6, affaire_id),
-        association_id = COALESCE($7, association_id),
-        heures_saisies = COALESCE($8, heures_saisies),
-        heures_calculees = COALESCE($9, heures_calculees),
-        taux_horaire = COALESCE($10, taux_horaire),
-        total_heures_ht = COALESCE($11, total_heures_ht),
-        taux_majoration_materiel = COALESCE($12, taux_majoration_materiel),
-        total_materiel_ht = COALESCE($13, total_materiel_ht),
-        deplacement_qte = COALESCE($14, deplacement_qte),
-        deplacement_pu = COALESCE($15, deplacement_pu),
-        divers_ht = COALESCE($16, divers_ht),
-        tva_taux = COALESCE($17, tva_taux),
-        total_deplacement_ht = COALESCE($18, total_deplacement_ht),
-        total_tva = COALESCE($19, total_tva),
-        total_ht = COALESCE($20, total_ht),
-        total_ttc = COALESCE($21, total_ttc),
-        intervention_id = COALESCE($22, intervention_id)
-      WHERE id=$23 RETURNING *`,
+        titre = COALESCE($1, titre),
+        reference = COALESCE($2, reference),
+        statut = COALESCE($3::statut_facture, statut),
+        date_emission = COALESCE($4, date_emission),
+        date_echeance = COALESCE($5, date_echeance),
+        client_id = COALESCE($6, client_id),
+        affaire_id = COALESCE($7, affaire_id),
+        association_id = COALESCE($8, association_id),
+        heures_saisies = COALESCE($9, heures_saisies),
+        heures_calculees = COALESCE($10, heures_calculees),
+        taux_horaire = COALESCE($11, taux_horaire),
+        total_heures_ht = COALESCE($12, total_heures_ht),
+        taux_majoration_materiel = COALESCE($13, taux_majoration_materiel),
+        total_materiel_ht = COALESCE($14, total_materiel_ht),
+        deplacement_qte = COALESCE($15, deplacement_qte),
+        deplacement_pu = COALESCE($16, deplacement_pu),
+        divers_ht = COALESCE($17, divers_ht),
+        tva_taux = COALESCE($18, tva_taux),
+        total_deplacement_ht = COALESCE($19, total_deplacement_ht),
+        total_tva = COALESCE($20, total_tva),
+        total_ht = COALESCE($21, total_ht),
+        total_ttc = COALESCE($22, total_ttc),
+        intervention_id = COALESCE($23, intervention_id)
+      WHERE id=$24 RETURNING *`,
       [
-        reference||null, statut||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null,
+        titre||null, reference||null, statut||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null,
         num(heures_saisies), num(heures_calculees), num(taux_horaire), num(total_heures_ht), num(taux_majoration_materiel), num(total_materiel_ht),
         num(deplacement_qte), num(deplacement_pu), num(divers_ht), num(tva_taux), num(total_deplacement_ht), num(total_tva), num(total_ht), num(total_ttc),
         intervention_id||null,

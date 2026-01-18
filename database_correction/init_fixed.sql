@@ -519,6 +519,7 @@ CREATE TABLE IF NOT EXISTS facture (
     intervention_id BIGINT REFERENCES intervention(id) ON DELETE SET NULL,
     client_id BIGINT REFERENCES client(id) ON DELETE SET NULL,
     association_id INTEGER REFERENCES association(id) ON DELETE SET NULL,
+    titre VARCHAR(255),
     reference VARCHAR(50),
     date_emission DATE,
     date_echeance DATE,

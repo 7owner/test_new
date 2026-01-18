@@ -43,3 +43,5 @@ To continue development, focus should be on implementing the Node.js/Express.js 
 
 - Added `intervention_id` column to the `facture` table.
   `ALTER TABLE facture ADD COLUMN intervention_id BIGINT REFERENCES intervention(id) ON DELETE SET NULL;`
+- Added `titre` column to the `facture` table.
+  `ALTER TABLE facture ADD COLUMN titre VARCHAR(255);`
