@@ -5272,7 +5272,7 @@ app.post('/api/factures', authenticateToken, authorizeAdmin, async (req, res) =>
         reference, statut, date_emission, date_echeance, client_id, affaire_id, association_id,
         heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
         deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id
-      ) VALUES ($1, COALESCE($2,'Brouillon'), $3,$4,$5,$6,$7,
+      ) VALUES ($1, COALESCE($2::statut_facture,'Brouillon'::statut_facture), $3,$4,$5,$6,$7,
                 $8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING *`,
       [
         reference||null, statut||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null,
@@ -5293,7 +5293,7 @@ app.put('/api/factures/:id', authenticateToken, authorizeAdmin, async (req, res)
     const r = await pool.query(
       `UPDATE facture SET
         reference = COALESCE($1, reference),
-        statut = COALESCE($2, statut),
+        statut = COALESCE($2::statut_facture, statut),
         date_emission = COALESCE($3, date_emission),
         date_echeance = COALESCE($4, date_echeance),
         client_id = COALESCE($5, client_id),
