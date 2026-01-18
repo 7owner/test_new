@@ -5245,23 +5245,39 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
 });
 app.post('/api/factures', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    let { reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id, association_id,
+    let { reference, statut, date_emission, date_echeance, client_id, affaire_id, association_id,
       heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
       deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id
     } = req.body;
-    if (montant_ht != null && tva != null && (montant_ttc == null)) {
-      montant_ttc = Number(montant_ht) * (1 + Number(tva)/100);
-    }
+
+    // Sécuriser les valeurs numériques
+    const num = (v, def = 0) => (v === undefined || v === null || Number.isNaN(Number(v)) ? def : Number(v));
+    heures_saisies = num(heures_saisies);
+    heures_calculees = num(heures_calculees);
+    taux_horaire = num(taux_horaire);
+    total_heures_ht = num(total_heures_ht);
+    taux_majoration_materiel = num(taux_majoration_materiel);
+    total_materiel_ht = num(total_materiel_ht);
+    deplacement_qte = num(deplacement_qte);
+    deplacement_pu = num(deplacement_pu);
+    divers_ht = num(divers_ht);
+    tva_taux = num(tva_taux, 20);
+    total_deplacement_ht = num(total_deplacement_ht);
+    total_tva = num(total_tva);
+    total_ht = num(total_ht);
+    total_ttc = num(total_ttc);
+
     const r = await pool.query(
       `INSERT INTO facture (
-        reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id, association_id,
+        reference, statut, date_emission, date_echeance, client_id, affaire_id, association_id,
         heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
         deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id
-      ) VALUES ($1, COALESCE($2,'Brouillon'), $3,$4,$5,$6,$7,$8,$9,$10, $11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24, $25) RETURNING *`,
+      ) VALUES ($1, COALESCE($2,'Brouillon'), $3,$4,$5,$6,$7,
+                $8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING *`,
       [
-        reference||null, statut||null, montant_ht||null, tva||null, montant_ttc||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null,
-        heures_saisies||0, heures_calculees||0, taux_horaire||0, total_heures_ht||0, taux_majoration_materiel||0, total_materiel_ht||0,
-        deplacement_qte||0, deplacement_pu||0, divers_ht||0, tva_taux||20, total_deplacement_ht||0, total_tva||0, total_ht||0, total_ttc||0, intervention_id||null
+        reference||null, statut||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null,
+        heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
+        deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id||null
       ]
     );
     res.status(201).json(r.rows[0]);
@@ -5269,45 +5285,40 @@ app.post('/api/factures', authenticateToken, authorizeAdmin, async (req, res) =>
 });
 app.put('/api/factures/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params; try {
-    let { reference, statut, montant_ht, tva, montant_ttc, date_emission, date_echeance, client_id, affaire_id, association_id,
+    let { reference, statut, date_emission, date_echeance, client_id, affaire_id, association_id,
       heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
       deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id
     } = req.body;
-    if (montant_ht != null && tva != null && (montant_ttc == null)) {
-      montant_ttc = Number(montant_ht) * (1 + Number(tva)/100);
-    }
+    const num = (v) => (v === undefined || v === null || Number.isNaN(Number(v)) ? null : Number(v));
     const r = await pool.query(
       `UPDATE facture SET
         reference = COALESCE($1, reference),
         statut = COALESCE($2, statut),
-        montant_ht = COALESCE($3, montant_ht),
-        tva = COALESCE($4, tva),
-        montant_ttc = COALESCE($5, montant_ttc),
-        date_emission = COALESCE($6, date_emission),
-        date_echeance = COALESCE($7, date_echeance),
-        client_id = COALESCE($8, client_id),
-        affaire_id = COALESCE($9, affaire_id),
-        association_id = COALESCE($10, association_id),
-        heures_saisies = COALESCE($11, heures_saisies),
-        heures_calculees = COALESCE($12, heures_calculees),
-        taux_horaire = COALESCE($13, taux_horaire),
-        total_heures_ht = COALESCE($14, total_heures_ht),
-        taux_majoration_materiel = COALESCE($15, taux_majoration_materiel),
-        total_materiel_ht = COALESCE($16, total_materiel_ht),
-        deplacement_qte = COALESCE($17, deplacement_qte),
-        deplacement_pu = COALESCE($18, deplacement_pu),
-        divers_ht = COALESCE($19, divers_ht),
-        tva_taux = COALESCE($20, tva_taux),
-        total_deplacement_ht = COALESCE($21, total_deplacement_ht),
-        total_tva = COALESCE($22, total_tva),
-        total_ht = COALESCE($23, total_ht),
-        total_ttc = COALESCE($24, total_ttc),
-        intervention_id = COALESCE($25, intervention_id)
-      WHERE id=$26 RETURNING *`,
+        date_emission = COALESCE($3, date_emission),
+        date_echeance = COALESCE($4, date_echeance),
+        client_id = COALESCE($5, client_id),
+        affaire_id = COALESCE($6, affaire_id),
+        association_id = COALESCE($7, association_id),
+        heures_saisies = COALESCE($8, heures_saisies),
+        heures_calculees = COALESCE($9, heures_calculees),
+        taux_horaire = COALESCE($10, taux_horaire),
+        total_heures_ht = COALESCE($11, total_heures_ht),
+        taux_majoration_materiel = COALESCE($12, taux_majoration_materiel),
+        total_materiel_ht = COALESCE($13, total_materiel_ht),
+        deplacement_qte = COALESCE($14, deplacement_qte),
+        deplacement_pu = COALESCE($15, deplacement_pu),
+        divers_ht = COALESCE($16, divers_ht),
+        tva_taux = COALESCE($17, tva_taux),
+        total_deplacement_ht = COALESCE($18, total_deplacement_ht),
+        total_tva = COALESCE($19, total_tva),
+        total_ht = COALESCE($20, total_ht),
+        total_ttc = COALESCE($21, total_ttc),
+        intervention_id = COALESCE($22, intervention_id)
+      WHERE id=$23 RETURNING *`,
       [
-        reference||null, statut||null, montant_ht||null, tva||null, montant_ttc||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null,
-        heures_saisies||null, heures_calculees||null, taux_horaire||null, total_heures_ht||null, taux_majoration_materiel||null, total_materiel_ht||null,
-        deplacement_qte||null, deplacement_pu||null, divers_ht||null, tva_taux||null, total_deplacement_ht||null, total_tva||null, total_ht||null, total_ttc||null,
+        reference||null, statut||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null,
+        num(heures_saisies), num(heures_calculees), num(taux_horaire), num(total_heures_ht), num(taux_majoration_materiel), num(total_materiel_ht),
+        num(deplacement_qte), num(deplacement_pu), num(divers_ht), num(tva_taux), num(total_deplacement_ht), num(total_tva), num(total_ht), num(total_ttc),
         intervention_id||null,
         id
       ]
