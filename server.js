@@ -5094,6 +5094,13 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
     let materiels = [];
     let clientName = f.nom_client || null;
     let affaireName = f.nom_affaire || null;
+    // Fallback client direct depuis facture.client_id
+    if (!clientName && f.client_id) {
+      try {
+        const c = await pool.query('SELECT nom_client FROM client WHERE id=$1 LIMIT 1', [f.client_id]);
+        clientName = (c.rows[0] || {}).nom_client || null;
+      } catch (_) {}
+    }
     if (f.intervention_id) {
       const intRes = await pool.query('SELECT * FROM intervention WHERE id=$1', [f.intervention_id]);
       intervention = intRes.rows[0] || null;
@@ -5123,6 +5130,19 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
         [f.intervention_id]
       );
       materiels = matRes.rows || [];
+    }
+    // Fallback via association si toujours pas de client
+    if (!clientName && f.association_id) {
+      try {
+        const assoc = await pool.query(`
+          SELECT c.nom_client
+          FROM association a
+          LEFT JOIN client c ON c.id = a.client_id
+          WHERE a.id=$1
+          LIMIT 1
+        `, [f.association_id]);
+        clientName = (assoc.rows[0] || {}).nom_client || clientName;
+      } catch (_) {}
     }
 
     const fmt = (v, suffix=' €') => v === null || v === undefined || Number.isNaN(Number(v)) ? '—' : `${Number(v).toFixed(2)}${suffix}`;
