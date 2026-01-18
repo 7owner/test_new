@@ -5092,9 +5092,29 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
     // Si une intervention est liée, on récupère les infos nécessaires pour le détail facture
     let intervention = null;
     let materiels = [];
+    let clientName = f.nom_client || null;
+    let affaireName = f.nom_affaire || null;
     if (f.intervention_id) {
       const intRes = await pool.query('SELECT * FROM intervention WHERE id=$1', [f.intervention_id]);
       intervention = intRes.rows[0] || null;
+      // Compléter client/affaire via le site si nécessaire
+      if ((!clientName || !affaireName) && intervention?.site_id) {
+        try {
+          const siteRes = await pool.query(`
+            SELECT c.nom_client, a.nom_affaire
+            FROM site s
+            LEFT JOIN client c ON c.id = s.client_id
+            LEFT JOIN contrat_site_association csa ON csa.site_id = s.id
+            LEFT JOIN contrat ct ON ct.id = csa.contrat_id
+            LEFT JOIN affaire a ON a.id = ct.affaire_id
+            WHERE s.id = $1
+            LIMIT 1
+          `, [intervention.site_id]);
+          const extra = siteRes.rows[0] || {};
+          clientName = clientName || extra.nom_client || null;
+          affaireName = affaireName || extra.nom_affaire || null;
+        } catch (_) {}
+      }
       const matRes = await pool.query(
         `SELECT m.reference, m.designation, im.quantite, m.prix_achat
          FROM intervention_materiel im
@@ -5158,11 +5178,12 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
         }).join('')
       : '<li class="text-muted">Aucun matériel validé</li>';
 
+    const factTitle = f.titre || f.reference || '';
     const html = `<!DOCTYPE html>
     <html lang="fr">
     <head>
       <meta charset="UTF-8">
-      <title>Facture #${f.id}</title>
+      <title>Facture #${f.id}${factTitle ? ' – '+factTitle : ''}</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 24px; background:#f7f7fb; color:#333; }
         .card { background:#fff; border-radius:10px; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.08); }
@@ -5178,12 +5199,10 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
     </head>
     <body>
       <div class="card">
-        <h1>Facture #${f.id} ${f.reference ? '– '+f.reference : ''}</h1>
+        <h1>Facture #${f.id} ${factTitle ? '– '+factTitle : ''}</h1>
         <div class="grid">
-          <div class="item"><div class="label">Client</div><div class="value">${f.nom_client || '—'}</div></div>
-          <div class="item"><div class="label">Affaire</div><div class="value">${f.nom_affaire || '—'}</div></div>
-          <div class="item"><div class="label">Date émission</div><div class="value">${f.date_emission ? new Date(f.date_emission).toLocaleDateString('fr-FR') : '—'}</div></div>
-          <div class="item"><div class="label">Date échéance</div><div class="value">${f.date_echeance ? new Date(f.date_echeance).toLocaleDateString('fr-FR') : '—'}</div></div>
+          <div class="item"><div class="label">Client</div><div class="value">${clientName || '—'}</div></div>
+          <div class="item"><div class="label">Affaire</div><div class="value">${affaireName || '—'}</div></div>
           <div class="item"><div class="label">Statut</div><div class="value">${f.statut || '—'}</div></div>
           ${intervention ? `<div class="item"><div class="label">Intervention</div><div class="value">${intervention.titre || 'Intervention #'+intervention.id}</div></div>` : ''}
         </div>
