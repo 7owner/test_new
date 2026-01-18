@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const filtered = cacheFactures.filter(f => {
       const matchSearch =
         !q ||
+        (f.titre || '').toLowerCase().includes(q) ||
         (f.reference || '').toLowerCase().includes(q) ||
         (f.nom_client || '').toLowerCase().includes(q) ||
         (f.nom_affaire || '').toLowerCase().includes(q);
@@ -176,7 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const payload = {
         reference: document.getElementById('f_reference').value || null,
         titre: document.getElementById('f_titre').value || null,
-        montant_ht: document.getElementById('f_montant_ht').value || null,
         tva_taux: document.getElementById('f_tva_taux').value || null,
         date_emission: document.getElementById('f_date_emission').value || null,
         date_echeance: document.getElementById('f_date_echeance').value || null,
@@ -198,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
         total_tva: document.getElementById('f_total_tva').value || null,
         total_ht: document.getElementById('f_total_ht').value || null,
         total_ttc: document.getElementById('f_total_ttc').value || null,
+        statut: 'Emise'
       };
       try {
         const r = await fetch('/api/factures', {

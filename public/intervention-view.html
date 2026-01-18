@@ -210,11 +210,15 @@
     <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
       <h4 class="mb-0 d-flex align-items-center"><i class="bi bi-receipt me-2"></i>Facture intervention</h4>
       <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-outline-success" id="save-facture-btn"><i class="bi bi-save"></i> Enregistrer</button>
-        <button class="btn btn-sm btn-outline-light" id="toggle-facture-btn"><i class="bi bi-eye"></i> Voir</button>
+        <button class="btn btn-sm btn-light text-primary fw-semibold shadow-sm" id="save-facture-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
+        <button class="btn btn-sm btn-outline-light border-light" id="toggle-facture-btn"><i class="bi bi-eye"></i> Voir</button>
       </div>
     </div>
     <div class="card-body p-4" id="facture-body" style="display:none;">
+      <div class="input-group input-group-sm mb-3" style="max-width:380px;">
+        <span class="input-group-text"><i class="bi bi-type"></i></span>
+        <input type="text" class="form-control" id="facture-title-input" placeholder="Titre / Référence de la facture">
+      </div>
       <div class="row g-3">
         <div class="col-md-6">
           <div class="p-3 bg-light border rounded h-100">
@@ -625,6 +629,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const factureBody = document.getElementById('facture-body');
   const factureBtn = document.getElementById('toggle-facture-btn');
   // Inputs facture (sécurisés avec fallback null)
+  const factureTitleInput = document.getElementById('facture-title-input') || null;
   const factureHoursInput = document.getElementById('facture-hours-input') || null;
   const factureHoursAutoEl = document.getElementById('facture-hours-auto') || null;
   const factureRateInput = document.getElementById('facture-rate') || null;
@@ -1142,6 +1147,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         factureRecordId = existing.id;
         factureCard?.classList.remove('d-none');
         // Pré-remplir les champs si présents
+        if (factureTitleInput) factureTitleInput.value = existing.titre || existing.reference || '';
         if (factureHoursInput && existing.heures_saisies != null) factureHoursInput.value = existing.heures_saisies;
         if (factureRateInput && existing.taux_horaire != null) factureRateInput.value = existing.taux_horaire;
         if (factureMatTauxInput && existing.taux_majoration_materiel != null) factureMatTauxInput.value = existing.taux_majoration_materiel;
@@ -1185,7 +1191,11 @@ document.addEventListener('DOMContentLoaded', async function () {
       if (!Number.isNaN(parsed)) heuresCalculees = parsed;
     }
 
+    const titreFacture = factureTitleInput?.value?.trim() || null;
+
     const payload = {
+      titre: titreFacture,
+      reference: titreFacture,
       intervention_id: interventionId,
       client_id: clientId || null,
       affaire_id: affaireId || null,
