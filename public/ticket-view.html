@@ -519,10 +519,10 @@
       <div class="modal-body">
         <form id="addResponsableForm">
           <div class="mb-3">
-            <label for="responsable-select" class="form-label fw-bold">Sélectionner un agent admin</label>
-            <select id="responsable-select" class="form-select" required>
-              <option value="">-- Sélectionner --</option>
-            </select>
+            <label for="responsable-search-input" class="form-label fw-bold">Rechercher un responsable</label>
+            <input type="text" id="responsable-search-input" class="form-control" placeholder="Nom, matricule..." autocomplete="off">
+            <input type="hidden" id="responsable-mat">
+            <div id="responsable-suggestions" class="list-group mt-1" style="max-height:200px;overflow:auto;"></div>
           </div>
         </form>
       </div>
@@ -547,10 +547,10 @@
       <div class="modal-body">
         <form id="addAgentForm">
           <div class="mb-3">
-            <label for="agent-select" class="form-label fw-bold">Sélectionner un agent</label>
-            <select id="agent-select" class="form-select" required>
-              <option value="">-- Sélectionner --</option>
-            </select>
+            <label for="agent-search-input" class="form-label fw-bold">Rechercher un agent</label>
+            <input type="text" id="agent-search-input" class="form-control" placeholder="Nom, matricule..." autocomplete="off">
+            <input type="hidden" id="agent-mat">
+            <div id="agent-suggestions" class="list-group mt-1" style="max-height:200px;overflow:auto;"></div>
           </div>
         </form>
       </div>
@@ -1218,6 +1218,22 @@
             inlineAg.textContent = 'Aucun agent';
           }
         }
+        if (inlineAddResp) {
+          inlineAddResp.addEventListener('click', () => {
+            if (respHidden) respHidden.value='';
+            if (respSearch) respSearch.value='';
+            const modal = new bootstrap.Modal(document.getElementById('addResponsableModal'));
+            modal.show();
+          });
+        }
+        if (inlineAddAgent) {
+          inlineAddAgent.addEventListener('click', () => {
+            if (agentHidden) agentHidden.value='';
+            if (agentSearch) agentSearch.value='';
+            const modal = new bootstrap.Modal(document.getElementById('addAgentModal'));
+            modal.show();
+          });
+        }
 
        // Admin features
         if (isAdmin) {
@@ -1296,33 +1312,53 @@
             }
           } catch {}
 
-          const responsableSelect = document.getElementById('responsable-select');
-          const agentSelect = document.getElementById('agent-select');
+        const respSearch = document.getElementById('responsable-search-input');
+        const respHidden = document.getElementById('responsable-mat');
+        const respSug = document.getElementById('responsable-suggestions');
+        const agentSearch = document.getElementById('agent-search-input');
+        const agentHidden = document.getElementById('agent-mat');
+        const agentSug = document.getElementById('agent-suggestions');
 
-          function populateSelect(selectEl, filterFn) {
-            if (!selectEl) return;
-            selectEl.innerHTML = '<option value="">-- Sélectionner --</option>';
-            (allAgents || [])
-              .filter(filterFn || (() => true))
-              .forEach(a => {
-                const opt = document.createElement('option');
-                opt.value = a.matricule;
-                opt.textContent = `${a.matricule} - ${a.nom} ${a.prenom}`;
-                selectEl.appendChild(opt);
-              });
+          function setupAgentAutocomplete(inputEl, hiddenEl, sugEl, filterFn) {
+            if (!inputEl || !hiddenEl || !sugEl) return;
+            let timer;
+            inputEl.addEventListener('input', () => {
+              clearTimeout(timer);
+              const q = inputEl.value.trim();
+              hiddenEl.value = '';
+              if (q.length < 1) { sugEl.innerHTML=''; return; }
+              timer = setTimeout(async () => {
+                try {
+                  const r = await fetch(`/api/agents?query=${encodeURIComponent(q)}`, { headers, credentials:'same-origin' });
+                  let agents = r.ok ? await r.json() : [];
+                  if (filterFn) agents = agents.filter(filterFn);
+                  sugEl.innerHTML = '';
+                  (agents || []).forEach(a => {
+                    const btn = document.createElement('button');
+                    btn.type='button';
+                    btn.className='list-group-item list-group-item-action';
+                    const full = `${a.prenom || ''} ${a.nom || ''}`.trim() || a.matricule || 'Agent';
+                    btn.textContent = `${full}${a.matricule ? ' ('+a.matricule+')' : ''}`;
+                    btn.addEventListener('click', () => {
+                      inputEl.value = full;
+                      hiddenEl.value = a.matricule || '';
+                      sugEl.innerHTML='';
+                    });
+                    sugEl.appendChild(btn);
+                  });
+                  if (!sugEl.innerHTML) sugEl.innerHTML = '<div class="list-group-item text-muted">Aucun résultat</div>';
+                } catch(err){ sugEl.innerHTML='<div class="list-group-item text-danger">Erreur</div>'; }
+              }, 200);
+            });
+            inputEl.addEventListener('blur', () => setTimeout(() => { sugEl.innerHTML=''; }, 200));
           }
-
-          // Responsable : admin + Chef
-          populateSelect(responsableSelect, a =>
-            Array.isArray(a.roles) && a.roles.includes('ROLE_ADMIN')
-          );
-          // Agents : tous
-          populateSelect(agentSelect);
+          setupAgentAutocomplete(respSearch, respHidden, respSug, a => Array.isArray(a.roles) && a.roles.includes('ROLE_ADMIN'));
+          setupAgentAutocomplete(agentSearch, agentHidden, agentSug);
 
           const saveResponsableBtn = document.getElementById('save-responsable-btn');
-          if (saveResponsableBtn && responsableSelect) {
+          if (saveResponsableBtn) {
             saveResponsableBtn.addEventListener('click', async () => {
-              const matricule = responsableSelect.value;
+              const matricule = respHidden?.value;
               if (!matricule) return alert('Veuillez sélectionner un responsable.');
               try {
                 const resPost = await fetch(`/api/tickets/${ticketId}/responsables`, {
@@ -1336,7 +1372,8 @@
                 });
                 const body = await resPost.json().catch(() => ({}));
                 if (!resPost.ok) throw new Error(body.error || 'Erreur lors de l\'ajout du responsable');
-                alert('Responsable ajouté avec succès.');
+                if(respHidden) respHidden.value='';
+                if(respSearch) respSearch.value='';
                 location.reload();
               } catch (err) {
                 alert(`Erreur: ${err.message}`);
@@ -1345,9 +1382,9 @@
           }
 
           const saveAgentBtn = document.getElementById('save-agent-btn');
-          if (saveAgentBtn && agentSelect) {
+          if (saveAgentBtn) {
             saveAgentBtn.addEventListener('click', async () => {
-              const matricule = agentSelect.value;
+              const matricule = agentHidden?.value;
               if (!matricule) return alert('Veuillez sélectionner un agent.');
               try {
                 const resPost = await fetch(`/api/tickets/${ticketId}/agents`, {
@@ -1361,7 +1398,8 @@
                 });
                 const body = await resPost.json().catch(() => ({}));
                 if (!resPost.ok) throw new Error(body.error || 'Erreur lors de l\'assignation de l\'agent');
-                alert('Agent assigné avec succès.');
+                if(agentHidden) agentHidden.value='';
+                if(agentSearch) agentSearch.value='';
                 location.reload();
               } catch (err) {
                 alert(`Erreur: ${err.message}`);
