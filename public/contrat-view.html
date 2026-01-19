@@ -335,33 +335,51 @@
         if (count) count.textContent = `${(sites || []).length} site(s)`;
         grid.innerHTML = '';
         if (!sites || !sites.length) {
-          grid.innerHTML = '<div class="col-12 text-muted small">Aucun site lié.</div>';
+          grid.innerHTML = `
+            <div class="col-12 empty-state">
+              <i class="bi bi-geo-alt"></i>
+              <p class="mb-0">Aucun site associé</p>
+            </div>`;
           return;
         }
-        sites.forEach(s => {
+        sites.forEach((s, idx) => {
           const col = document.createElement('div');
-          col.className = 'col-12 col-md-6';
+          col.className = 'col-12 col-lg-6 animate-in';
+          col.style.animationDelay = `${0.2 + idx * 0.05}s`;
           const displayAddressParts = [s.ligne1, `${s.code_postal || ''} ${s.ville || ''}`.trim(), s.pays].filter(Boolean);
           const displayAddress = displayAddressParts.length ? displayAddressParts.join('<br>') : 'Adresse non renseignée';
           const searchQuery = [s.ligne1, s.code_postal, s.ville, s.pays].filter(Boolean).join(', ');
           const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`;
+          const responsableLabel = s.responsable_matricule
+            ? `${agentMap.get(String(s.responsable_matricule)) || 'Non assigné'} (${s.responsable_matricule})`
+            : 'Non assigné';
 
           col.innerHTML = `
-            <div class="border rounded p-3 h-100 d-flex flex-column shadow-sm">
-              <div class="fw-semibold mb-1">${s.nom_site || 'Site'}</div>
-              <div class="mb-2">
-                <div class="text-uppercase text-muted small">Adresse</div>
-                <div><a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="link-primary">${displayAddress}</a></div>
+            <div class="site-card h-100">
+              <div class="site-header d-flex justify-content-between align-items-start">
+                <div class="site-title">
+                  <i class="bi bi-building"></i>
+                  <span>${s.nom_site || 'Site'}</span>
+                </div>
+                <span class="badge-status bg-light text-dark">${s.statut || 'N/A'}</span>
               </div>
-              <div class="mb-2">
-                <div class="text-uppercase text-muted small">Responsable</div>
-                <div>${s.responsable_matricule ? `${agentMap.get(String(s.responsable_matricule)) || 'Non assigné'} (${s.responsable_matricule})` : 'Non assigné'}</div>
-              </div>
-              <div class="mt-auto d-flex justify-content-between align-items-center">
-                <span class="badge bg-light text-dark">${s.statut || 'N/A'}</span>
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#siteModal" data-site-id="${s.id}">
-                  Voir le site
-                </button>
+              <div class="site-body">
+                <div class="info-row">
+                  <div class="info-label">Adresse</div>
+                  <div class="info-value">
+                    <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer">${displayAddress}</a>
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Responsable</div>
+                  <div class="info-value">${responsableLabel}</div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                  <div class="small text-muted">ID: ${s.id}</div>
+                  <button class="btn btn-sm btn-gradient-primary" data-bs-toggle="modal" data-bs-target="#siteModal" data-site-id="${s.id}">
+                    <i class="bi bi-box-arrow-up-right me-1"></i>Voir le site
+                  </button>
+                </div>
               </div>
             </div>`;
           grid.appendChild(col);
