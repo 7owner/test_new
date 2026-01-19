@@ -5371,6 +5371,118 @@ app.delete('/api/factures/:id', authenticateToken, authorizeAdmin, async (req, r
   const { id } = req.params; try { await pool.query('DELETE FROM facture WHERE id=$1', [id]); res.status(204).send(); } catch (err) { console.error('Error deleting facture:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });
 
+// -------------------- Travaux API --------------------
+app.get('/api/travaux', authenticateToken, async (req, res) => {
+  try {
+    const { ticket_id, agent_matricule, etat, priorite } = req.query;
+    const params = [];
+    const conditions = [];
+    let paramIndex = 1;
+
+    let sql = `
+      SELECT
+          t.*,
+          tk.titre AS ticket_titre,
+          a.nom AS agent_nom,
+          a.prenom AS agent_prenom
+      FROM travaux t
+      LEFT JOIN ticket tk ON t.ticket_id = tk.id
+      LEFT JOIN agent a ON t.agent_matricule = a.matricule
+    `;
+
+    if (ticket_id) {
+      conditions.push(`t.ticket_id = $${paramIndex++}`);
+      params.push(ticket_id);
+    }
+    if (agent_matricule) {
+      conditions.push(`t.agent_matricule = $${paramIndex++}`);
+      params.push(agent_matricule);
+    }
+    if (etat) {
+      conditions.push(`t.etat = $${paramIndex++}::etat_travaux`);
+      params.push(etat);
+    }
+    if (priorite) {
+      conditions.push(`t.priorite ILIKE $${paramIndex++}`);
+      params.push(`%${priorite}%`);
+    }
+
+    if (conditions.length > 0) {
+      sql += ` WHERE ${conditions.join(' AND ')}`;
+    }
+
+    sql += " ORDER BY t.created_at DESC";
+
+    const r = await pool.query(sql, params);
+    res.json(r.rows);
+  } catch (err) { console.error('Error fetching travaux:', err); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+app.get('/api/travaux/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const r = await pool.query('SELECT * FROM travaux WHERE id=$1', [id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json(r.rows[0]);
+  } catch (err) { console.error('Error fetching travaux by id:', err); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+app.post('/api/travaux', authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    let { ticket_id, agent_matricule, titre, description, etat, priorite, date_debut, date_fin, date_echeance } = req.body;
+
+    if (!titre) return res.status(400).json({ error: 'Titre is required' });
+
+    const r = await pool.query(
+      `INSERT INTO travaux (
+        ticket_id, agent_matricule, titre, description, etat, priorite, date_debut, date_fin, date_echeance
+      ) VALUES ($1, $2, $3, $4, COALESCE($5::etat_travaux, 'A_faire'::etat_travaux), $6, COALESCE($7::timestamp, CURRENT_TIMESTAMP), $8, $9) RETURNING *`,
+      [
+        ticket_id || null, agent_matricule || null, titre, description || null, etat || null, priorite || null, date_debut || null, date_fin || null, date_echeance || null
+      ]
+    );
+    res.status(201).json(r.rows[0]);
+  } catch (err) { console.error('Error creating travaux:', err); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+app.put('/api/travaux/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    let { ticket_id, agent_matricule, titre, description, etat, priorite, date_debut, date_fin, date_echeance } = req.body;
+
+    if (!titre) return res.status(400).json({ error: 'Titre is required' });
+
+    const r = await pool.query(
+      `UPDATE travaux SET
+        ticket_id = COALESCE($1, ticket_id),
+        agent_matricule = COALESCE($2, agent_matricule),
+        titre = COALESCE($3, titre),
+        description = COALESCE($4, description),
+        etat = COALESCE($5::etat_travaux, etat),
+        priorite = COALESCE($6, priorite),
+        date_debut = COALESCE($7, date_debut),
+        date_fin = COALESCE($8, date_fin),
+        date_echeance = COALESCE($9, date_echeance),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id=$10 RETURNING *`,
+      [
+        ticket_id || null, agent_matricule || null, titre || null, description || null, etat || null, priorite || null, date_debut || null, date_fin || null, date_echeance || null,
+        id
+      ]
+    );
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json(r.rows[0]);
+  } catch (err) { console.error('Error updating travaux:', err); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+app.delete('/api/travaux/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM travaux WHERE id=$1', [id]);
+    res.status(204).send();
+  } catch (err) { console.error('Error deleting travaux:', err); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
 // -------------------- RÃ¨glements --------------------
 app.get('/api/reglements', authenticateToken, async (req, res) => {
   try {

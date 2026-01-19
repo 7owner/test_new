@@ -85,6 +85,7 @@ CREATE TYPE devis_status AS ENUM ('Brouillon', 'Envoye', 'Accepte', 'Refuse');
 CREATE TYPE metier_type AS ENUM ('GTB', 'Video', 'Intrusion', 'Control_Acces');
 CREATE TYPE commande_status_type AS ENUM ('A commander', 'Commande', 'En livraison', 'Reçu', 'Installé');
 CREATE TYPE intervention_event_statut AS ENUM ('Planifie','En_cours','Termine','Annule','Reporte');
+CREATE TYPE etat_travaux AS ENUM ('A_faire','En_cours','Termine','En_attente','Annule');
 
 -- --------------------------------------------------
 -- CORE ENTITIES
@@ -256,6 +257,21 @@ CREATE TABLE IF NOT EXISTS ticket (
 );
 
 ALTER TABLE demande_client ADD FOREIGN KEY (ticket_id) REFERENCES ticket(id) ON DELETE SET NULL;
+
+CREATE TABLE IF NOT EXISTS travaux (
+    id SERIAL PRIMARY KEY,
+    ticket_id BIGINT REFERENCES ticket(id) ON DELETE CASCADE,
+    agent_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL, -- Main agent assigned to this task
+    titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    etat etat_travaux DEFAULT 'A_faire',
+    priorite VARCHAR(50) DEFAULT 'Moyenne', -- Example: 'Faible', 'Moyenne', 'Haute', 'Urgent'
+    date_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_fin TIMESTAMP,
+    date_echeance TIMESTAMP, -- Due date for the task
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE TABLE IF NOT EXISTS ticket_agent (
     id SERIAL PRIMARY KEY,

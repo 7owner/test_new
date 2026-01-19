@@ -45,3 +45,7 @@ To continue development, focus should be on implementing the Node.js/Express.js 
   `ALTER TABLE facture ADD COLUMN intervention_id BIGINT REFERENCES intervention(id) ON DELETE SET NULL;`
 - Added `titre` column to the `facture` table.
   `ALTER TABLE facture ADD COLUMN titre VARCHAR(255);`
+- Added `etat_travaux` ENUM type.
+  `CREATE TYPE etat_travaux AS ENUM ('A_faire','En_cours','Termine','En_attente','Annule');`
+- Added `travaux` table.
+  `CREATE TABLE travaux ( id SERIAL PRIMARY KEY, ticket_id BIGINT REFERENCES ticket(id) ON DELETE CASCADE, agent_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL, titre VARCHAR(255) NOT NULL, description TEXT, etat etat_travaux DEFAULT 'A_faire', priorite VARCHAR(50) DEFAULT 'Moyenne', date_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP, date_fin TIMESTAMP, date_echeance TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );`
