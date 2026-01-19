@@ -422,12 +422,18 @@
       });
 
       try {
-        const res = await fetch(`/api/demandes_client/${demandeId}`, { headers });
+        let res = await fetch(`/api/demandes_client/${demandeId}`, { headers, cache: 'no-store' });
+        if (res.status === 304) {
+          // Réessaye en forçant le rechargement pour éviter un body vide
+          res = await fetch(`/api/demandes_client/${demandeId}`, { headers, cache: 'reload' });
+        }
         if (!res.ok) {
           if ([401,403].includes(res.status)) location.href = '/login.html';
-          throw new Error();
+          throw new Error(`HTTP ${res.status}`);
         }
-        const { demande, ticket, responsable, interventions } = await res.json();
+        const payload = await res.json();
+        const { demande, ticket, responsable, interventions } = payload || {};
+        if (!demande) throw new Error('Données de demande manquantes');
 
         set('demande-id', demande.id);
         set('demande-date', fmt(demande.created_at));
