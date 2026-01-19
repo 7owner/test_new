@@ -134,6 +134,9 @@
           items.forEach(t => {
             const card = document.createElement('div');
             card.className = 'card work-card';
+            card.dataset.travailId = t.id;
+            card.dataset.etat = etat;
+            card.draggable = true;
             const priorite = t.priorite || 'Moyenne';
             const echeance = t.date_echeance ? new Date(t.date_echeance).toLocaleDateString('fr-FR') : '—';
             const responsable = t.agent_nom
@@ -210,6 +213,63 @@
 
       loadTravaux();
       searchInput.addEventListener('input', () => loadTravaux());
+
+      // --- Drag & Drop pour changement d'état ---
+      let dragId = null;
+      let dragCard = null;
+
+      function clearDropStates() {
+        document.querySelectorAll('.col-body').forEach(c => c.classList.remove('drop-hover'));
+        if (dragCard) dragCard.classList.remove('dragging');
+      }
+
+      document.body.addEventListener('dragstart', (e) => {
+        const card = e.target.closest('.work-card');
+        if (!card || !card.dataset.travailId) return;
+        dragId = card.dataset.travailId;
+        dragCard = card;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+
+      document.body.addEventListener('dragend', () => {
+        dragId = null;
+        clearDropStates();
+      });
+
+      document.querySelectorAll('.col-body').forEach(col => {
+        col.addEventListener('dragover', (e) => {
+          if (!dragId) return;
+          e.preventDefault();
+          col.classList.add('drop-hover');
+        });
+        col.addEventListener('dragleave', () => col.classList.remove('drop-hover'));
+        col.addEventListener('drop', async (e) => {
+          e.preventDefault();
+          const newEtat = col.parentElement?.querySelector('.board-col')?.dataset.etat || col.closest('.board-col')?.dataset.etat || col.id?.replace('col-','');
+          clearDropStates();
+          if (!dragId || !newEtat) return;
+          const currentEtat = dragCard?.dataset.etat;
+          if (currentEtat === newEtat) return;
+          try {
+            const res = await fetch(`/api/travaux/${dragId}`, {
+              method:'PUT',
+              headers: { 'Content-Type':'application/json', ...(headers||{}) },
+              credentials:'same-origin',
+              body: JSON.stringify({ etat:newEtat })
+            });
+            if (res.status===401||res.status===403){ location.href='/login.html'; return; }
+            if (!res.ok) throw new Error('Mise à jour impossible');
+            await loadTravaux();
+          } catch (err) {
+            console.error('Drag update failed', err);
+            alert(err.message || 'Erreur changement d’état');
+          } finally {
+            dragId = null;
+            dragCard = null;
+          }
+        });
+      });
     });
   </script>
   <!-- Modale de visualisation / création -->
