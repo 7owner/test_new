@@ -61,24 +61,18 @@ document.addEventListener('DOMContentLoaded', () => {
         <thead>
           <tr>
             <th>Titre</th>
-            <th>Référence</th>
-            <th>Client</th>
-            <th>Affaire</th>
-            <th>Montants</th>
-            <th>Dates</th>
-            <th>Actions</th>
+            <th>Intervention</th>
+            <th>Montant TTC</th>
+            <th class="text-end">Actions</th>
           </tr>
         </thead>
         <tbody>
     `;
 
     filtered.forEach(f => {
-      const mht = formatAmount(f.montant_ht);
-      const tva = f.tva !== undefined && f.tva !== null ? Number(f.tva).toFixed(2) + ' %' : '—';
-      const ttc = formatAmount(f.montant_ttc);
+      const ttc = formatAmount(f.total_ttc || f.montant_ttc);
       const statut = f.statut || 'N/A';
-      // const hasAmounts = mht !== '—' || ttc !== '—'; // Old check, not fully comprehensive
-      const hasAmounts = f.montant_ht !== null || f.total_ht !== null; // More robust check
+      const hasAmounts = f.total_ht !== null || f.total_ttc !== null || f.montant_ht !== null || f.montant_ttc !== null;
 
       const viewUrl = f.intervention_id ? `/intervention-view.html?id=${f.intervention_id}` : null;
       const viewTitle = f.intervention_id ? (f.intervention_titre || `Intervention #${f.intervention_id}`) : 'Intervention non liée';
@@ -86,24 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
       html += `
         <tr>
           <td>
-            <div class="fw-semibold">${f.titre || '—'}</div>
-          </td>
-          <td>
-            <div class="fw-semibold">${f.reference || 'Sans ref.'}</div>
+            <div class="fw-semibold">${f.titre || f.reference || '—'}</div>
             <div class="small text-muted">Facture #${f.id}</div>
           </td>
-          <td>${f.nom_client || '—'}</td>
-          <td>${f.nom_affaire || '—'}</td>
-          <td>
-            <div class="small">HT: ${formatAmount(f.total_ht || f.montant_ht)}</div>
-            <div class="small">TVA: ${f.tva_taux !== undefined && f.tva_taux !== null ? Number(f.tva_taux).toFixed(2) + ' %' : '—'}</div>
-            <div class="small fw-semibold">TTC: ${formatAmount(f.total_ttc || f.montant_ttc)}</div>
-          </td>
-          <td>
-            <div class="small">Émission: ${formatDate(f.date_emission)}</div>
-            <div class="small">Échéance: ${formatDate(f.date_echeance)}</div>
-            <span class="badge bg-secondary badge-status mt-1">${statut}</span>
-          </td>
+          <td>${viewUrl ? (f.intervention_titre || `Intervention #${f.intervention_id}`) : '—'}</td>
+          <td class="fw-semibold">${ttc}</td>
           <td class="text-end">
             <div class="btn-group">
               ${viewUrl
