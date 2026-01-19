@@ -84,6 +84,10 @@
       const token = localStorage.getItem('token');
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
       const colIds = ['A_faire','En_cours','En_attente','Termine'];
+      const searchInput = document.createElement('input');
+      searchInput.className = 'form-control form-control-sm mb-3';
+      searchInput.placeholder = 'Rechercher (titre, ticket, responsable)...';
+      document.querySelector('main .container')?.insertBefore(searchInput, document.getElementById('board'));
 
       function setCount(etat, n) {
         const el = document.getElementById('count-' + etat);
@@ -98,8 +102,18 @@
           setCount(etat, 0);
         });
 
+        const term = (searchInput.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+        const filtered = travaux.filter(t => {
+          if (!term) return true;
+          const hay = [
+            t.titre, t.description, t.ticket_titre,
+            t.agent_nom, t.agent_prenom, t.agent_matricule
+          ].join(' ').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+          return hay.includes(term);
+        });
+
         const groupByEtat = {};
-        travaux.forEach(t => {
+        filtered.forEach(t => {
           const e = t.etat || 'A_faire';
           groupByEtat[e] = groupByEtat[e] || [];
           groupByEtat[e].push(t);
@@ -120,14 +134,16 @@
             card.className = 'card work-card';
             const priorite = t.priorite || 'Moyenne';
             const echeance = t.date_echeance ? new Date(t.date_echeance).toLocaleDateString('fr-FR') : '—';
-            const responsable = t.agent_matricule || t.responsable || '—';
+            const responsable = t.agent_nom
+              ? `${t.agent_nom || ''} ${t.agent_prenom || ''}`.trim() || t.agent_matricule || '—'
+              : (t.agent_matricule || t.responsable || '—');
             card.innerHTML = `
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-1">
                   <div class="fw-semibold">${t.titre || '(Sans titre)'}</div>
                   <span class="tag">${priorite}</span>
                 </div>
-                <div class="text-muted small mb-1">${t.description || ''}</div>
+                <div class="text-muted small mb-1">${t.ticket_titre ? `<i class="bi bi-ticket-detailed"></i> ${t.ticket_titre}` : (t.description || '')}</div>
                 <div class="d-flex flex-wrap gap-2 small text-muted">
                   <span><i class="bi bi-person-badge"></i> Resp. ${responsable}</span>
                   <span><i class="bi bi-calendar-event"></i> Échéance : ${echeance}</span>
@@ -163,6 +179,7 @@
       }
 
       loadTravaux();
+      searchInput.addEventListener('input', () => loadTravaux());
     });
   </script>
 </body>

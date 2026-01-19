@@ -134,6 +134,9 @@
 
       const set = (id,val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
       const setHTML = (id,val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
+      const renduList = document.getElementById('rendu-list');
+      const factList = document.getElementById('fact-list');
+      const matList = document.getElementById('mat-list');
 
       try {
         const res = await fetch(`/api/travaux/${id}`, { headers, credentials:'same-origin' });
@@ -149,10 +152,10 @@
         set('work-fin', fmt(t.date_fin));
         setHTML('work-desc', t.description ? t.description.replace(/\n/g,'<br>') : '—');
 
-        set('work-ticket', t.ticket_id ? `<a href="ticket-view.html?id=${t.ticket_id}">Ticket #${t.ticket_id}</a>` : '—');
-        set('work-client', t.client_nom || '—');
-        set('work-affaire', t.affaire_nom || '—');
-        set('work-site', t.site_nom || '—');
+        setHTML('work-ticket', t.ticket_id ? `<a href="ticket-view.html?id=${t.ticket_id}">Ticket #${t.ticket_id}</a>` : '—');
+        setHTML('work-client', t.client_nom || '—');
+        setHTML('work-affaire', t.affaire_nom || '—');
+        setHTML('work-site', t.site_nom || '—');
 
         // Agents
         const agentsList = document.getElementById('agents-list');
@@ -165,10 +168,34 @@
         });
         set('resp-principal', t.agent_matricule || '—');
 
-        // Rendus / factures / matériel : placeholders
-        document.getElementById('rendu-list').innerHTML = '<div class="text-muted">À connecter aux rendus (cible Travaux).</div>';
-        document.getElementById('fact-list').innerHTML = '<div class="text-muted">À connecter aux factures (cible Travaux).</div>';
-        document.getElementById('mat-list').innerHTML = '<div class="text-muted">À connecter aux demandes matériel (cible Travaux).</div>';
+        // Rendus
+        const rRendus = await fetch(`/api/travaux/${id}/rendus`, { headers, credentials:'same-origin' });
+        if (rRendus.status===401||rRendus.status===403){ location.href='/login.html'; return; }
+        const rendus = rRendus.ok ? await rRendus.json() : [];
+        renduList.innerHTML = '';
+        if (!rendus.length) {
+          renduList.innerHTML = '<div class="text-muted">Aucun rendu.</div>';
+        } else {
+          rendus.forEach(r => {
+            const div = document.createElement('div');
+            div.className = 'border rounded p-2 mb-2';
+            div.innerHTML = `
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="fw-semibold">Rendu #${r.id}</div>
+                <span class="badge bg-light text-dark">${r.attachments_count || 0} pièce(s)</span>
+              </div>
+              <div class="small text-muted mb-1">${r.resume || '—'}</div>
+              <div class="d-flex gap-2">
+                <a href="/rendu-intervention-view.html?id=${r.id}" class="btn btn-sm btn-outline-primary">Voir</a>
+              </div>
+            `;
+            renduList.appendChild(div);
+          });
+        }
+
+        // Factures / matériel restent à raccorder côté API (cible Travaux)
+        factList.innerHTML = '<div class="text-muted">Pas encore relié aux factures Travaux.</div>';
+        matList.innerHTML = '<div class="text-muted">Pas encore relié aux demandes matériel Travaux.</div>';
       } catch (err) {
         alert(err.message || 'Erreur chargement travail');
       }
