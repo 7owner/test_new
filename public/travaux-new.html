@@ -32,15 +32,35 @@
             <label class="form-label fw-semibold">Description</label>
             <textarea class="form-control" id="description" rows="3" placeholder="Détail du travail..."></textarea>
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Ticket lié (ID)</label>
-            <input type="number" class="form-control" id="ticket_id" placeholder="Optionnel">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Site</label>
+            <input type="text" class="form-control" id="site-search-input" placeholder="Rechercher un site...">
+            <input type="hidden" id="site_id">
+            <div id="site-suggestions" class="list-group position-absolute w-100"></div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">DOE</label>
+            <input type="text" class="form-control" id="doe-search-input" placeholder="Rechercher un DOE...">
+            <input type="hidden" id="doe_id">
+            <div id="doe-suggestions" class="list-group position-absolute w-100"></div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Affaire</label>
+            <input type="text" class="form-control" id="affaire-search-input" placeholder="Rechercher une affaire...">
+            <input type="hidden" id="affaire_id">
+            <div id="affaire-suggestions" class="list-group position-absolute w-100"></div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Demande client</label>
+            <input type="text" class="form-control" id="demande-search-input" placeholder="Rechercher une demande...">
+            <input type="hidden" id="demande_id">
+            <div id="demande-suggestions" class="list-group position-absolute w-100"></div>
+          </div>
+          <div class="col-md-6">
             <label class="form-label fw-semibold">Agent responsable (matricule)</label>
             <input type="text" class="form-control" id="agent_matricule" placeholder="Ex: AGT001">
           </div>
-          <div class="col-md-4">
+          <div class="col-md-6">
             <label class="form-label fw-semibold">Priorité</label>
             <select class="form-select" id="priorite">
               <option value="Haute">Haute</option>
@@ -48,7 +68,7 @@
               <option value="Basse">Basse</option>
             </select>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-6">
             <label class="form-label fw-semibold">État</label>
             <select class="form-select" id="etat">
               <option value="A_faire" selected>À faire</option>
@@ -58,6 +78,10 @@
               <option value="Annule">Annulé</option>
             </select>
           </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Ticket lié (ID)</label>
+            <input type="number" class="form-control" id="ticket_id" placeholder="Optionnel">
+          </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Date de début</label>
             <input type="datetime-local" class="form-control" id="date_debut">
@@ -65,6 +89,10 @@
           <div class="col-md-4">
             <label class="form-label fw-semibold">Date d'échéance</label>
             <input type="datetime-local" class="form-control" id="date_echeance">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Date de fin</label>
+            <input type="datetime-local" class="form-control" id="date_fin">
           </div>
           <div class="col-12 d-flex justify-content-end gap-2">
             <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Créer</button>
@@ -91,6 +119,78 @@
         msg.classList.remove('d-none');
       }
 
+      // Autocomplete util
+      function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey='nom', idKey='id') {
+        let timeout;
+        const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+        searchInput.addEventListener('input', () => {
+          clearTimeout(timeout);
+          const q = searchInput.value.trim();
+          if (q.length < 2) { suggestionsContainer.innerHTML=''; return; }
+          timeout = setTimeout(async () => {
+            try {
+              const url = new URL(fetchUrl, window.location.origin);
+              url.searchParams.append('query', q);
+              const r = await fetch(url.toString(), { headers, credentials:'same-origin' });
+              if (!r.ok) throw new Error(r.status);
+              const items = await r.json();
+              const filtered = (items || []).filter(it => norm(it[displayKey]).includes(norm(q)));
+              suggestionsContainer.innerHTML = '';
+              if (!filtered.length) { suggestionsContainer.innerHTML='<div class="list-group-item">Aucun résultat.</div>'; return; }
+              filtered.forEach(it => {
+                const btn = document.createElement('button');
+                btn.type='button';
+                btn.className='list-group-item list-group-item-action';
+                btn.textContent = it[displayKey];
+                btn.addEventListener('click', () => {
+                  searchInput.value = it[displayKey] || '';
+                  hiddenInput.value = it[idKey] || '';
+                  suggestionsContainer.innerHTML='';
+                });
+                suggestionsContainer.appendChild(btn);
+              });
+            } catch (err) {
+              suggestionsContainer.innerHTML = '<div class="list-group-item list-group-item-danger">Erreur de chargement</div>';
+            }
+          }, 250);
+        });
+        searchInput.addEventListener('blur', () => setTimeout(()=> suggestionsContainer.innerHTML='', 120));
+      }
+
+      // Autocomplete initialisation
+      setupAutocomplete(
+        document.getElementById('site-search-input'),
+        document.getElementById('site_id'),
+        document.getElementById('site-suggestions'),
+        '/api/sites',
+        'nom_site',
+        'id'
+      );
+      setupAutocomplete(
+        document.getElementById('doe-search-input'),
+        document.getElementById('doe_id'),
+        document.getElementById('doe-suggestions'),
+        '/api/does',
+        'titre',
+        'id'
+      );
+      setupAutocomplete(
+        document.getElementById('affaire-search-input'),
+        document.getElementById('affaire_id'),
+        document.getElementById('affaire-suggestions'),
+        '/api/affaires',
+        'nom_affaire',
+        'id'
+      );
+      setupAutocomplete(
+        document.getElementById('demande-search-input'),
+        document.getElementById('demande_id'),
+        document.getElementById('demande-suggestions'),
+        '/api/demandes_client',
+        'titre',
+        'id'
+      );
+
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const payload = {
@@ -101,7 +201,12 @@
           priorite: document.getElementById('priorite').value || null,
           etat: document.getElementById('etat').value || null,
           date_debut: document.getElementById('date_debut').value || null,
-          date_echeance: document.getElementById('date_echeance').value || null
+          date_echeance: document.getElementById('date_echeance').value || null,
+          date_fin: document.getElementById('date_fin').value || null,
+          site_id: Number(document.getElementById('site_id').value) || null,
+          doe_id: Number(document.getElementById('doe_id').value) || null,
+          affaire_id: Number(document.getElementById('affaire_id').value) || null,
+          demande_id: Number(document.getElementById('demande_id').value) || null
         };
         if (!payload.titre) { flash('Le titre est obligatoire.', 'danger'); return; }
         try {

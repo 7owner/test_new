@@ -9,116 +9,337 @@
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=3"></script>
   <style>
-    .embed header, .embed #navbar-placeholder { display:none !important; }
+    :root {
+      --primary: #667eea;
+      --primary-dark: #5a67d8;
+      --gradient-bg: linear-gradient(135deg, #f0f4ff 0%, #e0eaff 100%);
+      --card-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      --border-radius: 16px;
+      --text-muted: #64748b;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    body {
+      background: var(--gradient-bg);
+      min-height: 100vh;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #1e293b;
+    }
+
+    .embed header, .embed #navbar-placeholder { display: none !important; }
+
+    .card {
+      border: none;
+      border-radius: var(--border-radius);
+      box-shadow: var(--card-shadow);
+      transition: all 0.25s ease;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 35px rgba(0,0,0,0.12);
+    }
+
+    .card-title {
+      color: #1e293b;
+      font-weight: 600;
+      position: relative;
+      padding-bottom: 0.75rem;
+    }
+
+    .card-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      height: 3px;
+      background: var(--primary);
+      border-radius: 3px;
+    }
+
+    .status-badge {
+      padding: 0.35rem 0.9rem;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+
+    .status-en-cours     { background: #fef3c7; color: #92400e; }
+    .status-traite       { background: #d1fae5; color: #065f46; }
+    .status-rejete       { background: #fee2e2; color: #991b1b; }
+    .status-annule       { background: #e5e7eb; color: #374151; }
+
+    /* Timeline Interventions */
+    .timeline {
+      position: relative;
+      padding-left: 2.5rem;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 1.25rem;
+      width: 3px;
+      background: linear-gradient(to bottom, #e2e8f0, #cbd5e1);
+      border-radius: 2px;
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 1.75rem;
+    }
+
+    .timeline-item:last-child { margin-bottom: 0; }
+
+    .timeline-dot {
+      position: absolute;
+      left: -2.25rem;
+      top: 0.4rem;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: white;
+      border: 3px solid var(--primary);
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+    }
+
+    .timeline-content {
+      background: white;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    /* Messages */
+    .messages-display {
+      height: 380px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 0.9rem 1.2rem;
+      border-radius: 18px;
+      line-height: 1.4;
+      position: relative;
+    }
+
+    .message-sent {
+      align-self: flex-end;
+      background: #dcf8c6;
+      border-bottom-right-radius: 6px;
+    }
+
+    .message-received {
+      align-self: flex-start;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-bottom-left-radius: 6px;
+    }
+
+    .message small {
+      display: block;
+      margin-top: 0.4rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    .message-attachments a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(102,126,234,0.1);
+      color: var(--primary);
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      margin-right: 0.5rem;
+    }
+
+    .message-attachments a:hover {
+      background: rgba(102,126,234,0.2);
+    }
+
+    /* Form */
+    #message-form .btn-primary {
+      background: var(--primary);
+      border: none;
+      padding: 0.65rem 1.5rem;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+
+    #message-form .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    @media (max-width: 576px) {
+      .messages-display { height: 320px; }
+      .timeline { padding-left: 2rem; }
+      .timeline-dot { left: -1.75rem; }
+    }
   </style>
 </head>
 <body>
   <div id="navbar-placeholder"></div>
-  <main class="container mt-5">
-    <h1 class="mb-4">Suivi de la Demande #<span id="demande-id"></span></h1>
 
-    <!-- Demand Details -->
+  <main class="container mt-4 mt-md-5">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+      <h1 class="mb-0">Suivi de la Demande #<span id="demande-id"></span></h1>
+    </div>
+
+    <!-- Détails de la demande -->
     <div class="card mb-4">
       <div class="card-body">
-        <h2 class="card-title mb-4">Détails de votre demande</h2>
-        <p><strong>Date de création:</strong> <span id="demande-date"></span></p>
-        <p><strong>Site concerné:</strong> <span id="demande-site"></span></p>
-        <p><strong>Description:</strong> <span id="demande-description"></span></p>
-        <p><strong>Statut de la demande:</strong> <span id="demande-status" class="fw-bold"></span></p>
+        <h2 class="card-title">Détails de votre demande</h2>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="fw-semibold text-muted small">Date de création</div>
+            <div id="demande-date" class="fs-5 fw-medium"></div>
+          </div>
+          <div class="col-md-4">
+            <div class="fw-semibold text-muted small">Site concerné</div>
+            <div id="demande-site" class="fs-5 fw-medium"></div>
+          </div>
+          <div class="col-12">
+            <div class="fw-semibold text-muted small">Description</div>
+            <div id="demande-description" class="fs-6"></div>
+          </div>
+          <div class="col-md-4">
+            <div class="fw-semibold text-muted small">Statut</div>
+            <span id="demande-status" class="status-badge"></span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Ticket Details -->
+    <!-- Ticket -->
     <div id="ticket-section" class="card mb-4 d-none">
       <div class="card-body">
-        <h2 class="card-title mb-4">Progression du Ticket</h2>
-        <p><strong>Titre du ticket:</strong> <span id="ticket-titre"></span></p>
-        <p><strong>Statut du ticket:</strong> <span id="ticket-status" class="fw-bold"></span></p>
-        <p><strong>Date de début:</strong> <span id="ticket-date-debut"></span></p>
-        <p><strong>Date de fin:</strong> <span id="ticket-date-fin"></span></p>
+        <h2 class="card-title">Progression du Ticket</h2>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="fw-semibold text-muted small">Titre</div>
+            <div id="ticket-titre" class="fs-5"></div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-semibold text-muted small">Statut</div>
+            <span id="ticket-status" class="status-badge"></span>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-semibold text-muted small">Début</div>
+            <div id="ticket-date-debut"></div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-semibold text-muted small">Fin prévue</div>
+            <div id="ticket-date-fin"></div>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Interlocuteur -->
     <div id="interlocuteur-card" class="card mb-4 d-none">
       <div class="card-body">
-        <h2 class="card-title mb-4">Votre Interlocuteur</h2>
+        <h2 class="card-title">Votre Interlocuteur</h2>
         <div class="row g-3">
-          <div class="col-md-6">
-            <div class="fw-semibold text-muted small text-uppercase">Nom</div>
-            <div id="interlocuteur-nom" class="fs-6"></div>
+          <div class="col-md-4">
+            <div class="fw-semibold text-muted small">Nom</div>
+            <div id="interlocuteur-nom" class="fs-5"></div>
           </div>
-          <div class="col-md-6">
-            <div class="fw-semibold text-muted small text-uppercase">Email</div>
-            <div id="interlocuteur-email" class="fs-6"></div>
+          <div class="col-md-4">
+            <div class="fw-semibold text-muted small">Email</div>
+            <div id="interlocuteur-email" class="fs-5"></div>
           </div>
-          <div class="col-md-6">
-            <div class="fw-semibold text-muted small text-uppercase">Téléphone</div>
-            <div id="interlocuteur-tel" class="fs-6"></div>
+          <div class="col-md-4">
+            <div class="fw-semibold text-muted small">Téléphone</div>
+            <div id="interlocuteur-tel" class="fs-5"></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Interventions -->
+    <!-- Interventions (Timeline) -->
     <div id="interventions-section" class="card mb-4 d-none">
       <div class="card-body">
-        <h2 class="card-title mb-4">Interventions Planifiées ou Réalisées</h2>
-        <div id="interventions-list">
-            <p class="text-muted">Aucune intervention pour le moment.</p>
+        <h2 class="card-title">Interventions</h2>
+        <div id="interventions-list" class="timeline">
+          <!-- Timeline items seront injectés ici -->
         </div>
       </div>
     </div>
 
-    <!-- Messagerie Section -->
-    <div id="messagerie-section" class="card mb-4">
+    <!-- Messagerie -->
+    <div class="card mb-4">
       <div class="card-body">
-        <h2 class="card-title mb-4">Messagerie</h2>
-        <div id="messages-display" class="border p-3 mb-3" style="height: 300px; overflow-y: auto;">
-            <!-- Messages will be loaded here -->
+        <h2 class="card-title">Messagerie</h2>
+        <div id="messages-display" class="messages-display">
+          <!-- Messages ici -->
         </div>
-        <form id="message-form">
+        <form id="message-form" class="mt-4">
           <div class="mb-3">
-            <textarea id="message-body" class="form-control" rows="3" placeholder="Écrivez un message..." required></textarea>
+            <textarea id="message-body" class="form-control" rows="3" placeholder="Votre message..." required></textarea>
           </div>
-          <div class="mb-3">
-            <label for="attachments" class="form-label">Pièce jointe (optionnel)</label>
-            <input type="file" id="attachments" class="form-control">
+          <div class="input-group mb-3">
+            <label class="input-group-text" for="attachments"><i class="bi bi-paperclip"></i></label>
+            <input type="file" class="form-control" id="attachments">
           </div>
-          <button class="btn btn-primary" type="submit">Envoyer</button>
+          <div class="text-end">
+            <button class="btn btn-primary" type="submit">
+              <i class="bi bi-send me-2"></i>Envoyer
+            </button>
+          </div>
         </form>
       </div>
     </div>
-
-    
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
+    // ────────────────────────────────────────────────────────────────
+    // Le script reste presque identique, juste quelques ajustements
+    // pour le rendu visuel (classes status, timeline, etc.)
+    // ────────────────────────────────────────────────────────────────
+
     document.addEventListener('DOMContentLoaded', async function() {
       const qp = new URLSearchParams(location.search);
       const demandeId = qp.get('id');
       const section = qp.get('section');
       const isModal = window.self !== window.top || qp.get('modal') === '1' || qp.get('embed') === '1';
       if (isModal) document.body.classList.add('embed');
+
       const token = localStorage.getItem('token');
       if (!token) { window.location.href = '/login.html'; return; }
+
       let userId = null;
       try {
         const user = JSON.parse(atob(token.split('.')[1]));
-        userId = user && user.id;
+        userId = user?.id;
       } catch (e) {
-        console.warn('JWT parse failed, redirecting to login', e);
         window.location.href = '/login.html';
         return;
       }
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-      console.log('DEBUG: DOMContentLoaded started. demandeId:', demandeId, 'userId:', userId);
+      const headers = { 'Authorization': `Bearer ${token}` };
 
       if (!demandeId) {
         document.querySelector('main').innerHTML = '<div class="alert alert-danger">ID de demande manquant.</div>';
-        console.log('DEBUG: demandeId is missing.');
         return;
       }
 
@@ -127,194 +348,163 @@
 
       const messagesDisplay = document.getElementById('messages-display');
       const messageForm = document.getElementById('message-form');
-      const messageBodyInput = document.getElementById('message-body');
-      const attachmentsInput = document.getElementById('attachments');
+      const messageBody = document.getElementById('message-body');
+      const attachments = document.getElementById('attachments');
 
       function set(id, val) {
         const el = document.getElementById(id);
-        if (el) el.textContent = val || 'N/A';
+        if (el) el.textContent = val ?? '—';
       }
 
-
-
       function fmt(iso) {
-        if (!iso) return 'N/A';
+        if (!iso) return '—';
         const d = new Date(iso);
-        return isNaN(d) ? 'Date invalide' : d.toLocaleString('fr-FR');
+        return isNaN(d) ? '—' : d.toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' });
+      }
+
+      function getStatusClass(status) {
+        const s = (status || '').toLowerCase();
+        if (s.includes('en cours')) return 'status-en-cours';
+        if (s.includes('trait'))    return 'status-traite';
+        if (s.includes('rejet'))    return 'status-rejete';
+        if (s.includes('annul'))    return 'status-annule';
+        return '';
       }
 
       function hrefForAttachment(att) {
-        if (!att || !att.id) return '#';
-        return `/api/attachments/${att.id}/view`;
+        return att?.id ? `/api/attachments/${att.id}/view` : '#';
       }
 
       async function loadMessages() {
-        console.log('DEBUG: loadMessages started.');
         try {
-          const messages = await fetch(`/api/conversations/${conversation_id}`, { headers, credentials: 'same-origin' }).then(res => res.json());
-          console.log('DEBUG: Messages fetched:', messages);
+          const res = await fetch(`/api/conversations/${conversation_id}`, { headers });
+          if (!res.ok) throw new Error();
+          const messages = await res.json();
+
           messagesDisplay.innerHTML = '';
           messages.forEach(msg => {
-            const msgElement = document.createElement('div');
-            msgElement.className = msg.sender_id === userId ? 'message-sent' : 'message-received';
-            let attachmentsHTML = '';
-            if (msg.attachments && msg.attachments.length > 0) {
-              attachmentsHTML = msg.attachments.map(att => 
-                `<br><a href="${hrefForAttachment(att)}" target="_blank" download="${att.file_name}">${att.file_name}</a>`
-              ).join('');
+            const div = document.createElement('div');
+            div.className = `message ${msg.sender_id === userId ? 'message-sent' : 'message-received'}`;
+            let attHtml = '';
+            if (msg.attachments?.length) {
+              attHtml = `<div class="message-attachments mt-2">${
+                msg.attachments.map(a => 
+                  `<a href="${hrefForAttachment(a)}" target="_blank"><i class="bi bi-file-earmark"></i> ${a.file_name}</a>`
+                ).join('')
+              }</div>`;
             }
-            msgElement.innerHTML = `
-              <p>${msg.body}</p>
-              <small>${new Date(msg.created_at).toLocaleString()}</small>
-              ${attachmentsHTML}
+            div.innerHTML = `
+              <div>${msg.body || ''}</div>
+              <small>${fmt(msg.created_at)}</small>
+              ${attHtml}
             `;
-            messagesDisplay.prepend(msgElement);
+            messagesDisplay.appendChild(div);
           });
-        } catch (error) {
-          console.error('Error loading messages:', error);
-          messagesDisplay.innerHTML = '<p class="text-muted">Aucun message pour le moment.</p>';
+
+          messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
+        } catch (err) {
+          messagesDisplay.innerHTML = '<p class="text-center text-muted py-4">Aucun message pour le moment.</p>';
         }
       }
-      
-      messageForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const body = messageBodyInput.value;
-        const files = attachmentsInput.files;
-        
-        if (!body && files.length === 0) return;
 
-        // Ensure sender and receiver are defined before proceeding
-        if (!userId) {
-            alert("L'expéditeur n'est pas défini. Veuillez vous reconnecter.");
-            return;
-        }
+      messageForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const body = messageBody.value.trim();
+        if (!body && !attachments.files.length) return;
+
         if (!receiver_id) {
-            alert("Le destinataire n'est pas défini. Impossible d'envoyer le message.");
-            return;
+          alert("Destinataire inconnu. Impossible d'envoyer.");
+          return;
         }
 
         const formData = new FormData();
         formData.append('body', body);
-        formData.append('sender_id', String(userId)); // Explicitly cast to string
-        formData.append('receiver_id', String(receiver_id)); // Explicitly cast to string
+        formData.append('receiver_id', receiver_id);
         formData.append('demande_id', demandeId);
-
-        for (let i = 0; i < files.length; i++) {
-          formData.append('attachments', files[i]);
-        }
+        for (const file of attachments.files) formData.append('attachments', file);
 
         try {
           const res = await fetch(`/api/conversations/${conversation_id}/messages`, {
             method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + token },
-            credentials: 'same-origin',
+            headers: { 'Authorization': `Bearer ${token}` },
             body: formData
           });
-
-          if (!res.ok) {
-              const err = await res.json();
-              throw new Error(err.error || 'Failed to send message');
-          }
-
-          messageBodyInput.value = '';
-          attachmentsInput.value = '';
+          if (!res.ok) throw new Error();
+          messageBody.value = '';
+          attachments.value = '';
           loadMessages();
-        } catch (error) {
-          console.error('Error sending message:', error);
-          alert("Erreur lors de l'envoi du message.");
+        } catch {
+          alert("Erreur lors de l'envoi.");
         }
       });
 
-      console.log('DEBUG: Before main fetch for demand details.');
       try {
-        const res = await fetch(`/api/demandes_client/${demandeId}`, { headers, credentials: 'same-origin' });
-        console.log('DEBUG: Main fetch response status:', res.status);
-        if (res.status === 401 || res.status === 403) {
-          location.href = '/login.html';
-          return;
+        const res = await fetch(`/api/demandes_client/${demandeId}`, { headers });
+        if (!res.ok) {
+          if ([401,403].includes(res.status)) location.href = '/login.html';
+          throw new Error();
         }
-        const data = await res.json();
-        console.log('DEBUG: Main fetch data:', data);
-        if (!res.ok) throw new Error(data.error || `Erreur HTTP ${res.status}`);
+        const { demande, ticket, responsable, interventions } = await res.json();
 
-        const { demande, ticket, responsable, interventions } = data;
-        console.log('DEBUG: Destructured data. demande:', demande, 'ticket:', ticket);
+        set('demande-id', demande.id);
+        set('demande-date', fmt(demande.created_at));
+        set('demande-site', demande.nom_site || '—');
+        set('demande-description', demande.description || 'Aucune description');
+        
+        const statusEl = document.getElementById('demande-status');
+        statusEl.textContent = demande.status || '—';
+        statusEl.className = `status-badge ${getStatusClass(demande.status)}`;
 
-        // Populate Demand Info
-        if (!isModal) {
-          set('demande-id', demande.id);
-          console.log('DEBUG: demande-id set.');
-          set('demande-date', fmt(demande.created_at));
-          set('demande-site', demande.nom_site || 'Non spécifié');
-          set('demande-description', demande.description);
-          set('demande-status', demande.status);
-          console.log('DEBUG: Demand info populated.');
-
-
-          if (ticket) {
-            document.getElementById('ticket-section').classList.remove('d-none');
-            set('ticket-titre', ticket.titre);
-            set('ticket-status', ticket.etat);
-            set('ticket-date-debut', fmt(ticket.date_debut));
-            set('ticket-date-fin', ticket.date_fin ? fmt(ticket.date_fin) : 'En cours');
-            console.log('DEBUG: Ticket info populated.');
-          } else {
-            console.log('DEBUG: No ticket found.');
-          }
-        } else {
-          // Masquer les sections non nécessaires dans la modale de messages
-          document.getElementById('demande-details')?.classList.add('d-none');
-          document.getElementById('ticket-section')?.classList.add('d-none');
+        if (ticket) {
+          document.getElementById('ticket-section').classList.remove('d-none');
+          set('ticket-titre', ticket.titre || '—');
+          set('ticket-date-debut', fmt(ticket.date_debut));
+          set('ticket-date-fin', ticket.date_fin ? fmt(ticket.date_fin) : 'En cours');
+          const ts = document.getElementById('ticket-status');
+          ts.textContent = ticket.etat || '—';
+          ts.className = `status-badge ${getStatusClass(ticket.etat)}`;
         }
 
         if (responsable) {
-            const interCard = document.getElementById('interlocuteur-card');
-            if (interCard) interCard.classList.remove('d-none');
-            set('interlocuteur-nom', `${responsable.prenom || ''} ${responsable.nom || ''}`.trim());
-            set('interlocuteur-email', responsable.email);
-            set('interlocuteur-tel', responsable.tel);
-            receiver_id = responsable.user_id; // Set receiver_id
-            console.log('DEBUG: Responsable / interlocuteur info populated.');
-        } else {
-          console.log('DEBUG: No responsable found.');
+          document.getElementById('interlocuteur-card').classList.remove('d-none');
+          set('interlocuteur-nom', `${responsable.prenom || ''} ${responsable.nom || ''}`.trim() || '—');
+          set('interlocuteur-email', responsable.email || '—');
+          set('interlocuteur-tel', responsable.tel || '—');
+          receiver_id = responsable.user_id;
         }
 
-        if (!isModal) {
-          if (interventions && interventions.length > 0) {
-            document.getElementById('interventions-section').classList.remove('d-none');
-            const listEl = document.getElementById('interventions-list');
-            listEl.innerHTML = ''; // Clear placeholder
-            interventions.forEach(inter => {
-              const item = document.createElement('div');
-              item.className = 'card card-body mb-2';
-              item.innerHTML = `
-                <p class="mb-1"><strong>Description:</strong> ${inter.description || 'Pas de description'}</p>
-                <small class="text-muted">Du ${fmt(inter.date_debut)} au ${inter.date_fin ? fmt(inter.date_fin) : 'en cours'}</small>
-                <small class="text-muted">Statut: ${inter.status || 'Non défini'}</small>
-              `;
-              listEl.appendChild(item);
-            });
-            console.log('DEBUG: Interventions populated.');
-          } else {
-            console.log('DEBUG: No interventions found.');
-          }
-        } else {
-          document.getElementById('interventions-section')?.classList.add('d-none');
+        if (interventions?.length) {
+          document.getElementById('interventions-section').classList.remove('d-none');
+          const list = document.getElementById('interventions-list');
+          list.innerHTML = '';
+          interventions.forEach(i => {
+            const item = document.createElement('div');
+            item.className = 'timeline-item';
+            item.innerHTML = `
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <p class="mb-1 fw-medium">${i.description || 'Intervention sans description'}</p>
+                <small class="d-block text-muted">
+                  ${fmt(i.date_debut)} → ${i.date_fin ? fmt(i.date_fin) : 'en cours'}
+                </small>
+                <small class="d-block mt-1">
+                  Statut : <strong>${i.status || '—'}</strong>
+                </small>
+              </div>
+            `;
+            list.appendChild(item);
+          });
         }
 
-        // Load messages for the demand
         loadMessages();
-        console.log('DEBUG: loadMessages called.');
+
+        if (section === 'messages') {
+          document.getElementById('messagerie-section')?.scrollIntoView({ behavior: 'smooth' });
+          messageBody.focus();
+        }
 
       } catch (err) {
-        document.querySelector('main').innerHTML = `<div class="alert alert-danger">Erreur: ${err.message}</div>`;
-        console.error('DEBUG: Error in main try-catch block:', err);
-      }
-
-      if (section === 'messages') {
-        const msgSection = document.getElementById('messagerie-section');
-        if (msgSection) msgSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        if (messageBodyInput) messageBodyInput.focus();
+        document.querySelector('main').innerHTML = `<div class="alert alert-danger m-4">Erreur de chargement : ${err.message}</div>`;
       }
     });
   </script>

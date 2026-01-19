@@ -63,7 +63,7 @@
             <button class="btn btn-sm btn-primary" id="add-task-btn"><i class="bi bi-plus-lg"></i> Ajouter</button>
           </div>
           <div class="card-body" id="tasks-list">
-            <div class="text-muted">À implémenter (endpoint tâches interne).</div>
+            <div class="text-muted">Chargement...</div>
           </div>
         </div>
 
@@ -125,6 +125,57 @@
     </div>
   </main>
 
+  <!-- Modal ajout tâche -->
+  <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Nouvelle tâche</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="task-form" class="row g-2">
+            <div class="col-12">
+              <label class="form-label">Titre *</label>
+              <input type="text" class="form-control" id="task-titre" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea class="form-control" id="task-desc" rows="2"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">État</label>
+              <select class="form-select" id="task-etat">
+                <option value="A_faire">À faire</option>
+                <option value="En_cours">En cours</option>
+                <option value="En_attente">En attente</option>
+                <option value="Termine">Terminé</option>
+                <option value="Annule">Annulé</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Priorité</label>
+              <select class="form-select" id="task-priorite">
+                <option value="Haute">Haute</option>
+                <option value="Moyenne" selected>Moyenne</option>
+                <option value="Basse">Basse</option>
+              </select>
+            </div>
+            <div class="col-md-12">
+              <label class="form-label">Échéance</label>
+              <input type="datetime-local" class="form-control" id="task-ech">
+            </div>
+          </form>
+          <div id="task-feedback" class="small mt-2 text-danger d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="task-save-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       const params = new URLSearchParams(location.search);
@@ -139,6 +190,9 @@
       const renduList = document.getElementById('rendu-list');
       const factList = document.getElementById('fact-list');
       const matList = document.getElementById('mat-list');
+      const taskList = document.getElementById('tasks-list');
+      const taskModalEl = document.getElementById('taskModal');
+      const taskModal = taskModalEl ? new bootstrap.Modal(taskModalEl) : null;
 
       try {
         const res = await fetch(`/api/travaux/${id}`, { headers, credentials:'same-origin' });
@@ -200,6 +254,93 @@
         // Factures / matériel restent à raccorder côté API (cible Travaux)
         factList.innerHTML = '<div class="text-muted">Pas encore relié aux factures Travaux.</div>';
         matList.innerHTML = '<div class="text-muted">Pas encore relié aux demandes matériel Travaux.</div>';
+
+        // --- Tâches ---
+        async function loadTasks() {
+          try {
+            const rt = await fetch(`/api/travaux/${id}/taches`, { headers, credentials:'same-origin' });
+            if (rt.status===401||rt.status===403){ location.href='/login.html'; return; }
+            const tasks = rt.ok ? await rt.json() : [];
+            taskList.innerHTML = '';
+            if (!tasks.length) {
+              taskList.innerHTML = '<div class="text-muted">Aucune tâche.</div>';
+              return;
+            }
+            tasks.forEach(tk => {
+              const card = document.createElement('div');
+              card.className = 'border rounded p-2 mb-2';
+              const ech = tk.date_echeance ? new Date(tk.date_echeance).toLocaleString('fr-FR') : '—';
+              card.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="fw-semibold">${tk.titre}</div>
+                    <div class="small text-muted">${tk.description || ''}</div>
+                    <div class="small text-muted">État: ${tk.etat || 'A_faire'} · Priorité: ${tk.priorite || 'Moyenne'} · Échéance: ${ech}</div>
+                  </div>
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-success btn-task-done" data-id="${tk.id}" title="Terminer"><i class="bi bi-check2"></i></button>
+                    <button class="btn btn-sm btn-outline-danger btn-task-del" data-id="${tk.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
+                  </div>
+                </div>
+              `;
+              taskList.appendChild(card);
+            });
+          } catch(err) {
+            taskList.innerHTML = '<div class="text-danger">Erreur chargement tâches.</div>';
+          }
+        }
+        await loadTasks();
+
+        document.getElementById('add-task-btn')?.addEventListener('click', () => {
+          document.getElementById('task-form').reset();
+          document.getElementById('task-feedback').classList.add('d-none');
+          taskModal?.show();
+        });
+
+        document.getElementById('task-save-btn')?.addEventListener('click', async () => {
+          const fb = document.getElementById('task-feedback');
+          const titre = document.getElementById('task-titre').value.trim();
+          const description = document.getElementById('task-desc').value.trim() || null;
+          const etat = document.getElementById('task-etat').value;
+          const priorite = document.getElementById('task-priorite').value;
+          const date_echeance = document.getElementById('task-ech').value || null;
+          if (!titre) { fb.textContent='Le titre est requis.'; fb.classList.remove('d-none'); return; }
+          try {
+            const r = await fetch(`/api/travaux/${id}/taches`, {
+              method:'POST',
+              headers:{ ...headers, 'Content-Type':'application/json' },
+              credentials:'same-origin',
+              body: JSON.stringify({ titre, description, etat, priorite, date_echeance })
+            });
+            if (r.status===401||r.status===403){ location.href='/login.html'; return; }
+            if (!r.ok) { const d=await r.json().catch(()=>({})); throw new Error(d.error||'Erreur'); }
+            taskModal?.hide();
+            await loadTasks();
+          } catch(err) {
+            fb.textContent = err.message || 'Erreur';
+            fb.classList.remove('d-none');
+          }
+        });
+
+        taskList?.addEventListener('click', async (e) => {
+          const btnDone = e.target.closest('.btn-task-done');
+          const btnDel = e.target.closest('.btn-task-del');
+          if (btnDone) {
+            const tid = btnDone.dataset.id;
+            await fetch(`/api/travaux_taches/${tid}`, {
+              method:'PUT',
+              headers:{ ...headers, 'Content-Type':'application/json' },
+              credentials:'same-origin',
+              body: JSON.stringify({ titre:'', etat:'Termine' })
+            }).catch(()=>{});
+            await loadTasks();
+          }
+          if (btnDel) {
+            const tid = btnDel.dataset.id;
+            await fetch(`/api/travaux_taches/${tid}`, { method:'DELETE', headers, credentials:'same-origin' }).catch(()=>{});
+            await loadTasks();
+          }
+        });
       } catch (err) {
         alert(err.message || 'Erreur chargement travail');
       }
