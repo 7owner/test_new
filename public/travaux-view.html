@@ -12,6 +12,19 @@
     body { background: linear-gradient(135deg,#eef2ff 0%,#f8fbff 100%); }
     .card-gradient { background: linear-gradient(135deg,#4da5ff 0%,#7c5bff 100%); color:#fff; border:none; }
     .embed #navbar-placeholder { display:none !important; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      font-weight: 600;
+      margin-right: 0.35rem;
+      margin-bottom: 0.35rem;
+      border: 1px solid rgba(255,255,255,0.25);
+    }
   </style>
 </head>
 <body>
@@ -28,6 +41,10 @@
           <span class="badge bg-light text-dark" id="work-etat">-</span>
           <span class="badge bg-light text-dark" id="work-prio">-</span>
         </div>
+      </div>
+      <div class="card-body pt-0">
+        <div class="text-white-50 small mb-1">Responsables / Agents</div>
+        <div id="team-inline" class="d-flex flex-wrap"></div>
       </div>
     </div>
 
@@ -209,6 +226,20 @@
       const taskList = document.getElementById('tasks-list');
       const taskModalEl = document.getElementById('taskModal');
       const taskModal = taskModalEl ? new bootstrap.Modal(taskModalEl) : null;
+      const teamInline = document.getElementById('team-inline');
+
+      function renderTeamInline(respMatricule, agents = []) {
+        if (!teamInline) return;
+        const chips = [];
+        if (respMatricule) {
+          chips.push(`<span class="chip"><i class="bi bi-person-badge"></i>${respMatricule}</span>`);
+        }
+        (agents || []).forEach(a => {
+          const label = a.agent_matricule || a.matricule || a.actor_name || a.actor_email;
+          if (label) chips.push(`<span class="chip"><i class="bi bi-people"></i>${label}</span>`);
+        });
+        teamInline.innerHTML = chips.length ? chips.join('') : '<span class="text-white-50">Aucun responsable ou agent assigné</span>';
+      }
 
       try {
         const res = await fetch(`/api/travaux/${id}`, { headers, credentials:'same-origin' });
@@ -231,16 +262,19 @@
         setHTML('work-doe', t.doe_id ? `<a href="doe-view.html?id=${t.doe_id}" target="_blank">${t.doe_titre || 'DOE'}</a>` : (t.doe_titre || '—'));
         setHTML('work-demande', t.demande_id ? `<a href="demande-client-admin.html?embed=1&id=${t.demande_id}" target="_blank">Demande #${t.demande_id}</a>` : (t.demande_titre || '—'));
 
-        // Agents
+        // Agents / Responsables
         const agentsList = document.getElementById('agents-list');
-        agentsList.innerHTML = t.agents_assignes?.length ? '' : '<li class="list-group-item text-muted">Aucun agent.</li>';
-        (t.agents_assignes || []).forEach(a => {
+        const agentsData = t.agents_assignes || [];
+        agentsList.innerHTML = agentsData.length ? '' : '<li class="list-group-item text-muted">Aucun agent.</li>';
+        agentsData.forEach(a => {
           const li = document.createElement('li');
           li.className = 'list-group-item';
           li.textContent = a.agent_matricule || a.matricule || 'Agent';
           agentsList.appendChild(li);
         });
-        set('resp-principal', t.agent_matricule || '—');
+        const responsableMatricule = t.agent_matricule || null;
+        set('resp-principal', responsableMatricule || '—');
+        renderTeamInline(responsableMatricule, agentsData);
 
         // Rendus
         const rRendus = await fetch(`/api/travaux/${id}/rendus`, { headers, credentials:'same-origin' });
