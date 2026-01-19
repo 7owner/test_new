@@ -365,6 +365,17 @@
           const messages = await res.json();
 
           messagesDisplay.innerHTML = '';
+          // Déterminer automatiquement le destinataire si absent, à partir des messages existants
+          if (!receiver_id) {
+            const counterpart = (messages || []).find(m => m.sender_id && m.sender_id !== userId)
+              || (messages || []).find(m => m.receiver_id && m.receiver_id !== userId);
+            if (counterpart) {
+              receiver_id = counterpart.sender_id && counterpart.sender_id !== userId
+                ? counterpart.sender_id
+                : counterpart.receiver_id;
+            }
+          }
+
           messages.forEach(msg => {
             const div = document.createElement('div');
             div.className = `message ${msg.sender_id === userId ? 'message-sent' : 'message-received'}`;
