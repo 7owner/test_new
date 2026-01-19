@@ -9,21 +9,65 @@
   <link rel="stylesheet" href="/custom.css?v=1">
   <script src="/nav.js?v=3"></script>
   <style>
-    body { background: linear-gradient(135deg,#eef2ff 0%,#f8fbff 100%); }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 1.5rem;
+    }
     .embed #navbar-placeholder { display:none !important; }
-    .card-gradient { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; border:none; }
-    .info-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:.75rem; }
-    .info-box { background:#f4f6fb; border-radius:12px; padding:.9rem 1rem; border:1px solid #e5e7eb; min-height:76px; }
+    .main-card {
+      border: none;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      background: white;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .main-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    }
+    .card-header-gradient {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.5rem;
+      font-weight: 600;
+      border: none;
+    }
+    .info-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap:1rem; }
+    .info-box {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius:12px;
+      padding:1rem;
+      border:none;
+      min-height:76px;
+      border-left:4px solid #667eea;
+    }
     .info-box label { font-size:.8rem; color:#6b7280; font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
     .info-box .value { font-weight:700; color:#111827; margin-top:.2rem; }
     .chip { display:inline-flex; align-items:center; gap:.35rem; padding:.35rem .75rem; border-radius:999px; background:#eef2ff; color:#312e81; font-weight:600; margin-right:.35rem; margin-bottom:.35rem; border:1px solid #c7d2fe; }
+    .btn-gradient {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .btn-gradient:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+      color: white;
+    }
   </style>
 </head>
 <body>
   <div id="navbar-placeholder"></div>
-  <main class="container my-4">
+  <main class="container-fluid" style="max-width: 1400px;">
     <div class="card main-card mb-3">
-      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;">
+      <div class="card-header card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2 flex-wrap">
           <h4 class="mb-0 d-flex align-items-center">
             <i class="bi bi-tools me-2"></i>
@@ -32,11 +76,11 @@
           <div class="small opacity-75" id="work-sub">—</div>
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">
-          <div class="btn-group btn-group-sm" role="group" aria-label="liens travail">
-            <button class="btn btn-light" id="btn-resp"><i class="bi bi-person-badge me-1"></i>Responsable</button>
-            <button class="btn btn-light" id="btn-agent"><i class="bi bi-people me-1"></i>Agent</button>
-            <button class="btn btn-light" id="btn-affaire"><i class="bi bi-briefcase me-1"></i>Affaire</button>
-            <button class="btn btn-light" id="btn-doe"><i class="bi bi-diagram-3 me-1"></i>DOE</button>
+          <div class="d-flex flex-wrap gap-2 d-none" id="header-actions-bar">
+            <button class="btn btn-light btn-sm" id="header-add-resp"><i class="bi bi-person-plus me-1"></i>Responsable</button>
+            <button class="btn btn-light btn-sm" id="header-add-agent"><i class="bi bi-people me-1"></i>Agent</button>
+            <button class="btn btn-light btn-sm" id="header-create-affaire"><i class="bi bi-briefcase me-1"></i>Affaire</button>
+            <button class="btn btn-light btn-sm" id="header-create-doe"><i class="bi bi-diagram-3 me-1"></i>DOE</button>
           </div>
           <span class="badge bg-light text-dark" id="work-etat">-</span>
           <span class="badge bg-light text-dark" id="work-prio">-</span>
@@ -212,6 +256,120 @@
     </div>
   </main>
 
+  <!-- Modale ajout responsable -->
+  <div class="modal fade" id="addResponsableModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Ajouter un responsable</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addResponsableForm">
+            <div class="mb-3">
+              <label for="responsable-select" class="form-label fw-bold">Sélectionner un agent admin</label>
+              <select id="responsable-select" class="form-select" required>
+                <option value="">-- Sélectionner --</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-gradient" id="save-responsable-btn">
+            <i class="bi bi-check-circle me-1"></i>Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale ajout agent -->
+  <div class="modal fade" id="addAgentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Ajouter un agent</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addAgentForm">
+            <div class="mb-3">
+              <label for="agent-select" class="form-label fw-bold">Sélectionner un agent</label>
+              <select id="agent-select" class="form-select" required>
+                <option value="">-- Sélectionner --</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-gradient" id="save-agent-btn">
+            <i class="bi bi-check-circle me-1"></i>Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale création affaire -->
+  <div class="modal fade" id="createAffaireModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title"><i class="bi bi-briefcase me-2"></i>Nouvelle affaire</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="create-affaire-form">
+            <div class="mb-3">
+              <label for="affaire-nom" class="form-label fw-bold">Nom de l'affaire</label>
+              <input type="text" id="affaire-nom" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label for="affaire-numero" class="form-label fw-bold">Numéro (optionnel)</label>
+              <input type="text" id="affaire-numero" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label for="affaire-description" class="form-label fw-bold">Description</label>
+              <textarea id="affaire-description" class="form-control" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-success w-100">
+              <i class="bi bi-check-circle me-2"></i>Créer et lier
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale création DOE -->
+  <div class="modal fade" id="createDoeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title"><i class="bi bi-diagram-3 me-2"></i>Nouveau DOE</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="create-doe-form">
+            <div class="mb-3">
+              <label for="doe-titre" class="form-label fw-bold">Titre</label>
+              <input type="text" id="doe-titre" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label for="doe-description" class="form-label fw-bold">Description</label>
+              <textarea id="doe-description" class="form-control" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-info w-100">
+              <i class="bi bi-check-circle me-2"></i>Créer et lier
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal ajout tâche -->
   <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
@@ -292,11 +450,16 @@
       const taskModalEl = document.getElementById('taskModal');
       const taskModal = taskModalEl ? new bootstrap.Modal(taskModalEl) : null;
       const teamInline = document.getElementById('team-inline');
-      const btnResp = document.getElementById('btn-resp');
-      const btnAgent = document.getElementById('btn-agent');
-      const btnAffaire = document.getElementById('btn-affaire');
-      const btnDoe = document.getElementById('btn-doe');
+      const headerActionsBar = document.getElementById('header-actions-bar');
+      const btnResp = document.getElementById('header-add-resp');
+      const btnAgent = document.getElementById('header-add-agent');
+      const btnAffaire = document.getElementById('header-create-affaire');
+      const btnDoe = document.getElementById('header-create-doe');
       const editBtn = document.getElementById('edit-travail-btn');
+      const addRespModal = document.getElementById('addResponsableModal') ? new bootstrap.Modal(document.getElementById('addResponsableModal')) : null;
+      const addAgentModal = document.getElementById('addAgentModal') ? new bootstrap.Modal(document.getElementById('addAgentModal')) : null;
+      const createAffaireModal = document.getElementById('createAffaireModal') ? new bootstrap.Modal(document.getElementById('createAffaireModal')) : null;
+      const createDoeModal = document.getElementById('createDoeModal') ? new bootstrap.Modal(document.getElementById('createDoeModal')) : null;
 
       function formatMember(label, email) {
         if (label && email) return `${label} (${email})`;
@@ -385,27 +548,33 @@
         // Actions alignées sur ticket-view
         if (!isAdmin) {
           editBtn?.classList.add('d-none');
-          btnResp?.classList.add('d-none');
-          btnAgent?.classList.add('d-none');
-          btnAffaire?.classList.add('d-none');
-          btnDoe?.classList.add('d-none');
+          headerActionsBar?.classList.add('d-none');
         } else {
+          if (headerActionsBar) { headerActionsBar.classList.remove('d-none'); headerActionsBar.style.display = 'flex'; }
           if (editBtn) { editBtn.classList.remove('d-none'); editBtn.href = `travaux-edit.html?id=${id}`; }
-          if (btnResp) btnResp.onclick = () => { window.open(`/travaux-edit.html?id=${id}#responsables`, '_blank'); };
-          if (btnAgent) btnAgent.onclick = () => { window.open(`/travaux-edit.html?id=${id}#agents`, '_blank'); };
-          if (btnAffaire) {
-            btnAffaire.onclick = () => {
-              if (t.affaire_id) window.open(`/affaire-view.html?id=${t.affaire_id}`, '_blank');
-              else window.open('/affaire-new.html', '_blank');
-            };
-          }
-          if (btnDoe) {
-            btnDoe.onclick = () => {
-              if (t.doe_id) window.open(`/doe-view.html?id=${t.doe_id}`, '_blank');
-              else window.open('/doe-new.html', '_blank');
-            };
-          }
+          if (btnResp) btnResp.onclick = () => { addRespModal?.show(); };
+          if (btnAgent) btnAgent.onclick = () => { addAgentModal?.show(); };
+          if (btnAffaire) btnAffaire.onclick = () => { createAffaireModal?.show(); };
+          if (btnDoe) btnDoe.onclick = () => { createDoeModal?.show(); };
         }
+
+        // Modales présentes pour alignement visuel (non raccordées API travaux pour le moment)
+        document.getElementById('save-responsable-btn')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          alert('Sélectionnez le responsable dans la page d’édition du travail pour l’instant.');
+        });
+        document.getElementById('save-agent-btn')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          alert('Assignez les agents depuis la page d’édition du travail pour l’instant.');
+        });
+        document.getElementById('create-affaire-form')?.addEventListener('submit', (e) => {
+          e.preventDefault();
+          alert('Création d’affaire non raccordée sur cette vue (ouvrir affaire-new).');
+        });
+        document.getElementById('create-doe-form')?.addEventListener('submit', (e) => {
+          e.preventDefault();
+          alert('Création de DOE non raccordée sur cette vue (ouvrir doe-new).');
+        });
 
         // Rendus
         const rRendus = await fetch(`/api/travaux/${id}/rendus`, { headers, credentials:'same-origin' });
