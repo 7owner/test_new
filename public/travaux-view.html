@@ -120,10 +120,6 @@
             <label>DOE</label>
             <div class="value" id="info-doe">-</div>
           </div>
-          <div class="info-box">
-            <label>Responsable principal</label>
-            <div class="value" id="info-resp">-</div>
-          </div>
         </div>
 
         <div class="mb-3">
@@ -154,51 +150,6 @@
 
     <div class="row g-3">
       <div class="col-lg-8">
-        <div class="card mb-3">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-info-circle me-1"></i>Détails</span>
-          </div>
-          <div class="card-body">
-            <p class="mb-1 text-muted">Description</p>
-            <div id="work-desc" class="border rounded p-2 bg-light">—</div>
-            <hr>
-            <div class="row g-3 small">
-              <div class="col-md-4">
-                <div class="text-muted">Échéance</div>
-                <div id="work-ech">—</div>
-              </div>
-              <div class="col-md-4">
-                <div class="text-muted">Début</div>
-                <div id="work-debut">—</div>
-              </div>
-              <div class="col-md-4">
-                <div class="text-muted">Fin</div>
-                <div id="work-fin">—</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card mb-3">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-people-fill me-1"></i>Responsables & Agents</span>
-          </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-4">
-                <div class="text-muted small">Responsable principal</div>
-                <div id="resp-principal" class="fw-semibold">—</div>
-              </div>
-              <div class="col-md-8">
-                <div class="text-muted small mb-1">Agents assignés</div>
-                <ul class="list-group list-group-flush" id="agents-list">
-                  <li class="list-group-item text-muted">Aucun agent.</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="card mb-3">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span><i class="bi bi-list-check me-1"></i>Tâches / Checklists</span>
@@ -460,6 +411,8 @@
       const addAgentModal = document.getElementById('addAgentModal') ? new bootstrap.Modal(document.getElementById('addAgentModal')) : null;
       const createAffaireModal = document.getElementById('createAffaireModal') ? new bootstrap.Modal(document.getElementById('createAffaireModal')) : null;
       const createDoeModal = document.getElementById('createDoeModal') ? new bootstrap.Modal(document.getElementById('createDoeModal')) : null;
+      const responsableSelect = document.getElementById('responsable-select');
+      const agentSelect = document.getElementById('agent-select');
 
       function formatMember(label, email) {
         if (label && email) return `${label} (${email})`;
@@ -486,6 +439,29 @@
           } else {
             agentsInline.innerHTML = 'Aucun agent';
           }
+        }
+      }
+
+      // Charger agents pour les modales
+      async function loadAgentsOptions() {
+        try {
+          const r = await fetch('/api/agents', { headers, credentials:'same-origin' });
+          const agents = r.ok ? await r.json() : [];
+          const fill = (selectEl) => {
+            if (!selectEl) return;
+            selectEl.innerHTML = '<option value="">-- Sélectionner --</option>';
+            (agents || []).forEach(a => {
+              const opt = document.createElement('option');
+              opt.value = a.matricule || '';
+              const full = `${a.prenom || ''} ${a.nom || ''}`.trim();
+              opt.textContent = `${full || a.matricule || 'Agent'}${a.matricule ? ' (' + a.matricule + ')' : ''}`;
+              selectEl.appendChild(opt);
+            });
+          };
+          fill(responsableSelect);
+          fill(agentSelect);
+        } catch (e) {
+          console.error('Chargement agents impossible', e);
         }
       }
 
@@ -533,13 +509,15 @@
         // Agents / Responsables
         const agentsList = document.getElementById('agents-list');
         const agentsData = t.agents_assignes || [];
-        agentsList.innerHTML = agentsData.length ? '' : '<li class="list-group-item text-muted">Aucun agent.</li>';
-        agentsData.forEach(a => {
-          const li = document.createElement('li');
-          li.className = 'list-group-item';
-          li.textContent = a.agent_matricule || a.matricule || 'Agent';
-          agentsList.appendChild(li);
-        });
+        if (agentsList) {
+          agentsList.innerHTML = agentsData.length ? '' : '<li class="list-group-item text-muted">Aucun agent.</li>';
+          agentsData.forEach(a => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item';
+            li.textContent = a.agent_matricule || a.matricule || 'Agent';
+            agentsList.appendChild(li);
+          });
+        }
         const responsableMatricule = t.agent_matricule || null;
         set('resp-principal', responsableMatricule || '—');
         set('info-resp', responsableMatricule || '—');
@@ -556,24 +534,89 @@
           if (btnAgent) btnAgent.onclick = () => { addAgentModal?.show(); };
           if (btnAffaire) btnAffaire.onclick = () => { createAffaireModal?.show(); };
           if (btnDoe) btnDoe.onclick = () => { createDoeModal?.show(); };
+          await loadAgentsOptions();
         }
 
-        // Modales présentes pour alignement visuel (non raccordées API travaux pour le moment)
-        document.getElementById('save-responsable-btn')?.addEventListener('click', (e) => {
+        // Helpers pour mises à jour
+        async function updateTravail(payload) {
+          const r = await fetch(`/api/travaux/${id}`, {
+            method:'PUT',
+            headers:{ ...headers, 'Content-Type':'application/json' },
+            credentials:'same-origin',
+            body: JSON.stringify(payload)
+          });
+          const d = await r.json().catch(()=>({}));
+          if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+        }
+
+        document.getElementById('save-responsable-btn')?.addEventListener('click', async (e) => {
           e.preventDefault();
-          alert('Sélectionnez le responsable dans la page d’édition du travail pour l’instant.');
+          const val = responsableSelect?.value;
+          if (!val) { alert('Sélectionnez un responsable.'); return; }
+          try {
+            await updateTravail({ agent_matricule: val });
+            addRespModal?.hide();
+            location.reload();
+          } catch(err){ alert(err.message || 'Erreur enregistrement responsable'); }
         });
-        document.getElementById('save-agent-btn')?.addEventListener('click', (e) => {
+
+        document.getElementById('save-agent-btn')?.addEventListener('click', async (e) => {
           e.preventDefault();
-          alert('Assignez les agents depuis la page d’édition du travail pour l’instant.');
+          const val = agentSelect?.value;
+          if (!val) { alert('Sélectionnez un agent.'); return; }
+          try {
+            const r = await fetch(`/api/travaux/${id}/agents`, {
+              method:'POST',
+              headers:{ ...headers, 'Content-Type':'application/json' },
+              credentials:'same-origin',
+              body: JSON.stringify({ agent_matricule: val })
+            });
+            const d = await r.json().catch(()=>({}));
+            if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+            addAgentModal?.hide();
+            location.reload();
+          } catch(err){ alert(err.message || 'Erreur ajout agent'); }
         });
-        document.getElementById('create-affaire-form')?.addEventListener('submit', (e) => {
+
+        document.getElementById('create-affaire-form')?.addEventListener('submit', async (e) => {
           e.preventDefault();
-          alert('Création d’affaire non raccordée sur cette vue (ouvrir affaire-new).');
+          const nom = document.getElementById('affaire-nom').value.trim();
+          const numero = document.getElementById('affaire-numero').value.trim() || null;
+          const desc = document.getElementById('affaire-description').value.trim() || null;
+          if (!nom) { alert('Nom requis'); return; }
+          try {
+            const r = await fetch('/api/affaires', {
+              method:'POST',
+              headers:{ ...headers, 'Content-Type':'application/json' },
+              credentials:'same-origin',
+              body: JSON.stringify({ nom_affaire: nom, numero_affaire: numero, description: desc })
+            });
+            const d = await r.json().catch(()=>({}));
+            if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+            if (d.id) await updateTravail({ affaire_id: d.id });
+            createAffaireModal?.hide();
+            location.reload();
+          } catch(err){ alert(err.message || 'Erreur création affaire'); }
         });
-        document.getElementById('create-doe-form')?.addEventListener('submit', (e) => {
+
+        document.getElementById('create-doe-form')?.addEventListener('submit', async (e) => {
           e.preventDefault();
-          alert('Création de DOE non raccordée sur cette vue (ouvrir doe-new).');
+          const titre = document.getElementById('doe-titre').value.trim();
+          const desc = document.getElementById('doe-description').value.trim() || null;
+          if (!titre) { alert('Titre requis'); return; }
+          try {
+            const r = await fetch('/api/does', {
+              method:'POST',
+              headers:{ ...headers, 'Content-Type':'application/json' },
+              credentials:'same-origin',
+              body: JSON.stringify({ titre, description: desc })
+            });
+            const d = await r.json().catch(()=>({}));
+            if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+            if (d.id) await updateTravail({ doe_id: d.id });
+            createDoeModal?.hide();
+            location.reload();
+          } catch(err){ alert(err.message || 'Erreur création DOE'); }
         });
 
         // Rendus
