@@ -86,10 +86,20 @@
       const token = localStorage.getItem('token');
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
       const colIds = ['A_faire','En_cours','En_attente','Termine'];
-      const searchInput = document.createElement('input');
-      searchInput.className = 'form-control form-control-sm mb-3';
-      searchInput.placeholder = 'Rechercher (titre, DOE, affaire, site, demande client)...';
-      document.querySelector('main .container')?.insertBefore(searchInput, document.getElementById('board'));
+      const container = document.querySelector('main .container');
+      const filterRow = document.createElement('div');
+      filterRow.className = 'row g-2 mb-3';
+      filterRow.innerHTML = `
+        <div class="col-md-6">
+          <input id="filter-title" class="form-control form-control-sm" placeholder="Filtrer par titre de travail...">
+        </div>
+        <div class="col-md-6">
+          <input id="filter-global" class="form-control form-control-sm" placeholder="Recherche globale (DOE, affaire, site, demande)...">
+        </div>`;
+      container?.insertBefore(filterRow, document.getElementById('board'));
+      const titleFilter = document.getElementById('filter-title');
+      const searchInput = document.getElementById('filter-global');
+      let travauxCache = [];
 
       function setCount(etat, n) {
         const el = document.getElementById('count-' + etat);
@@ -104,13 +114,16 @@
           setCount(etat, 0);
         });
 
-        const term = (searchInput.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+        const termTitle = (titleFilter?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+        const term = (searchInput?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
         const filtered = travaux.filter(t => {
-          if (!term) return true;
+          const hayTitle = (t.titre || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+          const matchTitle = !termTitle || hayTitle.includes(termTitle);
+          if (!term) return matchTitle;
           const hay = [
             t.titre, t.description, t.doe_titre, t.affaire_nom, t.site_nom, t.demande_titre
           ].join(' ').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
-          return hay.includes(term);
+          return matchTitle && hay.includes(term);
         });
 
         const groupByEtat = {};
@@ -137,7 +150,6 @@
             card.dataset.etat = etat;
             card.draggable = true;
             const priorite = t.priorite || 'Moyenne';
-            const echeance = t.date_echeance ? new Date(t.date_echeance).toLocaleDateString('fr-FR') : '—';
             const responsable = t.agent_nom
               ? `${t.agent_nom || ''} ${t.agent_prenom || ''}`.trim() || t.agent_matricule || '—'
               : (t.agent_matricule || t.responsable || '—');
@@ -152,20 +164,10 @@
                   <div class="fw-semibold">${t.titre || '(Sans titre)'}</div>
                   <span class="tag">${priorite}</span>
                 </div>
-                <div class="text-muted small mb-1">
-                  ${t.doe_titre ? `<i class="bi bi-file-earmark-text"></i> DOE: ${t.doe_titre}<br>` : ''}
-                  ${t.affaire_nom ? `<i class="bi bi-briefcase"></i> Affaire: ${t.affaire_nom}<br>` : ''}
-                  ${t.site_nom ? `<i class="bi bi-building"></i> Site: ${t.site_nom}<br>` : ''}
-                  ${t.demande_titre ? `<i class="bi bi-question-circle"></i> Demande: ${t.demande_titre}<br>` : ''}
-                  ${t.description || ''}
-                </div>
-                <div class="d-flex flex-wrap gap-2 small text-muted">
-                  <span><i class="bi bi-person-badge"></i> Resp. ${responsable}</span>
-                  <span><i class="bi bi-calendar-event"></i> Échéance : ${echeance}</span>
-                </div>
-                ${badgeLinks.length ? `<div class="d-flex flex-wrap gap-1 mt-2">${badgeLinks.join(' ')}</div>` : ''}
-                <div class="mt-2 d-flex justify-content-between align-items-center">
-                  <div class="small text-muted">État : ${t.etat || '—'}</div>
+                <div class="text-muted small mb-2">${t.description || ''}</div>
+                <div class="small text-muted mb-2"><i class="bi bi-person-badge"></i> Resp. ${responsable}</div>
+                ${badgeLinks.length ? `<div class="d-flex flex-wrap gap-1 mb-2">${badgeLinks.join(' ')}</div>` : ''}
+                <div class="d-flex justify-content-end align-items-center">
                   <button class="btn btn-sm btn-outline-primary btn-open-travail" data-id="${t.id}"><i class="bi bi-eye"></i> Voir</button>
                 </div>
               </div>
@@ -183,8 +185,8 @@
         try {
           const res = await fetch('/api/travaux', { headers, credentials: 'same-origin' });
           if (res.status === 401 || res.status === 403) { location.href = '/login.html'; return; }
-          const travaux = res.ok ? await res.json() : [];
-          renderTravaux(Array.isArray(travaux) ? travaux : []);
+          travauxCache = res.ok ? await res.json() : [];
+          renderTravaux(Array.isArray(travauxCache) ? travauxCache : []);
         } catch (err) {
           console.error('Erreur chargement travaux', err);
           colIds.forEach(etat => {
@@ -223,7 +225,8 @@
       }
 
       loadTravaux();
-      searchInput.addEventListener('input', () => loadTravaux());
+      searchInput?.addEventListener('input', () => renderTravaux(travauxCache));
+      titleFilter?.addEventListener('input', () => renderTravaux(travauxCache));
 
       // --- Drag & Drop pour changement d'état ---
       let dragId = null;

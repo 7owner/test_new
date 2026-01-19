@@ -11,6 +11,7 @@
   <style>
     body { background: linear-gradient(135deg,#eef2ff 0%,#f8fbff 100%); }
     .card-gradient { background: linear-gradient(135deg,#4da5ff 0%,#7c5bff 100%); color:#fff; border:none; }
+    .embed #navbar-placeholder { display:none !important; }
   </style>
 </head>
 <body>
@@ -178,6 +179,10 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
+      const qp = new URLSearchParams(location.search);
+      const isEmbed = window.self !== window.top || qp.get('embed') === '1';
+      if (isEmbed) document.body.classList.add('embed');
+
       const params = new URLSearchParams(location.search);
       const id = params.get('id');
       if (!id) { alert('Travail introuvable'); return; }
