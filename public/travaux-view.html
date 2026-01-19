@@ -76,13 +76,22 @@
           <div class="small opacity-75" id="work-sub">—</div>
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">
-          <div class="d-flex flex-wrap gap-2 d-none" id="header-actions-bar">
+          <div class="d-flex flex-wrap gap-2" id="header-actions-bar">
             <button class="btn btn-light btn-sm" id="header-add-resp"><i class="bi bi-person-plus me-1"></i>Responsable</button>
             <button class="btn btn-light btn-sm" id="header-add-agent"><i class="bi bi-people me-1"></i>Agent</button>
             <button class="btn btn-light btn-sm" id="header-create-affaire"><i class="bi bi-briefcase me-1"></i>Affaire</button>
             <button class="btn btn-light btn-sm" id="header-create-doe"><i class="bi bi-diagram-3 me-1"></i>DOE</button>
           </div>
-          <span class="badge bg-light text-dark" id="work-etat">-</span>
+          <div class="d-flex align-items-center gap-1">
+            <select id="work-etat-select" class="form-select form-select-sm" style="min-width:140px;">
+              <option value="A_faire">À faire</option>
+              <option value="En_cours">En cours</option>
+              <option value="En_attente">En attente</option>
+              <option value="Termine">Terminé</option>
+              <option value="Annule">Annulé</option>
+            </select>
+            <button class="btn btn-light btn-sm" id="work-etat-save" title="Enregistrer le statut"><i class="bi bi-save"></i></button>
+          </div>
           <span class="badge bg-light text-dark" id="work-prio">-</span>
         </div>
       </div>
@@ -111,6 +120,10 @@
           <div class="info-box">
             <label>Fin</label>
             <div class="value" id="info-fin">-</div>
+          </div>
+          <div class="info-box">
+            <label>Site</label>
+            <div class="value" id="info-site">-</div>
           </div>
           <div class="info-box">
             <label>Affaire</label>
@@ -149,23 +162,13 @@
     </div>
 
     <div class="row g-3">
-      <div class="col-lg-8">
+      <div class="col-12">
         <div class="card mb-3">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span><i class="bi bi-list-check me-1"></i>Tâches / Checklists</span>
             <button class="btn btn-sm btn-primary" id="add-task-btn"><i class="bi bi-plus-lg"></i> Ajouter</button>
           </div>
           <div class="card-body" id="tasks-list">
-            <div class="text-muted">Chargement...</div>
-          </div>
-        </div>
-
-        <div class="card mb-3">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-archive me-1"></i>Demandes matériel</span>
-            <button class="btn btn-sm btn-outline-primary" id="add-mat-btn">Demander</button>
-          </div>
-          <div class="card-body" id="mat-list">
             <div class="text-muted">Chargement...</div>
           </div>
         </div>
@@ -180,29 +183,6 @@
           </div>
         </div>
 
-        <div class="card mb-3">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-receipt me-1"></i>Factures liées</span>
-            <button class="btn btn-sm btn-outline-success" id="add-fac-btn">Ajouter facture</button>
-          </div>
-          <div class="card-body" id="fact-list">
-            <div class="text-muted">Chargement...</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-lg-4">
-        <div class="card mb-3">
-          <div class="card-header"><i class="bi bi-diagram-3 me-1"></i>Liens</div>
-          <div class="card-body small">
-            <div>Ticket lié : <span id="work-ticket">—</span></div>
-            <div>Client : <span id="work-client">—</span></div>
-            <div>Affaire : <span id="work-affaire">—</span></div>
-            <div>Site : <span id="work-site">—</span></div>
-            <div>DOE : <span id="work-doe">—</span></div>
-            <div>Demande client : <span id="work-demande">—</span></div>
-          </div>
-        </div>
       </div>
     </div>
   </main>
@@ -372,6 +352,21 @@
     </div>
   </div>
 
+  <!-- Modal lien (affaire/site/DOE/demande) -->
+  <div class="modal fade" id="linkModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Détails</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0">
+          <iframe id="linkFrame" src="about:blank" style="width:100%;height:80vh;border:none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
@@ -406,6 +401,9 @@
       const btnAgent = document.getElementById('header-add-agent');
       const btnAffaire = document.getElementById('header-create-affaire');
       const btnDoe = document.getElementById('header-create-doe');
+      const etatSelect = document.getElementById('work-etat-select');
+      const etatSave = document.getElementById('work-etat-save');
+      let currentTravail = null;
       const editBtn = document.getElementById('edit-travail-btn');
       const addRespModal = document.getElementById('addResponsableModal') ? new bootstrap.Modal(document.getElementById('addResponsableModal')) : null;
       const addAgentModal = document.getElementById('addAgentModal') ? new bootstrap.Modal(document.getElementById('addAgentModal')) : null;
@@ -486,11 +484,13 @@
         const res = await fetch(`/api/travaux/${id}`, { headers, credentials:'same-origin' });
         if (res.status===401||res.status===403){ location.href='/login.html'; return; }
         const t = res.ok ? await res.json() : null;
+        currentTravail = t;
         if (!t) throw new Error('Travail introuvable');
         set('work-title', t.titre || '(Sans titre)');
         set('work-sub', t.description || '');
         set('work-etat', t.etat || 'A_faire');
         set('work-prio', t.priorite || 'Moyenne');
+        if (etatSelect && t.etat) etatSelect.value = t.etat;
         set('work-ech', fmt(t.date_echeance));
         set('work-debut', fmt(t.date_debut));
         set('work-fin', fmt(t.date_fin));
@@ -516,12 +516,18 @@
 
         setHTML('work-ticket', t.ticket_id ? `<a href="ticket-view.html?id=${t.ticket_id}" target="_blank">Ticket #${t.ticket_id}</a>` : '—');
         setHTML('work-client', t.client_nom ? t.client_nom : '—');
-        setHTML('work-affaire', t.affaire_id ? `<a href="affaire-view.html?id=${t.affaire_id}" target="_blank">${t.affaire_nom || 'Affaire'}</a>` : (t.affaire_nom || '—'));
-        setHTML('work-site', t.site_id ? `<a href="site-view.html?id=${t.site_id}" target="_blank">${t.site_nom || 'Site'}</a>` : (t.site_nom || '—'));
-        setHTML('work-doe', t.doe_id ? `<a href="doe-view.html?id=${t.doe_id}" target="_blank">${t.doe_titre || 'DOE'}</a>` : (t.doe_titre || '—'));
-        setHTML('work-demande', t.demande_id ? `<a href="demande-client-admin.html?embed=1&id=${t.demande_id}" target="_blank">Demande #${t.demande_id}</a>` : (t.demande_titre || '—'));
-        setHTML('info-affaire', t.affaire_id ? `<a href="affaire-view.html?id=${t.affaire_id}" target="_blank">${t.affaire_nom || 'Affaire'}</a>` : (t.affaire_nom || '—'));
-        setHTML('info-doe', t.doe_id ? `<a href="doe-view.html?id=${t.doe_id}" target="_blank">${t.doe_titre || 'DOE'}</a>` : (t.doe_titre || '—'));
+        const modalLink = (url, label) => {
+          if (!url) return label || '—';
+          const href = url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`;
+          return `<a href="${href}" class="link-button open-link-modal" data-href="${href}">${label || url}</a>`;
+        };
+        setHTML('work-affaire', t.affaire_id ? modalLink(`affaire-view.html?id=${t.affaire_id}`, t.affaire_nom || 'Affaire') : (t.affaire_nom || '—'));
+        setHTML('work-site', t.site_id ? modalLink(`site-view.html?id=${t.site_id}`, t.site_nom || 'Site') : (t.site_nom || '—'));
+        setHTML('work-doe', t.doe_id ? modalLink(`doe-view.html?id=${t.doe_id}`, t.doe_titre || 'DOE') : (t.doe_titre || '—'));
+        setHTML('work-demande', t.demande_id ? modalLink(`demande-client-admin.html?id=${t.demande_id}`, `Demande #${t.demande_id}`) : (t.demande_titre || '—'));
+        setHTML('info-affaire', t.affaire_id ? modalLink(`affaire-view.html?id=${t.affaire_id}`, t.affaire_nom || 'Affaire') : (t.affaire_nom || '—'));
+        setHTML('info-doe', t.doe_id ? modalLink(`doe-view.html?id=${t.doe_id}`, t.doe_titre || 'DOE') : (t.doe_titre || '—'));
+        setHTML('info-site', t.site_id ? `<a href="site-view.html?id=${t.site_id}" target="_blank">${t.site_nom || 'Site'}</a>` : (t.site_nom || '—'));
 
         // Agents / Responsables
         const agentsList = document.getElementById('agents-list');
@@ -575,6 +581,27 @@
             location.reload();
           } catch(err){ alert(err.message || 'Erreur enregistrement responsable'); }
         });
+
+        if (etatSave && etatSelect) {
+          etatSave.addEventListener('click', async () => {
+            const newEtat = etatSelect.value;
+            if (!newEtat || !currentTravail) return;
+            etatSave.disabled = true;
+            const prev = etatSave.innerHTML;
+            etatSave.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            try {
+              await updateTravail({ etat: newEtat });
+              set('work-etat', newEtat);
+              set('info-etat', newEtat);
+              currentTravail.etat = newEtat;
+            } catch (err) {
+              alert(err.message || 'Erreur lors de la mise à jour du statut');
+            } finally {
+              etatSave.disabled = false;
+              etatSave.innerHTML = prev;
+            }
+          });
+        }
 
         document.getElementById('save-agent-btn')?.addEventListener('click', async (e) => {
           e.preventDefault();
@@ -664,7 +691,7 @@
         factList.innerHTML = '<div class="text-muted">Pas encore relié aux factures Travaux.</div>';
         matList.innerHTML = '<div class="text-muted">Pas encore relié aux demandes matériel Travaux.</div>';
 
-        // --- Tâches ---
+      // --- Tâches ---
         async function loadTasks() {
           try {
             const rt = await fetch(`/api/travaux/${id}/taches`, { headers, credentials:'same-origin' });
@@ -754,6 +781,24 @@
       } catch (err) {
         alert(err.message || 'Erreur chargement travail');
       }
+
+      // Liens modaux pour affaire/site/DOE/demande
+      const linkModalEl = document.getElementById('linkModal');
+      const linkFrame = document.getElementById('linkFrame');
+      const linkModal = linkModalEl ? new bootstrap.Modal(linkModalEl) : null;
+      const toModal = (href) => {
+        if (!href) return;
+        const finalHref = href.includes('?') ? `${href}&embed=1` : `${href}?embed=1`;
+        if (linkFrame) linkFrame.src = finalHref;
+        linkModal?.show();
+      };
+      document.body.addEventListener('click', (e) => {
+        const a = e.target.closest('.open-link-modal');
+        if (a && a.dataset.href) {
+          e.preventDefault();
+          toModal(a.dataset.href);
+        }
+      });
     });
   </script>
 </body>
