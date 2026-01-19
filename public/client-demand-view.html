@@ -73,7 +73,6 @@
     .status-rejete       { background: #fee2e2; color: #991b1b; }
     .status-annule       { background: #e5e7eb; color: #374151; }
 
-    /* Timeline Interventions */
     .timeline {
       position: relative;
       padding-left: 2.5rem;
@@ -117,7 +116,6 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
 
-    /* Messages */
     .messages-display {
       height: 380px;
       overflow-y: auto;
@@ -176,7 +174,6 @@
       background: rgba(102,126,234,0.2);
     }
 
-    /* Form */
     #message-form .btn-primary {
       background: var(--primary);
       border: none;
@@ -204,7 +201,6 @@
       <h1 class="mb-0">Suivi de la Demande #<span id="demande-id"></span></h1>
     </div>
 
-    <!-- Détails de la demande -->
     <div class="card mb-4">
       <div class="card-body">
         <h2 class="card-title">Détails de votre demande</h2>
@@ -229,7 +225,6 @@
       </div>
     </div>
 
-    <!-- Ticket -->
     <div id="ticket-section" class="card mb-4 d-none">
       <div class="card-body">
         <h2 class="card-title">Progression du Ticket</h2>
@@ -254,7 +249,6 @@
       </div>
     </div>
 
-    <!-- Interlocuteur -->
     <div id="interlocuteur-card" class="card mb-4 d-none">
       <div class="card-body">
         <h2 class="card-title">Votre Interlocuteur</h2>
@@ -275,23 +269,17 @@
       </div>
     </div>
 
-    <!-- Interventions (Timeline) -->
     <div id="interventions-section" class="card mb-4 d-none">
       <div class="card-body">
         <h2 class="card-title">Interventions</h2>
-        <div id="interventions-list" class="timeline">
-          <!-- Timeline items seront injectés ici -->
-        </div>
+        <div id="interventions-list" class="timeline"></div>
       </div>
     </div>
 
-    <!-- Messagerie -->
     <div class="card mb-4">
       <div class="card-body">
         <h2 class="card-title">Messagerie</h2>
-        <div id="messages-display" class="messages-display">
-          <!-- Messages ici -->
-        </div>
+        <div id="messages-display" class="messages-display"></div>
         <form id="message-form" class="mt-4">
           <div class="mb-3">
             <textarea id="message-body" class="form-control" rows="3" placeholder="Votre message..." required></textarea>
@@ -312,11 +300,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script>
-    // ────────────────────────────────────────────────────────────────
-    // Le script reste presque identique, juste quelques ajustements
-    // pour le rendu visuel (classes status, timeline, etc.)
-    // ────────────────────────────────────────────────────────────────
-
     document.addEventListener('DOMContentLoaded', async function() {
       const qp = new URLSearchParams(location.search);
       const demandeId = qp.get('id');
@@ -388,7 +371,7 @@
             let attHtml = '';
             if (msg.attachments?.length) {
               attHtml = `<div class="message-attachments mt-2">${
-                msg.attachments.map(a => 
+                msg.attachments.map(a =>
                   `<a href="${hrefForAttachment(a)}" target="_blank"><i class="bi bi-file-earmark"></i> ${a.file_name}</a>`
                 ).join('')
               }</div>`;
@@ -450,7 +433,7 @@
         set('demande-date', fmt(demande.created_at));
         set('demande-site', demande.nom_site || '—');
         set('demande-description', demande.description || 'Aucune description');
-        
+
         const statusEl = document.getElementById('demande-status');
         statusEl.textContent = demande.status || '—';
         statusEl.className = `status-badge ${getStatusClass(demande.status)}`;
