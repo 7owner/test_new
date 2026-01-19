@@ -1,160 +1,169 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Liste des Travaux</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>Travaux</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link href="/custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="/custom.css?v=1">
+  <script src="/nav.js?v=2"></script>
   <style>
-    body {
-      background: linear-gradient(135deg, #f5f7fb 0%, #e9ecf5 50%, #f5f7fb 100%);
-      min-height: 100vh;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    }
-    .page-hero {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #fff;
-      border-radius: 16px;
-      padding: 1.5rem;
-      box-shadow: 0 12px 30px rgba(118,75,162,0.25);
-    }
-    .card-elevated {
-      border: none;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    }
-    .badge-status { text-transform: capitalize; }
-    .table thead th {
-      border-bottom: none;
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #6c757d;
-    }
-    .form-check-input {
-      border-radius: 0.35em;
-    }
+    body { background: linear-gradient(135deg,#eef2ff 0%,#f8fbff 100%); }
+    .board-col { min-height: 60vh; border-radius: 14px; padding: 12px; background: #ffffff; box-shadow: 0 14px 24px rgba(41,53,108,0.10); }
+    .col-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .col-header .badge { font-size: .9rem; }
+    .work-card { border-radius: 12px; border: 1px solid #e9ecf5; box-shadow: 0 8px 18px rgba(0,0,0,0.06); }
+    .tag { font-size: 0.8rem; padding: 2px 8px; border-radius: 999px; background: #eef2ff; color: #4353ff; }
+    .empty-placeholder { color: #8b93aa; font-style: italic; }
   </style>
 </head>
 <body>
   <div id="navbar-placeholder"></div>
-
-  <main class="container mt-4 mb-5">
-    <div class="page-hero mb-4">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-          <div class="text-uppercase small opacity-75">Gestion</div>
-          <h1 class="h3 mb-0">Travaux et Tâches</h1>
-        </div>
-        <div class="d-flex gap-2">
-          <a class="btn btn-light btn-sm" href="/dashboard.html"><i class="bi bi-house-door me-1"></i>Dashboard</a>
-          <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#createTravauxModal">
-            <i class="bi bi-plus-circle me-1"></i>Nouveau Travail
-          </button>
-        </div>
+  <main class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h1 class="h4 mb-0">Tableau des travaux</h1>
+        <small class="text-muted">Vue Kanban des travaux (comme les tickets, avec colonnes par état).</small>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/travaux-new.html" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Nouveau travail</a>
       </div>
     </div>
 
-    <div class="card card-elevated">
-      <div class="card-body">
-        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
-          <h2 class="h5 mb-0"><i class="bi bi-list-task me-2 text-primary"></i>Liste des Travaux</h2>
-          <div class="ms-auto d-flex flex-wrap gap-2">
-            <input id="filter_search" type="text" class="form-control form-control-sm" placeholder="Titre / Agent / Ticket">
-            <select id="filter_etat" class="form-select form-select-sm" style="min-width:150px">
-              <option value="">Tous les états</option>
-              <option value="A_faire">A faire</option>
-              <option value="En_cours">En cours</option>
-              <option value="Termine">Terminé</option>
-              <option value="En_attente">En attente</option>
-              <option value="Annule">Annulé</option>
-            </select>
-            <select id="filter_priorite" class="form-select form-select-sm" style="min-width:150px">
-              <option value="">Toutes les priorités</option>
-              <option value="Faible">Faible</option>
-              <option value="Moyenne">Moyenne</option>
-              <option value="Haute">Haute</option>
-              <option value="Urgent">Urgent</option>
-            </select>
+    <div class="row g-3" id="board">
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="board-col" data-etat="A_faire">
+          <div class="col-header">
+            <div class="fw-semibold"><i class="bi bi-list-task me-1"></i> À faire</div>
+            <span class="badge bg-light text-dark" id="count-A_faire">0</span>
+          </div>
+          <div class="col-body d-flex flex-column gap-2" id="col-A_faire">
+            <div class="empty-placeholder">Chargement...</div>
           </div>
         </div>
-        <div id="travauxList" class="table-responsive">
-          <!-- Travaux list will be rendered here by JavaScript -->
-          <div class="text-muted p-3">Chargement des travaux...</div>
+      </div>
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="board-col" data-etat="En_cours">
+          <div class="col-header">
+            <div class="fw-semibold"><i class="bi bi-play-fill me-1"></i> En cours</div>
+            <span class="badge bg-warning text-dark" id="count-En_cours">0</span>
+          </div>
+          <div class="col-body d-flex flex-column gap-2" id="col-En_cours">
+            <div class="empty-placeholder">Chargement...</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="board-col" data-etat="En_attente">
+          <div class="col-header">
+            <div class="fw-semibold"><i class="bi bi-pause-fill me-1"></i> En attente</div>
+            <span class="badge bg-secondary" id="count-En_attente">0</span>
+          </div>
+          <div class="col-body d-flex flex-column gap-2" id="col-En_attente">
+            <div class="empty-placeholder">Chargement...</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="board-col" data-etat="Termine">
+          <div class="col-header">
+            <div class="fw-semibold"><i class="bi bi-check2-circle me-1"></i> Terminé</div>
+            <span class="badge bg-success" id="count-Termine">0</span>
+          </div>
+          <div class="col-body d-flex flex-column gap-2" id="col-Termine">
+            <div class="empty-placeholder">Chargement...</div>
+          </div>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- Modal pour créer/modifier un travail -->
-  <div class="modal fade" id="createTravauxModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Nouveau Travail</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="travauxForm">
-            <input type="hidden" id="travaux-id">
-            <div class="mb-3">
-              <label for="travaux-titre" class="form-label">Titre</label>
-              <input type="text" class="form-control" id="travaux-titre" required>
-            </div>
-            <div class="mb-3">
-              <label for="travaux-description" class="form-label">Description</label>
-              <textarea class="form-control" id="travaux-description" rows="3"></textarea>
-            </div>
-            <div class="row g-3">
-              <div class="col-md-6 mb-3">
-                <label for="travaux-ticket" class="form-label">Ticket associé</label>
-                <select id="travaux-ticket" class="form-select">
-                  <option value="">(Aucun)</option>
-                </select>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="travaux-agent" class="form-label">Agent responsable</label>
-                <select id="travaux-agent" class="form-select">
-                  <option value="">(Aucun)</option>
-                </select>
-              </div>
-            </div>
-            <div class="row g-3">
-              <div class="col-md-4 mb-3">
-                <label for="travaux-etat" class="form-label">État</label>
-                <select id="travaux-etat" class="form-select">
-                  <option value="A_faire">A faire</option>
-                  <option value="En_cours">En cours</option>
-                  <option value="Termine">Terminé</option>
-                  <option value="En_attente">En attente</option>
-                  <option value="Annule">Annulé</option>
-                </select>
-              </div>
-              <div class="col-md-4 mb-3">
-                <label for="travaux-priorite" class="form-label">Priorité</label>
-                <select id="travaux-priorite" class="form-select">
-                  <option value="Faible">Faible</option>
-                  <option value="Moyenne" selected>Moyenne</option>
-                  <option value="Haute">Haute</option>
-                  <option value="Urgent">Urgent</option>
-                </select>
-              </div>
-              <div class="col-md-4 mb-3">
-                <label for="travaux-date-echeance" class="form-label">Date d'échéance</label>
-                <input type="date" class="form-control" id="travaux-date-echeance">
-              </div>
-            </div>
-            <button type="submit" class="btn btn-gradient w-100 mt-3"><i class="bi bi-check-circle me-1"></i>Enregistrer le Travail</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = localStorage.getItem('token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const colIds = ['A_faire','En_cours','En_attente','Termine'];
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/nav.js"></script>
-  <script src="/js/travaux.js"></script>
+      function setCount(etat, n) {
+        const el = document.getElementById('count-' + etat);
+        if (el) el.textContent = n;
+      }
+
+      function renderTravaux(travaux = []) {
+        // Reset colonnes
+        colIds.forEach(etat => {
+          const col = document.getElementById('col-' + etat);
+          if (col) col.innerHTML = '<div class="empty-placeholder">Aucun travail.</div>';
+          setCount(etat, 0);
+        });
+
+        const groupByEtat = {};
+        travaux.forEach(t => {
+          const e = t.etat || 'A_faire';
+          groupByEtat[e] = groupByEtat[e] || [];
+          groupByEtat[e].push(t);
+        });
+
+        colIds.forEach(etat => {
+          const col = document.getElementById('col-' + etat);
+          const items = groupByEtat[etat] || [];
+          setCount(etat, items.length);
+          if (!col) return;
+          if (!items.length) {
+            col.innerHTML = '<div class="empty-placeholder">Aucun travail.</div>';
+            return;
+          }
+          col.innerHTML = '';
+          items.forEach(t => {
+            const card = document.createElement('div');
+            card.className = 'card work-card';
+            const priorite = t.priorite || 'Moyenne';
+            const echeance = t.date_echeance ? new Date(t.date_echeance).toLocaleDateString('fr-FR') : '—';
+            const responsable = t.agent_matricule || t.responsable || '—';
+            card.innerHTML = `
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                  <div class="fw-semibold">${t.titre || '(Sans titre)'}</div>
+                  <span class="tag">${priorite}</span>
+                </div>
+                <div class="text-muted small mb-1">${t.description || ''}</div>
+                <div class="d-flex flex-wrap gap-2 small text-muted">
+                  <span><i class="bi bi-person-badge"></i> Resp. ${responsable}</span>
+                  <span><i class="bi bi-calendar-event"></i> Échéance : ${echeance}</span>
+                </div>
+                <div class="mt-2 d-flex justify-content-between align-items-center">
+                  <div class="small text-muted">État : ${t.etat || '—'}</div>
+                  <a href="travaux-view.html?id=${t.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> Voir</a>
+                </div>
+              </div>
+            `;
+            col.appendChild(card);
+          });
+        });
+      }
+
+      async function loadTravaux() {
+        colIds.forEach(etat => {
+          const col = document.getElementById('col-' + etat);
+          if (col) col.innerHTML = '<div class="empty-placeholder">Chargement...</div>';
+        });
+        try {
+          const res = await fetch('/api/travaux', { headers, credentials: 'same-origin' });
+          if (res.status === 401 || res.status === 403) { location.href = '/login.html'; return; }
+          const travaux = res.ok ? await res.json() : [];
+          renderTravaux(Array.isArray(travaux) ? travaux : []);
+        } catch (err) {
+          console.error('Erreur chargement travaux', err);
+          colIds.forEach(etat => {
+            const col = document.getElementById('col-' + etat);
+            if (col) col.innerHTML = '<div class="text-danger">Erreur de chargement.</div>';
+          });
+        }
+      }
+
+      loadTravaux();
+    });
+  </script>
 </body>
 </html>
