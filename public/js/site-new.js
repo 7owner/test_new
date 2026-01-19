@@ -17,9 +17,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const associationAdresse = document.getElementById('association-adresse');
       const associationViewLink = document.getElementById('association-view-link');
 
-      // Responsable select (à la façon ticket-view)
-      const responsableSelect = document.getElementById('responsable-select');
+      // Responsable autocomplete
+      const responsableSearchInput = document.getElementById('responsable-search-input');
       const responsableMatriculeHidden = document.getElementById('responsable_matricule');
+      const responsableSuggestionsContainer = document.getElementById('responsable-suggestions');
 
       // Adresse Autocomplete
       const adresseSearchInput = document.getElementById('adresse-search-input');
@@ -150,28 +151,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       
 
-      // Charger les agents dans le select (admins + agents)
-      async function populateResponsables() {
-        if (!responsableSelect) return;
-        try {
-          const headers = await buildHeaders(false);
-          const r = await fetch('/api/agents', { headers, credentials:'same-origin' });
-          const agents = r.ok ? await r.json() : [];
-          responsableSelect.innerHTML = '<option value="">-- Sélectionner un agent --</option>';
-          (agents || []).forEach(a => {
-            const opt = document.createElement('option');
-            opt.value = a.matricule || '';
-            const full = `${a.prenom || ''} ${a.nom || ''}`.trim();
-            opt.textContent = `${full || a.matricule || 'Agent'}${a.matricule ? ' (' + a.matricule + ')' : ''}`;
-            responsableSelect.appendChild(opt);
-          });
-          responsableSelect.addEventListener('change', () => {
-            responsableMatriculeHidden.value = responsableSelect.value || '';
-          });
-        } catch (e) {
-          console.error('Chargement responsables impossible', e);
-        }
-      }
       if (associationSearchInput && associationIdHidden && associationSuggestionsContainer) {
         setupAutocomplete(
           associationSearchInput,
@@ -184,6 +163,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           (item)=>{ if (item && item.id) renderAssociationPreview(item.id, item); }
         );
         if (associationIdHidden.value) renderAssociationPreview(associationIdHidden.value);
+      }
+
+      // Responsable (agents) autocomplete
+      if (responsableSearchInput && responsableMatriculeHidden && responsableSuggestionsContainer) {
+        setupAutocomplete(
+          responsableSearchInput,
+          responsableMatriculeHidden,
+          responsableSuggestionsContainer,
+          '/api/agents',
+          (item) => `${item.prenom || ''} ${item.nom || ''} (${item.matricule || ''})`.trim(),
+          'matricule',
+          { minChars: 1 }
+        );
       }
 
             if (adresseSearchInput && adresseIdHidden && adresseSuggestionsContainer) {
@@ -285,9 +277,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           associationCard.classList.add('d-none');
         }
       }
-
-      // Charger immédiatement les responsables
-      await populateResponsables();
 
       // Submit
       form.addEventListener('submit', async (e) => {
