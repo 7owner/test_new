@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           const viewSiteModal = document.getElementById('viewSiteModal');
           const viewSiteFrame = document.getElementById('viewSiteFrame');
           if (viewSiteModal && viewSiteFrame) {
-            viewSiteFrame.src = `/site-view.html?id=${siteId}`;
+            viewSiteFrame.src = `/site-view.html?id=${siteId}&embed=1`;
             const m = bootstrap.Modal.getOrCreateInstance(viewSiteModal);
             m.show();
           }
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           const editSiteModal = document.getElementById('editSiteModal');
           const editSiteFrame = document.getElementById('editSiteFrame');
           if (editSiteModal && editSiteFrame) {
-            editSiteFrame.src = `/site-edit.html?id=${siteId}`;
+            editSiteFrame.src = `/site-edit.html?id=${siteId}&embed=1`;
             const m = bootstrap.Modal.getOrCreateInstance(editSiteModal);
             m.show();
           }
@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           const associationModal = document.getElementById('associationModal');
           const associationFrame = document.getElementById('associationFrame');
           if (associationModal && associationFrame && assocId) {
-            associationFrame.src = `/association-view.html?id=${assocId}`;
+            associationFrame.src = `/association-view.html?id=${assocId}&embed=1`;
             const m = bootstrap.Modal.getOrCreateInstance(associationModal);
             m.show();
           }
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         createSiteModal.addEventListener('show.bs.modal', function (event) {
           const createSiteFrame = createSiteModal.querySelector('iframe');
           if (createSiteFrame) {
-            createSiteFrame.src = '/site-new.html';
+            createSiteFrame.src = '/site-new.html?embed=1';
           }
         });
         createSiteModal.addEventListener('hidden.bs.modal', load);
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         viewSiteModal.addEventListener('show.bs.modal', function (event) {
           const button = event.relatedTarget;
           const siteId = button.getAttribute('data-id');
-          viewSiteFrame.src = `/site-view.html?id=${siteId}`;
+          viewSiteFrame.src = `/site-view.html?id=${siteId}&embed=1`;
         });
       }
 
@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         editSiteModal.addEventListener('show.bs.modal', function (event) {
           const button = event.relatedTarget;
           const siteId = button.getAttribute('data-id');
-          editSiteFrame.src = `/site-edit.html?id=${siteId}`;
+          editSiteFrame.src = `/site-edit.html?id=${siteId}&embed=1`;
         });
         editSiteModal.addEventListener('hidden.bs.modal', load);
       }

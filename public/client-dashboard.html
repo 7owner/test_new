@@ -357,6 +357,32 @@
       </div>
     </div>
 
+    <!-- Demandes de Travaux (résumé) -->
+    <div class="main-card" id="travauxCard">
+      <div class="section-header">
+        <h3 class="section-title">
+          <div class="section-icon">
+            <i class="bi bi-tools"></i>
+          </div>
+          Demandes de Travaux
+        </h3>
+        <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-gradient" data-modal="createDemandeModal">
+            <i class="bi bi-plus-circle me-2"></i>Nouvelle demande
+          </button>
+          <a class="btn btn-outline-primary" href="#demandesList">
+            <i class="bi bi-list-ul me-2"></i>Voir toutes
+          </a>
+        </div>
+      </div>
+      <div class="travaux-body">
+        <div class="empty-state">
+          <i class="bi bi-inbox"></i>
+          <p class="mb-0">Aucune demande enregistrée pour le moment.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Demandes d'Intervention -->
     <div class="main-card">
       <div class="section-header">
@@ -618,12 +644,87 @@
         }
       }
 
+      function updateTravauxCard(demands) {
+        const card = document.getElementById("travauxCard");
+        if (!card) return;
+        const body = card.querySelector(".travaux-body");
+        if (!demands || !demands.length) {
+          body.innerHTML = `
+            <div class="empty-state">
+              <i class="bi bi-inbox"></i>
+              <p class="mb-0">Aucune demande enregistrée pour le moment.</p>
+            </div>
+          `;
+          return;
+        }
+        const total = demands.length;
+        const enCours = demands.filter(d => (d.status || "").toLowerCase().includes("cours")).length;
+        const verrouillees = demands.filter(d => d.ticket_id).length;
+        const last = demands[0];
+        const siteLabel = last.nom_site || last.site_nom || "";
+        body.innerHTML = `
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="item-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="fw-semibold">Total</span>
+                  <span class="badge bg-primary">${total}</span>
+                </div>
+                <p class="text-muted small mb-0">Toutes vos demandes enregistrées.</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="item-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="fw-semibold">En cours</span>
+                  <span class="badge bg-warning text-dark">${enCours}</span>
+                </div>
+                <p class="text-muted small mb-0">Demandes encore en traitement.</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="item-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="fw-semibold">Converties en ticket</span>
+                  <span class="badge bg-success">${verrouillees}</span>
+                </div>
+                <p class="text-muted small mb-0">Déjà transmises au support.</p>
+              </div>
+            </div>
+          </div>
+          <div class="item-card mt-3">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+              <div>
+                <div class="demand-chip"><i class="bi bi-hash"></i>Dernière demande</div>
+                <h5 class="demand-title mb-1">${last.titre || siteLabel || "Sans titre"}</h5>
+                <div class="demand-meta d-flex flex-wrap gap-3">
+                  <span><i class="bi bi-calendar-event me-1"></i>${new Date(last.created_at).toLocaleDateString('fr-FR')}</span>
+                  ${siteLabel ? `<span><i class="bi bi-geo-alt me-1"></i>${siteLabel}</span>` : ""}
+                </div>
+              </div>
+              <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-action-ghost btn-sm" data-modal="viewDemandeModal" data-id="${last.id}">
+                  <i class="bi bi-eye me-1"></i>Suivre
+                </button>
+                <button class="btn btn-action-ghost btn-sm" data-modal="messagesModal" data-id="${last.id}">
+                  <i class="bi bi-chat-dots me-1"></i>Messages
+                </button>
+                <button class="btn btn-action-ghost btn-sm" data-modal="filesDemandeModal" data-id="${last.id}">
+                  <i class="bi bi-paperclip me-1"></i>Fichiers
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
       async function loadDemands() {
         const el = document.getElementById("demandesList");
         setLoading(el, "Chargement des demandes...");
 
         try {
           const demands = await api("/api/demandes_client/mine");
+          updateTravauxCard(demands);
 
           if (!demands.length) {
             el.innerHTML = `

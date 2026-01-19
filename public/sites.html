@@ -7,131 +7,285 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
-  <!-- Même navbar que le dashboard (injection via nav.js) -->
   <script src="/nav.js?v=2"></script>
   <style>
-    .dashboard-bg { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); min-height: 100vh; }
-    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+    :root {
+      --primary: #667eea;
+      --primary-dark: #5a67d8;
+      --gradient-bg: linear-gradient(135deg, #f0f4ff 0%, #e0eaff 100%);
+      --card-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      --border-radius: 16px;
+      --text-muted: #64748b;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #0dcaf0;
+    }
+
+    body {
+      background: var(--gradient-bg);
+      min-height: 100vh;
+      color: #1e293b;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    .card {
+      border: none;
+      border-radius: var(--border-radius);
+      box-shadow: var(--card-shadow);
+      transition: all 0.25s ease;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 35px rgba(0,0,0,0.12);
+    }
+
+    .filters-card {
+      background: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s ease;
+    }
+
+    .filters-card.collapsed {
+      max-height: 80px;
+      overflow: hidden;
+    }
+
+    .table {
+      --bs-table-bg: transparent;
+      --bs-table-accent-bg: transparent;
+    }
+
+    .table thead th {
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.8125rem;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .table tbody tr {
+      transition: background 0.2s ease;
+    }
+
+    .table tbody tr:hover {
+      background: rgba(102, 126, 234, 0.08);
+    }
+
+    .status-badge,
+    .association-badge {
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+    }
+
+    .status-actif     { background: #d1fae5; color: #065f46; }
+    .status-inactif   { background: #fee2e2; color: #991b1b; }
+
+    .btn-primary {
+      background: var(--primary);
+      border: none;
+      border-radius: 10px;
+      padding: 0.6rem 1.25rem;
+      font-weight: 500;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-outline-primary {
+      border-radius: 10px;
+    }
+
+    .modal-content {
+      border-radius: var(--border-radius);
+      border: none;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, var(--primary), #764ba2);
+      color: white;
+      border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+
+    .modal-header .btn-close {
+      filter: invert(1);
+    }
+
+    .suggestions-list {
+      max-height: 240px;
+      overflow-y: auto;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+      border-radius: 10px;
+      z-index: 1050;
+    }
+
+    .suggestions-list .list-group-item {
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .suggestions-list .list-group-item:hover {
+      background: rgba(102,126,234,0.1);
+    }
+
+    @media (max-width: 992px) {
+      .filters-card .row > div {
+        margin-bottom: 0.75rem;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .table-responsive {
+        font-size: 0.875rem;
+      }
+      .status-badge, .association-badge {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.6rem;
+      }
+    }
   </style>
 </head>
-<body class="dashboard-bg">
+<body>
   <div id="navbar-placeholder"></div>
 
-  <main class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-      <h1>Sites</h1>
-      <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-outline-primary" id="toggle-filters-btn"><i class="bi bi-funnel-fill me-1"></i> Masquer les filtres</button>
-        <button class="btn btn-primary" id="create-site-btn" data-bs-toggle="modal" data-bs-target="#createSiteModal"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau site</button>
+  <main class="container mt-4 mt-md-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+      <h1 class="mb-0">Gestion des Sites</h1>
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-outline-primary btn-sm" id="toggle-filters-btn">
+          <i class="bi bi-funnel me-1"></i><span>Filtres</span>
+        </button>
+        <button class="btn btn-primary" id="create-site-btn" data-bs-toggle="modal" data-bs-target="#createSiteModal">
+          <i class="bi bi-plus-lg me-1"></i>Nouveau site
+        </button>
       </div>
     </div>
 
     <div class="filters-card p-3 mb-4" id="filters-row">
-      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-        <h5 class="mb-0">Filtres</h5>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Filtres avancés</h5>
       </div>
-      <div class="row g-2">
+      <div class="row g-3">
         <div class="col-lg-4 col-md-6">
-            <input type="text" class="form-control" id="site-search" placeholder="Rechercher par nom ou ID...">
+          <input type="text" class="form-control" id="site-search" placeholder="Nom, ID, adresse...">
         </div>
         <div class="col-lg-3 col-md-6">
-            <select class="form-select" id="association-filter">
-              <option value="">Toutes les associations</option>
-            </select>
+          <select class="form-select" id="association-filter">
+            <option value="">Toutes les associations</option>
+          </select>
         </div>
         <div class="col-lg-2 col-md-6">
-            <input type="date" class="form-control" id="site-date-start" title="Date de début">
+          <input type="date" class="form-control" id="site-date-start" title="Date de création ≥">
         </div>
         <div class="col-lg-3 col-md-6">
-            <input type="date" class="form-control" id="site-date-end" title="Date de fin">
+          <input type="date" class="form-control" id="site-date-end" title="Date de création ≤">
         </div>
       </div>
     </div>
 
-    <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="d-flex justify-content-between align-items-center mb-3">
       <h5 class="mb-0">Liste des sites</h5>
-      <span class="badge bg-primary" id="sites-count">0 site(s)</span>
+      <span class="badge bg-primary-subtle text-primary fs-6 px-3 py-2" id="sites-count">0 site</span>
     </div>
+
     <div class="card">
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
+        <table class="table table-hover mb-0 align-middle">
+          <thead>
             <tr>
-              <th>Nom du Site</th>
+              <th>Nom du site</th>
               <th>Adresse</th>
               <th>Statut</th>
               <th>Association(s)</th>
-              <th>Ticket Ouvert</th>
+              <th>Tickets ouverts</th>
               <th>Responsable</th>
-              <th>Actions</th>
+              <th class="text-end">Actions</th>
             </tr>
           </thead>
           <tbody id="sites-tbody">
-            <tr><td colspan="7" class="text-muted text-center py-4">Chargement...</td></tr>
+            <tr><td colspan="7" class="text-center py-5 text-muted">
+              <div class="spinner-border text-primary" role="status"></div>
+              <div class="mt-2">Chargement des sites...</div>
+            </td></tr>
           </tbody>
         </table>
       </div>
     </div>
   </main>
 
+  <!-- Modal Création Site -->
   <div class="modal fade" id="createSiteModal" tabindex="-1" aria-labelledby="createSiteModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="createSiteModalLabel">Créer un nouveau site</h5>
+          <h5 class="modal-title" id="createSiteModalLabel"><i class="bi bi-building-add me-2"></i>Créer un nouveau site</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <form id="site-new-form" class="row g-3">
+          <form id="site-new-form" class="row g-3 needs-validation" novalidate>
             <div class="col-12">
-              <label for="nom_site" class="form-label">Nom du Site</label>
+              <label for="nom_site" class="form-label fw-semibold">Nom du site <span class="text-danger">*</span></label>
               <input type="text" class="form-control" id="nom_site" required>
             </div>
-            <div class="col-lg-6 col-md-6">
-              <label for="responsable-search-input" class="form-label">Responsable</label>
-              <input type="text" class="form-control" id="responsable-search-input" placeholder="Rechercher un responsable" autocomplete="off">
+
+            <div class="col-lg-6">
+              <label for="responsable-search-input" class="form-label fw-semibold">Responsable</label>
+              <input type="text" class="form-control" id="responsable-search-input" placeholder="Nom, prénom, matricule..." autocomplete="off">
               <input type="hidden" id="responsable_matricule">
-              <div id="responsable-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
-            </div>
-            <div class="col-lg-6 col-md-6">
-              <label for="association-search-input" class="form-label">Association(s)</label>
-              <input type="text" class="form-control" id="association-search-input" placeholder="Rechercher une association" autocomplete="off">
-              <input type="hidden" id="association_id">
-              <div id="association-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
+              <div id="responsable-suggestions" class="list-group suggestions-list mt-1"></div>
             </div>
 
-            <div class="col-lg-4 col-md-6">
-              <label for="site-statut" class="form-label">Statut</label>
-              <select class="form-select" id="site-statut">
+            <div class="col-lg-6">
+              <label for="association-search-input" class="form-label fw-semibold">Association(s)</label>
+              <input type="text" class="form-control" id="association-search-input" placeholder="Rechercher association..." autocomplete="off">
+              <input type="hidden" id="association_id">
+              <div id="association-suggestions" class="list-group suggestions-list mt-1"></div>
+            </div>
+
+            <div class="col-lg-4">
+              <label for="site-statut" class="form-label fw-semibold">Statut</label>
+              <select class="form-select" id="site-statut" required>
                 <option value="Actif">Actif</option>
                 <option value="Inactif">Inactif</option>
               </select>
             </div>
+
             <div class="col-12">
-              <div class="form-check form-switch mb-2">
+              <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" id="toggle_new_address">
-                <label class="form-check-label" for="toggle_new_address">Saisir une nouvelle adresse</label>
+                <label class="form-check-label fw-semibold" for="toggle_new_address">Définir une nouvelle adresse</label>
               </div>
-              <label for="adresse_id" class="form-label">Adresse associée</label>
-              <input type="text" class="form-control" id="adresse-search-input" placeholder="Rechercher une adresse existante" autocomplete="off">
+
+              <label for="adresse-search-input" class="form-label fw-semibold">Adresse associée</label>
+              <input type="text" class="form-control" id="adresse-search-input" placeholder="Rechercher une adresse existante..." autocomplete="off">
               <input type="hidden" id="adresse_id">
-              <div id="adresse-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
-              <div id="new-address-fields" class="row g-2 mt-2 d-none">
+              <div id="adresse-suggestions" class="list-group suggestions-list mt-1"></div>
+
+              <div id="new-address-fields" class="row g-3 mt-3 d-none">
                 <div class="col-12">
-                  <label for="addr_libelle" class="form-label">Libellé (facultatif)</label>
-                  <input type="text" class="form-control" id="addr_libelle" placeholder="Ex: Siège, Entrepôt, ...">
+                  <label for="addr_libelle" class="form-label">Libellé (optionnel)</label>
+                  <input type="text" class="form-control" id="addr_libelle" placeholder="Siège social, Entrepôt, Agence...">
                 </div>
                 <div class="col-12">
-                  <label for="addr_ligne1" class="form-label">Adresse (ligne 1)</label>
-                  <input type="text" class="form-control" id="addr_ligne1" placeholder="N°, Rue ...">
+                  <label for="addr_ligne1" class="form-label">Adresse ligne 1 <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="addr_ligne1" required>
                 </div>
                 <div class="col-md-4">
-                  <label for="addr_code_postal" class="form-label">Code postal</label>
-                  <input type="text" class="form-control" id="addr_code_postal">
+                  <label for="addr_code_postal" class="form-label">Code postal <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="addr_code_postal" required>
                 </div>
                 <div class="col-md-5">
-                  <label for="addr_ville" class="form-label">Ville</label>
-                  <input type="text" class="form-control" id="addr_ville">
+                  <label for="addr_ville" class="form-label">Ville <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="addr_ville" required>
                 </div>
                 <div class="col-md-3">
                   <label for="addr_pays" class="form-label">Pays</label>
@@ -139,13 +293,17 @@
                 </div>
               </div>
             </div>
+
             <div class="col-12">
-              <label for="commentaire" class="form-label">Commentaire</label>
-              <textarea class="form-control" id="commentaire" rows="3"></textarea>
+              <label for="commentaire" class="form-label fw-semibold">Commentaire / Notes</label>
+              <textarea class="form-control" id="commentaire" rows="3" placeholder="Informations complémentaires..."></textarea>
             </div>
-            <div class="col-12 d-flex gap-2">
-              <button type="submit" class="btn btn-primary" id="save-site-btn"><i class="bi bi-save me-2"></i>Enregistrer</button>
-              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+
+            <div class="col-12 d-flex gap-3 justify-content-end mt-4">
+              <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Annuler</button>
+              <button type="submit" class="btn btn-primary px-5" id="save-site-btn">
+                <i class="bi bi-save me-2"></i>Enregistrer le site
+              </button>
             </div>
           </form>
         </div>
@@ -153,15 +311,16 @@
     </div>
   </div>
 
+  <!-- Modales de visualisation / édition (inchangées structurellement) -->
   <div class="modal fade" id="viewSiteModal" tabindex="-1" aria-labelledby="viewSiteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="viewSiteModalLabel">Voir Site</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title" id="viewSiteModalLabel">Détails du site</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">
-          <iframe id="viewSiteFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        <div class="modal-body p-0">
+          <iframe id="viewSiteFrame" style="width:100%;height:80vh;border:none;"></iframe>
         </div>
       </div>
     </div>
@@ -171,26 +330,25 @@
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="editSiteModalLabel">Modifier Site</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title" id="editSiteModalLabel">Modifier le site</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">
-          <iframe id="editSiteFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        <div class="modal-body p-0">
+          <iframe id="editSiteFrame" style="width:100%;height:80vh;border:none;"></iframe>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal consultation Association -->
   <div class="modal fade" id="associationModal" tabindex="-1" aria-labelledby="associationModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="associationModalLabel">Association</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title" id="associationModalLabel">Détails de l'association</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body p-0" style="height:80vh;">
-          <iframe id="associationFrame" src="about:blank" style="width:100%;height:100%;border:none;"></iframe>
+        <div class="modal-body p-0">
+          <iframe id="associationFrame" style="width:100%;height:100%;border:none;"></iframe>
         </div>
       </div>
     </div>
@@ -199,5 +357,17 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script src="/js/sites.js"></script>
   <script src="/js/site-new.js"></script>
+
+  <!-- Petit script bonus pour le toggle des filtres -->
+  <script>
+    document.getElementById('toggle-filters-btn')?.addEventListener('click', function() {
+      const filters = document.getElementById('filters-row');
+      const btnText = this.querySelector('span');
+      filters.classList.toggle('collapsed');
+      btnText.textContent = filters.classList.contains('collapsed') ? 'Afficher filtres' : 'Masquer filtres';
+      this.classList.toggle('btn-outline-primary');
+      this.classList.toggle('btn-primary');
+    });
+  </script>
 </body>
 </html>
