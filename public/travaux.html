@@ -27,7 +27,7 @@
         <small class="text-muted">Vue Kanban des travaux (comme les tickets, avec colonnes par état).</small>
       </div>
       <div class="d-flex gap-2">
-        <a href="/travaux-new.html" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Nouveau travail</a>
+        <button class="btn btn-primary btn-sm" id="btn-new-travail"><i class="bi bi-plus-lg me-1"></i>Nouveau travail</button>
       </div>
     </div>
 
@@ -150,7 +150,7 @@
                 </div>
                 <div class="mt-2 d-flex justify-content-between align-items-center">
                   <div class="small text-muted">État : ${t.etat || '—'}</div>
-                  <a href="travaux-view.html?id=${t.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> Voir</a>
+                  <button class="btn btn-sm btn-outline-primary btn-open-travail" data-id="${t.id}"><i class="bi bi-eye"></i> Voir</button>
                 </div>
               </div>
             `;
@@ -178,9 +178,52 @@
         }
       }
 
+      // Modale générique
+      const modalEl = document.getElementById('travailModal');
+      const modalFrame = document.getElementById('travailModalFrame');
+      const travailModal = modalEl ? new bootstrap.Modal(modalEl) : null;
+
+      function openInModal(url) {
+        if (!travailModal || !modalFrame) { window.location.href = url; return; }
+        modalFrame.src = url;
+        travailModal.show();
+      }
+
+      document.body.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-open-travail');
+        if (btn) {
+          e.preventDefault();
+          const id = btn.getAttribute('data-id');
+          if (id) openInModal(`/travaux-view.html?id=${id}`);
+        }
+      });
+
+      const btnNew = document.getElementById('btn-new-travail');
+      if (btnNew) {
+        btnNew.addEventListener('click', (e) => {
+          e.preventDefault();
+          openInModal('/travaux-new.html');
+        });
+      }
+
       loadTravaux();
       searchInput.addEventListener('input', () => loadTravaux());
     });
   </script>
+  <!-- Modale de visualisation / création -->
+  <div class="modal fade" id="travailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Travail</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0">
+          <iframe id="travailModalFrame" src="about:blank" style="width:100%;height:80vh;border:none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 </body>
 </html>
