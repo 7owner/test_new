@@ -1,4 +1,4 @@
-# Contexte du Projet : projet_var_v4 (Session 4)
+# Contexte du Projet : projet_var_v4 
 
 Cette session a portÃ© sur lâ€™authentification par sessions/cookies, la protection CSRF, lâ€™eâ€‘mailing Gmail pour â€œmot de passe oubliÃ©â€, et la fonctionnalitÃ© mÃ©tier de â€œprise de ticketâ€ depuis le dÃ©tail dâ€™une intervention, avec traÃ§abilitÃ© et corrections dâ€™encodage (UTFâ€‘8) cÃ´tÃ© UI.
 
@@ -60,21 +60,21 @@ Cette session a portÃ© sur lâ€™authentification par sessions/cookies, la protect
 - Intervention â†’ modal â€œPrendre le ticketâ€ â†’ prise principale si pas de responsable, sinon secondaire; historique visible.
 - Tickets â†’ dÃ©tail â†’ relations chargÃ©es via API (id numÃ©rique), 403 Ã©vitÃ©s.
 
-## Mises à jour rétro-annotées
+## Mises ï¿½ jour rï¿½tro-annotï¿½es
 
 - Agents / Users
-  - `agents.html` utilise désormais `/api/agents` (plus de données statiques).
-  - `agent-token-new.html` charge l’agent par matricule depuis l’API et appelle `POST /api/invite-agent` (email réel, `intervention_id` via l’URL).
-  - Cohérence agents/users assurée au démarrage (création users/agents et agences si manquants).
+  - `agents.html` utilise dï¿½sormais `/api/agents` (plus de donnï¿½es statiques).
+  - `agent-token-new.html` charge lï¿½agent par matricule depuis lï¿½API et appelle `POST /api/invite-agent` (email rï¿½el, `intervention_id` via lï¿½URL).
+  - Cohï¿½rence agents/users assurï¿½e au dï¿½marrage (crï¿½ation users/agents et agences si manquants).
 
 - Tickets
-  - `POST /api/tickets`: cast enum `etat_rapport` + `date_debut` par défaut; `ticket-new.html` (dates début/fin) et `ticket-view.html` (date/heure locales).
+  - `POST /api/tickets`: cast enum `etat_rapport` + `date_debut` par dï¿½faut; `ticket-new.html` (dates dï¿½but/fin) et `ticket-view.html` (date/heure locales).
 
 - Dashboard
-  - Carte “Tickets ouverts” (X/Y) depuis l’API; graphe barres mensuel + donut “Ouverts vs Fermés”; liste des 5 tickets ouverts (triés, liens, nom site via `/api/sites`).
+  - Carte ï¿½Tickets ouvertsï¿½ (X/Y) depuis lï¿½API; graphe barres mensuel + donut ï¿½Ouverts vs Fermï¿½sï¿½; liste des 5 tickets ouverts (triï¿½s, liens, nom site via `/api/sites`).
 
 - Sites
-  - `site-new.html` saisie d’adresse inline (Adresse/CP/Ville requis si activé) puis création; compatible JWT/CSRF.
+  - `site-new.html` saisie dï¿½adresse inline (Adresse/CP/Ville requis si activï¿½) puis crï¿½ation; compatible JWT/CSRF.
 
 - Sessions/CSRF
-  - `trust proxy` activé; table `session` pré-créée; `connect-pg-simple` sans auto-create.
+  - `trust proxy` activï¿½; table `session` prï¿½-crï¿½ï¿½e; `connect-pg-simple` sans auto-create.

@@ -1,4 +1,4 @@
-# Contexte du Projet : projet_var_v4 (Mises à jour récentes)
+# Contexte du Projet : projet_var_v4 
 
 Ce document résume les correctifs et évolutions réalisés durant les dernières sessions.
 

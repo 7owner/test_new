@@ -1,4 +1,4 @@
-dans # Project Context: projet_var_v4 (Session 2)
+dans # Project Context: projet_var_v4 
 
 This document summarizes the work done and the current state of the `projet_var_v4` project since the creation of `CONTEXT.md`.
 

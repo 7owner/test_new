@@ -1,4 +1,4 @@
-# Contexte du Projet : projet_var_v4 (Sessions 7+)
+# Contexte du Projet : projet_var_v4 
 
 ## Situation actuelle
 - Fonctionnalités clients (ROLE_CLIENT) en place : dashboard client, demandes d’intervention, conversion admin → ticket.

@@ -1,4 +1,4 @@
-# Contexte du Projet : projet_var_v4 (Session 5)
+# Contexte du Projet : projet_var_v4 
 
 Ce document rÃ©sume les correctifs et Ã©volutions rÃ©alisÃ©s durant la session, ainsi que les points Ã  traiter lors de la prochaine session.
 
@@ -64,57 +64,59 @@ Ce document rÃ©sume les correctifs et Ã©volutions rÃ©alisÃ©s durant la session, 
   - login.html: rÃ©cupÃ©ration CSRF optionnelle et parsing JSON conditionnÃ© au content-type pour Ã©viter les â€œUnexpected tokenâ€¦â€.
 
 
-- Tickets (création + vue + liste)
-  - API: lors de POST /api/tickets, etat est casté en etat_rapport (défaut Pas_commence).
-  - API: date_debut par défaut CURRENT_TIMESTAMP si manquante; cast explicite des dates.
-  - UI: public/ticket-new.html propose 'Date de début/fin' (datetime-local) envoyées en ISO.
+- Tickets (crï¿½ation + vue + liste)
+  - API: lors de POST /api/tickets, etat est castï¿½ en etat_rapport (dï¿½faut Pas_commence).
+  - API: date_debut par dï¿½faut CURRENT_TIMESTAMP si manquante; cast explicite des dates.
+  - UI: public/ticket-new.html propose 'Date de dï¿½but/fin' (datetime-local) envoyï¿½es en ISO.
   - UI: public/ticket-view.html affiche date + heure locales.
   - UI: public/tickets.html charge les noms de sites via /api/sites et affiche un lien vers site-view.html.
 
-- Sites (création)
-  - public/site-new.html: switch 'Saisir une nouvelle adresse'. Si activé: Adresse (ligne 1), Code postal, Ville requis. Création via /api/adresses puis /api/sites (JWT ou CSRF).
+- Sites (crï¿½ation)
+  - public/site-new.html: switch 'Saisir une nouvelle adresse'. Si activï¿½: Adresse (ligne 1), Code postal, Ville requis. Crï¿½ation via /api/adresses puis /api/sites (JWT ou CSRF).
 
-- Dashboard (synchronisé DB)
-  - Carte 'Tickets ouverts': 'X / Y' depuis /api/tickets. Graphe barres 'Tickets par mois' et donut 'Ouverts vs Fermés'.
-  - Panneau 'Tickets ouverts': 5 plus récents (tri date), badge d'état, nom du site et lien 'Voir tout'.
+- Dashboard (synchronisï¿½ DB)
+  - Carte 'Tickets ouverts': 'X / Y' depuis /api/tickets. Graphe barres 'Tickets par mois' et donut 'Ouverts vs Fermï¿½s'.
+  - Panneau 'Tickets ouverts': 5 plus rï¿½cents (tri date), badge d'ï¿½tat, nom du site et lien 'Voir tout'.
 
-- Mot de passe oublié (Render)
-  - Liens reset basés sur x-forwarded-proto/eq.protocol + eq.get('host').
+- Mot de passe oubliï¿½ (Render)
+  - Liens reset basï¿½s sur x-forwarded-proto/
+eq.protocol + 
+eq.get('host').
 
-- Routage par défaut
+- Routage par dï¿½faut
   - GET / renvoie public/dashboard.html (page d'accueil).
 
 - Initialisation DB (compat Render)
-  - Exécution SQL statement-par-statement avec normalisation (BOM, commentaires) et logs. Env: INIT_SQL, SEED_SQL, SKIP_DB_INIT.
+  - Exï¿½cution SQL statement-par-statement avec normalisation (BOM, commentaires) et logs. Env: INIT_SQL, SEED_SQL, SKIP_DB_INIT.
 
-- Tickets (création + vue + liste)
-  - API: lors de `POST /api/tickets`, `etat` est casté en `etat_rapport` (défaut `Pas_commence`).
-  - API: `date_debut` par défaut `CURRENT_TIMESTAMP` si manquante; cast explicite des dates.
-  - UI: `public/ticket-new.html` propose “Date de début/fin” (datetime-local) envoyées en ISO.
+- Tickets (crï¿½ation + vue + liste)
+  - API: lors de `POST /api/tickets`, `etat` est castï¿½ en `etat_rapport` (dï¿½faut `Pas_commence`).
+  - API: `date_debut` par dï¿½faut `CURRENT_TIMESTAMP` si manquante; cast explicite des dates.
+  - UI: `public/ticket-new.html` propose ï¿½Date de dï¿½but/finï¿½ (datetime-local) envoyï¿½es en ISO.
   - UI: `public/ticket-view.html` affiche date + heure locales.
   - UI: `public/tickets.html` charge les noms de sites via `/api/sites` et affiche un lien vers `site-view.html`.
 
-- Sites (création)
-  - `public/site-new.html`: switch “Saisir une nouvelle adresse”. Si activé: Adresse (ligne 1), Code postal, Ville requis (Libellé facultatif). Création via `/api/adresses` puis `/api/sites` (JWT ou CSRF).
+- Sites (crï¿½ation)
+  - `public/site-new.html`: switch ï¿½Saisir une nouvelle adresseï¿½. Si activï¿½: Adresse (ligne 1), Code postal, Ville requis (Libellï¿½ facultatif). Crï¿½ation via `/api/adresses` puis `/api/sites` (JWT ou CSRF).
 
-- Dashboard (synchronisé DB)
-  - Carte “Tickets ouverts”: affiche “X / Y” depuis `/api/tickets`.
-  - Graphe barres “Tickets par mois” via API; donut “Ouverts vs Fermés”.
-  - Panneau “Tickets ouverts”: 5 plus récents (tri date), badge d’état, nom du site (via `/api/sites`) et lien “Voir tout”.
+- Dashboard (synchronisï¿½ DB)
+  - Carte ï¿½Tickets ouvertsï¿½: affiche ï¿½X / Yï¿½ depuis `/api/tickets`.
+  - Graphe barres ï¿½Tickets par moisï¿½ via API; donut ï¿½Ouverts vs Fermï¿½sï¿½.
+  - Panneau ï¿½Tickets ouvertsï¿½: 5 plus rï¿½cents (tri date), badge dï¿½ï¿½tat, nom du site (via `/api/sites`) et lien ï¿½Voir toutï¿½.
 
 - Agents
-  - `public/agents.html`: suppression des données statiques; chargement depuis `/api/agents`.
-  - Cohérence agents/users assurée au démarrage (création users/agents et agences si manquants).
-  - `public/agent-token-new.html`: charge l’agent par matricule via `/api/agents` et appelle `POST /api/invite-agent`.
+  - `public/agents.html`: suppression des donnï¿½es statiques; chargement depuis `/api/agents`.
+  - Cohï¿½rence agents/users assurï¿½e au dï¿½marrage (crï¿½ation users/agents et agences si manquants).
+  - `public/agent-token-new.html`: charge lï¿½agent par matricule via `/api/agents` et appelle `POST /api/invite-agent`.
 
 - Sessions
-  - `trust proxy` activé et pré-création de la table `session` + index; `connect-pg-simple` sans auto-create pour éviter “transaction annulée”.
+  - `trust proxy` activï¿½ et prï¿½-crï¿½ation de la table `session` + index; `connect-pg-simple` sans auto-create pour ï¿½viter ï¿½transaction annulï¿½eï¿½.
 
 - Reset password (Render)
-  - Liens de reset basés sur protocole/hôte dynamiques (`x-forwarded-proto`/`req.protocol` + `req.get('host')`).
+  - Liens de reset basï¿½s sur protocole/hï¿½te dynamiques (`x-forwarded-proto`/`req.protocol` + `req.get('host')`).
 
 - Init DB (compat Render)
-  - Exécution SQL statement-par-statement (normalisation BOM/commentaires) + logs. Env: `INIT_SQL`, `SEED_SQL`, `SKIP_DB_INIT`.## Points connus / Dette technique
+  - Exï¿½cution SQL statement-par-statement (normalisation BOM/commentaires) + logs. Env: `INIT_SQL`, `SEED_SQL`, `SKIP_DB_INIT`.## Points connus / Dette technique
 
 - `public/script.js` est tronquÃ© (Unexpected end of input). Il a Ã©tÃ© retirÃ© des pages sensibles; Ã  rÃ©parer ou dÃ©coupler dÃ©finitivement.
 - `server.js` contient encore des doublons historiques de blocs (certains nettoyÃ©s). Une passe de nettoyage globale est Ã  prÃ©voir.
@@ -156,13 +158,13 @@ Ce document rÃ©sume les correctifs et Ã©volutions rÃ©alisÃ©s durant la session, 
 - Le by-pass CSRF pour les requÃªtes JSON Bearer-side est une mesure pragmatique cÃ´tÃ© SPA; Ã  remplacer par un flux CSRF complet si nÃ©cessaire.
 
 
-- Responsables et Agents assignés
+- Responsables et Agents assignï¿½s
   - Nouvelles tables: ticket_agent, site_responsable, site_agent (migrate-assignments)
   - Endpoints:
     - Tickets: POST /api/tickets/:id/agents, DELETE /api/tickets/:id/agents/:matricule, POST /api/tickets/:id/responsables
     - Sites: POST /api/sites/:id/agents, DELETE /api/sites/:id/agents/:matricule, POST /api/sites/:id/responsables
-  - Règle: un Responsable doit être admin et avoir la fonction Chef (si tables de fonction présentes)
-  - UI: ticket-view et site-view affichent désormais
-    - cartes "Responsables" et "Agents assignés" avec actions admin (ajout)
-  - Seed démo: npm run seed-demo ajoute des responsables Chef/admin et des agents assignés sur sites et tickets
+  - Rï¿½gle: un Responsable doit ï¿½tre admin et avoir la fonction Chef (si tables de fonction prï¿½sentes)
+  - UI: ticket-view et site-view affichent dï¿½sormais
+    - cartes "Responsables" et "Agents assignï¿½s" avec actions admin (ajout)
+  - Seed dï¿½mo: npm run seed-demo ajoute des responsables Chef/admin et des agents assignï¿½s sur sites et tickets
 
