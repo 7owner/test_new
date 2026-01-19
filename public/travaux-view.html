@@ -31,7 +31,13 @@
           </h4>
           <div class="small opacity-75" id="work-sub">—</div>
         </div>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <div class="btn-group btn-group-sm" role="group" aria-label="liens travail">
+            <button class="btn btn-light" id="btn-resp"><i class="bi bi-person-badge me-1"></i>Responsable</button>
+            <button class="btn btn-light" id="btn-agent"><i class="bi bi-people me-1"></i>Agent</button>
+            <button class="btn btn-light" id="btn-affaire"><i class="bi bi-briefcase me-1"></i>Affaire</button>
+            <button class="btn btn-light" id="btn-doe"><i class="bi bi-diagram-3 me-1"></i>DOE</button>
+          </div>
           <span class="badge bg-light text-dark" id="work-etat">-</span>
           <span class="badge bg-light text-dark" id="work-prio">-</span>
         </div>
@@ -39,7 +45,7 @@
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
           <div class="d-flex gap-2">
-            <a href="travaux.html" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Retour</a>
+           <!-- <a href="travaux.html" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Retour</a>-->
             <a id="edit-travail-btn" href="#" class="btn btn-primary btn-sm"><i class="bi bi-pencil-square me-1"></i>Modifier</a>
           </div>
           <div id="team-inline" class="d-flex flex-wrap"></div>
@@ -281,6 +287,10 @@
       const taskModalEl = document.getElementById('taskModal');
       const taskModal = taskModalEl ? new bootstrap.Modal(taskModalEl) : null;
       const teamInline = document.getElementById('team-inline');
+      const btnResp = document.getElementById('btn-resp');
+      const btnAgent = document.getElementById('btn-agent');
+      const btnAffaire = document.getElementById('btn-affaire');
+      const btnDoe = document.getElementById('btn-doe');
 
       function formatMember(label, email) {
         if (label && email) return `${label} (${email})`;
@@ -365,6 +375,25 @@
         set('resp-principal', responsableMatricule || '—');
         set('info-resp', responsableMatricule || '—');
         renderTeamInline(responsableMatricule, agentsData);
+
+        if (btnResp) btnResp.onclick = () => {
+          document.getElementById('responsables-inline')?.scrollIntoView({ behavior:'smooth', block:'center' });
+        };
+        if (btnAgent) btnAgent.onclick = () => {
+          document.getElementById('agents-inline')?.scrollIntoView({ behavior:'smooth', block:'center' });
+        };
+        if (btnAffaire) {
+          btnAffaire.disabled = !t.affaire_id;
+          btnAffaire.onclick = () => {
+            if (t.affaire_id) window.open(`/affaire-view.html?id=${t.affaire_id}`, '_blank');
+          };
+        }
+        if (btnDoe) {
+          btnDoe.disabled = !t.doe_id;
+          btnDoe.onclick = () => {
+            if (t.doe_id) window.open(`/doe-view.html?id=${t.doe_id}`, '_blank');
+          };
+        }
 
         // Rendus
         const rRendus = await fetch(`/api/travaux/${id}/rendus`, { headers, credentials:'same-origin' });
