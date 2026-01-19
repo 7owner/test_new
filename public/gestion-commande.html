@@ -9,35 +9,112 @@
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=2"></script>
   <style>
-    body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); }
-    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
-    .order-card { transition: transform 0.2s, box-shadow 0.2s; }
-    .order-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,0.1); }
+    body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); min-height: 100vh; }
+    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); transition: all 0.3s ease; }
+    .order-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+    .order-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(0,0,0,0.12); }
+    .badge { font-weight: 500; padding: 0.4em 0.8em; border-radius: 8px; }
+    .stats-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .stats-card .stats-number { font-size: 2rem; font-weight: 700; }
+    .stats-card .stats-label { opacity: 0.9; font-size: 0.875rem; }
+    .filter-section { background: white; border-radius: 12px; padding: 1.5rem; }
+    .demande-card { border-left: 4px solid #667eea; }
+    .demande-card.complete { border-left-color: #10b981; opacity: 0.7; }
+    .btn-action { width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+    .timeline-item { position: relative; padding-left: 2rem; padding-bottom: 1.5rem; }
+    .timeline-item::before { content: ''; position: absolute; left: 0.5rem; top: 0.5rem; bottom: -0.5rem; width: 2px; background: #e5e7eb; }
+    .timeline-item::after { content: ''; position: absolute; left: 0.25rem; top: 0.5rem; width: 10px; height: 10px; border-radius: 50%; background: #667eea; border: 2px solid white; box-shadow: 0 0 0 2px #667eea; }
+    .timeline-item:last-child::before { display: none; }
+    .price-display { font-size: 1.25rem; font-weight: 600; color: #667eea; }
+    .empty-state { padding: 3rem; text-align: center; }
+    .empty-state i { font-size: 4rem; color: #cbd5e1; margin-bottom: 1rem; }
+    .quick-action-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 600; transition: all 0.3s; }
+    .quick-action-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3); color: white; }
+    .status-progress { height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; margin-top: 0.5rem; }
+    .status-progress-bar { height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); transition: width 0.3s; }
+    .document-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: #f1f5f9; border-radius: 6px; font-size: 0.75rem; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-in { animation: slideIn 0.3s ease-out; }
+    .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
+    @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .search-input { border-radius: 12px; padding: 0.75rem 1rem; padding-left: 2.5rem; border: 2px solid #e5e7eb; transition: all 0.3s; }
+    .search-input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    .search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #9ca3af; }
   </style>
 </head>
 <body class="dashboard-bg">
   <div id="navbar-placeholder"></div>
 
   <main class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-      <h1 class="h4 mb-0">Gestion des Commandes</h1>
-      <div class="d-flex gap-2">
-        <a href="/catalogue-materiel.html" class="btn btn-outline-primary btn-sm"><i class="bi bi-box-seam me-1"></i>Depuis le catalogue</a>
-        <button class="btn btn-primary btn-sm" id="new-order-btn"><i class="bi bi-plus-circle me-1"></i>Nouvelle commande</button>
+    <!-- En-tête avec statistiques -->
+    <div class="row mb-4 g-3">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+          <div>
+            <h1 class="h3 mb-1 fw-bold">Gestion des Commandes</h1>
+            <p class="text-muted mb-0">Suivez et gérez vos commandes de matériel</p>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="/catalogue-materiel.html" class="btn btn-outline-primary"><i class="bi bi-box-seam me-2"></i>Catalogue</a>
+            <button class="quick-action-btn" id="new-order-btn"><i class="bi bi-plus-circle me-2"></i>Nouvelle commande</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Statistiques -->
+      <div class="col-md-3 col-sm-6">
+        <div class="card stats-card">
+          <div class="card-body">
+            <div class="stats-number" id="stats-total">0</div>
+            <div class="stats-label">Total commandes</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="card bg-warning text-dark">
+          <div class="card-body">
+            <div class="stats-number" id="stats-pending">0</div>
+            <div class="stats-label">À commander</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="card bg-info text-dark">
+          <div class="card-body">
+            <div class="stats-number" id="stats-transit">0</div>
+            <div class="stats-label">En transit</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="card bg-success text-white">
+          <div class="card-body">
+            <div class="stats-number" id="stats-received">0</div>
+            <div class="stats-label">Reçues</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="card mb-3">
+    <!-- Filtres améliorés -->
+    <div class="card mb-4">
       <div class="card-body">
-        <div class="row g-2 align-items-end">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Rechercher</label>
-            <input type="text" id="search-input" class="form-control" placeholder="Filtrer par référence, désignation, fournisseur...">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-5">
+            <label class="form-label fw-semibold mb-2">
+              <i class="bi bi-search me-1"></i>Recherche globale
+            </label>
+            <div class="position-relative">
+              <i class="bi bi-search search-icon"></i>
+              <input type="text" id="search-input" class="form-control search-input" placeholder="Référence, désignation, fournisseur, fabricant...">
+            </div>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Statut de commande</label>
-            <select id="filter-status" class="form-select">
-              <option value="">Tous</option>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold mb-2">
+              <i class="bi bi-funnel me-1"></i>Statut
+            </label>
+            <select id="filter-status" class="form-select" style="border-radius: 12px; padding: 0.75rem;">
+              <option value="">Tous les statuts</option>
               <option value="A commander">À commander</option>
               <option value="Commande">Commandé</option>
               <option value="En livraison">En livraison</option>
@@ -45,74 +122,94 @@
               <option value="Installé">Installé</option>
             </select>
           </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold mb-2">
+              <i class="bi bi-sort-down me-1"></i>Trier par
+            </label>
+            <select id="sort-by" class="form-select" style="border-radius: 12px; padding: 0.75rem;">
+              <option value="recent">Plus récent</option>
+              <option value="reference">Référence</option>
+              <option value="price-asc">Prix croissant</option>
+              <option value="price-desc">Prix décroissant</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-outline-secondary w-100" id="reset-filters" style="border-radius: 12px; padding: 0.75rem;">
+              <i class="bi bi-arrow-counterclockwise me-1"></i>Réinitialiser
+            </button>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="card mb-3">
+    <!-- Demandes matériel -->
+    <div class="card mb-4" id="demandes-section">
       <div class="card-body">
-        <h5 class="card-title">Demandes matériel</h5>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="card-title mb-0"><i class="bi bi-inbox me-2"></i>Demandes de matériel</h5>
+          <span class="badge bg-primary" id="demandes-count">0</span>
+        </div>
         <div id="demandes-cards" class="row g-3">
-          <div class="col-12 text-muted">Chargement...</div>
+          <div class="col-12 text-muted text-center py-3">
+            <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
+          </div>
         </div>
       </div>
     </div>
 
+    <!-- Liste des commandes -->
     <div class="card">
       <div class="card-body">
-        <div class="table-responsive">
-          <div id="orders-cards" class="row g-3">
-            <div class="col-12 text-center text-muted py-4">Chargement...</div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="card-title mb-0"><i class="bi bi-box-seam me-2"></i>Commandes</h5>
+          <div class="btn-group btn-group-sm" role="group">
+            <input type="radio" class="btn-check" name="view-mode" id="view-cards" checked>
+            <label class="btn btn-outline-secondary" for="view-cards"><i class="bi bi-grid"></i></label>
+            <input type="radio" class="btn-check" name="view-mode" id="view-list">
+            <label class="btn btn-outline-secondary" for="view-list"><i class="bi bi-list-ul"></i></label>
+          </div>
+        </div>
+        <div id="orders-cards" class="row g-3">
+          <div class="col-12 text-center py-5">
+            <div class="skeleton" style="height: 200px; border-radius: 12px;"></div>
           </div>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- Modal nouvelle commande manuelle -->
+  <!-- Modal nouvelle commande -->
   <div class="modal fade" id="newOrderModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
+      <div class="modal-content" style="border-radius: 16px; border: none;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 16px 16px 0 0;">
           <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Nouvelle commande</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body p-4">
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label">Référence</label>
-              <input type="text" class="form-control" id="new-ref" placeholder="REF123">
+              <label class="form-label fw-semibold">Référence <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="new-ref" placeholder="REF-2024-001" required>
             </div>
             <div class="col-md-6">
-              <label class="form-label">Désignation</label>
-              <input type="text" class="form-control" id="new-designation" placeholder="Désignation du matériel">
+              <label class="form-label fw-semibold">Désignation <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="new-designation" placeholder="Nom du matériel" required>
             </div>
             <div class="col-md-6">
-              <label class="form-label">Catégorie</label>
-              <input type="text" class="form-control" id="new-categorie" placeholder="Catégorie">
+              <label class="form-label fw-semibold">Catégorie</label>
+              <input type="text" class="form-control" id="new-categorie" placeholder="Ex: Informatique, Mobilier...">
             </div>
             <div class="col-md-6">
-              <label class="form-label">Fabricant</label>
-              <input type="text" class="form-control" id="new-fabricant" placeholder="Fabricant">
+              <label class="form-label fw-semibold">Fabricant</label>
+              <input type="text" class="form-control" id="new-fabricant" placeholder="Nom du fabricant">
             </div>
             <div class="col-md-6">
-              <label class="form-label">Fournisseur</label>
-              <input type="text" class="form-control" id="new-fournisseur" placeholder="Fournisseur">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Prix achat (€)</label>
-              <input type="number" step="0.01" class="form-control" id="new-prix" placeholder="0.00">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Remise (%)</label>
-              <input type="number" step="0.01" class="form-control" id="new-remise" placeholder="0">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Quantité</label>
-              <input type="number" min="1" step="1" class="form-control" id="new-quantite" placeholder="1">
+              <label class="form-label fw-semibold">Fournisseur</label>
+              <input type="text" class="form-control" id="new-fournisseur" placeholder="Nom du fournisseur">
             </div>
             <div class="col-md-6">
-              <label class="form-label">Statut commande</label>
+              <label class="form-label fw-semibold">Statut</label>
               <select class="form-select" id="new-status">
                 <option value="A commander">À commander</option>
                 <option value="Commande">Commandé</option>
@@ -121,64 +218,97 @@
                 <option value="Installé">Installé</option>
               </select>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Commentaire</label>
-              <input type="text" class="form-control" id="new-commentaire" placeholder="Commentaire (optionnel)">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Prix achat (€)</label>
+              <div class="input-group">
+                <input type="number" step="0.01" class="form-control" id="new-prix" placeholder="0.00">
+                <span class="input-group-text">€</span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Remise (%)</label>
+              <div class="input-group">
+                <input type="number" step="0.01" class="form-control" id="new-remise" placeholder="0">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Quantité</label>
+              <input type="number" min="1" step="1" class="form-control" id="new-quantite" placeholder="1" value="1">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Commentaire</label>
+              <textarea class="form-control" id="new-commentaire" rows="3" placeholder="Notes ou informations complémentaires..."></textarea>
             </div>
           </div>
           <div class="alert alert-danger d-none mt-3" id="new-order-error"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="new-order-save"><i class="bi bi-save me-1"></i>Enregistrer</button>
+          <button type="button" class="btn btn-primary" id="new-order-save">
+            <i class="bi bi-save me-1"></i>Enregistrer
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal edit -->
+  <!-- Modal édition -->
   <div class="modal fade" id="orderModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
+      <div class="modal-content" style="border-radius: 16px;">
+        <div class="modal-header bg-light">
           <h5 class="modal-title" id="orderModalLabel">Détails de la commande</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body">
-            <p><strong>Référence:</strong> <span id="ord-reference"></span></p>
-            <p><strong>Désignation:</strong> <span id="ord-designation"></span></p>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Statut de commande</label>
-                    <select class="form-select" id="ord-commande_status">
-                        <option value="A commander">À commander</option>
-                        <option value="Commande">Commandé</option>
-                        <option value="En livraison">En livraison</option>
-                        <option value="Reçu">Reçu</option>
-                        <option value="Installé">Installé</option>
-                    </select>
-                </div>
-                 <div class="col-md-6">
-                    <label class="form-label">Fournisseur</label>
-                    <input type="text" class="form-control" id="ord-fournisseur">
-                </div>
-                <div class="col-12">
-                    <label class="form-label">Commentaire</label>
-                    <textarea class="form-control" id="ord-commentaire" rows="2"></textarea>
-                </div>
+        <div class="modal-body p-4">
+          <div class="mb-4">
+            <h6 class="text-muted mb-2">INFORMATIONS GÉNÉRALES</h6>
+            <p class="mb-1"><strong>Référence:</strong> <span id="ord-reference" class="ms-2"></span></p>
+            <p class="mb-0"><strong>Désignation:</strong> <span id="ord-designation" class="ms-2"></span></p>
+          </div>
+          
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Statut de commande</label>
+              <select class="form-select" id="ord-commande_status">
+                <option value="A commander">À commander</option>
+                <option value="Commande">Commandé</option>
+                <option value="En livraison">En livraison</option>
+                <option value="Reçu">Reçu</option>
+                <option value="Installé">Installé</option>
+              </select>
             </div>
-            <hr>
-            <h6>Pièces Jointes (Bon de livraison, etc.)</h6>
-            <div id="ord-documents-list" class="list-group mb-3"></div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Fournisseur</label>
+              <input type="text" class="form-control" id="ord-fournisseur">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Commentaire</label>
+              <textarea class="form-control" id="ord-commentaire" rows="3"></textarea>
+            </div>
+          </div>
+
+          <hr>
+          
+          <div class="mb-3">
+            <h6 class="mb-3"><i class="bi bi-paperclip me-2"></i>Pièces jointes</h6>
+            <div id="ord-documents-list" class="mb-3"></div>
             <div class="input-group">
-                <input type="file" class="form-control" id="ord-document-upload">
-                <button class="btn btn-outline-secondary" type="button" id="btn-upload-document">Téléverser</button>
+              <input type="file" class="form-control" id="ord-document-upload">
+              <button class="btn btn-outline-primary" type="button" id="btn-upload-document">
+                <i class="bi bi-upload me-1"></i>Téléverser
+              </button>
             </div>
-             <div class="alert d-none mt-3" id="ord-feedback"></div>
+          </div>
+          
+          <div class="alert d-none mt-3" id="ord-feedback"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="ord-save-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
+          <button type="button" class="btn btn-primary" id="ord-save-btn">
+            <i class="bi bi-save me-1"></i>Enregistrer
+          </button>
         </div>
       </div>
     </div>
@@ -187,37 +317,41 @@
   <!-- Modal réception -->
   <div class="modal fade" id="receiveModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Marquer comme reçu</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      <div class="modal-content" style="border-radius: 16px;">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title"><i class="bi bi-box-seam me-2"></i>Marquer comme reçu</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
         </div>
-        <div class="modal-body">
-          <p class="mb-2 text-muted" id="receive-ref">Référence : -</p>
+        <div class="modal-body p-4">
+          <p class="mb-3 fw-semibold" id="receive-ref">Référence : -</p>
           <div class="mb-3">
-            <label class="form-label">Quantité reçue</label>
+            <label class="form-label fw-semibold">Quantité reçue</label>
             <input type="number" min="0" step="1" class="form-control" id="receive-qty" placeholder="Ex: 5">
-            <small class="text-muted">Cette quantité sera enregistrée dans le commentaire de la commande.</small>
+            <small class="text-muted">Cette quantité sera enregistrée dans le commentaire.</small>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-success" id="receive-save-btn"><i class="bi bi-check-circle me-1"></i>Valider reçu</button>
+          <button type="button" class="btn btn-success" id="receive-save-btn">
+            <i class="bi bi-check-circle me-1"></i>Valider
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal consultation documents -->
+  <!-- Modal documents -->
   <div class="modal fade" id="docsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-      <div class="modal-content">
+      <div class="modal-content" style="border-radius: 16px;">
         <div class="modal-header">
-          <h5 class="modal-title" id="docsModalLabel">Pièces jointes</h5>
+          <h5 class="modal-title" id="docsModalLabel">
+            <i class="bi bi-paperclip me-2"></i>Pièces jointes
+          </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
         </div>
         <div class="modal-body">
-          <div id="docs-list" class="list-group"></div>
+          <div id="docs-list"></div>
         </div>
       </div>
     </div>
@@ -234,6 +368,8 @@
       const demandesContainer = document.getElementById('demandes-cards');
       const searchInput = document.getElementById('search-input');
       const statusFilter = document.getElementById('filter-status');
+      const sortBy = document.getElementById('sort-by');
+      const resetFilters = document.getElementById('reset-filters');
       
       const orderModalEl = document.getElementById('orderModal');
       const orderModal = new bootstrap.Modal(orderModalEl);
@@ -254,6 +390,7 @@
       const newOrderModal = newOrderModalEl ? new bootstrap.Modal(newOrderModalEl) : null;
       const newOrderError = document.getElementById('new-order-error');
       const newOrderSave = document.getElementById('new-order-save');
+      
       let linkedDemandeId = null;
       let linkedDemandeQty = null;
       const newFields = {
@@ -273,34 +410,42 @@
       let editingOrderId = null;
       let receivingOrderId = null;
       let demandes = [];
+      let viewMode = 'cards';
 
       const fields = {
-          reference: document.getElementById('ord-reference'),
-          designation: document.getElementById('ord-designation'),
-          commande_status: document.getElementById('ord-commande_status'),
-          fournisseur: document.getElementById('ord-fournisseur'),
-          commentaire: document.getElementById('ord-commentaire'),
-          docList: document.getElementById('ord-documents-list'),
-          docUploadInput: document.getElementById('ord-document-upload'),
-          docUploadBtn: document.getElementById('btn-upload-document'),
+        reference: document.getElementById('ord-reference'),
+        designation: document.getElementById('ord-designation'),
+        commande_status: document.getElementById('ord-commande_status'),
+        fournisseur: document.getElementById('ord-fournisseur'),
+        commentaire: document.getElementById('ord-commentaire'),
+        docList: document.getElementById('ord-documents-list'),
+        docUploadInput: document.getElementById('ord-document-upload'),
+        docUploadBtn: document.getElementById('btn-upload-document'),
       };
 
       const statusClass = (status) => {
         switch (status) {
-          case 'A commander': return 'bg-secondary';
+          case 'A commander': return 'bg-warning text-dark';
           case 'Commande': return 'bg-primary';
-          case 'En livraison': return 'bg-warning text-dark';
+          case 'En livraison': return 'bg-info text-dark';
           case 'Reçu': return 'bg-success';
-          case 'Installé': return 'bg-info text-dark';
+          case 'Installé': return 'bg-secondary';
           default: return 'bg-light text-dark';
         }
       };
+      
+      const getStatusProgress = (status) => {
+        const levels = { 'A commander': 20, 'Commande': 40, 'En livraison': 60, 'Reçu': 80, 'Installé': 100 };
+        return levels[status] || 0;
+      };
+      
       const formatPrice = (value) => {
         if (value === null || value === undefined || value === '') return '—';
         const num = Number(value);
         if (Number.isNaN(num)) return '—';
         return `${num.toFixed(2)} €`;
       };
+      
       const formatPercent = (value) => {
         if (value === null || value === undefined || value === '') return '—';
         const num = Number(value);
@@ -309,75 +454,160 @@
       };
       
       const api = async (url, opts = {}) => {
-          const res = await fetch(url, { headers, credentials: 'same-origin', ...opts });
-          if (res.status === 401) window.location.href = '/login.html';
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) throw new Error(data.error || `HTTP Error ${res.status}`);
-          return data;
+        const res = await fetch(url, { headers, credentials: 'same-origin', ...opts });
+        if (res.status === 401) window.location.href = '/login.html';
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP Error ${res.status}`);
+        return data;
       };
+
+      function updateStats() {
+        document.getElementById('stats-total').textContent = orders.length;
+        document.getElementById('stats-pending').textContent = orders.filter(o => o.commande_status === 'A commander').length;
+        document.getElementById('stats-transit').textContent = orders.filter(o => ['Commande', 'En livraison'].includes(o.commande_status)).length;
+        document.getElementById('stats-received').textContent = orders.filter(o => ['Reçu', 'Installé'].includes(o.commande_status)).length;
+      }
+
+      function sortOrders(ordersList) {
+        const sortValue = sortBy.value;
+        const sorted = [...ordersList];
+        
+        switch(sortValue) {
+          case 'reference':
+            sorted.sort((a, b) => (a.reference || '').localeCompare(b.reference || ''));
+            break;
+          case 'price-asc':
+            sorted.sort((a, b) => (a.prix_achat || 0) - (b.prix_achat || 0));
+            break;
+          case 'price-desc':
+            sorted.sort((a, b) => (b.prix_achat || 0) - (a.prix_achat || 0));
+            break;
+          case 'recent':
+          default:
+            sorted.sort((a, b) => (b.id || 0) - (a.id || 0));
+        }
+        
+        return sorted;
+      }
 
       function render() {
         const term = searchInput.value.toLowerCase();
         const status = statusFilter.value;
         const filtered = orders.filter(item => {
-            const matchesTerm = !term || [item.titre, item.reference, item.fournisseur, item.designation, item.fabricant].some(f => f?.toLowerCase().includes(term));
-            const matchesStatus = !status || item.commande_status === status;
-            return matchesTerm && matchesStatus;
+          const matchesTerm = !term || [item.titre, item.reference, item.fournisseur, item.designation, item.fabricant, item.categorie].some(f => f?.toLowerCase().includes(term));
+          const matchesStatus = !status || item.commande_status === status;
+          return matchesTerm && matchesStatus;
         });
 
+        const sorted = sortOrders(filtered);
         cardsContainer.innerHTML = '';
-      if (!filtered.length) {
-        cardsContainer.innerHTML = '<div class="col-12 text-center text-muted py-4">Aucune commande.</div>';
-        return;
-      }
 
-        filtered.forEach(item => {
-            const col = document.createElement('div');
-            col.className = 'col-12 col-md-6 col-lg-4';
-            const card = document.createElement('div');
-            card.className = 'card h-100 shadow-sm order-card';
-            card.innerHTML = `
+        if (!sorted.length) {
+          cardsContainer.innerHTML = `
+            <div class="col-12 empty-state">
+              <i class="bi bi-inbox"></i>
+              <h5>Aucune commande</h5>
+              <p class="text-muted">Aucune commande ne correspond à vos critères.</p>
+            </div>`;
+          return;
+        }
+
+        if (viewMode === 'list') {
+          const table = document.createElement('div');
+          table.className = 'col-12';
+          const rows = sorted.map(item => `
+            <tr>
+              <td>${item.reference || '-'}</td>
+              <td>${item.designation || '-'}</td>
+              <td>${item.fabricant || '—'}</td>
+              <td>${item.fournisseur || '—'}</td>
+              <td>${formatPrice(item.prix_achat)}</td>
+              <td><span class="badge ${statusClass(item.commande_status)}">${item.commande_status || '—'}</span></td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-success receive-btn" data-id="${item.id}" title="Marquer reçu"><i class="bi bi-box-seam"></i></button>
+                  <button class="btn btn-outline-primary docs-btn" data-id="${item.id}" title="Pièces jointes"><i class="bi bi-paperclip"></i></button>
+                  <button class="btn btn-outline-secondary edit-btn" data-id="${item.id}" title="Détails"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-outline-danger del-btn" data-id="${item.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
+                </div>
+              </td>
+            </tr>`).join('');
+          table.innerHTML = `
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead>
+                  <tr>
+                    <th>Référence</th>
+                    <th>Désignation</th>
+                    <th>Fabricant</th>
+                    <th>Fournisseur</th>
+                    <th>Prix</th>
+                    <th>Statut</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>`;
+          cardsContainer.appendChild(table);
+          return;
+        }
+
+        sorted.forEach(item => {
+          const col = document.createElement('div');
+          col.className = 'col-12 col-md-6 col-lg-4';
+          const progress = getStatusProgress(item.commande_status);
+          col.innerHTML = `
+            <div class="card h-100 shadow-sm order-card animate-in">
               <div class="card-body d-flex flex-column gap-2">
                 <div class="d-flex justify-content-between align-items-start">
                   <div>
                     <div class="fw-semibold">${item.reference || '-'}</div>
                     <div class="text-muted">${item.designation || '-'}</div>
-                    <div class="small text-muted">Fabricant: ${item.fabricant || '—'}</div>
-                    <div class="small text-muted">Fournisseur: ${item.fournisseur || '—'}</div>
-                    <div class="small text-muted">Quantité (interventions): ${item.total_quantite_used_in_interventions ?? 0}</div>
-                    <div class="small text-muted">Prix: ${formatPrice(item.prix_achat)}</div>
-                    <div class="small text-muted">Remise: ${formatPercent(item.remise_fournisseur)}</div>
+                    <div class="small text-muted">Fabricant : ${item.fabricant || '—'}</div>
+                    <div class="small text-muted">Fournisseur : ${item.fournisseur || '—'}</div>
+                    <div class="small text-muted">Quantité (interventions) : ${item.total_quantite_used_in_interventions ?? 0}</div>
+                    <div class="small text-muted">Prix : ${formatPrice(item.prix_achat)}</div>
+                    <div class="small text-muted">Remise : ${formatPercent(item.remise_fournisseur)}</div>
                   </div>
-                  <span class="badge ${statusClass(item.commande_status)}">${(item.commande_status || '').replace('_', ' ')}</span>
+                  <div class="text-end">
+                    <span class="badge ${statusClass(item.commande_status)}">${(item.commande_status || '—').replace('_',' ')}</span>
+                    <div class="status-progress"><div class="status-progress-bar" style="width:${progress}%;"></div></div>
+                  </div>
                 </div>
                 <div class="d-flex flex-wrap gap-2 justify-content-end">
-                  <button class="btn btn-sm btn-outline-success receive-btn" data-id="${item.id}" title="Marquer reçu"><i class="bi bi-box-seam"></i></button>
-                  <button class="btn btn-sm btn-outline-primary docs-btn" data-id="${item.id}" title="Pièces jointes"><i class="bi bi-paperclip"></i></button>
-                  <button class="btn btn-sm btn-outline-secondary edit-btn" data-id="${item.id}" title="Détails"><i class="bi bi-pencil"></i></button>
-                  <button class="btn btn-sm btn-outline-danger del-btn" data-id="${item.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
+                  <button class="btn btn-outline-success btn-sm btn-action receive-btn" data-id="${item.id}" title="Marquer reçu"><i class="bi bi-box-seam"></i></button>
+                  <button class="btn btn-outline-primary btn-sm btn-action docs-btn" data-id="${item.id}" title="Pièces jointes"><i class="bi bi-paperclip"></i></button>
+                  <button class="btn btn-outline-secondary btn-sm btn-action edit-btn" data-id="${item.id}" title="Détails"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-outline-danger btn-sm btn-action del-btn" data-id="${item.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
                 </div>
-              </div>`;
-            col.appendChild(card);
-            cardsContainer.appendChild(col);
+              </div>
+            </div>`;
+          cardsContainer.appendChild(col);
         });
       }
 
       async function loadOrders() {
-        cardsContainer.innerHTML = '<div class="col-12 text-center text-muted py-4">Chargement...</div>';
+        cardsContainer.innerHTML = '<div class="col-12 text-center py-5"><div class="skeleton" style="height:200px;border-radius:12px;"></div></div>';
         try {
           orders = await api('/api/materiels');
+          updateStats();
           render();
-        } catch(e) {
+        } catch (e) {
           cardsContainer.innerHTML = `<div class="col-12 text-danger text-center py-4">Erreur: ${e.message}</div>`;
         }
       }
 
       async function loadDemandes() {
         if (!demandesContainer) return;
-        demandesContainer.innerHTML = '<div class="col-12 text-muted">Chargement...</div>';
+        demandesContainer.innerHTML = '<div class="col-12 text-muted text-center py-3"><div class="skeleton" style="height:100px;border-radius:12px;"></div></div>';
         try {
           demandes = await api('/api/demandes-materiel');
-          if (!demandes.length) { demandesContainer.innerHTML = '<div class="col-12 text-muted">Aucune demande.</div>'; return; }
+          document.getElementById('demandes-count').textContent = demandes.length;
+          if (!demandes.length) {
+            demandesContainer.innerHTML = '<div class="col-12 text-muted text-center py-3">Aucune demande.</div>';
+            return;
+          }
           demandesContainer.innerHTML = '';
           demandes.forEach(d => {
             const col = document.createElement('div');
@@ -390,7 +620,7 @@
               ? d.materiels.map(m => `<div class="small text-muted">- ${m.designation || m.reference || 'Matériel'} (${m.commande_status || '—'})</div>`).join('')
               : '<div class="small text-muted">Aucune commande liée.</div>';
             col.innerHTML = `
-              <div class="card h-100 shadow-sm">
+              <div class="card h-100 demande-card ${d.commande_complete ? 'complete' : ''}">
                 <div class="card-body d-flex justify-content-between align-items-start gap-2">
                   <div>
                     <div class="fw-semibold">${d.titre}</div>
@@ -403,7 +633,7 @@
                     <div class="form-check">
                       <input class="form-check-input demande-check" type="checkbox" data-id="${d.id}" ${d.commande_complete ? 'checked' : ''}>
                     </div>
-                    <button class="btn btn-sm btn-outline-primary btn-create-order" data-id="${d.id}" title="Créer une commande"><i class="bi bi-plus-circle"></i></button>
+                    <button class="btn btn-outline-primary btn-sm btn-action btn-create-order" data-id="${d.id}" title="Créer une commande"><i class="bi bi-plus-circle"></i></button>
                   </div>
                 </div>
                 <div class="card-footer bg-light d-flex justify-content-between align-items-center">
@@ -413,6 +643,7 @@
               </div>`;
             demandesContainer.appendChild(col);
           });
+
           demandesContainer.querySelectorAll('.demande-check').forEach(cb => {
             cb.addEventListener('change', async () => {
               const id = cb.dataset.id;
@@ -478,13 +709,9 @@
           }
           try {
             newOrderSave.disabled = true;
-            await api('/api/materiels', {
-              method: 'POST',
-              body: JSON.stringify(body)
-            });
+            await api('/api/materiels', { method: 'POST', body: JSON.stringify(body) });
             newOrderModal.hide();
             loadOrders();
-            // rafraîchir les demandes pour voir le lien
             loadDemandes();
           } catch (e) {
             if (newOrderError) {
@@ -498,6 +725,7 @@
           }
         });
       }
+
       // Lier demande -> nouvelle commande pré-remplie
       demandesContainer?.addEventListener('click', (ev) => {
         const btn = ev.target.closest('.btn-create-order');
@@ -508,7 +736,6 @@
         linkedDemandeId = d.id;
         linkedDemandeQty = d.quantite || 1;
         if (newOrderError) newOrderError.classList.add('d-none');
-        // Préfill
         if (newFields.reference) newFields.reference.value = d.titre ? `DM-${d.id}` : '';
         if (newFields.designation) newFields.designation.value = d.titre || '';
         if (newFields.categorie) newFields.categorie.value = '';
@@ -523,139 +750,138 @@
       });
 
       function showFeedback(msg, isError = true) {
-          feedback.className = `alert ${isError ? 'alert-danger' : 'alert-success'}`;
-          feedback.textContent = msg;
-          feedback.classList.remove('d-none');
+        feedback.className = `alert ${isError ? 'alert-danger' : 'alert-success'}`;
+        feedback.textContent = msg;
+        feedback.classList.remove('d-none');
       }
 
       function openModal(order) {
-          feedback.classList.add('d-none');
-          editingOrderId = order?.id || null;
-          orderModalLabel.textContent = `Commande #${order.id} - ${order.reference}`;
-          
-          fields.reference.textContent = order.reference;
-          fields.designation.textContent = order.designation;
-          fields.commande_status.value = order.commande_status || 'A commander';
-          fields.fournisseur.value = order.fournisseur || '';
-          fields.commentaire.value = order.commentaire || '';
-
-          if (order.id) {
-              fields.docUploadBtn.disabled = false;
-              renderDocuments(order.id);
-          }
-          orderModal.show();
+        feedback.classList.add('d-none');
+        editingOrderId = order?.id || null;
+        orderModalLabel.textContent = `Commande #${order.id} - ${order.reference}`;
+        fields.reference.textContent = order.reference;
+        fields.designation.textContent = order.designation;
+        fields.commande_status.value = order.commande_status || 'A commander';
+        fields.fournisseur.value = order.fournisseur || '';
+        fields.commentaire.value = order.commentaire || '';
+        if (order.id) {
+          fields.docUploadBtn.disabled = false;
+          renderDocuments(order.id);
+        }
+        orderModal.show();
       }
 
       saveBtn.addEventListener('click', async () => {
-          if (!editingOrderId) return;
-          const payload = {
-              fournisseur: fields.fournisseur.value,
-              commande_status: fields.commande_status.value,
-              commentaire: fields.commentaire.value
-          };
-          try {
-              saveBtn.disabled = true;
-              await api(`/api/materiels/${editingOrderId}`, { method: 'PUT', body: JSON.stringify(payload) });
-              showFeedback('Enregistré.', false);
-              await loadOrders();
-              setTimeout(() => orderModal.hide(), 800);
-          } catch (e) {
-              showFeedback(e.message);
-          } finally {
-              saveBtn.disabled = false;
-          }
+        if (!editingOrderId) return;
+        const payload = {
+          fournisseur: fields.fournisseur.value,
+          commande_status: fields.commande_status.value,
+          commentaire: fields.commentaire.value
+        };
+        try {
+          saveBtn.disabled = true;
+          await api(`/api/materiels/${editingOrderId}`, { method: 'PUT', body: JSON.stringify(payload) });
+          showFeedback('Enregistré.', false);
+          await loadOrders();
+          setTimeout(() => orderModal.hide(), 800);
+        } catch (e) {
+          showFeedback(e.message);
+        } finally {
+          saveBtn.disabled = false;
+        }
       });
       
       cardsContainer.addEventListener('click', (e) => {
-          const target = e.target.closest('button');
-          if (!target) return;
-          const id = target.dataset.id;
-          if (target.classList.contains('edit-btn')) {
-              const order = orders.find(i => i.id == id);
-              openModal(order);
-          } else if (target.classList.contains('receive-btn')) {
-              const order = orders.find(i => i.id == id);
-              if (!order) return;
-              receivingOrderId = id;
-              receiveRef.textContent = `Référence : ${order.reference || '-'}`;
-              receiveQty.value = '';
-              receiveModal.show();
-          } else if (target.classList.contains('del-btn')) {
-              if (!confirm('Supprimer cette commande?')) return;
-              api(`/api/materiels/${id}`, { method: 'DELETE' }).then(loadOrders).catch(e => alert(e.message));
-          } else if (target.classList.contains('docs-btn')) {
-              openDocsModal(id);
-          }
+        const target = e.target.closest('button');
+        if (!target) return;
+        const id = target.dataset.id;
+        if (target.classList.contains('edit-btn')) {
+          const order = orders.find(i => String(i.id) === String(id));
+          if (order) openModal(order);
+        } else if (target.classList.contains('receive-btn')) {
+          const order = orders.find(i => String(i.id) === String(id));
+          if (!order) return;
+          receivingOrderId = id;
+          receiveRef.textContent = `Référence : ${order.reference || '-'}`;
+          receiveQty.value = '';
+          receiveModal.show();
+        } else if (target.classList.contains('del-btn')) {
+          if (!confirm('Supprimer cette commande?')) return;
+          api(`/api/materiels/${id}`, { method: 'DELETE' }).then(() => { loadOrders(); loadDemandes(); }).catch(e => alert(e.message));
+        } else if (target.classList.contains('docs-btn')) {
+          openDocsModal(id);
+        }
       });
 
       receiveSaveBtn.addEventListener('click', async () => {
-          if (!receivingOrderId) return;
-          const qty = Number(receiveQty.value);
-          if (Number.isNaN(qty) || qty < 0) { alert('Veuillez saisir une quantité valide.'); return; }
-          try {
-              await api(`/api/materiels/${receivingOrderId}`, {
-                  method: 'PUT',
-                  body: JSON.stringify({
-                    commande_status: 'Reçu',
-                    commentaire: `Quantité reçue: ${qty}`
-                  })
-              });
-              await loadOrders();
-              receiveModal.hide();
-          } catch (err) { alert(err.message); }
+        if (!receivingOrderId) return;
+        const qty = Number(receiveQty.value);
+        if (Number.isNaN(qty) || qty < 0) { alert('Veuillez saisir une quantité valide.'); return; }
+        try {
+          await api(`/api/materiels/${receivingOrderId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              commande_status: 'Reçu',
+              commentaire: `Quantité reçue: ${qty}`
+            })
+          });
+          await loadOrders();
+          receiveModal.hide();
+        } catch (err) { alert(err.message); }
       });
 
       // --- Document Logic ---
       async function renderDocuments(orderId) {
-          fields.docList.innerHTML = '';
-          try {
-              const documents = await api(`/api/documents?cible_type=Materiel&cible_id=${orderId}`);
-              if (!documents.length) {
-                  fields.docList.innerHTML = '<div class="text-muted small">Aucun document.</div>';
-                  return;
-              }
-              documents.forEach(doc => {
-                  const li = document.createElement('div');
-                  li.className = 'list-group-item d-flex justify-content-between align-items-center';
-                  li.innerHTML = `<a href="/api/documents/${doc.id}/download" target="_blank">${doc.nom_fichier}</a><button class="btn btn-sm btn-outline-danger" data-doc-id="${doc.id}"><i class="bi bi-trash"></i></button>`;
-                  li.querySelector('button').addEventListener('click', () => deleteDocument(doc.id, orderId));
-                  fields.docList.appendChild(li);
-              });
-          } catch (e) {
-              fields.docList.innerHTML = `<div class="text-danger small">Erreur: ${e.message}</div>`;
+        fields.docList.innerHTML = '<div class="text-muted small">Chargement...</div>';
+        try {
+          const documents = await api(`/api/documents?cible_type=Materiel&cible_id=${orderId}`);
+          if (!documents.length) {
+            fields.docList.innerHTML = '<div class="text-muted small">Aucun document.</div>';
+            return;
           }
+          fields.docList.innerHTML = '';
+          documents.forEach(doc => {
+            const li = document.createElement('div');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.innerHTML = `<a href="/api/documents/${doc.id}/download" target="_blank">${doc.nom_fichier}</a><button class="btn btn-sm btn-outline-danger" data-doc-id="${doc.id}"><i class="bi bi-trash"></i></button>`;
+            li.querySelector('button').addEventListener('click', () => deleteDocument(doc.id, orderId));
+            fields.docList.appendChild(li);
+          });
+        } catch (e) {
+          fields.docList.innerHTML = `<div class="text-danger small">Erreur: ${e.message}</div>`;
+        }
       }
       async function deleteDocument(docId, orderId) {
-          if (!confirm('Supprimer ce document?')) return;
-          try {
-              await api(`/api/documents/${docId}`, { method: 'DELETE' });
-              await renderDocuments(orderId);
-          } catch(e) { alert(`Erreur: ${e.message}`); }
+        if (!confirm('Supprimer ce document?')) return;
+        try {
+          await api(`/api/documents/${docId}`, { method: 'DELETE' });
+          await renderDocuments(orderId);
+        } catch(e) { alert(`Erreur: ${e.message}`); }
       }
       function fileToBase64(file) {
-          return new Promise((resolve, reject) => {
-              const reader = new FileReader(); reader.readAsDataURL(file);
-              reader.onload = () => resolve(reader.result.split(',')[1]);
-              reader.onerror = reject;
-          });
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader(); reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+        });
       }
       fields.docUploadBtn.addEventListener('click', async () => {
-          if (!editingOrderId) return;
-          const file = fields.docUploadInput.files[0];
-          if (!file) return alert('Sélectionnez un fichier.');
-          fields.docUploadBtn.disabled = true;
-          try {
-              const base64 = await fileToBase64(file);
-              await api('/api/documents', { method: 'POST', body: JSON.stringify({
-                  cible_type: 'Materiel', cible_id: editingOrderId, nom_fichier: file.name, type_mime: file.type, base64
-              }) });
-              await renderDocuments(editingOrderId);
-              fields.docUploadInput.value = '';
-          } catch (e) {
-              alert(`Erreur: ${e.message}`);
-          } finally {
-              fields.docUploadBtn.disabled = false;
-          }
+        if (!editingOrderId) return;
+        const file = fields.docUploadInput.files[0];
+        if (!file) return alert('Sélectionnez un fichier.');
+        fields.docUploadBtn.disabled = true;
+        try {
+          const base64 = await fileToBase64(file);
+          await api('/api/documents', { method: 'POST', body: JSON.stringify({
+            cible_type: 'Materiel', cible_id: editingOrderId, nom_fichier: file.name, type_mime: file.type, base64
+          }) });
+          await renderDocuments(editingOrderId);
+          fields.docUploadInput.value = '';
+        } catch (e) {
+          alert(`Erreur: ${e.message}`);
+        } finally {
+          fields.docUploadBtn.disabled = false;
+        }
       });
       // --- End Document Logic ---
 
@@ -684,10 +910,20 @@
 
       searchInput.addEventListener('input', render);
       statusFilter.addEventListener('change', render);
+      sortBy.addEventListener('change', render);
+      resetFilters.addEventListener('click', () => {
+        searchInput.value = '';
+        statusFilter.value = '';
+        sortBy.value = 'recent';
+        document.getElementById('view-cards').checked = true;
+        document.getElementById('view-list').checked = false;
+        viewMode = 'cards';
+        render();
+      });
+
+      document.getElementById('view-cards').addEventListener('change', () => { viewMode = 'cards'; render(); });
+      document.getElementById('view-list').addEventListener('change', () => { viewMode = 'list'; render(); });
 
       loadOrders();
       loadDemandes();
     });
-  </script>
-</body>
-</html>

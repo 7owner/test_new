@@ -5483,6 +5483,273 @@ app.delete('/api/travaux/:id', authenticateToken, authorizeAdmin, async (req, re
   } catch (err) { console.error('Error deleting travaux:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });
 
+// -------------------- Travaux Relations API --------------------
+
+// Travaux: assign agent
+app.post('/api/travaux/:id/agents', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params; const { agent_matricule, date_debut=null, date_fin=null } = req.body;
+  if (!agent_matricule) return res.status(400).json({ error: 'agent_matricule is required' });
+  try {
+    const t = (await pool.query('SELECT id FROM travaux WHERE id=$1', [id])).rows[0]; if (!t) return res.status(404).json({ error: 'Travaux not found' });
+    const a = (await pool.query('SELECT matricule FROM agent WHERE matricule=$1', [agent_matricule])).rows[0]; if (!a) return res.status(404).json({ error: 'Agent not found' });
+    const r = await pool.query('INSERT INTO travaux_agent (travaux_id, agent_matricule, date_debut, date_fin) VALUES ($1,$2,$3,$4) RETURNING *', [id, agent_matricule, date_debut, date_fin]);
+    res.status(201).json(r.rows[0]);
+  } catch (e) { console.error('travaux add agent:', e); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+app.delete('/api/travaux/:id/agents/:matricule', authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    const { id, matricule } = req.params;
+    const r = await pool.query('DELETE FROM travaux_agent WHERE travaux_id=$1 AND agent_matricule=$2 RETURNING id', [id, matricule]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json({ ok: true });
+  }
+  catch (e) { console.error('travaux remove agent:', e); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+// Travaux: add responsable (Chef/admin)
+app.post('/api/travaux/:id/responsables', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params; const { agent_matricule, role='Secondaire' } = req.body;
+  if (!agent_matricule) return res.status(400).json({ error: 'agent_matricule is required' });
+  try {
+    await assertAgentIsChef(agent_matricule);
+    const t = (await pool.query('SELECT id FROM travaux WHERE id=$1', [id])).rows[0]; if (!t) return res.status(404).json({ error: 'Travaux not found' });
+    const r = await pool.query("INSERT INTO travaux_responsable (travaux_id, agent_matricule, role) VALUES ($1,$2,$3) RETURNING *", [id, agent_matricule, role]);
+    res.status(201).json(r.rows[0]);
+  } catch (e) { console.error('travaux add responsable:', e); res.status(400).json({ error: e.message || 'Bad Request' }); }
+});
+
+// Travaux: submit satisfaction
+app.post('/api/travaux/:id/satisfaction', authenticateToken, async (req, res) => {
+    const { id: travauxId } = req.params;
+    const { note, commentaire } = req.body;
+    const userId = req.user.id;
+
+    const rating = Number(note);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: 'Rating must be an integer between 1 and 5.' });
+    }
+
+    try {
+        // Authorization check: User must be associated with the travaux's ticket's client
+        const authQuery = `
+            SELECT 1 FROM client c
+            JOIN users u ON c.user_id = u.id
+            JOIN ticket tk ON tk.client_id = c.id
+            JOIN travaux tr ON tr.ticket_id = tk.id
+            WHERE tr.id = $1 AND u.id = $2
+        `;
+        const authCheck = await pool.query(authQuery, [travauxId, userId]);
+
+        if (authCheck.rows.length === 0) {
+            return res.status(403).json({ error: 'Forbidden: You are not the client for this travaux.' });
+        }
+        
+        const result = await pool.query(
+            'INSERT INTO travaux_satisfaction (travaux_id, user_id, rating, comment, envoieok) VALUES ($1, $2, $3, $4, TRUE) ON CONFLICT (travaux_id) DO UPDATE SET rating = EXCLUDED.rating, comment = EXCLUDED.comment, envoieok = TRUE, created_at = CURRENT_TIMESTAMP RETURNING *',
+            [travauxId, userId, rating, commentaire]
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error(`Error submitting satisfaction for travaux ${travauxId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Create a Rendu for a Travaux
+app.post('/api/travaux/:id/rendus', authenticateToken, authorizeAdmin, renduUpload.array('image_files[]'), async (req, res) => {
+    const { id: travauxId } = req.params;
+    const { valeur, resume, image_commentaires, image_notes, image_titles } = req.body;
+    const commentairesArr = Array.isArray(image_commentaires) ? image_commentaires : (image_commentaires ? [image_commentaires] : []);
+    const notesArr = Array.isArray(image_notes) ? image_notes : (image_notes ? [image_notes] : []);
+    const titlesArr = Array.isArray(image_titles) ? image_titles : (image_titles ? [image_titles] : []);
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Create the rendu_travaux record
+        const renduResult = await client.query(
+            'INSERT INTO rendu_travaux (travaux_id, valeur, resume) VALUES ($1, $2, $3) RETURNING id',
+            [travauxId, valeur, resume]
+        );
+        const renduId = renduResult.rows[0].id;
+
+        // 2. Handle file uploads
+        if (req.files && req.files.length > 0) {
+            for (let i = 0; i < req.files.length; i++) {
+                const file = req.files[i];
+                const commentaire = commentairesArr[i] || null;
+                const note = notesArr[i] || null;
+                const fullComment = [commentaire, note].filter(Boolean).join('\\n\\n');
+                const titre = titlesArr[i] || null;
+
+                // Insert into images table
+                const imageResult = await client.query(
+                    `INSERT INTO images (nom_fichier, type_mime, taille_octets, image_blob, commentaire_image, auteur_matricule, cible_type, cible_id)
+                     VALUES ($1, $2, $3, $4, $5, $6, 'RenduTravaux', $7) RETURNING id`,
+                    [file.originalname, file.mimetype, file.size, file.buffer, fullComment, req.user.matricule || null, renduId]
+                );
+                const imageId = imageResult.rows[0].id;
+
+                // Link in rendu_travaux_image table
+                await client.query(
+                    'INSERT INTO rendu_travaux_image (rendu_travaux_id, image_id) VALUES ($1, $2)',
+                    [renduId, imageId]
+                );
+
+                // Enregistrer aussi dans documents_repertoire pour conserver titre/commentaire
+                await client.query(
+                  `INSERT INTO documents_repertoire (cible_type, cible_id, nature, nom_fichier, type_mime, taille_octets, titre, commentaire)
+                   VALUES ('RenduTravaux', $1, 'Document', $2, $3, $4, $5, $6)`,
+                  [renduId, file.originalname, file.mimetype, file.size, titre || file.originalname, commentaire || null]
+                );
+            }
+        }
+
+        await client.query('COMMIT');
+        res.status(201).json({ message: 'Rendu created successfully', renduId });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(`Error creating rendu for travaux ${travauxId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    } finally {
+        client.release();
+    }
+});
+
+// Get all Rendus for a Travaux
+app.get('/api/travaux/:id/rendus', authenticateToken, async (req, res) => {
+    const { id: travauxId } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT r.*,
+                    COALESCE(imgs.cnt,0) + COALESCE(docs.cnt,0) AS attachments_count
+             FROM rendu_travaux r
+             LEFT JOIN (
+                SELECT rti.rendu_travaux_id, COUNT(*) AS cnt
+                FROM rendu_travaux_image rti
+                GROUP BY rti.rendu_travaux_id
+             ) imgs ON imgs.rendu_travaux_id = r.id
+             LEFT JOIN (
+                SELECT cible_id, COUNT(*) AS cnt
+                FROM documents_repertoire
+                WHERE cible_type='RenduTravaux'
+                GROUP BY cible_id
+             ) docs ON docs.cible_id = r.id
+             WHERE r.travaux_id = $1
+             ORDER BY r.id DESC`,
+            [travauxId]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error(`Error fetching rendus for travaux ${travauxId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Get a single RenduTravaux by its own ID, with its attachments
+app.get('/api/rendu_travaux/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const renduResult = await pool.query('SELECT * FROM rendu_travaux WHERE id = $1', [id]);
+        const rendu = renduResult.rows[0];
+
+        if (!rendu) {
+            return res.status(404).json({ error: 'Rendu travaux not found' });
+        }
+
+        // Fetch associated images via the join table
+        const imagesResult = await pool.query(`
+            SELECT i.* FROM images i
+            JOIN rendu_travaux_image rti ON i.id = rti.image_id
+            WHERE rti.rendu_travaux_id = $1
+            ORDER BY i.id DESC
+        `, [id]);
+        // Fetch associated documents (if any are linked via cible_type/cible_id) to récupérer titre/commentaire
+        const documentsResult = await pool.query(
+            "SELECT * FROM documents_repertoire WHERE cible_type = 'RenduTravaux' AND cible_id = $1 ORDER BY id DESC",
+            [id]
+        );
+        // Associer des titres/commentaires éventuels depuis documents_repertoire (même cible, même nom de fichier)
+        const documents = documentsResult.rows;
+        const docMap = new Map((documents || []).map(d => [d.nom_fichier, d]));
+        const images = imagesResult.rows.map(img => {
+            const doc = docMap.get(img.nom_fichier);
+            return doc ? { ...img, titre: doc.titre || doc.nom_fichier, commentaire_image: img.commentaire_image || doc.commentaire } : img;
+        });
+        
+        res.json({ rendu, images, documents });
+
+    } catch (err) {
+        console.error(`Error fetching rendu_travaux ${id}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.patch('/api/rendu_travaux/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id: renduId } = req.params;
+    const { resume, valeur } = req.body;
+    
+    try {
+        if (resume === undefined && valeur === undefined) {
+            return res.status(400).json({ error: 'At least one field (resume or valeur) is required for update.' });
+        }
+
+        const result = await pool.query(
+            'UPDATE rendu_travaux SET resume = COALESCE($1, resume), valeur = COALESCE($2, valeur) WHERE id = $3 RETURNING *',
+            [resume, valeur, renduId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Rendu travaux not found' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(`Error updating rendu_travaux ${renduId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.delete('/api/rendu_travaux/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id: renduId } = req.params;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Find and delete associated images
+        const imagesToDelete = await client.query(
+            "SELECT id FROM images WHERE cible_type = 'RenduTravaux' AND cible_id = $1",
+            [renduId]
+        );
+        for (const img of imagesToDelete.rows) {
+            await client.query('DELETE FROM images WHERE id = $1', [img.id]);
+        }
+
+        // 2. Delete entries in the join table (rendu_travaux_image)
+        await client.query('DELETE FROM rendu_travaux_image WHERE rendu_travaux_id = $1', [renduId]);
+
+        // 3. Delete the rendu_travaux record
+        const result = await pool.query('DELETE FROM rendu_travaux WHERE id = $1 RETURNING id', [renduId]);
+
+        if (result.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Rendu travaux not found' });
+        }
+
+        await client.query('COMMIT');
+        res.status(204).send(); // No Content
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(`Error deleting rendu_travaux ${renduId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    } finally {
+        client.release();
+    }
+});
+
 // -------------------- RÃ¨glements --------------------
 app.get('/api/reglements', authenticateToken, async (req, res) => {
   try {
@@ -5517,6 +5784,20 @@ async function ensureAssignmentTables() {
     await client.query("CREATE TABLE IF NOT EXISTS site_agent (id SERIAL PRIMARY KEY, site_id INTEGER NOT NULL REFERENCES site(id) ON DELETE CASCADE, agent_matricule TEXT NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE, date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL, date_fin TIMESTAMP WITHOUT TIME ZONE NULL, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_site_agent_site ON site_agent(site_id)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_site_agent_agent ON site_agent(agent_matricule)");
+
+    // New tables for travaux assignments and satisfaction
+    await client.query("CREATE TABLE IF NOT EXISTS travaux_agent (id SERIAL PRIMARY KEY, travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE, agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE, date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, date_fin TIMESTAMP WITHOUT TIME ZONE NULL)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_travaux_agent_travaux ON travaux_agent(travaux_id)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_travaux_agent_agent ON travaux_agent(agent_matricule)");
+
+    await client.query("CREATE TABLE IF NOT EXISTS travaux_responsable (id SERIAL PRIMARY KEY, travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE, agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE, role TEXT DEFAULT 'Secondaire', date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL, date_fin TIMESTAMP WITHOUT TIME ZONE NULL, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_travaux_responsable_travaux ON travaux_responsable(travaux_id)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_travaux_responsable_agent ON travaux_responsable(agent_matricule)");
+
+    await client.query("CREATE TABLE IF NOT EXISTS travaux_satisfaction (id SERIAL PRIMARY KEY, travaux_id BIGINT NOT NULL UNIQUE REFERENCES travaux(id) ON DELETE CASCADE, user_id INTEGER REFERENCES users(id) ON DELETE SET NULL, rating INT, comment TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP, envoieok BOOLEAN DEFAULT FALSE)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_travaux_satisfaction_travaux ON travaux_satisfaction(travaux_id)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_travaux_satisfaction_user ON travaux_satisfaction(user_id)");
+
   } catch (e) { console.warn('ensureAssignmentTables failed:', e.message); } finally { client.release(); }
 }
 ensureAssignmentTables();

@@ -42,29 +42,31 @@ document.addEventListener('DOMContentLoaded', () => {
         !q || 
         (t.titre || '').toLowerCase().includes(q) || 
         (t.description || '').toLowerCase().includes(q) || 
-        (t.agent_nom || '').toLowerCase().includes(q) || 
-        (t.agent_prenom || '').toLowerCase().includes(q) || 
+        t.agents_assignes.some(a => (a.nom || '').toLowerCase().includes(q) || (a.prenom || '').toLowerCase().includes(q)) ||
+        t.responsables.some(r => (r.nom || '').toLowerCase().includes(q) || (r.prenom || '').toLowerCase().includes(q)) ||
         (t.ticket_titre || '').toLowerCase().includes(q);
       const matchEtat = !fe || String(t.etat) === String(fe);
       const matchPriorite = !fp || String(t.priorite) === String(fp);
       return matchSearch && matchEtat && matchPriorite;
     });
 
-    let html = '
+    let html = `
       <table class="table align-middle">
         <thead>
           <tr>
             <th>Titre</th>
             <th>Ticket</th>
-            <th>Agent</th>
+            <th>Agents Assignés</th>
+            <th>Responsables</th>
             <th>État</th>
             <th>Priorité</th>
             <th>Échéance</th>
+            <th>Satisfaction</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-    ';
+    `;
 
     filtered.forEach(t => {
       const etatClass = {
@@ -75,29 +77,43 @@ document.addEventListener('DOMContentLoaded', () => {
         'Annule': 'bg-danger',
       }[t.etat] || 'bg-secondary';
 
-      html += '
+      const assignedAgentsHtml = t.agents_assignes && t.agents_assignes.length > 0
+        ? t.agents_assignes.map(a => `<span class="badge bg-info text-dark me-1">${a.prenom} ${a.nom}</span>`).join('')
+        : '—';
+      
+      const responsablesHtml = t.responsables && t.responsables.length > 0
+        ? t.responsables.map(r => `<span class="badge bg-primary me-1">${r.prenom} ${r.nom} (${r.role})</span>`).join('')
+        : '—';
+
+      const satisfactionHtml = t.satisfaction 
+        ? `<span class="badge bg-success">${t.satisfaction.rating} / 5</span>` 
+        : '—';
+
+      html += `
         <tr>
           <td>
-            <div class="fw-semibold">' + (t.titre || 'Sans titre') + '</div>
-            <div class="small text-muted">' + (t.description || '—') + '</div>
+            <div class="fw-semibold">${t.titre || 'Sans titre'}</div>
+            <div class="small text-muted">${t.description || '—'}</div>
           </td>
-          <td>' + (t.ticket_titre ? `<a href="ticket-view.html?id=${t.ticket_id}" class="text-decoration-none">${t.ticket_titre}</a>` : '—') + '</td>
-          <td>' + (t.agent_nom ? `${t.agent_prenom} ${t.agent_nom}` : '—') + '</td>
-          <td><span class="badge ' + etatClass + '">' + (t.etat || 'N/A') + '</span></td>
-          <td>' + (t.priorite || 'N/A') + '</td>
-          <td>' + formatDate(t.date_echeance) + '</td>
+          <td>${t.ticket_titre ? `<a href="ticket-view.html?id=${t.ticket_id}" class="text-decoration-none">${t.ticket_titre}</a>` : '—'}</td>
+          <td>${assignedAgentsHtml}</td>
+          <td>${responsablesHtml}</td>
+          <td><span class="badge ${etatClass}">${t.etat || 'N/A'}</span></td>
+          <td>${t.priorite || 'N/A'}</td>
+          <td>${formatDate(t.date_echeance)}</td>
+          <td>${satisfactionHtml}</td>
           <td class="text-end">
             <div class="btn-group">
-              <button class="btn btn-sm btn-outline-primary edit-travaux-btn" data-id="' + t.id + '" title="Modifier"><i class="bi bi-pencil-square"></i></button>
-              <button class="btn btn-sm btn-outline-danger delete-travaux-btn" data-id="' + t.id + '" title="Supprimer"><i class="bi bi-trash"></i></button>
+              <button class="btn btn-sm btn-outline-primary edit-travaux-btn" data-id="${t.id}" title="Modifier"><i class="bi bi-pencil-square"></i></button>
+              <button class="btn btn-sm btn-outline-danger delete-travaux-btn" data-id="${t.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
             </div>
           </td>
         </tr>
-      ';
+      `;
     });
 
     if (!filtered.length) {
-      html += `<tr><td colspan="7" class="text-muted text-center py-3">Aucun travail ne correspond aux filtres.</td></tr>`;
+      html += `<tr><td colspan="9" class="text-muted text-center py-3">Aucun travail ne correspond aux filtres.</td></tr>`;
     }
     html += '</tbody></table>';
     travauxListDiv.innerHTML = html;
@@ -126,11 +142,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  async function fetchTravauxRelations(travauxId) {
+    try {
+      const r = await fetch(`/api/travaux/${travauxId}/relations`, { headers: headersAuth });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return await r.json();
+    } catch (e) {
+      console.error(`Error fetching relations for travaux ${travauxId}:`, e);
+      return { agents_assignes: [], responsables: [], satisfaction: null };
+    }
+  }
+
   async function fetchTravaux() {
     try {
       const r = await fetch('/api/travaux', { headers: headersAuth });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      cacheTravaux = await r.json() || [];
+      const travauxData = await r.json() || [];
+
+      // Fetch relations for each travaux item
+      cacheTravaux = await Promise.all(travauxData.map(async (t) => {
+        const relations = await fetchTravauxRelations(t.id);
+        return { ...t, ...relations };
+      }));
       renderTravaux();
     } catch (e) {
       console.error('Error fetching travaux:', e);

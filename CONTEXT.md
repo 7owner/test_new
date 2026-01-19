@@ -49,3 +49,15 @@ To continue development, focus should be on implementing the Node.js/Express.js 
   `CREATE TYPE etat_travaux AS ENUM ('A_faire','En_cours','Termine','En_attente','Annule');`
 - Added `travaux` table.
   `CREATE TABLE travaux ( id SERIAL PRIMARY KEY, ticket_id BIGINT REFERENCES ticket(id) ON DELETE CASCADE, agent_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL, titre VARCHAR(255) NOT NULL, description TEXT, etat etat_travaux DEFAULT 'A_faire', priorite VARCHAR(50) DEFAULT 'Moyenne', date_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP, date_fin TIMESTAMP, date_echeance TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );`
+- Added `travaux_agent` table.
+  `CREATE TABLE travaux_agent ( id SERIAL PRIMARY KEY, travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE, agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE, date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, date_fin TIMESTAMP WITHOUT TIME ZONE NULL );`
+- Added `travaux_historique_responsable` table.
+  `CREATE TABLE travaux_historique_responsable ( id SERIAL PRIMARY KEY, travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE, ancien_responsable_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL, nouveau_responsable_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL, modifie_par_matricule VARCHAR(20), date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP );`
+- Added `travaux_responsable` table.
+  `CREATE TABLE travaux_responsable ( id SERIAL PRIMARY KEY, travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE, agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE, role TEXT DEFAULT 'Secondaire', date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL, date_fin TIMESTAMP WITHOUT TIME ZONE NULL, created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP );`
+- Added `travaux_satisfaction` table.
+  `CREATE TABLE travaux_satisfaction ( id SERIAL PRIMARY KEY, travaux_id BIGINT NOT NULL UNIQUE REFERENCES travaux(id) ON DELETE CASCADE, user_id INTEGER REFERENCES users(id) ON DELETE SET NULL, rating INT, comment TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP, envoieok BOOLEAN DEFAULT FALSE );`
+- Added `rendu_travaux` table.
+  `CREATE TABLE rendu_travaux ( id SERIAL PRIMARY KEY, travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE, resume TEXT, valeur TEXT );`
+- Added `rendu_travaux_image` table.
+  `CREATE TABLE rendu_travaux_image ( id SERIAL PRIMARY KEY, rendu_travaux_id BIGINT NOT NULL REFERENCES rendu_travaux(id) ON DELETE CASCADE, image_id BIGINT NOT NULL REFERENCES images(id) ON DELETE CASCADE );`

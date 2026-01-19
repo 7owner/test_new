@@ -273,6 +273,56 @@ CREATE TABLE IF NOT EXISTS travaux (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS travaux_agent (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    date_fin TIMESTAMP WITHOUT TIME ZONE NULL
+);
+
+CREATE TABLE IF NOT EXISTS travaux_historique_responsable (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    ancien_responsable_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
+    nouveau_responsable_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
+    modifie_par_matricule VARCHAR(20),
+    date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS travaux_responsable (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    role TEXT DEFAULT 'Secondaire',
+    date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    date_fin TIMESTAMP WITHOUT TIME ZONE NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS travaux_satisfaction (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL UNIQUE REFERENCES travaux(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    rating INT,
+    comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    envoieok BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS rendu_travaux (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    resume TEXT,
+    valeur TEXT
+);
+
+CREATE TABLE IF NOT EXISTS rendu_travaux_image (
+    id SERIAL PRIMARY KEY,
+    rendu_travaux_id BIGINT NOT NULL REFERENCES rendu_travaux(id) ON DELETE CASCADE,
+    image_id BIGINT NOT NULL REFERENCES images(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS ticket_agent (
     id SERIAL PRIMARY KEY,
     ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
