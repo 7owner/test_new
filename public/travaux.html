@@ -88,7 +88,7 @@
       const colIds = ['A_faire','En_cours','En_attente','Termine'];
       const searchInput = document.createElement('input');
       searchInput.className = 'form-control form-control-sm mb-3';
-      searchInput.placeholder = 'Rechercher (titre, ticket, responsable)...';
+      searchInput.placeholder = 'Rechercher (titre, DOE, affaire, site, demande client)...';
       document.querySelector('main .container')?.insertBefore(searchInput, document.getElementById('board'));
 
       function setCount(etat, n) {
@@ -108,8 +108,7 @@
         const filtered = travaux.filter(t => {
           if (!term) return true;
           const hay = [
-            t.titre, t.description, t.ticket_titre,
-            t.agent_nom, t.agent_prenom, t.agent_matricule
+            t.titre, t.description, t.doe_titre, t.affaire_nom, t.site_nom, t.demande_titre
           ].join(' ').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
           return hay.includes(term);
         });
@@ -142,17 +141,29 @@
             const responsable = t.agent_nom
               ? `${t.agent_nom || ''} ${t.agent_prenom || ''}`.trim() || t.agent_matricule || '—'
               : (t.agent_matricule || t.responsable || '—');
+            const badgeLinks = [];
+            if (t.site_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="site-view.html?id=${t.site_id}" target="_blank"><i class="bi bi-geo"></i> ${t.site_nom || 'Site'}</a>`);
+            if (t.affaire_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="affaire-view.html?id=${t.affaire_id}" target="_blank"><i class="bi bi-briefcase"></i> ${t.affaire_nom || 'Affaire'}</a>`);
+            if (t.doe_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="doe-view.html?id=${t.doe_id}" target="_blank"><i class="bi bi-journal"></i> ${t.doe_titre || 'DOE'}</a>`);
+            if (t.demande_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="demande-client-admin.html?embed=1&id=${t.demande_id}" target="_blank"><i class="bi bi-chat"></i> Demande #${t.demande_id}</a>`);
             card.innerHTML = `
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-1">
                   <div class="fw-semibold">${t.titre || '(Sans titre)'}</div>
                   <span class="tag">${priorite}</span>
                 </div>
-                <div class="text-muted small mb-1">${t.ticket_titre ? `<i class="bi bi-ticket-detailed"></i> ${t.ticket_titre}` : (t.description || '')}</div>
+                <div class="text-muted small mb-1">
+                  ${t.doe_titre ? `<i class="bi bi-file-earmark-text"></i> DOE: ${t.doe_titre}<br>` : ''}
+                  ${t.affaire_nom ? `<i class="bi bi-briefcase"></i> Affaire: ${t.affaire_nom}<br>` : ''}
+                  ${t.site_nom ? `<i class="bi bi-building"></i> Site: ${t.site_nom}<br>` : ''}
+                  ${t.demande_titre ? `<i class="bi bi-question-circle"></i> Demande: ${t.demande_titre}<br>` : ''}
+                  ${t.description || ''}
+                </div>
                 <div class="d-flex flex-wrap gap-2 small text-muted">
                   <span><i class="bi bi-person-badge"></i> Resp. ${responsable}</span>
                   <span><i class="bi bi-calendar-event"></i> Échéance : ${echeance}</span>
                 </div>
+                ${badgeLinks.length ? `<div class="d-flex flex-wrap gap-1 mt-2">${badgeLinks.join(' ')}</div>` : ''}
                 <div class="mt-2 d-flex justify-content-between align-items-center">
                   <div class="small text-muted">État : ${t.etat || '—'}</div>
                   <button class="btn btn-sm btn-outline-primary btn-open-travail" data-id="${t.id}"><i class="bi bi-eye"></i> Voir</button>

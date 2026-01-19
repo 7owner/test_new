@@ -260,15 +260,17 @@ ALTER TABLE demande_client ADD FOREIGN KEY (ticket_id) REFERENCES ticket(id) ON 
 
 CREATE TABLE IF NOT EXISTS travaux (
     id SERIAL PRIMARY KEY,
-    ticket_id BIGINT REFERENCES ticket(id) ON DELETE CASCADE,
-    agent_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL, -- Main agent assigned to this task
+    doe_id BIGINT REFERENCES doe(id) ON DELETE SET NULL,
+    affaire_id BIGINT REFERENCES affaire(id) ON DELETE SET NULL,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    demande_id BIGINT REFERENCES demande_client(id) ON DELETE SET NULL,
     titre VARCHAR(255) NOT NULL,
     description TEXT,
     etat etat_travaux DEFAULT 'A_faire',
-    priorite VARCHAR(50) DEFAULT 'Moyenne', -- Example: 'Faible', 'Moyenne', 'Haute', 'Urgent'
+    priorite VARCHAR(50) DEFAULT 'Moyenne',
     date_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     date_fin TIMESTAMP,
-    date_echeance TIMESTAMP, -- Due date for the task
+    date_echeance TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -308,6 +310,30 @@ CREATE TABLE IF NOT EXISTS travaux_satisfaction (
     comment TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     envoieok BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS travaux_tache (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    etat etat_travaux DEFAULT 'A_faire',
+    priorite VARCHAR(50) DEFAULT 'Moyenne',
+    date_echeance TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS travaux_tache (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    etat etat_travaux DEFAULT 'A_faire',
+    priorite VARCHAR(50) DEFAULT 'Moyenne',
+    date_echeance TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS rendu_travaux (

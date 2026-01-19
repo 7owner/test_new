@@ -47,8 +47,12 @@ To continue development, focus should be on implementing the Node.js/Express.js 
   `ALTER TABLE facture ADD COLUMN titre VARCHAR(255);`
 - Added `etat_travaux` ENUM type.
   `CREATE TYPE etat_travaux AS ENUM ('A_faire','En_cours','Termine','En_attente','Annule');`
-- Added `travaux` table.
-  `CREATE TABLE travaux ( id SERIAL PRIMARY KEY, ticket_id BIGINT REFERENCES ticket(id) ON DELETE CASCADE, agent_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL, titre VARCHAR(255) NOT NULL, description TEXT, etat etat_travaux DEFAULT 'A_faire', priorite VARCHAR(50) DEFAULT 'Moyenne', date_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP, date_fin TIMESTAMP, date_echeance TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );`
+- Updated `travaux` table: removed `ticket_id`, `agent_matricule`; added `doe_id`, `affaire_id`, `site_id`, `demande_id`.
+  `CREATE TABLE travaux ( id SERIAL PRIMARY KEY, doe_id BIGINT REFERENCES doe(id) ON DELETE SET NULL, affaire_id BIGINT REFERENCES affaire(id) ON DELETE SET NULL, site_id BIGINT REFERENCES site(id) ON DELETE SET NULL, demande_id BIGINT REFERENCES demande_client(id) ON DELETE SET NULL, titre VARCHAR(255) NOT NULL, description TEXT, etat etat_travaux DEFAULT 'A_faire', priorite VARCHAR(50) DEFAULT 'Moyenne', date_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP, date_fin TIMESTAMP, date_echeance TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );`
+- Added `travaux_tache` table.
+  `CREATE TABLE travaux_tache ( id SERIAL PRIMARY KEY, travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE, titre VARCHAR(255) NOT NULL, description TEXT, etat etat_travaux DEFAULT 'A_faire', priorite VARCHAR(50) DEFAULT 'Moyenne', date_echeance TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );`
+- Added `travaux_tache` table.
+  `CREATE TABLE travaux_tache ( id SERIAL PRIMARY KEY, travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE, titre VARCHAR(255) NOT NULL, description TEXT, etat etat_travaux DEFAULT 'A_faire', priorite VARCHAR(50) DEFAULT 'Moyenne', date_echeance TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );`
 - Added `travaux_agent` table.
   `CREATE TABLE travaux_agent ( id SERIAL PRIMARY KEY, travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE, agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE, date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, date_fin TIMESTAMP WITHOUT TIME ZONE NULL );`
 - Added `travaux_historique_responsable` table.

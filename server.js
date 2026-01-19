@@ -5374,7 +5374,7 @@ app.delete('/api/factures/:id', authenticateToken, authorizeAdmin, async (req, r
 // -------------------- Travaux API --------------------
 app.get('/api/travaux', authenticateToken, async (req, res) => {
   try {
-    const { ticket_id, agent_matricule, etat, priorite } = req.query;
+    const { doe_id, affaire_id, site_id, demande_id, etat, priorite } = req.query;
     const params = [];
     const conditions = [];
     let paramIndex = 1;
@@ -5382,21 +5382,32 @@ app.get('/api/travaux', authenticateToken, async (req, res) => {
     let sql = `
       SELECT
           t.*,
-          tk.titre AS ticket_titre,
-          a.nom AS agent_nom,
-          a.prenom AS agent_prenom
+          d.titre AS doe_titre,
+          af.nom_affaire AS affaire_nom,
+          s.nom_site AS site_nom,
+          dc.titre AS demande_titre
       FROM travaux t
-      LEFT JOIN ticket tk ON t.ticket_id = tk.id
-      LEFT JOIN agent a ON t.agent_matricule = a.matricule
+      LEFT JOIN doe d ON t.doe_id = d.id
+      LEFT JOIN affaire af ON t.affaire_id = af.id
+      LEFT JOIN site s ON t.site_id = s.id
+      LEFT JOIN demande_client dc ON t.demande_id = dc.id
     `;
 
-    if (ticket_id) {
-      conditions.push(`t.ticket_id = $${paramIndex++}`);
-      params.push(ticket_id);
+    if (doe_id) {
+      conditions.push(`t.doe_id = $${paramIndex++}`);
+      params.push(doe_id);
     }
-    if (agent_matricule) {
-      conditions.push(`t.agent_matricule = $${paramIndex++}`);
-      params.push(agent_matricule);
+    if (affaire_id) {
+      conditions.push(`t.affaire_id = $${paramIndex++}`);
+      params.push(affaire_id);
+    }
+    if (site_id) {
+      conditions.push(`t.site_id = $${paramIndex++}`);
+      params.push(site_id);
+    }
+    if (demande_id) {
+      conditions.push(`t.demande_id = $${paramIndex++}`);
+      params.push(demande_id);
     }
     if (etat) {
       conditions.push(`t.etat = $${paramIndex++}::etat_travaux`);
@@ -5429,16 +5440,16 @@ app.get('/api/travaux/:id', authenticateToken, async (req, res) => {
 
 app.post('/api/travaux', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    let { ticket_id, agent_matricule, titre, description, etat, priorite, date_debut, date_fin, date_echeance } = req.body;
+    let { doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance } = req.body;
 
     if (!titre) return res.status(400).json({ error: 'Titre is required' });
 
     const r = await pool.query(
       `INSERT INTO travaux (
-        ticket_id, agent_matricule, titre, description, etat, priorite, date_debut, date_fin, date_echeance
-      ) VALUES ($1, $2, $3, $4, COALESCE($5::etat_travaux, 'A_faire'::etat_travaux), $6, COALESCE($7::timestamp, CURRENT_TIMESTAMP), $8, $9) RETURNING *`,
+        doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance
+      ) VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7::etat_travaux, 'A_faire'::etat_travaux), $8, COALESCE($9::timestamp, CURRENT_TIMESTAMP), $10, $11) RETURNING *`,
       [
-        ticket_id || null, agent_matricule || null, titre, description || null, etat || null, priorite || null, date_debut || null, date_fin || null, date_echeance || null
+        doe_id || null, affaire_id || null, site_id || null, demande_id || null, titre, description || null, etat || null, priorite || null, date_debut || null, date_fin || null, date_echeance || null
       ]
     );
     res.status(201).json(r.rows[0]);
@@ -5448,25 +5459,27 @@ app.post('/api/travaux', authenticateToken, authorizeAdmin, async (req, res) => 
 app.put('/api/travaux/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    let { ticket_id, agent_matricule, titre, description, etat, priorite, date_debut, date_fin, date_echeance } = req.body;
+    let { doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance } = req.body;
 
     if (!titre) return res.status(400).json({ error: 'Titre is required' });
 
     const r = await pool.query(
       `UPDATE travaux SET
-        ticket_id = COALESCE($1, ticket_id),
-        agent_matricule = COALESCE($2, agent_matricule),
-        titre = COALESCE($3, titre),
-        description = COALESCE($4, description),
-        etat = COALESCE($5::etat_travaux, etat),
-        priorite = COALESCE($6, priorite),
-        date_debut = COALESCE($7, date_debut),
-        date_fin = COALESCE($8, date_fin),
-        date_echeance = COALESCE($9, date_echeance),
+        doe_id = COALESCE($1, doe_id),
+        affaire_id = COALESCE($2, affaire_id),
+        site_id = COALESCE($3, site_id),
+        demande_id = COALESCE($4, demande_id),
+        titre = COALESCE($5, titre),
+        description = COALESCE($6, description),
+        etat = COALESCE($7::etat_travaux, etat),
+        priorite = COALESCE($8, priorite),
+        date_debut = COALESCE($9, date_debut),
+        date_fin = COALESCE($10, date_fin),
+        date_echeance = COALESCE($11, date_echeance),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id=$10 RETURNING *`,
+      WHERE id=$12 RETURNING *`,
       [
-        ticket_id || null, agent_matricule || null, titre || null, description || null, etat || null, priorite || null, date_debut || null, date_fin || null, date_echeance || null,
+        doe_id || null, affaire_id || null, site_id || null, demande_id || null, titre || null, description || null, etat || null, priorite || null, date_debut || null, date_fin || null, date_echeance || null,
         id
       ]
     );
@@ -5481,6 +5494,73 @@ app.delete('/api/travaux/:id', authenticateToken, authorizeAdmin, async (req, re
     await pool.query('DELETE FROM travaux WHERE id=$1', [id]);
     res.status(204).send();
   } catch (err) { console.error('Error deleting travaux:', err); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+// -------------------- Travaux Tache API --------------------
+
+// List all tasks for a specific travaux
+app.get('/api/travaux/:travauxId/taches', authenticateToken, async (req, res) => {
+  const { travauxId } = req.params;
+  try {
+    const r = await pool.query('SELECT * FROM travaux_tache WHERE travaux_id=$1 ORDER BY id DESC', [travauxId]);
+    res.json(r.rows);
+  } catch (err) { console.error('Error fetching travaux taches:', err); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+// Create a new task for a specific travaux
+app.post('/api/travaux/:travauxId/taches', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { travauxId } = req.params;
+  const { titre, description, etat, priorite, date_echeance } = req.body;
+  if (!titre) return res.status(400).json({ error: 'Titre is required' });
+  try {
+    const r = await pool.query(
+      `INSERT INTO travaux_tache (travaux_id, titre, description, etat, priorite, date_echeance)
+       VALUES ($1, $2, $3, COALESCE($4::etat_travaux, 'A_faire'::etat_travaux), $5, $6) RETURNING *`,
+      [travauxId, titre, description || null, etat || null, priorite || null, date_echeance || null]
+    );
+    res.status(201).json(r.rows[0]);
+  } catch (err) { console.error('Error creating travaux tache:', err); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+// Get a single task by its ID
+app.get('/api/travaux_taches/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const r = await pool.query('SELECT * FROM travaux_tache WHERE id=$1', [id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Travaux tache not found' });
+    res.json(r.rows[0]);
+  } catch (err) { console.error('Error fetching travaux tache by id:', err); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+// Update a task
+app.put('/api/travaux_taches/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { titre, description, etat, priorite, date_echeance } = req.body;
+  if (!titre) return res.status(400).json({ error: 'Titre is required' });
+  try {
+    const r = await pool.query(
+      `UPDATE travaux_tache SET
+        titre = COALESCE($1, titre),
+        description = COALESCE($2, description),
+        etat = COALESCE($3::etat_travaux, etat),
+        priorite = COALESCE($4, priorite),
+        date_echeance = COALESCE($5, date_echeance),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id=$6 RETURNING *`,
+      [titre || null, description || null, etat || null, priorite || null, date_echeance || null, id]
+    );
+    if (!r.rows[0]) return res.status(404).json({ error: 'Travaux tache not found' });
+    res.json(r.rows[0]);
+  } catch (err) { console.error('Error updating travaux tache:', err); res.status(500).json({ error: 'Internal Server Error' }); }
+});
+
+// Delete a task
+app.delete('/api/travaux_taches/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM travaux_tache WHERE id=$1', [id]);
+    res.status(204).send();
+  } catch (err) { console.error('Error deleting travaux tache:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });
 
 // -------------------- Travaux Relations API --------------------
@@ -5797,6 +5877,10 @@ async function ensureAssignmentTables() {
     await client.query("CREATE TABLE IF NOT EXISTS travaux_satisfaction (id SERIAL PRIMARY KEY, travaux_id BIGINT NOT NULL UNIQUE REFERENCES travaux(id) ON DELETE CASCADE, user_id INTEGER REFERENCES users(id) ON DELETE SET NULL, rating INT, comment TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP, envoieok BOOLEAN DEFAULT FALSE)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_travaux_satisfaction_travaux ON travaux_satisfaction(travaux_id)");
     await client.query("CREATE INDEX IF NOT EXISTS idx_travaux_satisfaction_user ON travaux_satisfaction(user_id)");
+
+    // New table for travaux tache
+    await client.query("CREATE TABLE IF NOT EXISTS travaux_tache (id SERIAL PRIMARY KEY, travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE, titre VARCHAR(255) NOT NULL, description TEXT, etat etat_travaux DEFAULT 'A_faire', priorite VARCHAR(50) DEFAULT 'Moyenne', date_echeance TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+    await client.query("CREATE INDEX IF NOT EXISTS idx_travaux_tache_travaux ON travaux_tache(travaux_id)");
 
   } catch (e) { console.warn('ensureAssignmentTables failed:', e.message); } finally { client.release(); }
 }

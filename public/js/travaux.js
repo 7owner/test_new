@@ -9,8 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterPriorite = document.getElementById('filter_priorite');
 
   let cacheTravaux = [];
-  let cacheTickets = [];
-  let cacheAgents = [];
+  let cacheDoes = [];
+  let cacheAffaires = [];
+  let cacheSites = [];
+  let cacheDemandes = [];
 
   const token = localStorage.getItem('token');
   const headersAuth = token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -42,9 +44,10 @@ document.addEventListener('DOMContentLoaded', () => {
         !q || 
         (t.titre || '').toLowerCase().includes(q) || 
         (t.description || '').toLowerCase().includes(q) || 
-        t.agents_assignes.some(a => (a.nom || '').toLowerCase().includes(q) || (a.prenom || '').toLowerCase().includes(q)) ||
-        t.responsables.some(r => (r.nom || '').toLowerCase().includes(q) || (r.prenom || '').toLowerCase().includes(q)) ||
-        (t.ticket_titre || '').toLowerCase().includes(q);
+        (t.doe_titre || '').toLowerCase().includes(q) ||
+        (t.affaire_nom || '').toLowerCase().includes(q) ||
+        (t.site_nom || '').toLowerCase().includes(q) ||
+        (t.demande_titre || '').toLowerCase().includes(q);
       const matchEtat = !fe || String(t.etat) === String(fe);
       const matchPriorite = !fp || String(t.priorite) === String(fp);
       return matchSearch && matchEtat && matchPriorite;
@@ -55,13 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
         <thead>
           <tr>
             <th>Titre</th>
-            <th>Ticket</th>
-            <th>Agents Assignés</th>
-            <th>Responsables</th>
+            <th>DOE</th>
+            <th>Affaire</th>
+            <th>Site</th>
+            <th>Demande Client</th>
             <th>État</th>
             <th>Priorité</th>
             <th>Échéance</th>
-            <th>Satisfaction</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -77,31 +80,19 @@ document.addEventListener('DOMContentLoaded', () => {
         'Annule': 'bg-danger',
       }[t.etat] || 'bg-secondary';
 
-      const assignedAgentsHtml = t.agents_assignes && t.agents_assignes.length > 0
-        ? t.agents_assignes.map(a => `<span class="badge bg-info text-dark me-1">${a.prenom} ${a.nom}</span>`).join('')
-        : '—';
-      
-      const responsablesHtml = t.responsables && t.responsables.length > 0
-        ? t.responsables.map(r => `<span class="badge bg-primary me-1">${r.prenom} ${r.nom} (${r.role})</span>`).join('')
-        : '—';
-
-      const satisfactionHtml = t.satisfaction 
-        ? `<span class="badge bg-success">${t.satisfaction.rating} / 5</span>` 
-        : '—';
-
       html += `
         <tr>
           <td>
             <div class="fw-semibold">${t.titre || 'Sans titre'}</div>
             <div class="small text-muted">${t.description || '—'}</div>
           </td>
-          <td>${t.ticket_titre ? `<a href="ticket-view.html?id=${t.ticket_id}" class="text-decoration-none">${t.ticket_titre}</a>` : '—'}</td>
-          <td>${assignedAgentsHtml}</td>
-          <td>${responsablesHtml}</td>
+          <td>${t.doe_titre || '—'}</td>
+          <td>${t.affaire_nom || '—'}</td>
+          <td>${t.site_nom || '—'}</td>
+          <td>${t.demande_titre || '—'}</td>
           <td><span class="badge ${etatClass}">${t.etat || 'N/A'}</span></td>
           <td>${t.priorite || 'N/A'}</td>
           <td>${formatDate(t.date_echeance)}</td>
-          <td>${satisfactionHtml}</td>
           <td class="text-end">
             <div class="btn-group">
               <button class="btn btn-sm btn-outline-primary edit-travaux-btn" data-id="${t.id}" title="Modifier"><i class="bi bi-pencil-square"></i></button>
@@ -119,37 +110,38 @@ document.addEventListener('DOMContentLoaded', () => {
     travauxListDiv.innerHTML = html;
   }
 
-  async function loadTicketsAgents() {
+  async function loadRelationsData() {
     try {
-      const [ticketsRes, agentsRes] = await Promise.all([
-        fetch('/api/tickets', { headers: headersAuth }),
-        fetch('/api/agents', { headers: headersAuth }),
+      const [doesRes, affairesRes, sitesRes, demandesRes] = await Promise.all([
+        fetch('/api/does', { headers: headersAuth }),
+        fetch('/api/affaires', { headers: headersAuth }),
+        fetch('/api/sites', { headers: headersAuth }),
+        fetch('/api/demandes_client', { headers: headersAuth }),
       ]);
-      cacheTickets = ticketsRes.ok ? await ticketsRes.json() : [];
-      cacheAgents = agentsRes.ok ? await agentsRes.json() : [];
+      cacheDoes = doesRes.ok ? await doesRes.json() : [];
+      cacheAffaires = affairesRes.ok ? await affairesRes.json() : [];
+      cacheSites = sitesRes.ok ? await sitesRes.json() : [];
+      cacheDemandes = demandesRes.ok ? await demandesRes.json() : [];
 
-      const selectTicket = document.getElementById('travaux-ticket');
-      const selectAgent = document.getElementById('travaux-agent');
+      const selectDoe = document.getElementById('travaux-doe');
+      const selectAffaire = document.getElementById('travaux-affaire');
+      const selectSite = document.getElementById('travaux-site');
+      const selectDemande = document.getElementById('travaux-demande');
 
-      if (selectTicket) {
-        selectTicket.innerHTML = '<option value="">(Aucun)</option>' + cacheTickets.map(t => `<option value="${t.id}">${t.titre || 'Ticket #' + t.id}</option>`).join('');
+      if (selectDoe) {
+        selectDoe.innerHTML = '<option value="">(Aucun)</option>' + cacheDoes.map(d => `<option value="${d.id}">${d.titre || 'DOE #' + d.id}</option>`).join('');
       }
-      if (selectAgent) {
-        selectAgent.innerHTML = '<option value="">(Aucun)</option>' + cacheAgents.map(a => `<option value="${a.matricule}">${a.prenom} ${a.nom} (${a.matricule})</option>`).join('');
+      if (selectAffaire) {
+        selectAffaire.innerHTML = '<option value="">(Aucun)</option>' + cacheAffaires.map(a => `<option value="${a.id}">${a.nom_affaire || 'Affaire #' + a.id}</option>`).join('');
+      }
+      if (selectSite) {
+        selectSite.innerHTML = '<option value="">(Aucun)</option>' + cacheSites.map(s => `<option value="${s.id}">${s.nom_site || 'Site #' + s.id}</option>`).join('');
+      }
+      if (selectDemande) {
+        selectDemande.innerHTML = '<option value="">(Aucun)</option>' + cacheDemandes.map(d => `<option value="${d.id}">${d.titre || 'Demande #' + d.id}</option>`).join('');
       }
     } catch (e) {
-      console.warn('Impossible de charger tickets/agents pour travaux', e);
-    }
-  }
-
-  async function fetchTravauxRelations(travauxId) {
-    try {
-      const r = await fetch(`/api/travaux/${travauxId}/relations`, { headers: headersAuth });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return await r.json();
-    } catch (e) {
-      console.error(`Error fetching relations for travaux ${travauxId}:`, e);
-      return { agents_assignes: [], responsables: [], satisfaction: null };
+      console.warn('Impossible de charger les données liées pour travaux', e);
     }
   }
 
@@ -157,13 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const r = await fetch('/api/travaux', { headers: headersAuth });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const travauxData = await r.json() || [];
-
-      // Fetch relations for each travaux item
-      cacheTravaux = await Promise.all(travauxData.map(async (t) => {
-        const relations = await fetchTravauxRelations(t.id);
-        return { ...t, ...relations };
-      }));
+      cacheTravaux = await r.json() || [];
       renderTravaux();
     } catch (e) {
       console.error('Error fetching travaux:', e);
@@ -183,8 +169,10 @@ document.addEventListener('DOMContentLoaded', () => {
       ev.preventDefault();
       const id = document.getElementById('travaux-id').value;
       const payload = {
-        ticket_id: document.getElementById('travaux-ticket').value || null,
-        agent_matricule: document.getElementById('travaux-agent').value || null,
+        doe_id: document.getElementById('travaux-doe').value || null,
+        affaire_id: document.getElementById('travaux-affaire').value || null,
+        site_id: document.getElementById('travaux-site').value || null,
+        demande_id: document.getElementById('travaux-demande').value || null,
         titre: document.getElementById('travaux-titre').value.trim(),
         description: document.getElementById('travaux-description').value.trim() || null,
         etat: document.getElementById('travaux-etat').value,
@@ -229,8 +217,10 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('travaux-id').value = travaux.id;
             document.getElementById('travaux-titre').value = travaux.titre || '';
             document.getElementById('travaux-description').value = travaux.description || '';
-            document.getElementById('travaux-ticket').value = travaux.ticket_id || '';
-            document.getElementById('travaux-agent').value = travaux.agent_matricule || '';
+            document.getElementById('travaux-doe').value = travaux.doe_id || '';
+            document.getElementById('travaux-affaire').value = travaux.affaire_id || '';
+            document.getElementById('travaux-site').value = travaux.site_id || '';
+            document.getElementById('travaux-demande').value = travaux.demande_id || '';
             document.getElementById('travaux-etat').value = travaux.etat || 'A_faire';
             document.getElementById('travaux-priorite').value = travaux.priorite || 'Moyenne';
             document.getElementById('travaux-date-echeance').value = travaux.date_echeance ? travaux.date_echeance.split('T')[0] : '';
@@ -268,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
       createTravauxModalEl.querySelector('.modal-title').textContent = 'Nouveau Travail';
     });
 
-    loadTicketsAgents();
+    loadRelationsData(); // Call the new function to load data
     fetchTravaux();
     bindFilters();
   }

@@ -117,6 +117,8 @@
             <div>Client : <span id="work-client">—</span></div>
             <div>Affaire : <span id="work-affaire">—</span></div>
             <div>Site : <span id="work-site">—</span></div>
+            <div>DOE : <span id="work-doe">—</span></div>
+            <div>Demande client : <span id="work-demande">—</span></div>
           </div>
         </div>
       </div>
@@ -152,10 +154,12 @@
         set('work-fin', fmt(t.date_fin));
         setHTML('work-desc', t.description ? t.description.replace(/\n/g,'<br>') : '—');
 
-        setHTML('work-ticket', t.ticket_id ? `<a href="ticket-view.html?id=${t.ticket_id}">Ticket #${t.ticket_id}</a>` : '—');
-        setHTML('work-client', t.client_nom || '—');
-        setHTML('work-affaire', t.affaire_nom || '—');
-        setHTML('work-site', t.site_nom || '—');
+        setHTML('work-ticket', t.ticket_id ? `<a href="ticket-view.html?id=${t.ticket_id}" target="_blank">Ticket #${t.ticket_id}</a>` : '—');
+        setHTML('work-client', t.client_nom ? t.client_nom : '—');
+        setHTML('work-affaire', t.affaire_id ? `<a href="affaire-view.html?id=${t.affaire_id}" target="_blank">${t.affaire_nom || 'Affaire'}</a>` : (t.affaire_nom || '—'));
+        setHTML('work-site', t.site_id ? `<a href="site-view.html?id=${t.site_id}" target="_blank">${t.site_nom || 'Site'}</a>` : (t.site_nom || '—'));
+        setHTML('work-doe', t.doe_id ? `<a href="doe-view.html?id=${t.doe_id}" target="_blank">${t.doe_titre || 'DOE'}</a>` : (t.doe_titre || '—'));
+        setHTML('work-demande', t.demande_id ? `<a href="demande-client-admin.html?embed=1&id=${t.demande_id}" target="_blank">Demande #${t.demande_id}</a>` : (t.demande_titre || '—'));
 
         // Agents
         const agentsList = document.getElementById('agents-list');
