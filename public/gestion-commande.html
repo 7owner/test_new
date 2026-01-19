@@ -110,7 +110,7 @@
             </div>
           </div>
           <div class="col-md-3">
-            <label class="form-label fw-semibold mb-2">
+            <label class="form-label fw-semibold mb-2" for="filter-status">
               <i class="bi bi-funnel me-1"></i>Statut
             </label>
             <select id="filter-status" class="form-select" style="border-radius: 12px; padding: 0.75rem;">
@@ -123,7 +123,7 @@
             </select>
           </div>
           <div class="col-md-2">
-            <label class="form-label fw-semibold mb-2">
+            <label class="form-label fw-semibold mb-2" for="sort-by">
               <i class="bi bi-sort-down me-1"></i>Trier par
             </label>
             <select id="sort-by" class="form-select" style="border-radius: 12px; padding: 0.75rem;">
@@ -163,10 +163,10 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="card-title mb-0"><i class="bi bi-box-seam me-2"></i>Commandes</h5>
           <div class="btn-group btn-group-sm" role="group">
-            <input type="radio" class="btn-check" name="view-mode" id="view-cards" checked>
-            <label class="btn btn-outline-secondary" for="view-cards"><i class="bi bi-grid"></i></label>
-            <input type="radio" class="btn-check" name="view-mode" id="view-list">
-            <label class="btn btn-outline-secondary" for="view-list"><i class="bi bi-list-ul"></i></label>
+            <input type="radio" class="btn-check" name="view-mode" id="view-cards" checked aria-label="Vue cartes" title="Vue cartes">
+            <label class="btn btn-outline-secondary" for="view-cards"><i class="bi bi-grid" aria-hidden="true"></i></label>
+            <input type="radio" class="btn-check" name="view-mode" id="view-list" aria-label="Vue liste" title="Vue liste">
+            <label class="btn btn-outline-secondary" for="view-list"><i class="bi bi-list-ul" aria-hidden="true"></i></label>
           </div>
         </div>
         <div id="orders-cards" class="row g-3">
