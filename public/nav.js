@@ -153,33 +153,35 @@
     const token = localStorage.getItem('token') || '';
 
     const readKey = 'notifReads';
-    const getReadMap = () => {
-      try { return JSON.parse(localStorage.getItem(readKey) || '{}'); } catch (_) { return {}; }
-    };
+  const getReadMap = () => {
+    try { return JSON.parse(localStorage.getItem(readKey) || '{}'); } catch (_) { return {}; }
+  };
     const setRead = (convId, ts) => {
       const map = getReadMap();
       map[convId] = ts;
       localStorage.setItem(readKey, JSON.stringify(map));
     };
 
-    async function fetchDemandes() {
-      const opts = {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        credentials: 'same-origin'
-      };
-      try {
-        let r = await fetch('/api/demandes_client?sort=id&direction=desc', opts);
-        // Fallback pour les clients (403 sur la liste complète)
-        if (r.status === 401 || r.status === 403) {
-          r = await fetch('/api/demandes_client/mine', opts);
-        }
-        if (!r.ok) return [];
-        const data = await r.json().catch(() => []);
-        return Array.isArray(data) ? data : [];
-      } catch (_) {
-        return [];
+  async function fetchDemandes() {
+    const opts = {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      credentials: 'same-origin'
+    };
+    try {
+      // Les comptes clients n'ont pas accès à la liste complète :
+      // on commence par /mine pour éviter les 403 dans les logs,
+      // puis on retente la liste complète pour les comptes internes.
+      let r = await fetch('/api/demandes_client/mine', opts);
+      if (!r.ok) {
+        r = await fetch('/api/demandes_client?sort=id&direction=desc', opts);
       }
+      if (!r.ok) return [];
+      const data = await r.json().catch(() => []);
+      return Array.isArray(data) ? data : [];
+    } catch (_) {
+      return [];
     }
+  }
 
     async function updateNotifications() {
       const demandes = await fetchDemandes();

@@ -278,7 +278,7 @@
                     <div class="small text-muted">État: ${tk.etat || 'A_faire'} · Priorité: ${tk.priorite || 'Moyenne'} · Échéance: ${ech}</div>
                   </div>
                   <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-outline-success btn-task-done" data-id="${tk.id}" title="Terminer"><i class="bi bi-check2"></i></button>
+                    <button class="btn btn-sm btn-outline-success btn-task-done" data-id="${tk.id}" data-title="${tk.titre || ''}" title="Terminer"><i class="bi bi-check2"></i></button>
                     <button class="btn btn-sm btn-outline-danger btn-task-del" data-id="${tk.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
                   </div>
                 </div>
@@ -327,11 +327,12 @@
           const btnDel = e.target.closest('.btn-task-del');
           if (btnDone) {
             const tid = btnDone.dataset.id;
+            const currentTitle = btnDone.dataset.title || 'Tâche';
             await fetch(`/api/travaux_taches/${tid}`, {
               method:'PUT',
               headers:{ ...headers, 'Content-Type':'application/json' },
               credentials:'same-origin',
-              body: JSON.stringify({ titre:'', etat:'Termine' })
+              body: JSON.stringify({ titre: currentTitle, etat:'Termine' })
             }).catch(()=>{});
             await loadTasks();
           }
