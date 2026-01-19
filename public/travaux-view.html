@@ -228,6 +228,11 @@
       const taskModal = taskModalEl ? new bootstrap.Modal(taskModalEl) : null;
       const teamInline = document.getElementById('team-inline');
 
+      function formatMember(label, email) {
+        if (label && email) return `${label} (${email})`;
+        return label || email || 'Utilisateur';
+      }
+
       function renderTeamInline(respMatricule, agents = []) {
         if (!teamInline) return;
         const chips = [];
@@ -235,7 +240,7 @@
           chips.push(`<span class="chip"><i class="bi bi-person-badge"></i>${respMatricule}</span>`);
         }
         (agents || []).forEach(a => {
-          const label = a.agent_matricule || a.matricule || a.actor_name || a.actor_email;
+          const label = formatMember(a.agent_matricule || a.matricule || a.actor_name, a.actor_email);
           if (label) chips.push(`<span class="chip"><i class="bi bi-people"></i>${label}</span>`);
         });
         teamInline.innerHTML = chips.length ? chips.join('') : '<span class="text-white-50">Aucun responsable ou agent assigné</span>';
