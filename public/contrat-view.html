@@ -13,6 +13,7 @@
       background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%); 
       min-height: 100vh;
     }
+    .embed header, .embed #navbar-placeholder { display: none !important; }
     .hero-card {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -455,6 +456,8 @@
     document.addEventListener('DOMContentLoaded', async () => {
       const params = new URLSearchParams(location.search);
       const id = params.get('id');
+      const isEmbed = window.self !== window.top || params.get('embed') === '1' || params.get('modal') === '1';
+      if (isEmbed) document.body.classList.add('embed');
       const feedback = document.getElementById('feedback');
       const sitesFeedback = document.getElementById('sites-feedback');
       const createSiteFeedback = document.getElementById('create-site-feedback');
