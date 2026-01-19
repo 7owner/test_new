@@ -218,10 +218,10 @@
         <div class="modal-body">
           <form id="addResponsableForm">
             <div class="mb-3">
-              <label for="responsable-select" class="form-label fw-bold">Sélectionner un agent admin</label>
-              <select id="responsable-select" class="form-select" required>
-                <option value="">-- Sélectionner --</option>
-              </select>
+              <label for="responsable-search-input" class="form-label fw-bold">Rechercher un responsable (matricule)</label>
+              <input type="text" id="responsable-search-input" class="form-control" placeholder="Ex: AGT001" autocomplete="off">
+              <input type="hidden" id="responsable-mat">
+              <div id="responsable-suggestions" class="list-group mt-1" style="max-height:200px;overflow:auto;"></div>
             </div>
           </form>
         </div>
@@ -246,10 +246,10 @@
         <div class="modal-body">
           <form id="addAgentForm">
             <div class="mb-3">
-              <label for="agent-select" class="form-label fw-bold">Sélectionner un agent</label>
-              <select id="agent-select" class="form-select" required>
-                <option value="">-- Sélectionner --</option>
-              </select>
+              <label for="agent-search-input" class="form-label fw-bold">Rechercher un agent</label>
+              <input type="text" id="agent-search-input" class="form-control" placeholder="Nom, matricule..." autocomplete="off">
+              <input type="hidden" id="agent-mat">
+              <div id="agent-suggestions" class="list-group mt-1" style="max-height:200px;overflow:auto;"></div>
             </div>
           </form>
         </div>
@@ -411,8 +411,12 @@
       const addAgentModal = document.getElementById('addAgentModal') ? new bootstrap.Modal(document.getElementById('addAgentModal')) : null;
       const createAffaireModal = document.getElementById('createAffaireModal') ? new bootstrap.Modal(document.getElementById('createAffaireModal')) : null;
       const createDoeModal = document.getElementById('createDoeModal') ? new bootstrap.Modal(document.getElementById('createDoeModal')) : null;
-      const responsableSelect = document.getElementById('responsable-select');
-      const agentSelect = document.getElementById('agent-select');
+      const respSearch = document.getElementById('responsable-search-input');
+      const respHidden = document.getElementById('responsable-mat');
+      const respSug = document.getElementById('responsable-suggestions');
+      const agentSearch = document.getElementById('agent-search-input');
+      const agentHidden = document.getElementById('agent-mat');
+      const agentSug = document.getElementById('agent-suggestions');
 
       function formatMember(label, email) {
         if (label && email) return `${label} (${email})`;
@@ -442,28 +446,41 @@
         }
       }
 
-      // Charger agents pour les modales
-      async function loadAgentsOptions() {
-        try {
-          const r = await fetch('/api/agents', { headers, credentials:'same-origin' });
-          const agents = r.ok ? await r.json() : [];
-          const fill = (selectEl) => {
-            if (!selectEl) return;
-            selectEl.innerHTML = '<option value="">-- Sélectionner --</option>';
-            (agents || []).forEach(a => {
-              const opt = document.createElement('option');
-              opt.value = a.matricule || '';
-              const full = `${a.prenom || ''} ${a.nom || ''}`.trim();
-              opt.textContent = `${full || a.matricule || 'Agent'}${a.matricule ? ' (' + a.matricule + ')' : ''}`;
-              selectEl.appendChild(opt);
-            });
-          };
-          fill(responsableSelect);
-          fill(agentSelect);
-        } catch (e) {
-          console.error('Chargement agents impossible', e);
-        }
+      // Autocomplete agents
+      function setupAgentAutocomplete(inputEl, hiddenEl, sugEl) {
+        if (!inputEl || !hiddenEl || !sugEl) return;
+        let timer;
+        inputEl.addEventListener('input', () => {
+          clearTimeout(timer);
+          const q = inputEl.value.trim();
+          hiddenEl.value = '';
+          if (q.length < 1) { sugEl.innerHTML=''; return; }
+          timer = setTimeout(async () => {
+            try {
+              const r = await fetch(`/api/agents?query=${encodeURIComponent(q)}`, { headers, credentials:'same-origin' });
+              const agents = r.ok ? await r.json() : [];
+              sugEl.innerHTML = '';
+              (agents || []).forEach(a => {
+                const btn = document.createElement('button');
+                btn.type='button';
+                btn.className='list-group-item list-group-item-action';
+                const full = `${a.prenom || ''} ${a.nom || ''}`.trim() || a.matricule || 'Agent';
+                btn.textContent = `${full}${a.matricule ? ' ('+a.matricule+')' : ''}`;
+                btn.addEventListener('click', () => {
+                  inputEl.value = full;
+                  hiddenEl.value = a.matricule || '';
+                  sugEl.innerHTML='';
+                });
+                sugEl.appendChild(btn);
+              });
+              if (!sugEl.innerHTML) sugEl.innerHTML = '<div class="list-group-item text-muted">Aucun résultat</div>';
+            } catch(err){ sugEl.innerHTML='<div class="list-group-item text-danger">Erreur</div>'; }
+          }, 200);
+        });
+        inputEl.addEventListener('blur', () => setTimeout(() => { sugEl.innerHTML=''; }, 200));
       }
+      setupAgentAutocomplete(respSearch, respHidden, respSug);
+      setupAgentAutocomplete(agentSearch, agentHidden, agentSug);
 
       try {
         const res = await fetch(`/api/travaux/${id}`, { headers, credentials:'same-origin' });
@@ -530,11 +547,10 @@
         } else {
           if (headerActionsBar) { headerActionsBar.classList.remove('d-none'); headerActionsBar.style.display = 'flex'; }
           if (editBtn) { editBtn.classList.remove('d-none'); editBtn.href = `travaux-edit.html?id=${id}`; }
-          if (btnResp) btnResp.onclick = () => { addRespModal?.show(); };
-          if (btnAgent) btnAgent.onclick = () => { addAgentModal?.show(); };
+          if (btnResp) btnResp.onclick = () => { if (respSearch) respSearch.value=''; if (respHidden) respHidden.value=''; addRespModal?.show(); };
+          if (btnAgent) btnAgent.onclick = () => { if (agentSearch) agentSearch.value=''; if (agentHidden) agentHidden.value=''; addAgentModal?.show(); };
           if (btnAffaire) btnAffaire.onclick = () => { createAffaireModal?.show(); };
           if (btnDoe) btnDoe.onclick = () => { createDoeModal?.show(); };
-          await loadAgentsOptions();
         }
 
         // Helpers pour mises à jour
@@ -551,7 +567,7 @@
 
         document.getElementById('save-responsable-btn')?.addEventListener('click', async (e) => {
           e.preventDefault();
-          const val = responsableSelect?.value;
+          const val = respHidden?.value;
           if (!val) { alert('Sélectionnez un responsable.'); return; }
           try {
             await updateTravail({ agent_matricule: val });
@@ -562,7 +578,7 @@
 
         document.getElementById('save-agent-btn')?.addEventListener('click', async (e) => {
           e.preventDefault();
-          const val = agentSelect?.value;
+          const val = agentHidden?.value;
           if (!val) { alert('Sélectionnez un agent.'); return; }
           try {
             const r = await fetch(`/api/travaux/${id}/agents`, {
