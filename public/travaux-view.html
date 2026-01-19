@@ -10,41 +10,95 @@
   <script src="/nav.js?v=3"></script>
   <style>
     body { background: linear-gradient(135deg,#eef2ff 0%,#f8fbff 100%); }
-    .card-gradient { background: linear-gradient(135deg,#4da5ff 0%,#7c5bff 100%); color:#fff; border:none; }
     .embed #navbar-placeholder { display:none !important; }
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.35rem 0.75rem;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.15);
-      color: #fff;
-      font-weight: 600;
-      margin-right: 0.35rem;
-      margin-bottom: 0.35rem;
-      border: 1px solid rgba(255,255,255,0.25);
-    }
+    .card-gradient { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; border:none; }
+    .info-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:.75rem; }
+    .info-box { background:#f4f6fb; border-radius:12px; padding:.9rem 1rem; border:1px solid #e5e7eb; min-height:76px; }
+    .info-box label { font-size:.8rem; color:#6b7280; font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+    .info-box .value { font-weight:700; color:#111827; margin-top:.2rem; }
+    .chip { display:inline-flex; align-items:center; gap:.35rem; padding:.35rem .75rem; border-radius:999px; background:#eef2ff; color:#312e81; font-weight:600; margin-right:.35rem; margin-bottom:.35rem; border:1px solid #c7d2fe; }
   </style>
 </head>
 <body>
   <div id="navbar-placeholder"></div>
   <main class="container my-4">
-    <div class="card card-gradient mb-3">
-      <div class="card-body d-flex flex-wrap justify-content-between align-items-center">
-        <div>
-          <div class="small text-white-50">Travail</div>
-          <h3 class="mb-0" id="work-title">Chargement...</h3>
-          <div class="text-white-50 small" id="work-sub">—</div>
+    <div class="card main-card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <h4 class="mb-0 d-flex align-items-center">
+            <i class="bi bi-tools me-2"></i>
+            <span id="work-title">Travail</span>
+          </h4>
+          <div class="small opacity-75" id="work-sub">—</div>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2">
           <span class="badge bg-light text-dark" id="work-etat">-</span>
           <span class="badge bg-light text-dark" id="work-prio">-</span>
         </div>
       </div>
-      <div class="card-body pt-0">
-        <div class="text-white-50 small mb-1">Responsables / Agents</div>
-        <div id="team-inline" class="d-flex flex-wrap"></div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <div class="d-flex gap-2">
+            <a href="travaux.html" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Retour</a>
+            <a id="edit-travail-btn" href="#" class="btn btn-primary btn-sm"><i class="bi bi-pencil-square me-1"></i>Modifier</a>
+          </div>
+          <div id="team-inline" class="d-flex flex-wrap"></div>
+        </div>
+
+        <div class="info-grid mb-3">
+          <div class="info-box">
+            <label>État</label>
+            <div class="value" id="info-etat">-</div>
+          </div>
+          <div class="info-box">
+            <label>Temps écoulé</label>
+            <div class="value" id="info-elapsed">-</div>
+          </div>
+          <div class="info-box">
+            <label>Début</label>
+            <div class="value" id="info-debut">-</div>
+          </div>
+          <div class="info-box">
+            <label>Fin</label>
+            <div class="value" id="info-fin">-</div>
+          </div>
+          <div class="info-box">
+            <label>Affaire</label>
+            <div class="value" id="info-affaire">-</div>
+          </div>
+          <div class="info-box">
+            <label>DOE</label>
+            <div class="value" id="info-doe">-</div>
+          </div>
+          <div class="info-box">
+            <label>Responsable principal</label>
+            <div class="value" id="info-resp">-</div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="fw-bold text-muted"><i class="bi bi-text-paragraph me-1"></i>Description :</div>
+          <div class="p-3 bg-light rounded border" id="work-desc-block">—</div>
+        </div>
+
+        <div class="row g-3 mb-2">
+          <div class="col-lg-6">
+            <div class="info-box h-100">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="mb-0">Responsables</label>
+              </div>
+              <div id="responsables-inline" class="d-flex flex-wrap gap-2 text-muted small">Aucun responsable</div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="info-box h-100">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="mb-0">Agents assignés</label>
+              </div>
+              <div id="agents-inline" class="d-flex flex-wrap gap-2 text-muted small">Aucun agent</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -244,6 +298,16 @@
           if (label) chips.push(`<span class="chip"><i class="bi bi-people"></i>${label}</span>`);
         });
         teamInline.innerHTML = chips.length ? chips.join('') : '<span class="text-white-50">Aucun responsable ou agent assigné</span>';
+        const respInline = document.getElementById('responsables-inline');
+        if (respInline) respInline.innerHTML = respMatricule ? `<span class="chip">${respMatricule}</span>` : 'Aucun responsable';
+        const agentsInline = document.getElementById('agents-inline');
+        if (agentsInline) {
+          if ((agents || []).length) {
+            agentsInline.innerHTML = agents.map(a => `<span class="chip">${formatMember(a.agent_matricule || a.matricule || a.actor_name, a.actor_email)}</span>`).join('');
+          } else {
+            agentsInline.innerHTML = 'Aucun agent';
+          }
+        }
       }
 
       try {
@@ -259,6 +323,24 @@
         set('work-debut', fmt(t.date_debut));
         set('work-fin', fmt(t.date_fin));
         setHTML('work-desc', t.description ? t.description.replace(/\n/g,'<br>') : '—');
+        setHTML('work-desc-block', t.description ? t.description.replace(/\n/g,'<br>') : '—');
+        setHTML('info-etat', t.etat || '—');
+
+        // elapsed
+        if (t.date_debut) {
+          const start = new Date(t.date_debut).getTime();
+          const end = t.date_fin ? new Date(t.date_fin).getTime() : Date.now();
+          const diff = end - start;
+          const days = Math.floor(diff / (1000*60*60*24));
+          const hours = Math.floor((diff / (1000*60*60)) % 24);
+          const mins = Math.floor((diff / (1000*60)) % 60);
+          set('info-elapsed', `${days}j ${hours}h ${mins}m`);
+        } else {
+          set('info-elapsed', '—');
+        }
+
+        set('info-debut', fmt(t.date_debut));
+        set('info-fin', t.date_fin ? fmt(t.date_fin) : 'En cours');
 
         setHTML('work-ticket', t.ticket_id ? `<a href="ticket-view.html?id=${t.ticket_id}" target="_blank">Ticket #${t.ticket_id}</a>` : '—');
         setHTML('work-client', t.client_nom ? t.client_nom : '—');
@@ -266,6 +348,8 @@
         setHTML('work-site', t.site_id ? `<a href="site-view.html?id=${t.site_id}" target="_blank">${t.site_nom || 'Site'}</a>` : (t.site_nom || '—'));
         setHTML('work-doe', t.doe_id ? `<a href="doe-view.html?id=${t.doe_id}" target="_blank">${t.doe_titre || 'DOE'}</a>` : (t.doe_titre || '—'));
         setHTML('work-demande', t.demande_id ? `<a href="demande-client-admin.html?embed=1&id=${t.demande_id}" target="_blank">Demande #${t.demande_id}</a>` : (t.demande_titre || '—'));
+        setHTML('info-affaire', t.affaire_id ? `<a href="affaire-view.html?id=${t.affaire_id}" target="_blank">${t.affaire_nom || 'Affaire'}</a>` : (t.affaire_nom || '—'));
+        setHTML('info-doe', t.doe_id ? `<a href="doe-view.html?id=${t.doe_id}" target="_blank">${t.doe_titre || 'DOE'}</a>` : (t.doe_titre || '—'));
 
         // Agents / Responsables
         const agentsList = document.getElementById('agents-list');
@@ -279,6 +363,7 @@
         });
         const responsableMatricule = t.agent_matricule || null;
         set('resp-principal', responsableMatricule || '—');
+        set('info-resp', responsableMatricule || '—');
         renderTeamInline(responsableMatricule, agentsData);
 
         // Rendus
