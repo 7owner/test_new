@@ -39,15 +39,26 @@
       </div>
     </div>
 
-    <!-- Responsible Agent -->
-    <div id="responsable-section" class="card mb-4 d-none">
-        <div class="card-body">
-          <h2 class="card-title mb-4">Votre Interlocuteur</h2>
-          <p><strong>Nom:</strong> <span id="responsable-nom"></span></p>
-          <p><strong>Email:</strong> <span id="responsable-email"></span></p>
-          <p><strong>Téléphone:</strong> <span id="responsable-tel"></span></p>
+    <!-- Interlocuteur -->
+    <div id="interlocuteur-card" class="card mb-4 d-none">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Votre Interlocuteur</h2>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="fw-semibold text-muted small text-uppercase">Nom</div>
+            <div id="interlocuteur-nom" class="fs-6"></div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-semibold text-muted small text-uppercase">Email</div>
+            <div id="interlocuteur-email" class="fs-6"></div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-semibold text-muted small text-uppercase">Téléphone</div>
+            <div id="interlocuteur-tel" class="fs-6"></div>
+          </div>
         </div>
       </div>
+    </div>
 
     <!-- Interventions -->
     <div id="interventions-section" class="card mb-4 d-none">
@@ -257,12 +268,13 @@
         }
 
         if (responsable) {
-            document.getElementById('responsable-section').classList.remove('d-none');
-            set('responsable-nom', `${responsable.prenom || ''} ${responsable.nom || ''}`.trim());
-            set('responsable-email', responsable.email);
-            set('responsable-tel', responsable.tel);
+            const interCard = document.getElementById('interlocuteur-card');
+            if (interCard) interCard.classList.remove('d-none');
+            set('interlocuteur-nom', `${responsable.prenom || ''} ${responsable.nom || ''}`.trim());
+            set('interlocuteur-email', responsable.email);
+            set('interlocuteur-tel', responsable.tel);
             receiver_id = responsable.user_id; // Set receiver_id
-            console.log('DEBUG: Responsable info populated.');
+            console.log('DEBUG: Responsable / interlocuteur info populated.');
         } else {
           console.log('DEBUG: No responsable found.');
         }

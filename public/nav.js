@@ -163,11 +163,16 @@
     };
 
     async function fetchDemandes() {
+      const opts = {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        credentials: 'same-origin'
+      };
       try {
-        const r = await fetch('/api/demandes_client?sort=id&direction=desc', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-          credentials: 'same-origin'
-        });
+        let r = await fetch('/api/demandes_client?sort=id&direction=desc', opts);
+        // Fallback pour les clients (403 sur la liste complète)
+        if (r.status === 401 || r.status === 403) {
+          r = await fetch('/api/demandes_client/mine', opts);
+        }
         if (!r.ok) return [];
         const data = await r.json().catch(() => []);
         return Array.isArray(data) ? data : [];
