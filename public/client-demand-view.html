@@ -446,6 +446,7 @@
         if (!demande && payload && payload.id) demande = payload;
         if (!demande) throw new Error('Données de demande manquantes');
 
+        // Sections toujours visibles, même en modal (requis par la demande utilisateur)
         set('demande-id', demande.id);
         set('demande-date', fmt(demande.created_at));
         set('demande-site', demande.nom_site || '—');
@@ -455,27 +456,40 @@
         statusEl.textContent = demande.status || '—';
         statusEl.className = `status-badge ${getStatusClass(demande.status)}`;
 
+        // Ticket lié
+        const ticketSection = document.getElementById('ticket-section');
         if (ticket) {
-          document.getElementById('ticket-section').classList.remove('d-none');
+          ticketSection?.classList.remove('d-none');
           set('ticket-titre', ticket.titre || '—');
           set('ticket-date-debut', fmt(ticket.date_debut));
           set('ticket-date-fin', ticket.date_fin ? fmt(ticket.date_fin) : 'En cours');
           const ts = document.getElementById('ticket-status');
           ts.textContent = ticket.etat || '—';
           ts.className = `status-badge ${getStatusClass(ticket.etat)}`;
+        } else {
+          ticketSection?.classList.add('d-none');
         }
 
+        // Interlocuteur
+        const interCard = document.getElementById('interlocuteur-card');
         if (responsable) {
-          document.getElementById('interlocuteur-card').classList.remove('d-none');
+          interCard?.classList.remove('d-none');
           set('interlocuteur-nom', `${responsable.prenom || ''} ${responsable.nom || ''}`.trim() || '—');
           set('interlocuteur-email', responsable.email || '—');
           set('interlocuteur-tel', responsable.tel || '—');
           receiver_id = responsable.user_id;
+        } else {
+          interCard?.classList.remove('d-none'); // visible mais vide pour cohérence
+          set('interlocuteur-nom', '—');
+          set('interlocuteur-email', '—');
+          set('interlocuteur-tel', '—');
         }
 
+        // Interventions
+        const intSection = document.getElementById('interventions-section');
+        const list = document.getElementById('interventions-list');
         if (interventions?.length) {
-          document.getElementById('interventions-section').classList.remove('d-none');
-          const list = document.getElementById('interventions-list');
+          intSection?.classList.remove('d-none');
           list.innerHTML = '';
           interventions.forEach(i => {
             const item = document.createElement('div');
@@ -494,6 +508,9 @@
             `;
             list.appendChild(item);
           });
+        } else {
+          intSection?.classList.remove('d-none');
+          list.innerHTML = '<div class="text-muted small">Aucune intervention.</div>';
         }
 
         loadMessages();

@@ -276,6 +276,11 @@
       const token = localStorage.getItem('token');
       if (!token) { location.href = '/login.html'; return; }
       const headers = { 'Authorization': `Bearer ${token}` };
+      let isAdmin = false;
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        isAdmin = Array.isArray(payload?.roles) && payload.roles.includes('ROLE_ADMIN');
+      } catch (_) {}
       const fmt = (d) => d ? new Date(d).toLocaleString('fr-FR') : '—';
 
       const set = (id,val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
@@ -291,6 +296,7 @@
       const btnAgent = document.getElementById('btn-agent');
       const btnAffaire = document.getElementById('btn-affaire');
       const btnDoe = document.getElementById('btn-doe');
+      const editBtn = document.getElementById('edit-travail-btn');
 
       function formatMember(label, email) {
         if (label && email) return `${label} (${email})`;
@@ -376,23 +382,29 @@
         set('info-resp', responsableMatricule || '—');
         renderTeamInline(responsableMatricule, agentsData);
 
-        if (btnResp) btnResp.onclick = () => {
-          document.getElementById('responsables-inline')?.scrollIntoView({ behavior:'smooth', block:'center' });
-        };
-        if (btnAgent) btnAgent.onclick = () => {
-          document.getElementById('agents-inline')?.scrollIntoView({ behavior:'smooth', block:'center' });
-        };
-        if (btnAffaire) {
-          btnAffaire.disabled = !t.affaire_id;
-          btnAffaire.onclick = () => {
-            if (t.affaire_id) window.open(`/affaire-view.html?id=${t.affaire_id}`, '_blank');
-          };
-        }
-        if (btnDoe) {
-          btnDoe.disabled = !t.doe_id;
-          btnDoe.onclick = () => {
-            if (t.doe_id) window.open(`/doe-view.html?id=${t.doe_id}`, '_blank');
-          };
+        // Actions alignées sur ticket-view
+        if (!isAdmin) {
+          editBtn?.classList.add('d-none');
+          btnResp?.classList.add('d-none');
+          btnAgent?.classList.add('d-none');
+          btnAffaire?.classList.add('d-none');
+          btnDoe?.classList.add('d-none');
+        } else {
+          if (editBtn) { editBtn.classList.remove('d-none'); editBtn.href = `travaux-edit.html?id=${id}`; }
+          if (btnResp) btnResp.onclick = () => { window.open(`/travaux-edit.html?id=${id}#responsables`, '_blank'); };
+          if (btnAgent) btnAgent.onclick = () => { window.open(`/travaux-edit.html?id=${id}#agents`, '_blank'); };
+          if (btnAffaire) {
+            btnAffaire.onclick = () => {
+              if (t.affaire_id) window.open(`/affaire-view.html?id=${t.affaire_id}`, '_blank');
+              else window.open('/affaire-new.html', '_blank');
+            };
+          }
+          if (btnDoe) {
+            btnDoe.onclick = () => {
+              if (t.doe_id) window.open(`/doe-view.html?id=${t.doe_id}`, '_blank');
+              else window.open('/doe-new.html', '_blank');
+            };
+          }
         }
 
         // Rendus
