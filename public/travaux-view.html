@@ -509,9 +509,27 @@
         tmForm.addEventListener('submit', async (e) => {
           e.preventDefault();
           const mat = tmMat?.value.trim();
-          const matId = mat && !isNaN(mat) ? Number(mat) : null;
+          let matId = mat && !isNaN(mat) ? Number(mat) : null;
           const comment = tmComment?.value.trim();
           const qty = Number(tmQty?.value || 1) || 1;
+          if (!matId && mat) {
+            try {
+              const searchRes = await fetch(`/api/materiels?query=${encodeURIComponent(mat)}`, { headers, credentials:'same-origin' });
+              const list = searchRes.ok ? await searchRes.json().catch(()=>[]) : [];
+              if (Array.isArray(list) && list.length) {
+                const first = list[0];
+                const label = `${first.designation || first.nom || 'Matériel'} ${first.reference ? '('+first.reference+')' : ''}`.trim();
+                const ok = confirm(`Utiliser ce matériel ?\n${label} (id: ${first.id})`);
+                if (ok) matId = first.id;
+              } else {
+                alert('Aucun matériel trouvé pour cette recherche. Merci de saisir un ID numérique.');
+                return;
+              }
+            } catch (_) {
+              alert('Recherche matériel impossible, saisir un ID numérique.');
+              return;
+            }
+          }
           if (!matId) { alert('ID du matériel requis (materiel_id numérique).'); return; }
           try {
             const r = await fetch(`/api/travaux/${id}/materiels`, {
