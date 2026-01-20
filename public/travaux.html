@@ -365,7 +365,7 @@
               ? `Avancement: <strong>${pct !== null ? pct + '%' : '—'}</strong>${remaining !== null ? ` · Reste: ${remaining}` : ''}`
               : 'Avancement: —';
             const barClass = pct === null ? 'opacity-50' : '';
-            const barWidth = pct !== null ? pct : 0; // pas de remplissage si inconnu
+            const barWidth = Number.isFinite(pct) ? pct : 0; // pas de remplissage si inconnu
             const badgeLinks = [];
             if (t.site_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="site-view.html?id=${t.site_id}" target="_blank"><i class="bi bi-geo"></i> ${t.site_nom || 'Site'}</a>`);
             if (t.affaire_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="affaire-view.html?id=${t.affaire_id}" target="_blank"><i class="bi bi-briefcase"></i> ${t.affaire_nom || 'Affaire'}</a>`);
