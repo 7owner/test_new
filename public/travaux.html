@@ -127,6 +127,30 @@
         return [];
       };
 
+      function renderSuggestions(listEl, data, filterValue, labelFn) {
+        if (!listEl) return;
+        const term = (filterValue || '').trim().toLowerCase();
+        if (!term) { listEl.innerHTML = ''; return; }
+        const matches = (data || []).filter(item => labelFn(item).toLowerCase().includes(term)).slice(0, 8);
+        if (!matches.length) { listEl.innerHTML = ''; return; }
+        listEl.innerHTML = '';
+        matches.forEach(m => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'list-group-item list-group-item-action';
+          btn.textContent = labelFn(m);
+          btn.addEventListener('click', () => {
+            const targetInput = listEl.id === 'sug-affaire' ? filterAffaire : filterSite;
+            if (targetInput) {
+              targetInput.value = labelFn(m);
+              renderTravaux(travauxCache);
+            }
+            listEl.innerHTML = '';
+          });
+          listEl.appendChild(btn);
+        });
+      }
+
       function formatProgressLine(pct, remaining) {
         if (pct === null && remaining === null) return 'Avancement: —';
         const pctStr = pct !== null ? `${pct}%` : '—';
@@ -274,8 +298,14 @@
           travauxCache = toTravauxArray(data);
           renderTravaux(travauxCache);
           // Chargements non bloquants des référentiels
-          fetch('/api/affaires', { headers, credentials: 'same-origin' }).then(r => r.ok ? r.json() : []).then(d => { affairesCache = toTravauxArray(d); }).catch(()=>{});
-          fetch('/api/sites', { headers, credentials: 'same-origin' }).then(r => r.ok ? r.json() : []).then(d => { sitesCache = toTravauxArray(d); }).catch(()=>{});
+          fetch('/api/affaires', { headers, credentials: 'same-origin' }).then(r => r.ok ? r.json() : []).then(d => {
+            affairesCache = toTravauxArray(d);
+            renderSuggestions(sugAffaire, affairesCache, filterAffaire?.value, a => a.nom_affaire || `Affaire #${a.id}`);
+          }).catch(()=>{});
+          fetch('/api/sites', { headers, credentials: 'same-origin' }).then(r => r.ok ? r.json() : []).then(d => {
+            sitesCache = toTravauxArray(d);
+            renderSuggestions(sugSite, sitesCache, filterSite?.value, s => s.nom_site || `Site #${s.id}`);
+          }).catch(()=>{});
         } catch (err) {
           console.error('Erreur chargement travaux', err);
           colIds.forEach(etat => {
@@ -323,6 +353,18 @@
             }).catch(err => alert(err.message || 'Erreur suppression'));
         }
       });
+
+      // Filtres dynamiques
+      [titleFilter, searchInput, filterAffaire, filterSite].forEach(el => {
+        if (!el) return;
+        el.addEventListener('input', () => {
+          if (el === filterAffaire) renderSuggestions(sugAffaire, affairesCache, filterAffaire.value, a => a.nom_affaire || `Affaire #${a.id}`);
+          if (el === filterSite) renderSuggestions(sugSite, sitesCache, filterSite.value, s => s.nom_site || `Site #${s.id}`);
+          renderTravaux(travauxCache);
+        });
+      });
+      filterAffaire?.addEventListener('blur', () => setTimeout(() => { if (sugAffaire) sugAffaire.innerHTML=''; }, 150));
+      filterSite?.addEventListener('blur', () => setTimeout(() => { if (sugSite) sugSite.innerHTML=''; }, 150));
 
       const btnNew = document.getElementById('btn-new-travail');
       if (btnNew) {
