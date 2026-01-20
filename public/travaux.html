@@ -105,6 +105,37 @@
       const titleFilter = document.getElementById('filter-title');
       const searchInput = document.getElementById('filter-global');
       let travauxCache = [];
+      const progressCache = new Map(); // travailId -> { pct, remaining }
+
+      function formatProgressLine(pct, remaining) {
+        if (pct === null && remaining === null) return 'Avancement: —';
+        const pctStr = pct !== null ? `${pct}%` : '—';
+        const restStr = remaining !== null ? ` · Reste: ${remaining}` : '';
+        return `Avancement: <strong>${pctStr}</strong>${restStr}`;
+      }
+
+      async function hydrateProgressFromTasks(travailId, progressEl) {
+        if (!progressEl || !travailId) return;
+        if (progressCache.has(travailId)) {
+          const cached = progressCache.get(travailId);
+          progressEl.innerHTML = formatProgressLine(cached.pct, cached.remaining);
+          return;
+        }
+        try {
+          const res = await fetch(`/api/travaux/${travailId}/taches`, { headers, credentials:'same-origin' });
+          if (res.status === 401 || res.status === 403) { location.href = '/login.html'; return; }
+          if (!res.ok) throw new Error('Erreur chargement tâches');
+          const tasks = await res.json();
+          const total = Array.isArray(tasks) ? tasks.length : 0;
+          const done = Array.isArray(tasks) ? tasks.filter(tk => (tk.etat || '').toLowerCase() === 'termine').length : 0;
+          const pct = total > 0 ? Math.round((done / total) * 100) : null;
+          const remaining = total > 0 ? Math.max(total - done, 0) : null;
+          progressCache.set(travailId, { pct, remaining });
+          progressEl.innerHTML = formatProgressLine(pct, remaining);
+        } catch (err) {
+          console.warn('Progress calcul impossible pour travail', travailId, err);
+        }
+      }
 
       function setCount(etat, n) {
         const el = document.getElementById('count-' + etat);
@@ -183,7 +214,7 @@
                 </div>
                 <div class="text-muted small mb-2">${t.description || ''}</div>
                 <div class="small text-muted mb-2"><i class="bi bi-person-badge"></i> Resp. ${responsable}</div>
-                <div class="small text-muted mb-2">${progressLine}</div>
+                <div class="small text-muted mb-2 progress-line">${progressLine}</div>
                 ${badgeLinks.length ? `<div class="d-flex flex-wrap gap-1 mb-2">${badgeLinks.join(' ')}</div>` : ''}
                 <div class="d-flex justify-content-end align-items-center gap-1">
                   <button class="btn btn-sm btn-outline-primary btn-open-travail" data-id="${t.id}"><i class="bi bi-eye"></i> Voir</button>
@@ -194,6 +225,11 @@
                 </div>
               </div>
             `;
+            // Si avancement absent, tenter de calculer via les tâches
+            if (progressLine === 'Avancement: —') {
+              const progressEl = card.querySelector('.progress-line');
+              hydrateProgressFromTasks(t.id, progressEl);
+            }
             col.appendChild(card);
           });
         });
