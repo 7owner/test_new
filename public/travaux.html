@@ -352,6 +352,7 @@
             const responsable = t.agent_nom
               ? `${t.agent_nom || ''} ${t.agent_prenom || ''}`.trim() || t.agent_matricule || '—'
               : (t.agent_matricule || t.responsable || '—');
+            const responsableDisplay = responsable && responsable !== '—' ? responsable : '—';
             const done = parseFloat(t.taches_terminees ?? t.tachesTerminees ?? t.tasks_done ?? t.tasksDone ?? t.taches_faites ?? t.tasksDoneCount);
             const total = parseFloat(t.taches_total ?? t.tachesTotal ?? t.tasks_total ?? t.tasksTotal ?? t.taches ?? t.tachesCount);
             const explicitPctVal = parseFloat(
@@ -368,7 +369,7 @@
               ? `Avancement: <strong>${pct !== null ? pct + '%' : '—'}</strong>${remaining !== null ? ` · Reste: ${remaining}` : ''}`
               : 'Avancement: —';
             const barClass = pct === null ? 'opacity-50' : '';
-            const barWidth = pct !== null ? pct : 5; // petite barre visible si inconnu
+            const barWidth = pct !== null ? pct : 0; // pas de remplissage si inconnu
             const badgeLinks = [];
             if (t.site_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="site-view.html?id=${t.site_id}" target="_blank"><i class="bi bi-geo"></i> ${t.site_nom || 'Site'}</a>`);
             if (t.affaire_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="affaire-view.html?id=${t.affaire_id}" target="_blank"><i class="bi bi-briefcase"></i> ${t.affaire_nom || 'Affaire'}</a>`);
@@ -381,7 +382,7 @@
                   <span class="tag ${priorite.toLowerCase() === 'haute' ? 'tag-haute' : priorite.toLowerCase() === 'basse' ? 'tag-basse' : 'tag-moyenne'}">${priorite}</span>
                 </div>
                 <div class="text-muted small mb-2">${t.description || ''}</div>
-                <div class="small text-muted mb-2"><i class="bi bi-person me-1"></i>Resp. ${responsable}</div>
+                <div class="small text-muted mb-2"><i class="bi bi-person me-1"></i>Resp. ${responsableDisplay}</div>
                 <div class="progress"><div class="progress-bar ${barClass}" style="width:${barWidth}%"></div></div>
                 <div class="small text-end fw-medium progress-line">${progressLine}</div>
                 ${badgeLinks.length ? `<div class="d-flex flex-wrap gap-1 mt-2">${badgeLinks.join(' ')}</div>` : ''}
