@@ -1478,18 +1478,20 @@ app.post('/api/catalogue', authenticateToken, authorizeAdmin, async (req, res) =
 // -------------------- Demande Matériel --------------------
 // List demandes (optional filters)
 app.get('/api/demandes-materiel', authenticateToken, async (req, res) => {
-  const { ticket_id, intervention_id, statut } = req.query;
+  const { ticket_id, intervention_id, travaux_id, statut } = req.query;
   try {
     const where = [];
     const params = [];
     let idx = 1;
     if (ticket_id) { where.push(`ticket_id = $${idx++}`); params.push(ticket_id); }
     if (intervention_id) { where.push(`intervention_id = $${idx++}`); params.push(intervention_id); }
+    if (travaux_id) { where.push(`travaux_id = $${idx++}`); params.push(travaux_id); }
     if (statut) { where.push(`statut = $${idx++}`); params.push(statut); }
     const r = await pool.query(
       `SELECT dm.*,
               i.titre AS intervention_titre,
               t.titre AS ticket_titre,
+              tr.titre AS travaux_titre,
               (
                 SELECT json_agg(json_build_object(
                   'id', m.id,
@@ -1505,6 +1507,7 @@ app.get('/api/demandes-materiel', authenticateToken, async (req, res) => {
        FROM demande_materiel dm
        LEFT JOIN intervention i ON dm.intervention_id = i.id
        LEFT JOIN ticket t ON dm.ticket_id = t.id
+       LEFT JOIN travaux tr ON dm.travaux_id = tr.id
        ${where.length ? 'WHERE '+where.join(' AND ') : ''}
        ORDER BY dm.created_at DESC`,
       params
@@ -1518,14 +1521,14 @@ app.get('/api/demandes-materiel', authenticateToken, async (req, res) => {
 
 // Create demande
 app.post('/api/demandes-materiel', authenticateToken, async (req, res) => {
-  const { titre, commentaire, quantite, ticket_id, intervention_id } = req.body;
+  const { titre, commentaire, quantite, ticket_id, intervention_id, travaux_id } = req.body;
   if (!titre) return res.status(400).json({ error: 'titre is required' });
   try {
     const r = await pool.query(
-      `INSERT INTO demande_materiel (titre, commentaire, quantite, ticket_id, intervention_id)
-       VALUES ($1,$2,COALESCE($3,1),$4,$5)
+      `INSERT INTO demande_materiel (titre, commentaire, quantite, ticket_id, intervention_id, travaux_id)
+       VALUES ($1,$2,COALESCE($3,1),$4,$5,$6)
        RETURNING *`,
-      [titre, commentaire || null, quantite || 1, ticket_id || null, intervention_id || null]
+      [titre, commentaire || null, quantite || 1, ticket_id || null, intervention_id || null, travaux_id || null]
     );
     res.status(201).json(r.rows[0]);
   } catch (e) {

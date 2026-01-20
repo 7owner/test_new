@@ -463,136 +463,75 @@
       let matTimer = null;
 
       const pickArray = (...candidates) => candidates.find(a => Array.isArray(a) && a.length >= 0) || [];
-      function renderMatSuggestions(list = []) {
-        if (!tmMatSug) return;
-        if (!list.length) { tmMatSug.innerHTML = ''; return; }
-        tmMatSug.innerHTML = '';
-        list.slice(0, 8).forEach(item => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'list-group-item list-group-item-action';
-          const label = `${item.designation || item.nom || 'Matériel'}${item.reference ? ' ('+item.reference+')' : ''}`.trim();
-          btn.textContent = `${label} — id: ${item.id}`;
-          btn.addEventListener('click', () => {
-            if (tmMat) tmMat.value = item.id;
-            tmMatSug.innerHTML = '';
-          });
-          tmMatSug.appendChild(btn);
+      // demandes matériel (travail -> table demande_materiel)
+      function renderDemandesTravaux(list = []) {
+        if (!tmList) return;
+        if (!list.length) {
+          tmList.innerHTML = '<div class="text-muted small">Aucune demande de matériel.</div>';
+          return;
+        }
+        tmList.innerHTML = '';
+        list.forEach(d => {
+          const row = document.createElement('div');
+          row.className = 'p-2 border rounded mb-2 bg-light';
+          row.innerHTML = `
+            <div class="fw-semibold">${d.titre || 'Demande'}</div>
+            <div class="small text-muted">${d.commentaire || ''}</div>
+            <div class="d-flex justify-content-between align-items-center mt-1">
+              <div class="small text-muted">Quantité: ${d.quantite || 1} • Statut: ${d.statut || 'En_attente'}</div>
+              ${isAdmin ? `<button class="btn btn-sm btn-outline-danger tm-del" data-id="${d.id}"><i class="bi bi-trash"></i></button>` : ''}
+            </div>
+          `;
+          tmList.appendChild(row);
         });
       }
 
-      async function searchMateriel(term) {
-        if (!term || term.length < 2) { tmMatSug.innerHTML=''; return; }
-        try {
-          const res = await fetch(`/api/materiels?query=${encodeURIComponent(term)}`, { headers, credentials:'same-origin' });
-          if (!res.ok) return;
-          const list = await res.json().catch(()=>[]);
-          renderMatSuggestions(list || []);
-        } catch (e) {
-          console.warn('Search materiel failed', e);
-        }
-      }
-      // Matériel travaux
-      async function loadTravauxMateriel() {
+      async function loadDemandesTravaux() {
         if (!tmList) return;
         try {
-          const r = await fetch(`/api/travaux/${id}/materiels`, { headers, credentials:'same-origin' });
-          if (r.status === 401 || r.status === 403) { location.href='/login.html'; return; }
-          const data = r.ok ? await r.json() : [];
-          if (!Array.isArray(data) || !data.length) {
-            tmList.innerHTML = '<div class="text-muted small">Aucun matériel demandé.</div>';
-            return;
-          }
-          tmList.innerHTML = '';
-          data.forEach(item => {
-              const row = document.createElement('div');
-              row.className = 'p-2 border rounded mb-2 bg-light';
-              const label = item.designation || item.materiel || `Matériel #${item.materiel_id || item.id}`;
-              row.innerHTML = `
-                <div class="fw-semibold">${label}</div>
-                <div class="small text-muted">${item.reference ? `Ref: ${item.reference}` : ''}</div>
-                <div class="small text-muted">${item.commentaire || ''}</div>
-                <div class="d-flex justify-content-between align-items-center mt-1">
-                  <div class="small text-muted">Quantité: ${item.quantite || 1}</div>
-                  <div class="d-flex align-items-center gap-2">
-                    ${isAdmin ? `<button class="btn btn-sm btn-outline-danger tm-del" data-id="${item.id}"><i class="bi bi-trash"></i></button>` : ''}
-                  </div>
-                </div>
-              `;
-              tmList.appendChild(row);
-            });
-
-          tmList.addEventListener('click', async (ev) => {
-            const btn = ev.target.closest('.tm-del');
-            if (!btn) return;
-            const mid = btn.getAttribute('data-id');
-            if (!mid || !confirm('Supprimer ce matériel ?')) return;
-            try {
-              const del = await fetch(`/api/travaux/${id}/materiels/${mid}`, { method:'DELETE', headers, credentials:'same-origin' });
-              if (!del.ok) throw new Error();
-              await loadTravauxMateriel();
-            } catch (_) { alert('Suppression impossible'); }
-          });
+          const data = await fetchJSON(`/api/demandes-materiel?travaux_id=${id}`);
+          renderDemandesTravaux(Array.isArray(data) ? data : []);
         } catch (err) {
-          tmList.innerHTML = '<div class="text-danger small">Erreur de chargement du matériel.</div>';
+          tmList.innerHTML = '<div class="text-danger small">Erreur de chargement des demandes.</div>';
         }
       }
+      // Demandes matériel (travaux -> demande_materiel)
+      async function loadTravauxMateriel() { await loadDemandesTravaux(); }
 
       if (tmForm) {
         if (tmMat) {
           tmMat.addEventListener('input', () => {
-            if (tmMatSug) tmMatSug.innerHTML='';
-            const val = tmMat.value.trim();
-            clearTimeout(matTimer);
-            matTimer = setTimeout(() => searchMateriel(val), 200);
+            if (tmMatSug) tmMatSug.innerHTML = '';
           });
         }
         tmForm.addEventListener('submit', async (e) => {
           e.preventDefault();
-          const mat = tmMat?.value.trim();
-          let matId = mat && !isNaN(mat) ? Number(mat) : null;
+          const titre = tmMat?.value.trim();
           const comment = tmComment?.value.trim();
           const qty = Number(tmQty?.value || 1) || 1;
-          if (!matId && mat) {
-            try {
-              const searchRes = await fetch(`/api/materiels?query=${encodeURIComponent(mat)}`, { headers, credentials:'same-origin' });
-              const list = searchRes.ok ? await searchRes.json().catch(()=>[]) : [];
-              if (Array.isArray(list) && list.length) {
-                renderMatSuggestions(list);
-                alert('Sélectionnez un matériel dans la liste pour préremplir son ID, puis validez à nouveau.');
-                return;
-              } else {
-                alert('Aucun matériel trouvé pour cette recherche. Merci de saisir un ID numérique.');
-                return;
-              }
-            } catch (_) {
-              alert('Recherche matériel impossible, saisir un ID numérique.');
-              return;
-            }
-          }
-          if (!matId) { alert('ID du matériel requis (materiel_id numérique).'); return; }
+          if (!titre) { alert('Le libellé du matériel est requis.'); return; }
           try {
-            const r = await fetch(`/api/travaux/${id}/materiels`, {
-              method:'POST',
-              headers:{ ...headers, 'Content-Type':'application/json' },
-              credentials:'same-origin',
+            const r = await fetch(`/api/demandes-materiel`, {
+              method: 'POST',
+              headers: { ...headers, 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
               body: JSON.stringify({
-                materiel_id: matId,
+                titre,
                 commentaire: comment || null,
                 quantite: qty,
                 travaux_id: id
               })
             });
             if (!r.ok) {
-              const d = await r.json().catch(()=>({}));
-              throw new Error(d.error || 'Erreur enregistrement matériel');
+              const d = await r.json().catch(() => ({}));
+              throw new Error(d.error || 'Erreur enregistrement demande matériel');
             }
             if (tmMat) tmMat.value = '';
             if (tmComment) tmComment.value = '';
             if (tmQty) tmQty.value = '1';
             await loadTravauxMateriel();
           } catch (err) {
-            alert(err.message || 'Erreur enregistrement matériel');
+            alert(err.message || 'Erreur enregistrement demande matériel');
           }
         });
       }
