@@ -169,6 +169,58 @@
       </div>
     </div>
 
+
+  <!-- Modal ajout tâche -->
+  <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Nouvelle tâche</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="task-form" class="row g-2">
+            <div class="col-12">
+              <label class="form-label">Titre *</label>
+              <input type="text" class="form-control" id="task-titre" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea class="form-control" id="task-desc" rows="2"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">État</label>
+              <select class="form-select" id="task-etat">
+                <option value="A_faire">À faire</option>
+                <option value="En_cours">En cours</option>
+                <option value="En_attente">En attente</option>
+                <option value="Termine">Terminé</option>
+                <option value="Annule">Annulé</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Priorité</label>
+              <select class="form-select" id="task-priorite">
+                <option value="Haute">Haute</option>
+                <option value="Moyenne" selected>Moyenne</option>
+                <option value="Basse">Basse</option>
+              </select>
+            </div>
+            <div class="col-md-12">
+              <label class="form-label">Échéance</label>
+              <input type="datetime-local" class="form-control" id="task-ech">
+            </div>
+          </form>
+          <div id="task-feedback" class="small mt-2 text-danger d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="task-save-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
     <div class="row g-3">
       <div class="col-12">
         <div class="card mb-3">
@@ -190,7 +242,7 @@
               <div class="col-lg-2 d-flex align-items-end">
                 <div class="input-group">
                   <span class="input-group-text">Qté</span>
-                  <input type="number" id="tm-qty" class="form-control" min="1" value="1" style="max-width:90px;">
+                  <input type="number" id="tm-qty" class="form-control" min="1" value="1" style="max-width:90px; margin-right:4px;">
                   <button type="submit" class="btn btn-primary ms-2"><i class="bi bi-plus-lg"></i> Ajouter</button>
                 </div>
               </div>
@@ -339,56 +391,6 @@
     </div>
   </div>
 
-  <!-- Modal ajout tâche -->
-  <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Nouvelle tâche</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="task-form" class="row g-2">
-            <div class="col-12">
-              <label class="form-label">Titre *</label>
-              <input type="text" class="form-control" id="task-titre" required>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Description</label>
-              <textarea class="form-control" id="task-desc" rows="2"></textarea>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">État</label>
-              <select class="form-select" id="task-etat">
-                <option value="A_faire">À faire</option>
-                <option value="En_cours">En cours</option>
-                <option value="En_attente">En attente</option>
-                <option value="Termine">Terminé</option>
-                <option value="Annule">Annulé</option>
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Priorité</label>
-              <select class="form-select" id="task-priorite">
-                <option value="Haute">Haute</option>
-                <option value="Moyenne" selected>Moyenne</option>
-                <option value="Basse">Basse</option>
-              </select>
-            </div>
-            <div class="col-md-12">
-              <label class="form-label">Échéance</label>
-              <input type="datetime-local" class="form-control" id="task-ech">
-            </div>
-          </form>
-          <div id="task-feedback" class="small mt-2 text-danger d-none"></div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="task-save-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Modal lien (affaire/site/DOE/demande) -->
   <div class="modal fade" id="linkModal" tabindex="-1" aria-hidden="true">
