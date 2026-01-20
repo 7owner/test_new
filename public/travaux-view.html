@@ -620,13 +620,38 @@
 
         document.getElementById('save-responsable-btn')?.addEventListener('click', async (e) => {
           e.preventDefault();
-          const val = respHidden?.value;
+          const btn = e.currentTarget;
+          const val = respHidden?.value?.trim();
           if (!val) { alert('Sélectionnez un responsable.'); return; }
           try {
-            await updateTravail({ agent_matricule: val });
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            // Tentative via endpoint dédié (si exposé)
+            const r = await fetch(`/api/travaux/${id}/responsables`, {
+              method:'POST',
+              headers:{ ...headers, 'Content-Type':'application/json' },
+              credentials:'same-origin',
+              body: JSON.stringify({ agent_matricule: val, matricule: val })
+            });
+            if (!r.ok) {
+              const d = await r.json().catch(()=>({}));
+              throw new Error(d.error || `HTTP ${r.status}`);
+            }
             addRespModal?.hide();
             location.reload();
-          } catch(err){ alert(err.message || 'Erreur enregistrement responsable'); }
+          } catch(err){
+            // Fallback: mise à jour du champ agent_matricule directement
+            try {
+              await updateTravail({ agent_matricule: val });
+              addRespModal?.hide();
+              location.reload();
+              return;
+            } catch(_) {}
+            alert(err.message || 'Erreur enregistrement responsable');
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Enregistrer';
+          }
         });
 
         if (etatSave && etatSelect) {
@@ -652,9 +677,12 @@
 
         document.getElementById('save-agent-btn')?.addEventListener('click', async (e) => {
           e.preventDefault();
-          const val = agentHidden?.value;
+          const btn = e.currentTarget;
+          const val = agentHidden?.value?.trim();
           if (!val) { alert('Sélectionnez un agent.'); return; }
           try {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
             const r = await fetch(`/api/travaux/${id}/agents`, {
               method:'POST',
               headers:{ ...headers, 'Content-Type':'application/json' },
@@ -665,7 +693,12 @@
             if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
             addAgentModal?.hide();
             location.reload();
-          } catch(err){ alert(err.message || 'Erreur ajout agent'); }
+          } catch(err){
+            alert(err.message || 'Erreur ajout agent');
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Enregistrer';
+          }
         });
 
         document.getElementById('create-affaire-form')?.addEventListener('submit', async (e) => {
