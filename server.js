@@ -5432,24 +5432,70 @@ app.get('/api/travaux', authenticateToken, async (req, res) => {
 app.get('/api/travaux/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
-    const r = await pool.query('SELECT * FROM travaux WHERE id=$1', [id]);
-    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
-    res.json(r.rows[0]);
-  } catch (err) { console.error('Error fetching travaux by id:', err); res.status(500).json({ error: 'Internal Server Error' }); }
+    const travailRow = await pool.query(
+      `SELECT t.*,
+              s.nom_site,
+              af.nom_affaire,
+              d.titre AS doe_titre
+       FROM travaux t
+       LEFT JOIN site s ON s.id = t.site_id
+       LEFT JOIN affaire af ON af.id = t.affaire_id
+       LEFT JOIN doe d ON d.id = t.doe_id
+       WHERE t.id = $1`,
+      [id]
+    );
+    const travail = travailRow.rows[0];
+    if (!travail) return res.status(404).json({ error: 'Not found' });
+
+    const agents_assignes = (await pool.query(
+      `SELECT ta.agent_matricule,
+              ag.nom,
+              ag.prenom,
+              ag.email,
+              ta.date_debut,
+              ta.date_fin
+       FROM travaux_agent ta
+       LEFT JOIN agent ag ON ag.matricule = ta.agent_matricule
+       WHERE ta.travaux_id = $1
+       ORDER BY ta.id DESC`,
+      [id]
+    )).rows;
+
+    const responsables = (await pool.query(
+      `SELECT tr.agent_matricule,
+              tr.role,
+              tr.date_debut,
+              tr.date_fin,
+              tr.created_at,
+              ag.nom,
+              ag.prenom,
+              ag.email
+       FROM travaux_responsable tr
+       LEFT JOIN agent ag ON ag.matricule = tr.agent_matricule
+       WHERE tr.travaux_id = $1
+       ORDER BY tr.id DESC`,
+      [id]
+    )).rows;
+
+    res.json({ ...travail, agents_assignes, responsables });
+  } catch (err) {
+    console.error('Error fetching travaux by id:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 app.post('/api/travaux', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    let { doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance } = req.body;
+    let { doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance, agent_matricule } = req.body;
 
     if (!titre) return res.status(400).json({ error: 'Titre is required' });
 
     const r = await pool.query(
       `INSERT INTO travaux (
-        doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance
-      ) VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7::etat_travaux, 'A_faire'::etat_travaux), $8, COALESCE($9::timestamp, CURRENT_TIMESTAMP), $10, $11) RETURNING *`,
+        doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance, agent_matricule
+      ) VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7::etat_travaux, 'A_faire'::etat_travaux), $8, COALESCE($9::timestamp, CURRENT_TIMESTAMP), $10, $11, $12) RETURNING *`,
       [
-        doe_id || null, affaire_id || null, site_id || null, demande_id || null, titre, description || null, etat || null, priorite || null, date_debut || null, date_fin || null, date_echeance || null
+        doe_id || null, affaire_id || null, site_id || null, demande_id || null, titre, description || null, etat || null, priorite || null, date_debut || null, date_fin || null, date_echeance || null, agent_matricule || null
       ]
     );
     res.status(201).json(r.rows[0]);
@@ -5459,7 +5505,7 @@ app.post('/api/travaux', authenticateToken, authorizeAdmin, async (req, res) => 
 app.put('/api/travaux/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    let { doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance } = req.body;
+    let { doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance, agent_matricule } = req.body;
 
     if (!titre) return res.status(400).json({ error: 'Titre is required' });
 
@@ -5476,10 +5522,12 @@ app.put('/api/travaux/:id', authenticateToken, authorizeAdmin, async (req, res) 
         date_debut = COALESCE($9, date_debut),
         date_fin = COALESCE($10, date_fin),
         date_echeance = COALESCE($11, date_echeance),
+        agent_matricule = COALESCE($12, agent_matricule),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id=$12 RETURNING *`,
+      WHERE id=$13 RETURNING *`,
       [
         doe_id || null, affaire_id || null, site_id || null, demande_id || null, titre || null, description || null, etat || null, priorite || null, date_debut || null, date_fin || null, date_echeance || null,
+        agent_matricule || null,
         id
       ]
     );
