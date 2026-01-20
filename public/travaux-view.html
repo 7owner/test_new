@@ -424,6 +424,8 @@
       const agentHidden = document.getElementById('agent-mat');
       const agentSug = document.getElementById('agent-suggestions');
 
+      const pickArray = (...candidates) => candidates.find(a => Array.isArray(a) && a.length >= 0) || [];
+
       async function fetchJSON(url, opts) {
         const r = await fetch(url, { headers, credentials:'same-origin', ...(opts||{}) });
         if (r.status===401||r.status===403){ location.href='/login.html'; return null; }
@@ -604,8 +606,16 @@
 
         // Agents / Responsables
         const agentsList = document.getElementById('agents-list');
-        let agentsData = t.agents_assignes || [];
-        let responsablesData = t.responsables || [];
+        let agentsData = pickArray(
+          t.agents_assignes,
+          t.agents,
+          t.travaux_agents
+        );
+        let responsablesData = pickArray(
+          t.responsables,
+          t.travaux_responsables,
+          t.responsables_assignes
+        );
         // Relations étendues si dispos
         let relations = null;
         try {
@@ -618,15 +628,22 @@
             fetchJSON(`/api/travaux/${id}/agents`).catch(()=>null),
             fetchJSON(`/api/travaux/${id}/responsables`).catch(()=>null)
           ]);
-          const relAgents = Array.isArray(relations?.agents) ? relations.agents
-            : Array.isArray(relations?.travaux_agents) ? relations.travaux_agents
-            : Array.isArray(relations?.agents_assignes) ? relations.agents_assignes : null;
-          const relResp = Array.isArray(relations?.responsables) ? relations.responsables
-            : Array.isArray(relations?.travaux_responsables) ? relations.travaux_responsables : null;
+          const relAgents = pickArray(
+            relations?.agents,
+            relations?.travaux_agents,
+            relations?.agents_assignes,
+            relations?.agents_lies
+          );
+          const relResp = pickArray(
+            relations?.responsables,
+            relations?.travaux_responsables,
+            relations?.responsables_assignes,
+            relations?.travaux_responsable
+          );
           if (Array.isArray(agentsApi)) agentsData = agentsApi;
-          else if (relAgents) agentsData = relAgents;
+          else if (relAgents.length) agentsData = relAgents;
           if (Array.isArray(respApi)) responsablesData = respApi;
-          else if (relResp) responsablesData = relResp;
+          else if (relResp.length) responsablesData = relResp;
         } catch(err) {
           console.warn('Impossible de charger agents/responsables travaux', err);
         }
