@@ -41,7 +41,7 @@
       margin-bottom: 28px;
       border: 1px solid rgba(255,255,255,0.3);
     }
-    .header-section { padding: 28px; }
+    .header-section { padding: 20px 24px; }
     .header-section h1 {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       -webkit-background-clip: text;
@@ -52,7 +52,7 @@
       margin-bottom: 8px;
     }
     .header-section small { color: #8b93aa; font-size: 0.95rem; }
-    .filters-section { padding: 20px 24px 22px; }
+    .filters-section { padding: 0; }
     .form-control {
       border: 1px solid rgba(109,93,252,0.18);
       border-radius: 12px;
@@ -132,33 +132,34 @@
 <body>
   <div id="navbar-placeholder"></div>
   <main class="container my-4">
-    <div class="header-section">
-      <div class="d-flex justify-content-between align-items-start">
-        <div>
-          <h1><i class="bi bi-kanban me-2"></i>Tableau des travaux</h1>
-          <small>Gérez vos travaux par état — Glissez-déposez pour modifier</small>
+    <div class="header-section mb-3">
+      <div class="d-flex flex-column gap-3">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <h1><i class="bi bi-kanban me-2"></i>Tableau des travaux</h1>
+            <small>Gérez vos travaux par état — Glissez-déposez pour modifier</small>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btn-new-travail">
+            <i class="bi bi-plus-lg me-1"></i>Nouveau travail
+          </button>
         </div>
-        <button class="btn btn-primary btn-sm" id="btn-new-travail">
-          <i class="bi bi-plus-lg me-1"></i>Nouveau travail
-        </button>
-      </div>
-    </div>
-
-    <div class="filters-section mb-3">
-      <div class="row g-2">
-        <div class="col-md-3">
-          <input id="filter-title" class="form-control form-control-sm" placeholder="Filtrer par titre...">
-        </div>
-        <div class="col-md-3 position-relative">
-          <input id="filter-affaire" class="form-control form-control-sm" placeholder="Filtrer par affaire...">
-          <div id="sug-affaire" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
-        </div>
-        <div class="col-md-3 position-relative">
-          <input id="filter-site" class="form-control form-control-sm" placeholder="Filtrer par site...">
-          <div id="sug-site" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
-        </div>
-        <div class="col-md-3">
-          <input id="filter-global" class="form-control form-control-sm" placeholder="Recherche globale...">
+        <div class="filters-section">
+          <div class="row g-2">
+            <div class="col-md-3">
+              <input id="filter-title" class="form-control form-control-sm" placeholder="Filtrer par titre...">
+            </div>
+            <div class="col-md-3 position-relative">
+              <input id="filter-affaire" class="form-control form-control-sm" placeholder="Filtrer par affaire...">
+              <div id="sug-affaire" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
+            </div>
+            <div class="col-md-3 position-relative">
+              <input id="filter-site" class="form-control form-control-sm" placeholder="Filtrer par site...">
+              <div id="sug-site" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
+            </div>
+            <div class="col-md-3">
+              <input id="filter-global" class="form-control form-control-sm" placeholder="Recherche globale...">
+            </div>
+          </div>
         </div>
       </div>
     </div>
