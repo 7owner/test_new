@@ -547,7 +547,12 @@
               method:'POST',
               headers:{ ...headers, 'Content-Type':'application/json' },
               credentials:'same-origin',
-              body: JSON.stringify({ materiel_id: matId, commentaire: comment || null, quantite: qty })
+              body: JSON.stringify({
+                materiel_id: matId,
+                commentaire: comment || null,
+                quantite: qty,
+                travaux_id: id
+              })
             });
             if (!r.ok) {
               const d = await r.json().catch(()=>({}));

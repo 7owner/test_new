@@ -357,6 +357,14 @@ CREATE TABLE IF NOT EXISTS travaux_materiel (
     commentaire TEXT
 );
 
+CREATE TABLE IF NOT EXISTS travaux_materiel (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    materiel_id BIGINT NOT NULL REFERENCES materiel(id) ON DELETE RESTRICT,
+    quantite INTEGER DEFAULT 1,
+    commentaire TEXT
+);
+
 CREATE TABLE IF NOT EXISTS ticket_agent (
     id SERIAL PRIMARY KEY,
     ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
@@ -397,15 +405,16 @@ CREATE TABLE IF NOT EXISTS intervention_event (
 
 CREATE TABLE IF NOT EXISTS demande_materiel (
     id SERIAL PRIMARY KEY,
+    client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
     titre VARCHAR(255) NOT NULL,
-    commentaire TEXT,
-    quantite INTEGER NOT NULL DEFAULT 1,
-    statut VARCHAR(50) DEFAULT 'En_attente',
-    commande_complete BOOLEAN DEFAULT FALSE,
-    ticket_id INTEGER REFERENCES ticket(id) ON DELETE CASCADE,
-    intervention_id INTEGER REFERENCES intervention(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    description TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'En cours de traitement',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ticket_id INTEGER,
+    travaux_id BIGINT REFERENCES travaux(id) ON DELETE SET NULL, -- NEW
+    commentaire TEXT
 );
 
 CREATE TABLE IF NOT EXISTS gestion_demande_materiel (
