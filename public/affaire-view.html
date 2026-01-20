@@ -8,32 +8,176 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
   <script src="/nav.js?v=1"></script>
+  <style>
+    :root {
+      --primary: #667eea;
+      --primary-dark: #5a67d8;
+      --gradient-bg: linear-gradient(135deg, #f0f4ff 0%, #e0eaff 100%);
+      --card-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      --border-radius: 16px;
+      --text-muted: #64748b;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --info: #0dcaf0;
+    }
+
+    body {
+      background: var(--gradient-bg);
+      min-height: 100vh;
+      color: #1e293b;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    .card {
+      border: none;
+      border-radius: var(--border-radius);
+      box-shadow: var(--card-shadow);
+      transition: all 0.25s ease;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 35px rgba(0,0,0,0.12);
+    }
+
+    .card-title {
+      color: #1e293b;
+      font-weight: 600;
+      position: relative;
+      padding-bottom: 0.75rem;
+    }
+
+    .card-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 50px;
+      height: 3px;
+      background: var(--primary);
+      border-radius: 3px;
+    }
+
+    /* Ticket items - style timeline light */
+    .ticket-item {
+      background: white;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      transition: all 0.2s ease;
+    }
+
+    .ticket-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+      border-color: var(--primary);
+    }
+
+    .ticket-title a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .ticket-title a:hover {
+      text-decoration: underline;
+    }
+
+    .status-badge {
+      padding: 0.35rem 0.9rem;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+
+    .status-en-cours { background: #fef3c7; color: #92400e; }
+    .status-traite   { background: #d1fae5; color: #065f46; }
+    .status-rejete   { background: #fee2e2; color: #991b1b; }
+    .status-ferme    { background: #e5e7eb; color: #374151; }
+
+    .btn-back {
+      border-radius: 10px;
+      padding: 0.5rem 1.25rem;
+      font-weight: 500;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+    }
+
+    .empty-state i {
+      font-size: 3.5rem;
+      opacity: 0.4;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 576px) {
+      .ticket-item {
+        padding: 1rem;
+      }
+    }
+  </style>
 </head>
 <body>
-  <main class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <h1 class="mb-0">Détails de l'Affaire: <span id="affaire-nom"></span></h1>
-      <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
+  <main class="container mt-4 mt-md-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+      <h1 class="mb-0">
+        <i class="bi bi-briefcase me-2 text-primary"></i>
+        Détails de l'Affaire : <span id="affaire-nom" class="fw-bold"></span>
+      </h1>
+      <!--<button type="button" class="btn btn-outline-secondary btn-back" id="back-btn">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+      </button>-->
     </div>
 
+    <!-- Informations générales -->
     <div class="card mb-4">
       <div class="card-body">
-        <h2 class="card-title mb-4">Informations Générales</h2>
-        <p><strong>ID:</strong> <span id="view_id"></span></p>
-        <p><strong>Nom:</strong> <span id="view_nom"></span></p>
-        <p><strong>Description:</strong> <span id="view_description"></span></p>
-        <p><strong>Client:</strong> <span id="view_client"></span></p>
+        <h2 class="card-title">Informations Générales</h2>
+        <div class="row g-4">
+          <div class="col-md-4">
+            <div class="fw-semibold text-muted small text-uppercase">ID Affaire</div>
+            <div class="fs-4 fw-medium" id="view_id"></div>
+          </div>
+          <div class="col-md-8">
+            <div class="fw-semibold text-muted small text-uppercase">Nom</div>
+            <div class="fs-4 fw-medium" id="view_nom"></div>
+          </div>
+          <div class="col-12">
+            <div class="fw-semibold text-muted small text-uppercase">Description</div>
+            <div class="fs-6 lh-lg" id="view_description"></div>
+          </div>
+          <div class="col-12">
+            <div class="fw-semibold text-muted small text-uppercase">Client associé</div>
+            <div class="fs-5" id="view_client"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="card mb-4">
+    <!-- Tickets associés -->
+    <div class="card mb-5">
       <div class="card-body">
-        <h2 class="card-title mb-4">Tickets Associés</h2>
-        <div id="tickets-list"></div>
+        <h2 class="card-title d-flex justify-content-between align-items-center">
+          <span>Tickets Associés</span>
+          <span class="badge bg-primary-subtle text-primary fs-6 px-3 py-2" id="tickets-count">0</span>
+        </h2>
+
+        <div id="tickets-list" class="mt-3"></div>
       </div>
     </div>
-    
-    <a href="affaires.html" class="btn btn-secondary d-none" id="fallback-back-link">Retour à la liste des affaires</a>
+
+    <!-- Lien fallback discret -->
+    <div class="text-center mt-5">
+      <a href="affaires.html" class="btn btn-outline-secondary btn-sm d-none" id="fallback-back-link">
+        <i class="bi bi-list-ul me-1"></i>Retour à la liste des affaires
+      </a>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
@@ -45,73 +189,114 @@
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
       if (!affaireId) {
-        document.querySelector('main').innerHTML = '<div class="alert alert-danger">ID d\'affaire manquant.</div>';
+        document.querySelector('main').innerHTML = '<div class="alert alert-danger m-5">ID d\'affaire manquant.</div>';
         return;
       }
 
       function set(id, val) {
         const el = document.getElementById(id);
-        if (el) el.textContent = val || 'N/A';
+        if (el) el.textContent = val ?? '—';
       }
-      
+
       function setHtml(id, val) {
         const el = document.getElementById(id);
-        if (el) el.innerHTML = val || 'N/A';
+        if (el) el.innerHTML = val ?? '—';
+      }
+
+      function getStatusClass(etat) {
+        const s = (etat || '').toLowerCase();
+        if (s.includes('en cours') || s.includes('ouvert')) return 'status-en-cours';
+        if (s.includes('trait') || s.includes('résolu'))   return 'status-traite';
+        if (s.includes('rejet'))                           return 'status-rejete';
+        if (s.includes('fermé') || s.includes('clos'))     return 'status-ferme';
+        return '';
       }
 
       try {
         const res = await fetch(`/api/affaires/${affaireId}/relations`, { headers });
         if (!res.ok) {
-          if (res.status === 401 || res.status === 403) location.href = '/login.html';
-          throw new Error(`Erreur HTTP ${res.status}`);
+          if ([401, 403].includes(res.status)) location.href = '/login.html';
+          throw new Error(`Erreur ${res.status}`);
         }
-        const data = await res.json();
-        const { affaire, client, tickets } = data;
 
-        document.title = `Détails de l'Affaire: ${affaire.nom_affaire}`;
-        set('affaire-nom', affaire.nom_affaire);
+        const { affaire, client, tickets } = await res.json();
+
+        document.title = `Affaire : ${affaire.nom_affaire || 'Sans nom'}`;
+        set('affaire-nom', affaire.nom_affaire || 'Sans nom');
         set('view_id', affaire.id);
-        set('view_nom', affaire.nom_affaire);
-        set('view_description', affaire.description);
+        set('view_nom', affaire.nom_affaire || '—');
+        set('view_description', affaire.description || 'Aucune description disponible.');
 
         if (client) {
-          setHtml('view_client', `<a href="client-view.html?id=${client.id}">${client.nom_client}</a>`);
+          setHtml('view_client', `
+            <a href="client-view.html?id=${client.id}" class="text-primary text-decoration-none fw-medium">
+              ${client.nom_client || 'Client inconnu'} <i class="bi bi-box-arrow-up-right ms-1 small"></i>
+            </a>
+          `);
+        } else {
+          setHtml('view_client', '<span class="text-muted">Aucun client associé</span>');
         }
 
         const ticketsList = document.getElementById('tickets-list');
+        const countEl = document.getElementById('tickets-count');
         ticketsList.innerHTML = '';
-        if (tickets && tickets.length > 0) {
+
+        if (tickets?.length > 0) {
+          countEl.textContent = `${tickets.length} ticket${tickets.length > 1 ? 's' : ''}`;
+
           tickets.forEach(ticket => {
-            const ticketEl = document.createElement('div');
-            ticketEl.className = 'list-group-item';
-            ticketEl.innerHTML = `
-              <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1"><a href="/ticket-view.html?id=${ticket.id}">${ticket.titre || 'Ticket sans titre'}</a></h5>
-                <small>Statut: ${ticket.etat}</small>
+            const item = document.createElement('div');
+            item.className = 'ticket-item';
+            item.innerHTML = `
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="ticket-title mb-1">
+                  <a href="/ticket-view.html?id=${ticket.id}">
+                    ${ticket.titre || 'Ticket sans titre'}
+                  </a>
+                </h5>
+                <span class="status-badge ${getStatusClass(ticket.etat)}">
+                  ${ticket.etat || 'Non défini'}
+                </span>
               </div>
-              <p class="mb-1">${ticket.description || ''}</p>
+              <p class="text-muted mb-1 small">
+                ${ticket.description ? ticket.description.substring(0, 180) + (ticket.description.length > 180 ? '...' : '') : 'Pas de description'}
+              </p>
+              <small class="text-muted">
+                Créé le ${new Date(ticket.created_at || Date.now()).toLocaleDateString('fr-FR')}
+              </small>
             `;
-            ticketsList.appendChild(ticketEl);
+            ticketsList.appendChild(item);
           });
         } else {
-          ticketsList.innerHTML = '<p class="text-muted">Aucun ticket associé à cette affaire.</p>';
+          countEl.textContent = '0';
+          ticketsList.innerHTML = `
+            <div class="empty-state">
+              <i class="bi bi-ticket-detailed"></i>
+              <p class="mt-2 mb-1">Aucun ticket associé à cette affaire pour le moment.</p>
+              <small>Les tickets apparaîtront ici dès qu'ils seront liés.</small>
+            </div>
+          `;
         }
 
       } catch (err) {
-        document.querySelector('main').innerHTML = `<div class="alert alert-danger">Erreur: ${err.message}</div>`;
+        document.querySelector('main').innerHTML = `
+          <div class="alert alert-danger m-5 text-center">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-3"></i>
+            Erreur de chargement : ${err.message}
+          </div>
+        `;
         console.error(err);
       }
     });
-    const backBtn = document.getElementById('back-btn');
-    if (backBtn) {
-      backBtn.addEventListener('click', () => {
-        if (window.history.length > 1) window.history.back();
-        else {
-          const fb = document.getElementById('fallback-back-link');
-          if (fb) fb.click();
-        }
-      });
-    }
+
+    // Gestion du bouton retour
+    document.getElementById('back-btn')?.addEventListener('click', () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        document.getElementById('fallback-back-link')?.click();
+      }
+    });
   </script>
 </body>
 </html>

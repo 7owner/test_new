@@ -688,8 +688,8 @@
         }
 
         // Factures / matériel restent à raccorder côté API (cible Travaux)
-        factList.innerHTML = '<div class="text-muted">Pas encore relié aux factures Travaux.</div>';
-        matList.innerHTML = '<div class="text-muted">Pas encore relié aux demandes matériel Travaux.</div>';
+        if (factList) factList.innerHTML = '<div class="text-muted">Pas encore relié aux factures Travaux.</div>';
+        if (matList) matList.innerHTML = '<div class="text-muted">Pas encore relié aux demandes matériel Travaux.</div>';
 
       // --- Tâches ---
         async function loadTasks() {
