@@ -51,9 +51,12 @@
             <div id="affaire-suggestions" class="list-group position-absolute w-100"></div>
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Agent responsable (matricule)</label>
-            <input type="text" class="form-control" id="agent_matricule" placeholder="Ex: AGT001">
+            <label class="form-label fw-semibold">Demande client</label>
+            <input type="text" class="form-control" id="demande-search-input" placeholder="Rechercher une demande client...">
+            <input type="hidden" id="demande_id">
+            <div id="demande-suggestions" class="list-group position-absolute w-100"></div>
           </div>
+
           <div class="col-md-6">
             <label class="form-label fw-semibold">Priorité</label>
             <select class="form-select" id="priorite">

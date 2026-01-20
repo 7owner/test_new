@@ -592,11 +592,15 @@
 
         // Helpers pour mises à jour
         async function updateTravail(payload) {
+          // L'API attend au minimum un titre : on le repasse toujours
+          const base = currentTravail && currentTravail.titre ? { titre: currentTravail.titre } : {};
+          const body = { ...base, ...payload };
+          if (!body.titre) throw new Error('Titre requis pour la mise à jour du travail');
           const r = await fetch(`/api/travaux/${id}`, {
             method:'PUT',
             headers:{ ...headers, 'Content-Type':'application/json' },
             credentials:'same-origin',
-            body: JSON.stringify(payload)
+            body: JSON.stringify(body)
           });
           const d = await r.json().catch(()=>({}));
           if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
