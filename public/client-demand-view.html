@@ -444,6 +444,21 @@
         const payload = await res.json();
         let { demande, ticket, responsable, interventions } = payload || {};
         if (!demande && payload && payload.id) demande = payload;
+
+        // Fallback: récupérer les relations (responsable / interventions / ticket) si absents
+        if ((!responsable || !interventions || !ticket) && demande?.id) {
+          try {
+            const relRes = await fetch(`/api/demandes_client/${demande.id}/relations`, { headers, cache: 'no-store' });
+            if (relRes.ok) {
+              const rel = await relRes.json();
+              responsable = responsable || rel.responsable || rel.agent || rel.assignation || null;
+              interventions = interventions || rel.interventions || rel.intervention || [];
+              ticket = ticket || rel.ticket || null;
+            }
+          } catch (e) {
+            console.warn('relations fallback failed', e);
+          }
+        }
         if (!demande) throw new Error('Données de demande manquantes');
 
         // Sections toujours visibles, même en modal (requis par la demande utilisateur)
