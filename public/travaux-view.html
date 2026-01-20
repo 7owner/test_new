@@ -445,6 +445,13 @@
         if (respMatricule) {
           chips.push(`<span class="chip"><i class="bi bi-person-badge"></i>${respMatricule}</span>`);
         }
+        // Responsables secondaires
+        (responsables || [])
+          .filter(r => !respMatricule || (r.agent_matricule !== respMatricule && r.matricule !== respMatricule))
+          .forEach(r => {
+            const label = r.agent_matricule || r.matricule || r.actor_name || 'Resp.';
+            chips.push(`<span class="chip bg-light text-dark border"><i class="bi bi-person-gear"></i>${label}</span>`);
+          });
         (agents || []).forEach(a => {
           const label = formatMember(a.agent_matricule || a.matricule || a.actor_name, a.actor_email);
           if (label) chips.push(`<span class="chip"><i class="bi bi-people"></i>${label}</span>`);
@@ -661,7 +668,13 @@
         set('resp-principal', responsableMatricule || '—');
         const infoRespEl = document.getElementById('info-resp');
         if (infoRespEl) infoRespEl.textContent = responsableMatricule || '—';
-        renderTeamInline(responsableMatricule, agentsData, responsablesData);
+        const secondaires = (responsablesData || []).filter(r => {
+          const role = String(r.role || '').toLowerCase();
+          const mat = r.agent_matricule || r.matricule;
+          const isPrincipalMat = responsableMatricule && mat === responsableMatricule;
+          return !isPrincipalMat && (role.includes('second') || !responsableMatricule);
+        });
+        renderTeamInline(responsableMatricule, agentsData, secondaires);
 
         // Actions alignées sur ticket-view
         if (!isAdmin) {
