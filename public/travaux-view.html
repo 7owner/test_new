@@ -521,9 +521,28 @@
           const href = url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`;
           return `<a href="${href}" class="link-button open-link-modal" data-href="${href}">${label || url}</a>`;
         };
-        const siteLabel = t.site_nom || (t.site_id ? `Site #${t.site_id}` : '—');
-        const affaireLabel = t.affaire_nom || (t.affaire_id ? `Affaire #${t.affaire_id}` : '—');
-        const doeLabel = t.doe_titre || (t.doe_id ? `DOE #${t.doe_id}` : '—');
+        // Récupérer les libellés si l'API ne les a pas inclus
+        let siteLabel = t.site_nom || '';
+        let affaireLabel = t.affaire_nom || '';
+        let doeLabel = t.doe_titre || '';
+        try {
+          if (t.site_id && !siteLabel) {
+            const rs = await fetch(`/api/sites/${t.site_id}`, { headers, credentials:'same-origin' });
+            if (rs.ok) { const s = await rs.json(); siteLabel = s.nom_site || siteLabel; }
+          }
+          if (t.affaire_id && !affaireLabel) {
+            const ra = await fetch(`/api/affaires/${t.affaire_id}`, { headers, credentials:'same-origin' });
+            if (ra.ok) { const a = await ra.json(); affaireLabel = a.nom_affaire || affaireLabel; }
+          }
+          if (t.doe_id && !doeLabel) {
+            const rd = await fetch(`/api/does/${t.doe_id}`, { headers, credentials:'same-origin' });
+            if (rd.ok) { const d = await rd.json(); doeLabel = d.titre || doeLabel; }
+          }
+        } catch(_) {}
+
+        siteLabel = siteLabel || (t.site_id ? `Site #${t.site_id}` : '—');
+        affaireLabel = affaireLabel || (t.affaire_id ? `Affaire #${t.affaire_id}` : '—');
+        doeLabel = doeLabel || (t.doe_id ? `DOE #${t.doe_id}` : '—');
 
         setHTML('work-affaire', t.affaire_id ? modalLink(`affaire-view.html?id=${t.affaire_id}`, affaireLabel) : affaireLabel);
         setHTML('work-site', t.site_id ? modalLink(`site-view.html?id=${t.site_id}`, siteLabel) : siteLabel);
