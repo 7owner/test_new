@@ -133,6 +133,14 @@
             <label>DOE</label>
             <div class="value" id="info-doe">-</div>
           </div>
+          <div class="info-box">
+            <label>Avancement</label>
+            <div class="value" id="info-progress">0%</div>
+          </div>
+          <div class="info-box">
+            <label>Reste à faire</label>
+            <div class="value" id="info-remaining">—</div>
+          </div>
         </div>
 
         <div class="mb-3">
@@ -723,12 +731,23 @@
             taskList.innerHTML = '';
             if (!tasks.length) {
               taskList.innerHTML = '<div class="text-muted">Aucune tâche.</div>';
+              set('info-progress', '0%');
+              set('info-remaining', '0');
               return;
             }
+            const doneCount = tasks.filter(tk => (tk.etat || '').toLowerCase() === 'termine').length;
+            const total = tasks.length;
+            const pct = Math.round((doneCount / total) * 100);
+            set('info-progress', `${pct}%`);
+            set('info-remaining', `${total - doneCount} tâche(s)`);
             tasks.forEach(tk => {
               const card = document.createElement('div');
               card.className = 'border rounded p-2 mb-2';
               const ech = tk.date_echeance ? new Date(tk.date_echeance).toLocaleString('fr-FR') : '—';
+              const isDone = tk.etat === 'Termine';
+              const doneAction = isDone
+                ? '<span class="badge bg-success align-self-center">Terminé</span>'
+                : `<button class="btn btn-sm btn-outline-success btn-task-done" data-id="${tk.id}" data-title="${tk.titre || ''}" title="Terminer"><i class="bi bi-check2"></i></button>`;
               card.innerHTML = `
                 <div class="d-flex justify-content-between align-items-center">
                   <div>
@@ -736,8 +755,8 @@
                     <div class="small text-muted">${tk.description || ''}</div>
                     <div class="small text-muted">État: ${tk.etat || 'A_faire'} · Priorité: ${tk.priorite || 'Moyenne'} · Échéance: ${ech}</div>
                   </div>
-                  <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-outline-success btn-task-done" data-id="${tk.id}" data-title="${tk.titre || ''}" title="Terminer"><i class="bi bi-check2"></i></button>
+                  <div class="d-flex gap-1 align-items-center">
+                    ${doneAction}
                     <button class="btn btn-sm btn-outline-danger btn-task-del" data-id="${tk.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
                   </div>
                 </div>
