@@ -521,13 +521,17 @@
           const href = url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`;
           return `<a href="${href}" class="link-button open-link-modal" data-href="${href}">${label || url}</a>`;
         };
-        setHTML('work-affaire', t.affaire_id ? modalLink(`affaire-view.html?id=${t.affaire_id}`, t.affaire_nom || 'Affaire') : (t.affaire_nom || '—'));
-        setHTML('work-site', t.site_id ? modalLink(`site-view.html?id=${t.site_id}`, t.site_nom || 'Site') : (t.site_nom || '—'));
-        setHTML('work-doe', t.doe_id ? modalLink(`doe-view.html?id=${t.doe_id}`, t.doe_titre || 'DOE') : (t.doe_titre || '—'));
+        const siteLabel = t.site_nom || (t.site_id ? `Site #${t.site_id}` : '—');
+        const affaireLabel = t.affaire_nom || (t.affaire_id ? `Affaire #${t.affaire_id}` : '—');
+        const doeLabel = t.doe_titre || (t.doe_id ? `DOE #${t.doe_id}` : '—');
+
+        setHTML('work-affaire', t.affaire_id ? modalLink(`affaire-view.html?id=${t.affaire_id}`, affaireLabel) : affaireLabel);
+        setHTML('work-site', t.site_id ? modalLink(`site-view.html?id=${t.site_id}`, siteLabel) : siteLabel);
+        setHTML('work-doe', t.doe_id ? modalLink(`doe-view.html?id=${t.doe_id}`, doeLabel) : doeLabel);
         setHTML('work-demande', t.demande_id ? modalLink(`demande-client-admin.html?id=${t.demande_id}`, `Demande #${t.demande_id}`) : (t.demande_titre || '—'));
-        setHTML('info-affaire', t.affaire_id ? modalLink(`affaire-view.html?id=${t.affaire_id}`, t.affaire_nom || 'Affaire') : (t.affaire_nom || '—'));
-        setHTML('info-doe', t.doe_id ? modalLink(`doe-view.html?id=${t.doe_id}`, t.doe_titre || 'DOE') : (t.doe_titre || '—'));
-        setHTML('info-site', t.site_id ? `<a href="site-view.html?id=${t.site_id}" target="_blank">${t.site_nom || 'Site'}</a>` : (t.site_nom || '—'));
+        setHTML('info-affaire', t.affaire_id ? modalLink(`affaire-view.html?id=${t.affaire_id}`, affaireLabel) : affaireLabel);
+        setHTML('info-doe', t.doe_id ? modalLink(`doe-view.html?id=${t.doe_id}`, doeLabel) : doeLabel);
+        setHTML('info-site', t.site_id ? modalLink(`site-view.html?id=${t.site_id}`, siteLabel) : siteLabel);
 
         // Agents / Responsables
         const agentsList = document.getElementById('agents-list');
