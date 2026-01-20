@@ -424,6 +424,14 @@
       const agentHidden = document.getElementById('agent-mat');
       const agentSug = document.getElementById('agent-suggestions');
 
+      async function fetchJSON(url, opts) {
+        const r = await fetch(url, { headers, credentials:'same-origin', ...(opts||{}) });
+        if (r.status===401||r.status===403){ location.href='/login.html'; return null; }
+        const data = await r.json().catch(()=>null);
+        if (!r.ok) throw new Error((data && data.error) || r.statusText);
+        return data;
+      }
+
       function formatMember(label, email) {
         if (label && email) return `${label} (${email})`;
         return label || email || 'Utilisateur';
@@ -574,7 +582,18 @@
 
         // Agents / Responsables
         const agentsList = document.getElementById('agents-list');
-        const agentsData = t.agents_assignes || [];
+        let agentsData = t.agents_assignes || [];
+        let responsablesData = t.responsables || [];
+        try {
+          const [agentsApi, respApi] = await Promise.all([
+            fetchJSON(`/api/travaux/${id}/agents`).catch(()=>null),
+            fetchJSON(`/api/travaux/${id}/responsables`).catch(()=>null)
+          ]);
+          if (Array.isArray(agentsApi)) agentsData = agentsApi;
+          if (Array.isArray(respApi)) responsablesData = respApi;
+        } catch(err) {
+          console.warn('Impossible de charger agents/responsables travaux', err);
+        }
         if (agentsList) {
           agentsList.innerHTML = agentsData.length ? '' : '<li class="list-group-item text-muted">Aucun agent.</li>';
           agentsData.forEach(a => {
@@ -584,9 +603,11 @@
             agentsList.appendChild(li);
           });
         }
-        const responsableMatricule = t.agent_matricule || null;
+        const principalResp = (responsablesData.find(r => (r.role || '').toLowerCase().includes('principal')) || responsablesData[0] || {});
+        const responsableMatricule = principalResp.agent_matricule || principalResp.matricule || t.agent_matricule || null;
         set('resp-principal', responsableMatricule || '—');
-        set('info-resp', responsableMatricule || '—');
+        const infoRespEl = document.getElementById('info-resp');
+        if (infoRespEl) infoRespEl.textContent = responsableMatricule || '—';
         renderTeamInline(responsableMatricule, agentsData);
 
         // Actions alignées sur ticket-view
