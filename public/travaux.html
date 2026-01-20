@@ -239,6 +239,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // travailId -> { pct, remaining }
   const progressCache = new Map();
+  const formatResp = (r) => {
+    if (!r) return '';
+    const name = [r.prenom, r.nom].filter(Boolean).join(' ').trim();
+    return name || r.agent_matricule || r.matricule || r.actor_name || r.email || '';
+  };
 
   const toTravauxArray = (raw) => {
     if (Array.isArray(raw)) return raw;
@@ -409,11 +414,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const priorite = t.priorite || 'Moyenne';
 
-        const responsable = t.agent_nom
-          ? `${t.agent_nom || ''} ${t.agent_prenom || ''}`.trim() || t.agent_matricule || '—'
-          : (t.agent_matricule || t.responsable || '—');
-
-        const responsableDisplay = responsable && responsable !== '—' ? responsable : '—';
+        const resps = t.responsables || t.travaux_responsables || t.responsables_assignes || [];
+        const primaryRespObj = resps.find(r => normalizeTxt(r.role).includes('principal')) || resps[0] || null;
+        const primaryResp = formatResp(primaryRespObj);
+        const fallbackResp = t.agent_nom
+          ? `${t.agent_nom || ''} ${t.agent_prenom || ''}`.trim() || t.agent_matricule || ''
+          : (t.agent_matricule || t.responsable || '');
+        const secondaryLabels = resps
+          .filter(r => primaryRespObj ? r !== primaryRespObj : true)
+          .map(formatResp)
+          .filter(Boolean);
+        const allRespLabels = [primaryResp || fallbackResp, ...secondaryLabels].filter(Boolean);
+        const responsableDisplay = allRespLabels.length ? allRespLabels.join(', ') : '—';
 
         // Avancement depuis API / calculs
         const done = Number.parseFloat(
