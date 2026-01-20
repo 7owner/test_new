@@ -120,6 +120,12 @@
       let affairesCache = [];
       let sitesCache = [];
       const progressCache = new Map(); // travailId -> { pct, remaining }
+      const toTravauxArray = (raw) => {
+        if (Array.isArray(raw)) return raw;
+        if (Array.isArray(raw?.data)) return raw.data;
+        if (Array.isArray(raw?.items)) return raw.items;
+        return [];
+      };
 
       function formatProgressLine(pct, remaining) {
         if (pct === null && remaining === null) return 'Avancement: —';
@@ -164,8 +170,6 @@
           setCount(etat, 0);
         });
 
-        const termTitle = (titleFilter?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
-        const term = (searchInput?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
         const termTitle = (titleFilter?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
         const term = (searchInput?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
         const termAff = (filterAffaire?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
@@ -264,16 +268,14 @@
           if (col) col.innerHTML = '<div class="empty-placeholder">Chargement...</div>';
         });
         try {
-          const [travRes, affRes, siteRes] = await Promise.all([
-            fetch('/api/travaux', { headers, credentials: 'same-origin' }),
-            fetch('/api/affaires', { headers, credentials: 'same-origin' }),
-            fetch('/api/sites', { headers, credentials: 'same-origin' })
-          ]);
+          const travRes = await fetch('/api/travaux', { headers, credentials: 'same-origin' });
           if (travRes.status === 401 || travRes.status === 403) { location.href = '/login.html'; return; }
-          travauxCache = travRes.ok ? await travRes.json() : [];
-          affairesCache = affRes.ok ? await affRes.json() : [];
-          sitesCache = siteRes.ok ? await siteRes.json() : [];
-          renderTravaux(Array.isArray(travauxCache) ? travauxCache : []);
+          const data = travRes.ok ? await travRes.json() : [];
+          travauxCache = toTravauxArray(data);
+          renderTravaux(travauxCache);
+          // Chargements non bloquants des référentiels
+          fetch('/api/affaires', { headers, credentials: 'same-origin' }).then(r => r.ok ? r.json() : []).then(d => { affairesCache = toTravauxArray(d); }).catch(()=>{});
+          fetch('/api/sites', { headers, credentials: 'same-origin' }).then(r => r.ok ? r.json() : []).then(d => { sitesCache = toTravauxArray(d); }).catch(()=>{});
         } catch (err) {
           console.error('Erreur chargement travaux', err);
           colIds.forEach(etat => {
