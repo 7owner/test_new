@@ -509,21 +509,10 @@
         tmForm.addEventListener('submit', async (e) => {
           e.preventDefault();
           const mat = tmMat?.value.trim();
-          let matId = mat && !isNaN(mat) ? Number(mat) : null;
+          const matId = mat && !isNaN(mat) ? Number(mat) : null;
           const comment = tmComment?.value.trim();
           const qty = Number(tmQty?.value || 1) || 1;
-          // Fallback: tenter de résoudre par référence / texte
-          if (!matId && mat) {
-            try {
-              const searchRes = await fetch(`/api/materiels?query=${encodeURIComponent(mat)}`, { headers, credentials:'same-origin' });
-              if (searchRes.ok) {
-                const list = await searchRes.json().catch(()=>[]);
-                const first = Array.isArray(list) ? list[0] : null;
-                if (first?.id) matId = first.id;
-              }
-            } catch {}
-          }
-          if (!matId) { alert('ID du matériel requis (materiel_id).'); return; }
+          if (!matId) { alert('ID du matériel requis (materiel_id numérique).'); return; }
           try {
             const r = await fetch(`/api/travaux/${id}/materiels`, {
               method:'POST',
