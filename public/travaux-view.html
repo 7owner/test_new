@@ -181,6 +181,7 @@
               <div class="col-lg-5">
                 <label class="form-label small text-muted">Matériel</label>
                 <input type="text" id="tm-mat" class="form-control" placeholder="Ex: Etiquette, Casque..." autocomplete="off">
+                <div id="tm-mat-suggestions" class="list-group mt-1" style="max-height:180px;overflow:auto;"></div>
               </div>
               <div class="col-lg-5">
                 <label class="form-label small text-muted">Commentaire</label>
@@ -431,6 +432,7 @@
       const matList = document.getElementById('mat-list');
       const tmForm = document.getElementById('tm-form');
       const tmMat = document.getElementById('tm-mat');
+      const tmMatSug = document.getElementById('tm-mat-suggestions');
       const tmComment = document.getElementById('tm-comment');
       const tmQty = document.getElementById('tm-qty');
       const tmList = document.getElementById('tm-list');
@@ -457,8 +459,39 @@
       const agentSearch = document.getElementById('agent-search-input');
       const agentHidden = document.getElementById('agent-mat');
       const agentSug = document.getElementById('agent-suggestions');
+      let materielCache = [];
+      let matTimer = null;
 
       const pickArray = (...candidates) => candidates.find(a => Array.isArray(a) && a.length >= 0) || [];
+      function renderMatSuggestions(list = []) {
+        if (!tmMatSug) return;
+        if (!list.length) { tmMatSug.innerHTML = ''; return; }
+        tmMatSug.innerHTML = '';
+        list.slice(0, 8).forEach(item => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'list-group-item list-group-item-action';
+          const label = `${item.designation || item.nom || 'Matériel'}${item.reference ? ' ('+item.reference+')' : ''}`.trim();
+          btn.textContent = `${label} — id: ${item.id}`;
+          btn.addEventListener('click', () => {
+            if (tmMat) tmMat.value = item.id;
+            tmMatSug.innerHTML = '';
+          });
+          tmMatSug.appendChild(btn);
+        });
+      }
+
+      async function searchMateriel(term) {
+        if (!term || term.length < 2) { tmMatSug.innerHTML=''; return; }
+        try {
+          const res = await fetch(`/api/materiels?query=${encodeURIComponent(term)}`, { headers, credentials:'same-origin' });
+          if (!res.ok) return;
+          const list = await res.json().catch(()=>[]);
+          renderMatSuggestions(list || []);
+        } catch (e) {
+          console.warn('Search materiel failed', e);
+        }
+      }
       // Matériel travaux
       async function loadTravauxMateriel() {
         if (!tmList) return;
@@ -506,6 +539,14 @@
       }
 
       if (tmForm) {
+        if (tmMat) {
+          tmMat.addEventListener('input', () => {
+            if (tmMatSug) tmMatSug.innerHTML='';
+            const val = tmMat.value.trim();
+            clearTimeout(matTimer);
+            matTimer = setTimeout(() => searchMateriel(val), 200);
+          });
+        }
         tmForm.addEventListener('submit', async (e) => {
           e.preventDefault();
           const mat = tmMat?.value.trim();
@@ -517,10 +558,9 @@
               const searchRes = await fetch(`/api/materiels?query=${encodeURIComponent(mat)}`, { headers, credentials:'same-origin' });
               const list = searchRes.ok ? await searchRes.json().catch(()=>[]) : [];
               if (Array.isArray(list) && list.length) {
-                const first = list[0];
-                const label = `${first.designation || first.nom || 'Matériel'} ${first.reference ? '('+first.reference+')' : ''}`.trim();
-                const ok = confirm(`Utiliser ce matériel ?\n${label} (id: ${first.id})`);
-                if (ok) matId = first.id;
+                renderMatSuggestions(list);
+                alert('Sélectionnez un matériel dans la liste pour préremplir son ID, puis validez à nouveau.');
+                return;
               } else {
                 alert('Aucun matériel trouvé pour cette recherche. Merci de saisir un ID numérique.');
                 return;
