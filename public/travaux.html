@@ -241,6 +241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const progressCache = new Map();
   const formatResp = (r) => {
     if (!r) return '';
+    if (typeof r === 'string') return r;
     const name = [r.prenom, r.nom].filter(Boolean).join(' ').trim();
     return name || r.agent_matricule || r.matricule || r.actor_name || r.email || '';
   };
@@ -414,13 +415,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const priorite = t.priorite || 'Moyenne';
 
-        const resps = t.responsables || t.travaux_responsables || t.responsables_assignes || [];
-        const primaryRespObj = resps.find(r => normalizeTxt(r.role).includes('principal')) || resps[0] || null;
+        let respsRaw = t.responsables || t.travaux_responsables || t.responsables_assignes || [];
+        respsRaw = Array.isArray(respsRaw) ? respsRaw.slice() : [];
+        if (!respsRaw.length && Array.isArray(t.responsables_noms)) respsRaw = t.responsables_noms.slice();
+        if (!respsRaw.length && t.responsable_noms) respsRaw = [t.responsable_noms];
+
+        const primaryRespObj = respsRaw.find(r => r && typeof r === 'object' && normalizeTxt(r.role).includes('principal')) || respsRaw[0] || null;
         const primaryResp = formatResp(primaryRespObj);
         const fallbackResp = t.agent_nom
           ? `${t.agent_nom || ''} ${t.agent_prenom || ''}`.trim() || t.agent_matricule || ''
           : (t.agent_matricule || t.responsable || '');
-        const secondaryLabels = resps
+        const secondaryLabels = respsRaw
           .filter(r => primaryRespObj ? r !== primaryRespObj : true)
           .map(formatResp)
           .filter(Boolean);
@@ -468,7 +473,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
 
             <div class="text-muted small mb-2">${t.description || ''}</div>
-            <div class="small text-muted mb-2"><i class="bi bi-person me-1"></i>Resp. ${responsableDisplay}</div>
+                <div class="small text-muted mb-2"><i class="bi bi-people me-1"></i>Resp. ${responsableDisplay}</div>
 
             <div class="progress mb-1" style="height:6px; background: rgba(102,126,234,0.12);">
               <div class="progress-bar ${barClass} progress-bar-fill"
