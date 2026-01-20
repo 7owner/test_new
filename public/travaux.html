@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/custom.css?v=1">
   <script src="/nav.js?v=2"></script>
   <style>
+    * { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     :root {
       --bg:        #f8f9fc;
       --card:      #ffffff;
@@ -24,72 +25,138 @@
       --prio-low:    #6b7280;
     }
     body {
-      background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: var(--text);
       min-height: 100vh;
-      font-family: system-ui, -apple-system, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       padding: 2rem 1rem;
     }
-    .board-col {
-      background: var(--card);
+    main.container { max-width: 1600px; }
+    .header-section, .filters-section {
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
       border-radius: 16px;
-      border: 1px solid var(--border);
-      box-shadow: 0 10px 25px -5px rgba(15,23,42,0.08);
-      padding: 1.25rem;
-      min-height: 65vh;
-      transition: all 0.22s ease;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      margin-bottom: 28px;
     }
-    .board-col:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 20px 35px -10px rgba(15,23,42,0.12);
+    .header-section { padding: 28px; }
+    .header-section h1 {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+      font-size: 2rem;
+      margin-bottom: 8px;
     }
-    .col-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; padding-bottom:.9rem; border-bottom:1px solid var(--border); }
-    .col-header h5 { margin:0; font-weight:600; font-size:1.1rem; }
-    .badge-count { font-weight:500; padding:0.4em 0.85em; border-radius:1.5rem; font-size:0.9rem; }
-    [data-etat="A_faire"]    { --state-color: var(--todo); }
-    [data-etat="En_cours"]   { --state-color: var(--doing); }
-    [data-etat="En_attente"] { --state-color: var(--waiting); }
-    [data-etat="Termine"]    { --state-color: var(--done); }
-    [data-etat] .col-header h5 { color: var(--state-color); }
-    [data-etat="A_faire"]    .badge-count { background: #e2e8f0; color: #475569; }
-    [data-etat="En_cours"]   .badge-count { background: #fef3c7; color: #92400e; }
-    [data-etat="En_attente"] .badge-count { background: #f3f4f6; color: #4b5563; }
-    [data-etat="Termine"]    .badge-count { background: #d1fae5; color: #065f46; }
+    .header-section small { color: #8b93aa; font-size: 0.95rem; }
+    .filters-section { padding: 20px; }
+    .form-control {
+      border: 2px solid #e9ecf5;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+      background: #f8fbff;
+    }
+    .form-control:focus {
+      border-color: #667eea;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .board-col {
+      min-height: 70vh;
+      border-radius: 16px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      border: 2px solid rgba(102, 126, 234, 0.1);
+      position: relative;
+      overflow-y: auto;
+    }
+    .board-col::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 16px 16px 0 0;
+    }
+    .col-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:12px; border-bottom:2px solid #e9ecf5; }
+    .col-header .fw-semibold { font-size: 1.1rem; color: #2d3748; }
+    .col-header .badge { font-size: 0.85rem; padding: 6px 12px; border-radius: 50px; font-weight: 600; background: rgba(102, 126, 234, 0.2); color: #667eea; }
     .work-card {
-      background: white;
+      border: 2px solid #e9ecf5;
       border-radius: 12px;
-      border: 1px solid #e5e7eb;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      margin-bottom: 1rem;
-      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      background: #fff;
+      cursor: move;
+      position: relative;
       overflow: hidden;
     }
-    .work-card:hover { transform: translateY(-4px); box-shadow: 0 14px 28px -8px rgba(0,0,0,0.14); }
-    .work-card .card-body { padding: 1.1rem; }
-    .tag { font-size: 0.8rem; padding: 0.25rem 0.65rem; border-radius: 2rem; font-weight: 500; }
-    .tag-haute   { background: #fee2e2; color: #991b1b; }
-    .tag-moyenne { background: #ffedd5; color: #9a3412; }
-    .tag-basse   { background: #e5e7eb; color: #4b5563; }
+    .work-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      background: linear-gradient(180deg, #667eea, #764ba2);
+      opacity: 0;
+    }
+    .work-card:hover { box-shadow: 0 12px 24px rgba(102, 126, 234, 0.15); border-color: #667eea; transform: translateY(-4px); }
+    .work-card:hover::before { opacity: 1; }
+    .work-card.dragging { opacity: 0.5; transform: scale(0.95); }
+    .work-card .card-body { padding: 16px; }
+    .tag { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
     .progress { height: 8px; border-radius: 999px; background: #e2e8f0; margin: 0.5rem 0; }
     .progress-bar { background: linear-gradient(90deg, #6366f1, #8b5cf6); border-radius: 999px; }
-    .drop-hover { background: #f1f5f9 !important; outline: 2px dashed #6366f1; outline-offset: -3px; }
-    .dragging { opacity: 0.6; }
-    .empty-placeholder { color: #8b93aa; font-style: italic; }
+    .badge-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border-radius: 8px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05));
+      color: #667eea; text-decoration: none; font-size: 0.85rem; font-weight: 500;
+      border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+    .badge-link:hover { background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.1)); transform: translateX(2px); }
+    .drop-hover { background: rgba(102, 126, 234, 0.05); border: 2px dashed #667eea; border-radius: 16px; }
+    .col-body { display:flex; flex-direction:column; gap:12px; }
+    .empty-placeholder { color: #cbd5e0; font-style: italic; text-align: center; padding: 40px 20px; font-size: 0.95rem; }
+    .btn-sm { border-radius: 8px; font-weight: 500; padding: 6px 12px; font-size: 0.85rem; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #667eea, #764ba2); border-radius: 10px; }
     @media (max-width: 992px) { .board-col { min-height: 50vh; margin-bottom: 1.5rem; } }
   </style>
 </head>
 <body>
   <div id="navbar-placeholder"></div>
   <main class="container my-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div>
-        <h1 class="h3 fw-bold">Tableau des travaux</h1>
-        <div class="text-muted">Vue Kanban – état des chantiers</div>
-      </div>
-      <div class="d-flex gap-2">
-        <button class="btn btn-primary px-4" id="btn-new-travail">
-          <i class="bi bi-plus-lg me-2"></i>Nouveau travail
+    <div class="header-section">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h1><i class="bi bi-kanban me-2"></i>Tableau des travaux</h1>
+          <small>Gérez vos travaux par état — Glissez-déposez pour modifier</small>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btn-new-travail">
+          <i class="bi bi-plus-lg me-1"></i>Nouveau travail
         </button>
+      </div>
+    </div>
+
+    <div class="filters-section mb-3">
+      <div class="row g-2">
+        <div class="col-md-3">
+          <input id="filter-title" class="form-control form-control-sm" placeholder="🔍 Filtrer par titre...">
+        </div>
+        <div class="col-md-3 position-relative">
+          <input id="filter-affaire" class="form-control form-control-sm" placeholder="💼 Filtrer par affaire...">
+          <div id="sug-affaire" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
+        </div>
+        <div class="col-md-3 position-relative">
+          <input id="filter-site" class="form-control form-control-sm" placeholder="📍 Filtrer par site...">
+          <div id="sug-site" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
+        </div>
+        <div class="col-md-3">
+          <input id="filter-global" class="form-control form-control-sm" placeholder="🔎 Recherche globale...">
+        </div>
       </div>
     </div>
 
@@ -151,25 +218,6 @@
       } catch(_) {}
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
       const colIds = ['A_faire','En_cours','En_attente','Termine'];
-      const container = document.querySelector('main .container');
-      const filterRow = document.createElement('div');
-      filterRow.className = 'row g-2 mb-3';
-      filterRow.innerHTML = `
-        <div class="col-md-3">
-          <input id="filter-title" class="form-control form-control-sm" placeholder="Filtrer par titre de travail...">
-        </div>
-        <div class="col-md-3 position-relative">
-          <input id="filter-affaire" class="form-control form-control-sm" placeholder="Filtrer par affaire...">
-          <div id="sug-affaire" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
-        </div>
-        <div class="col-md-3 position-relative">
-          <input id="filter-site" class="form-control form-control-sm" placeholder="Filtrer par site...">
-          <div id="sug-site" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
-        </div>
-        <div class="col-md-3">
-          <input id="filter-global" class="form-control form-control-sm" placeholder="Recherche globale (DOE, affaire, site, demande)...">
-        </div>`;
-      container?.insertBefore(filterRow, document.getElementById('board'));
       const titleFilter = document.getElementById('filter-title');
       const searchInput = document.getElementById('filter-global');
       const filterAffaire = document.getElementById('filter-affaire');
