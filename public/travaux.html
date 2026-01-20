@@ -212,371 +212,503 @@
     </div>
   </main>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const token = localStorage.getItem('token');
-      let isAdmin = false;
-      try {
-        const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
-        isAdmin = Array.isArray(payload?.roles) && payload.roles.includes('ROLE_ADMIN');
-      } catch(_) {}
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-      const colIds = ['A_faire','En_cours','En_attente','Termine'];
-      const titleFilter = document.getElementById('filter-title');
-      const searchInput = document.getElementById('filter-global');
-      const filterAffaire = document.getElementById('filter-affaire');
-      const filterSite = document.getElementById('filter-site');
-      const sugAffaire = document.getElementById('sug-affaire');
-      const sugSite = document.getElementById('sug-site');
-      let travauxCache = [];
-      let affairesCache = [];
-      let sitesCache = [];
-      const progressCache = new Map(); // travailId -> { pct, remaining }
-      const toTravauxArray = (raw) => {
-        if (Array.isArray(raw)) return raw;
-        if (Array.isArray(raw?.data)) return raw.data;
-        if (Array.isArray(raw?.items)) return raw.items;
-        return [];
-      };
+ <script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const token = localStorage.getItem('token');
+  let isAdmin = false;
 
-      function renderSuggestions(listEl, data, filterValue, labelFn) {
-        if (!listEl) return;
-        const term = (filterValue || '').trim().toLowerCase();
-        if (!term) { listEl.innerHTML = ''; return; }
-        const matches = (data || []).filter(item => labelFn(item).toLowerCase().includes(term)).slice(0, 8);
-        if (!matches.length) { listEl.innerHTML = ''; return; }
+  try {
+    const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
+    isAdmin = Array.isArray(payload?.roles) && payload.roles.includes('ROLE_ADMIN');
+  } catch (_) {}
+
+  const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+  const colIds = ['A_faire','En_cours','En_attente','Termine'];
+
+  const titleFilter   = document.getElementById('filter-title');
+  const searchInput   = document.getElementById('filter-global');
+  const filterAffaire = document.getElementById('filter-affaire');
+  const filterSite    = document.getElementById('filter-site');
+  const sugAffaire    = document.getElementById('sug-affaire');
+  const sugSite       = document.getElementById('sug-site');
+
+  let travauxCache = [];
+  let affairesCache = [];
+  let sitesCache = [];
+
+  // travailId -> { pct, remaining }
+  const progressCache = new Map();
+
+  const toTravauxArray = (raw) => {
+    if (Array.isArray(raw)) return raw;
+    if (Array.isArray(raw?.data)) return raw.data;
+    if (Array.isArray(raw?.items)) return raw.items;
+    return [];
+  };
+
+  function renderSuggestions(listEl, data, filterValue, labelFn) {
+    if (!listEl) return;
+    const term = (filterValue || '').trim().toLowerCase();
+    if (!term) { listEl.innerHTML = ''; return; }
+
+    const matches = (data || [])
+      .filter(item => labelFn(item).toLowerCase().includes(term))
+      .slice(0, 8);
+
+    if (!matches.length) { listEl.innerHTML = ''; return; }
+
+    listEl.innerHTML = '';
+    matches.forEach(m => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'list-group-item list-group-item-action';
+      btn.textContent = labelFn(m);
+      btn.addEventListener('click', () => {
+        const targetInput = listEl.id === 'sug-affaire' ? filterAffaire : filterSite;
+        if (targetInput) {
+          targetInput.value = labelFn(m);
+          renderTravaux(travauxCache);
+        }
         listEl.innerHTML = '';
-        matches.forEach(m => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'list-group-item list-group-item-action';
-          btn.textContent = labelFn(m);
-          btn.addEventListener('click', () => {
-            const targetInput = listEl.id === 'sug-affaire' ? filterAffaire : filterSite;
-            if (targetInput) {
-              targetInput.value = labelFn(m);
-              renderTravaux(travauxCache);
-            }
-            listEl.innerHTML = '';
-          });
-          listEl.appendChild(btn);
-        });
+      });
+      listEl.appendChild(btn);
+    });
+  }
+
+  function formatProgressLine(pct, remaining) {
+    if (pct === null && remaining === null) return 'Avancement: —';
+    const pctStr = pct !== null ? `${pct}%` : '—';
+    const restStr = remaining !== null ? ` · Reste: ${remaining}` : '';
+    return `Avancement: <strong>${pctStr}</strong>${restStr}`;
+  }
+
+  /**
+   * ✅ IMPORTANT : met à jour à la fois :
+   * - le texte progress-line
+   * - la largeur de la barre progress-bar
+   */
+  async function hydrateProgressFromTasks(travailId, progressLineEl) {
+    if (!progressLineEl || !travailId) return;
+
+    const card = progressLineEl.closest('.work-card');
+    const barEl = card ? card.querySelector('.progress-bar-fill') : null;
+
+    const apply = (pct, remaining) => {
+      progressLineEl.innerHTML = formatProgressLine(pct, remaining);
+
+      if (barEl) {
+        const w = Number.isFinite(pct) ? pct : 0;
+        barEl.style.width = w + '%';
+        barEl.style.opacity = (pct === null) ? 0.4 : 1;
+      }
+    };
+
+    // Cache
+    if (progressCache.has(travailId)) {
+      const cached = progressCache.get(travailId);
+      apply(cached.pct, cached.remaining);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/travaux/${travailId}/taches`, { headers, credentials: 'same-origin' });
+
+      if (res.status === 401 || res.status === 403) { location.href = '/login.html'; return; }
+      if (!res.ok) throw new Error('Erreur chargement tâches');
+
+      const tasks = await res.json();
+
+      const total = Array.isArray(tasks) ? tasks.length : 0;
+      const done = Array.isArray(tasks)
+        ? tasks.filter(tk => (tk.etat || '').toLowerCase() === 'termine').length
+        : 0;
+
+      const pct = total > 0 ? Math.round((done / total) * 100) : null;
+      const remaining = total > 0 ? Math.max(total - done, 0) : null;
+
+      progressCache.set(travailId, { pct, remaining });
+      apply(pct, remaining);
+
+    } catch (err) {
+      console.warn('Progress calcul impossible pour travail', travailId, err);
+    }
+  }
+
+  function setCount(etat, n) {
+    const el = document.getElementById('count-' + etat);
+    if (el) el.textContent = n;
+  }
+
+  function normalizeTxt(s) {
+    return (s || '')
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}+/gu,'');
+  }
+
+  function renderTravaux(travaux = []) {
+    // Reset colonnes
+    colIds.forEach(etat => {
+      const col = document.getElementById('col-' + etat);
+      if (col) col.innerHTML = '<div class="empty-placeholder">Aucun travail.</div>';
+      setCount(etat, 0);
+    });
+
+    const termTitle = normalizeTxt(titleFilter?.value);
+    const term      = normalizeTxt(searchInput?.value);
+    const termAff   = normalizeTxt(filterAffaire?.value);
+    const termSite  = normalizeTxt(filterSite?.value);
+
+    const filtered = travaux.filter(t => {
+      const hayTitle = normalizeTxt(t.titre);
+      const hayAff   = normalizeTxt(t.affaire_nom);
+      const haySite  = normalizeTxt(t.site_nom);
+
+      const matchTitle = !termTitle || hayTitle.includes(termTitle);
+      const matchAff   = !termAff || hayAff.includes(termAff);
+      const matchSite  = !termSite || haySite.includes(termSite);
+
+      if (!term) return matchTitle && matchAff && matchSite;
+
+      const hay = normalizeTxt([
+        t.titre, t.description, t.doe_titre, t.affaire_nom, t.site_nom, t.demande_titre
+      ].join(' '));
+
+      return matchTitle && matchAff && matchSite && hay.includes(term);
+    });
+
+    const groupByEtat = {};
+    filtered.forEach(t => {
+      const e = t.etat || 'A_faire';
+      groupByEtat[e] = groupByEtat[e] || [];
+      groupByEtat[e].push(t);
+    });
+
+    colIds.forEach(etat => {
+      const col = document.getElementById('col-' + etat);
+      const items = groupByEtat[etat] || [];
+
+      setCount(etat, items.length);
+      if (!col) return;
+
+      if (!items.length) {
+        col.innerHTML = '<div class="empty-placeholder">Aucun travail.</div>';
+        return;
       }
 
-      function formatProgressLine(pct, remaining) {
-        if (pct === null && remaining === null) return 'Avancement: —';
-        const pctStr = pct !== null ? `${pct}%` : '—';
-        const restStr = remaining !== null ? ` · Reste: ${remaining}` : '';
-        return `Avancement: <strong>${pctStr}</strong>${restStr}`;
-      }
+      col.innerHTML = '';
 
-      async function hydrateProgressFromTasks(travailId, progressEl) {
-        if (!progressEl || !travailId) return;
-        if (progressCache.has(travailId)) {
-          const cached = progressCache.get(travailId);
-          progressEl.innerHTML = formatProgressLine(cached.pct, cached.remaining);
-          return;
-        }
-        try {
-          const res = await fetch(`/api/travaux/${travailId}/taches`, { headers, credentials:'same-origin' });
-          if (res.status === 401 || res.status === 403) { location.href = '/login.html'; return; }
-          if (!res.ok) throw new Error('Erreur chargement tâches');
-          const tasks = await res.json();
-          const total = Array.isArray(tasks) ? tasks.length : 0;
-          const done = Array.isArray(tasks) ? tasks.filter(tk => (tk.etat || '').toLowerCase() === 'termine').length : 0;
-          const pct = total > 0 ? Math.round((done / total) * 100) : null;
-          const remaining = total > 0 ? Math.max(total - done, 0) : null;
-          progressCache.set(travailId, { pct, remaining });
-          progressEl.innerHTML = formatProgressLine(pct, remaining);
-        } catch (err) {
-          console.warn('Progress calcul impossible pour travail', travailId, err);
-        }
-      }
+      items.forEach(t => {
+        const card = document.createElement('div');
+        card.className = 'card work-card';
+        card.dataset.travailId = t.id;
+        card.dataset.etat = etat;
+        card.draggable = true;
 
-      function setCount(etat, n) {
-        const el = document.getElementById('count-' + etat);
-        if (el) el.textContent = n;
-      }
+        const priorite = t.priorite || 'Moyenne';
 
-      function renderTravaux(travaux = []) {
-        // Reset colonnes
-        colIds.forEach(etat => {
-          const col = document.getElementById('col-' + etat);
-          if (col) col.innerHTML = '<div class="empty-placeholder">Aucun travail.</div>';
-          setCount(etat, 0);
-        });
+        const responsable = t.agent_nom
+          ? `${t.agent_nom || ''} ${t.agent_prenom || ''}`.trim() || t.agent_matricule || '—'
+          : (t.agent_matricule || t.responsable || '—');
 
-        const termTitle = (titleFilter?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
-        const term = (searchInput?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
-        const termAff = (filterAffaire?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
-        const termSite = (filterSite?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+        const responsableDisplay = responsable && responsable !== '—' ? responsable : '—';
 
-        const filtered = travaux.filter(t => {
-          const hayTitle = (t.titre || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
-          const matchTitle = !termTitle || hayTitle.includes(termTitle);
-          const hayAff = (t.affaire_nom || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
-          const haySite = (t.site_nom || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
-          const matchAff = !termAff || hayAff.includes(termAff);
-          const matchSite = !termSite || haySite.includes(termSite);
-          if (!term) return matchTitle && matchAff && matchSite;
-          const hay = [
-            t.titre, t.description, t.doe_titre, t.affaire_nom, t.site_nom, t.demande_titre
-          ].join(' ').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
-          return matchTitle && matchAff && matchSite && hay.includes(term);
-        });
+        // Avancement depuis API / calculs
+        const done = Number.parseFloat(
+          t.taches_terminees ?? t.tachesTerminees ?? t.tasks_done ?? t.tasksDone ?? t.taches_faites ?? t.tasksDoneCount
+        );
+        const total = Number.parseFloat(
+          t.taches_total ?? t.tachesTotal ?? t.tasks_total ?? t.tasksTotal ?? t.taches ?? t.tachesCount
+        );
 
-        const groupByEtat = {};
-        filtered.forEach(t => {
-          const e = t.etat || 'A_faire';
-          groupByEtat[e] = groupByEtat[e] || [];
-          groupByEtat[e].push(t);
-        });
+        const explicitPctRaw = t.progress_percent ?? t.avancement ?? t.progression;
+        const explicitPct = Number.isFinite(Number(explicitPctRaw)) ? Number(explicitPctRaw) : NaN;
 
-        colIds.forEach(etat => {
-          const col = document.getElementById('col-' + etat);
-          const items = groupByEtat[etat] || [];
-          setCount(etat, items.length);
-          if (!col) return;
-          if (!items.length) {
-            col.innerHTML = '<div class="empty-placeholder">Aucun travail.</div>';
-            return;
-          }
-          col.innerHTML = '';
-          items.forEach(t => {
-            const card = document.createElement('div');
-            card.className = 'card work-card';
-            card.dataset.travailId = t.id;
-            card.dataset.etat = etat;
-            card.draggable = true;
-            const priorite = t.priorite || 'Moyenne';
-            const responsable = t.agent_nom
-              ? `${t.agent_nom || ''} ${t.agent_prenom || ''}`.trim() || t.agent_matricule || '—'
-              : (t.agent_matricule || t.responsable || '—');
-            const responsableDisplay = responsable && responsable !== '—' ? responsable : '—';
-            const done = Number.parseFloat(t.taches_terminees ?? t.tachesTerminees ?? t.tasks_done ?? t.tasksDone ?? t.taches_faites ?? t.tasksDoneCount);
-            const total = Number.parseFloat(t.taches_total ?? t.tachesTotal ?? t.tasks_total ?? t.tasksTotal ?? t.taches ?? t.tachesCount);
-            const explicitPctRaw = t.progress_percent ?? t.avancement ?? t.progression;
-            const explicitPct = Number.isFinite(Number(explicitPctRaw)) ? Number(explicitPctRaw) : NaN;
-            const pct = Number.isFinite(explicitPct) ? Math.max(0, Math.min(100, Math.round(explicitPct)))
-              : (Number.isFinite(done) && Number.isFinite(total) && total > 0 ? Math.max(0, Math.min(100, Math.round((done / total) * 100))) : null);
-            const remaining = Number.isFinite(parseFloat(t.taches_restantes ?? t.tachesRestantes)) ? Number(t.taches_restantes ?? t.tachesRestantes)
-              : (Number.isFinite(done) && Number.isFinite(total) && total > 0 ? Math.max(total - done, 0) : null);
-            const progressLine = pct !== null || remaining !== null
-              ? `Avancement: <strong>${pct !== null ? pct + '%' : '—'}</strong>${remaining !== null ? ` · Reste: ${remaining}` : ''}`
-              : 'Avancement: —';
-            const barClass = pct === null ? 'opacity-50' : '';
-            const barWidth = Number.isFinite(pct) ? pct : 0; // pas de remplissage si inconnu
-            const badgeLinks = [];
-            if (t.site_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="site-view.html?id=${t.site_id}" target="_blank"><i class="bi bi-geo"></i> ${t.site_nom || 'Site'}</a>`);
-            if (t.affaire_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="affaire-view.html?id=${t.affaire_id}" target="_blank"><i class="bi bi-briefcase"></i> ${t.affaire_nom || 'Affaire'}</a>`);
-            if (t.doe_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="doe-view.html?id=${t.doe_id}" target="_blank"><i class="bi bi-journal"></i> ${t.doe_titre || 'DOE'}</a>`);
-            if (t.demande_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="demande-client-admin.html?embed=1&id=${t.demande_id}" target="_blank"><i class="bi bi-chat"></i> Demande #${t.demande_id}</a>`);
-            card.innerHTML = `
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                  <div class="fw-semibold">${t.titre || '(Sans titre)'}</div>
-                  <span class="tag ${priorite.toLowerCase() === 'haute' ? 'tag-haute' : priorite.toLowerCase() === 'basse' ? 'tag-basse' : 'tag-moyenne'}">${priorite}</span>
-                </div>
-                <div class="text-muted small mb-2">${t.description || ''}</div>
-                <div class="small text-muted mb-2"><i class="bi bi-person me-1"></i>Resp. ${responsableDisplay}</div>
-                <div class="progress mb-1" style="height:6px; background: rgba(102,126,234,0.12);">
-                  <div class="progress-bar ${barClass}" role="progressbar" style="width:${barWidth}%; height:6px; background: linear-gradient(135deg,#667eea,#764ba2); opacity:${pct===null?0.4:1};"></div>
-                </div>
-                <div class="small text-end fw-medium progress-line">${progressLine}</div>
-                ${badgeLinks.length ? `<div class="d-flex flex-wrap gap-1 mt-2">${badgeLinks.join(' ')}</div>` : ''}
-                <div class="d-flex justify-content-end align-items-center gap-1 mt-2">
-                  <button class="btn btn-sm btn-outline-primary btn-open-travail" data-id="${t.id}"><i class="bi bi-eye"></i> Voir</button>
-                  ${isAdmin ? `
-                  <button class="btn btn-sm btn-outline-warning btn-edit-travail" data-id="${t.id}" title="Modifier"><i class="bi bi-pencil"></i></button>
-                  <button class="btn btn-sm btn-outline-danger btn-del-travail" data-id="${t.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
-                  ` : ''}
-                </div>
+        let pct = Number.isFinite(explicitPct)
+          ? Math.max(0, Math.min(100, Math.round(explicitPct)))
+          : (Number.isFinite(done) && Number.isFinite(total) && total > 0
+              ? Math.max(0, Math.min(100, Math.round((done / total) * 100)))
+              : null);
+
+        let remaining = Number.isFinite(parseFloat(t.taches_restantes ?? t.tachesRestantes))
+          ? Number(t.taches_restantes ?? t.tachesRestantes)
+          : (Number.isFinite(done) && Number.isFinite(total) && total > 0
+              ? Math.max(total - done, 0)
+              : null);
+
+        const progressLine = formatProgressLine(pct, remaining);
+        const barClass = pct === null ? 'opacity-50' : '';
+        const barWidth = Number.isFinite(pct) ? pct : 0;
+
+        const badgeLinks = [];
+        if (t.site_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="site-view.html?id=${t.site_id}" target="_blank"><i class="bi bi-geo"></i> ${t.site_nom || 'Site'}</a>`);
+        if (t.affaire_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="affaire-view.html?id=${t.affaire_id}" target="_blank"><i class="bi bi-briefcase"></i> ${t.affaire_nom || 'Affaire'}</a>`);
+        if (t.doe_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="doe-view.html?id=${t.doe_id}" target="_blank"><i class="bi bi-journal"></i> ${t.doe_titre || 'DOE'}</a>`);
+        if (t.demande_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="demande-client-admin.html?embed=1&id=${t.demande_id}" target="_blank"><i class="bi bi-chat"></i> Demande #${t.demande_id}</a>`);
+
+        card.innerHTML = `
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="fw-semibold">${t.titre || '(Sans titre)'}</div>
+              <span class="tag ${priorite.toLowerCase() === 'haute' ? 'tag-haute' : priorite.toLowerCase() === 'basse' ? 'tag-basse' : 'tag-moyenne'}">${priorite}</span>
+            </div>
+
+            <div class="text-muted small mb-2">${t.description || ''}</div>
+            <div class="small text-muted mb-2"><i class="bi bi-person me-1"></i>Resp. ${responsableDisplay}</div>
+
+            <div class="progress mb-1" style="height:6px; background: rgba(102,126,234,0.12);">
+              <div class="progress-bar ${barClass} progress-bar-fill"
+                   role="progressbar"
+                   data-travail-id="${t.id}"
+                   style="width:${barWidth}%; height:6px; background: linear-gradient(135deg,#667eea,#764ba2); opacity:${pct===null?0.4:1};">
               </div>
-            `;
-            // Si avancement absent, tenter de calculer via les tâches
-            if (progressLine === 'Avancement: —') {
-              const progressEl = card.querySelector('.progress-line');
-              hydrateProgressFromTasks(t.id, progressEl);
-            }
-            col.appendChild(card);
-          });
-        });
-      }
+            </div>
+            <div class="small text-end fw-medium progress-line" data-travail-id="${t.id}">${progressLine}</div>
 
-      async function loadTravaux() {
-        colIds.forEach(etat => {
-          const col = document.getElementById('col-' + etat);
-          if (col) col.innerHTML = '<div class="empty-placeholder">Chargement...</div>';
-        });
-        try {
-          const travRes = await fetch('/api/travaux', { headers, credentials: 'same-origin' });
-          if (travRes.status === 401 || travRes.status === 403) { location.href = '/login.html'; return; }
-          const data = travRes.ok ? await travRes.json() : [];
-          travauxCache = toTravauxArray(data);
-          renderTravaux(travauxCache);
-          // Chargements non bloquants des référentiels
-          fetch('/api/affaires', { headers, credentials: 'same-origin' }).then(r => r.ok ? r.json() : []).then(d => {
-            affairesCache = toTravauxArray(d);
-            renderSuggestions(sugAffaire, affairesCache, filterAffaire?.value, a => a.nom_affaire || `Affaire #${a.id}`);
-          }).catch(()=>{});
-          fetch('/api/sites', { headers, credentials: 'same-origin' }).then(r => r.ok ? r.json() : []).then(d => {
-            sitesCache = toTravauxArray(d);
-            renderSuggestions(sugSite, sitesCache, filterSite?.value, s => s.nom_site || `Site #${s.id}`);
-          }).catch(()=>{});
-        } catch (err) {
-          console.error('Erreur chargement travaux', err);
-          colIds.forEach(etat => {
-            const col = document.getElementById('col-' + etat);
-            if (col) col.innerHTML = '<div class="text-danger">Erreur de chargement.</div>';
-          });
+            ${badgeLinks.length ? `<div class="d-flex flex-wrap gap-1 mt-2">${badgeLinks.join(' ')}</div>` : ''}
+
+            <div class="d-flex justify-content-end align-items-center gap-1 mt-2">
+              <button class="btn btn-sm btn-outline-primary btn-open-travail" data-id="${t.id}">
+                <i class="bi bi-eye"></i> Voir
+              </button>
+              ${isAdmin ? `
+              <button class="btn btn-sm btn-outline-warning btn-edit-travail" data-id="${t.id}" title="Modifier"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger btn-del-travail" data-id="${t.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+
+        // ✅ Si pct inconnu => calcule depuis /taches ET met à jour barre+texte
+        if (pct === null) {
+          const progressEl = card.querySelector('.progress-line');
+          hydrateProgressFromTasks(t.id, progressEl);
         }
-      }
 
-      // Modale générique
-      const modalEl = document.getElementById('travailModal');
-      const modalFrame = document.getElementById('travailModalFrame');
-      const travailModal = modalEl ? new bootstrap.Modal(modalEl) : null;
-
-      function openInModal(url) {
-        if (!travailModal || !modalFrame) { window.location.href = url; return; }
-        modalFrame.src = url;
-        travailModal.show();
-      }
-
-      document.body.addEventListener('click', (e) => {
-        const btn = e.target.closest('.btn-open-travail');
-        if (btn) {
-          e.preventDefault();
-          const id = btn.getAttribute('data-id');
-          if (id) openInModal(`/travaux-view.html?id=${id}`);
-        }
-        const btnEdit = e.target.closest('.btn-edit-travail');
-        if (btnEdit) {
-          e.preventDefault();
-          const id = btnEdit.getAttribute('data-id');
-          if (id) openInModal(`/travaux-edit.html?id=${id}`);
-        }
-        const btnDel = e.target.closest('.btn-del-travail');
-        if (btnDel) {
-          e.preventDefault();
-          const id = btnDel.getAttribute('data-id');
-          if (!id) return;
-          if (!confirm('Supprimer ce travail ?')) return;
-          fetch(`/api/travaux/${id}`, { method:'DELETE', headers, credentials:'same-origin' })
-            .then(r => {
-              if (r.status===401||r.status===403) { location.href='/login.html'; return; }
-              if (!r.ok) throw new Error('Suppression impossible');
-              loadTravaux();
-            }).catch(err => alert(err.message || 'Erreur suppression'));
-        }
-      });
-
-      // Filtres dynamiques
-      [titleFilter, searchInput, filterAffaire, filterSite].forEach(el => {
-        if (!el) return;
-        el.addEventListener('input', () => {
-          if (el === filterAffaire) renderSuggestions(sugAffaire, affairesCache, filterAffaire.value, a => a.nom_affaire || `Affaire #${a.id}`);
-          if (el === filterSite) renderSuggestions(sugSite, sitesCache, filterSite.value, s => s.nom_site || `Site #${s.id}`);
-          renderTravaux(travauxCache);
-        });
-      });
-      filterAffaire?.addEventListener('blur', () => setTimeout(() => { if (sugAffaire) sugAffaire.innerHTML=''; }, 150));
-      filterSite?.addEventListener('blur', () => setTimeout(() => { if (sugSite) sugSite.innerHTML=''; }, 150));
-
-      const btnNew = document.getElementById('btn-new-travail');
-      if (btnNew) {
-        btnNew.addEventListener('click', (e) => {
-          e.preventDefault();
-          openInModal('/travaux-new.html');
-        });
-      }
-
-      loadTravaux();
-      searchInput?.addEventListener('input', () => renderTravaux(travauxCache));
-      titleFilter?.addEventListener('input', () => renderTravaux(travauxCache));
-      filterAffaire?.addEventListener('input', () => renderTravaux(travauxCache));
-      filterSite?.addEventListener('input', () => renderTravaux(travauxCache));
-
-      function bindAutocomplete(inputEl, sugEl, source = [], labelKey = 'nom') {
-        if (!inputEl || !sugEl) return;
-        inputEl.addEventListener('input', () => {
-          const term = inputEl.value.toLowerCase();
-          if (!term) { sugEl.innerHTML = ''; return; }
-          const matches = source.filter(item => (item[labelKey] || '').toLowerCase().includes(term)).slice(0, 5);
-          sugEl.innerHTML = matches.length
-            ? matches.map(m => `<button type="button" class="list-group-item list-group-item-action">${m[labelKey] || ''}</button>`).join('')
-            : '<div class="list-group-item text-muted">Aucun résultat</div>';
-        });
-        sugEl.addEventListener('click', (e) => {
-          const btn = e.target.closest('button');
-          if (!btn) return;
-          inputEl.value = btn.textContent.trim();
-          sugEl.innerHTML = '';
-          renderTravaux(travauxCache);
-        });
-        inputEl.addEventListener('blur', () => setTimeout(() => { sugEl.innerHTML = ''; }, 150));
-      }
-      bindAutocomplete(filterAffaire, sugAffaire, affairesCache, 'nom_affaire');
-      bindAutocomplete(filterSite, sugSite, sitesCache, 'nom_site');
-
-      // --- Drag & Drop pour changement d'état ---
-      let dragId = null;
-      let dragCard = null;
-
-      function clearDropStates() {
-        document.querySelectorAll('.col-body').forEach(c => c.classList.remove('drop-hover'));
-        if (dragCard) dragCard.classList.remove('dragging');
-      }
-
-      document.body.addEventListener('dragstart', (e) => {
-        const card = e.target.closest('.work-card');
-        if (!card || !card.dataset.travailId) return;
-        dragId = card.dataset.travailId;
-        dragCard = card;
-        card.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-      });
-
-      document.body.addEventListener('dragend', () => {
-        dragId = null;
-        clearDropStates();
-      });
-
-      document.querySelectorAll('.col-body').forEach(col => {
-        col.addEventListener('dragover', (e) => {
-          if (!dragId) return;
-          e.preventDefault();
-          col.classList.add('drop-hover');
-        });
-        col.addEventListener('dragleave', () => col.classList.remove('drop-hover'));
-        col.addEventListener('drop', async (e) => {
-          e.preventDefault();
-          const newEtat = col.parentElement?.querySelector('.board-col')?.dataset.etat || col.closest('.board-col')?.dataset.etat || col.id?.replace('col-','');
-          clearDropStates();
-          if (!dragId || !newEtat) return;
-          const currentEtat = dragCard?.dataset.etat;
-          if (currentEtat === newEtat) return;
-          try {
-            const res = await fetch(`/api/travaux/${dragId}`, {
-              method:'PUT',
-              headers: { 'Content-Type':'application/json', ...(headers||{}) },
-              credentials:'same-origin',
-              body: JSON.stringify({ etat:newEtat })
-            });
-            if (res.status===401||res.status===403){ location.href='/login.html'; return; }
-            if (!res.ok) throw new Error('Mise à jour impossible');
-            await loadTravaux();
-          } catch (err) {
-            console.error('Drag update failed', err);
-            alert(err.message || 'Erreur changement d’état');
-          } finally {
-            dragId = null;
-            dragCard = null;
-          }
-        });
+        col.appendChild(card);
       });
     });
-  </script>
+  }
+
+  async function loadTravaux() {
+    colIds.forEach(etat => {
+      const col = document.getElementById('col-' + etat);
+      if (col) col.innerHTML = '<div class="empty-placeholder">Chargement...</div>';
+    });
+
+    try {
+      const travRes = await fetch('/api/travaux', { headers, credentials: 'same-origin' });
+
+      if (travRes.status === 401 || travRes.status === 403) { location.href = '/login.html'; return; }
+
+      const data = travRes.ok ? await travRes.json() : [];
+      travauxCache = toTravauxArray(data);
+
+      renderTravaux(travauxCache);
+
+      // Chargements non bloquants des référentiels
+      fetch('/api/affaires', { headers, credentials: 'same-origin' })
+        .then(r => r.ok ? r.json() : [])
+        .then(d => {
+          affairesCache = toTravauxArray(d);
+          renderSuggestions(sugAffaire, affairesCache, filterAffaire?.value, a => a.nom_affaire || `Affaire #${a.id}`);
+        })
+        .catch(()=>{});
+
+      fetch('/api/sites', { headers, credentials: 'same-origin' })
+        .then(r => r.ok ? r.json() : [])
+        .then(d => {
+          sitesCache = toTravauxArray(d);
+          renderSuggestions(sugSite, sitesCache, filterSite?.value, s => s.nom_site || `Site #${s.id}`);
+        })
+        .catch(()=>{});
+
+    } catch (err) {
+      console.error('Erreur chargement travaux', err);
+      colIds.forEach(etat => {
+        const col = document.getElementById('col-' + etat);
+        if (col) col.innerHTML = '<div class="text-danger">Erreur de chargement.</div>';
+      });
+    }
+  }
+
+  // --- Modale générique ---
+  const modalEl = document.getElementById('travailModal');
+  const modalFrame = document.getElementById('travailModalFrame');
+  const travailModal = modalEl ? new bootstrap.Modal(modalEl) : null;
+
+  function openInModal(url) {
+    if (!travailModal || !modalFrame) { window.location.href = url; return; }
+    modalFrame.src = url;
+    travailModal.show();
+  }
+
+  // --- Buttons open/edit/delete ---
+  document.body.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-open-travail');
+    if (btn) {
+      e.preventDefault();
+      const id = btn.getAttribute('data-id');
+      if (id) openInModal(`/travaux-view.html?id=${id}`);
+    }
+
+    const btnEdit = e.target.closest('.btn-edit-travail');
+    if (btnEdit) {
+      e.preventDefault();
+      const id = btnEdit.getAttribute('data-id');
+      if (id) openInModal(`/travaux-edit.html?id=${id}`);
+    }
+
+    const btnDel = e.target.closest('.btn-del-travail');
+    if (btnDel) {
+      e.preventDefault();
+      const id = btnDel.getAttribute('data-id');
+      if (!id) return;
+      if (!confirm('Supprimer ce travail ?')) return;
+
+      fetch(`/api/travaux/${id}`, { method:'DELETE', headers, credentials:'same-origin' })
+        .then(r => {
+          if (r.status===401||r.status===403) { location.href='/login.html'; return; }
+          if (!r.ok) throw new Error('Suppression impossible');
+          loadTravaux();
+        })
+        .catch(err => alert(err.message || 'Erreur suppression'));
+    }
+  });
+
+  // --- Filtres dynamiques ---
+  [titleFilter, searchInput, filterAffaire, filterSite].forEach(el => {
+    if (!el) return;
+    el.addEventListener('input', () => {
+      if (el === filterAffaire) renderSuggestions(sugAffaire, affairesCache, filterAffaire.value, a => a.nom_affaire || `Affaire #${a.id}`);
+      if (el === filterSite) renderSuggestions(sugSite, sitesCache, filterSite.value, s => s.nom_site || `Site #${s.id}`);
+      renderTravaux(travauxCache);
+    });
+  });
+
+  filterAffaire?.addEventListener('blur', () => setTimeout(() => { if (sugAffaire) sugAffaire.innerHTML=''; }, 150));
+  filterSite?.addEventListener('blur', () => setTimeout(() => { if (sugSite) sugSite.innerHTML=''; }, 150));
+
+  const btnNew = document.getElementById('btn-new-travail');
+  if (btnNew) {
+    btnNew.addEventListener('click', (e) => {
+      e.preventDefault();
+      openInModal('/travaux-new.html');
+    });
+  }
+
+  // Autres triggers
+  searchInput?.addEventListener('input', () => renderTravaux(travauxCache));
+  titleFilter?.addEventListener('input', () => renderTravaux(travauxCache));
+  filterAffaire?.addEventListener('input', () => renderTravaux(travauxCache));
+  filterSite?.addEventListener('input', () => renderTravaux(travauxCache));
+
+  function bindAutocomplete(inputEl, sugEl, source = [], labelKey = 'nom') {
+    if (!inputEl || !sugEl) return;
+
+    inputEl.addEventListener('input', () => {
+      const term = (inputEl.value || '').toLowerCase();
+      if (!term) { sugEl.innerHTML = ''; return; }
+
+      const matches = source
+        .filter(item => (item[labelKey] || '').toLowerCase().includes(term))
+        .slice(0, 5);
+
+      sugEl.innerHTML = matches.length
+        ? matches.map(m => `<button type="button" class="list-group-item list-group-item-action">${m[labelKey] || ''}</button>`).join('')
+        : '<div class="list-group-item text-muted">Aucun résultat</div>';
+    });
+
+    sugEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      inputEl.value = btn.textContent.trim();
+      sugEl.innerHTML = '';
+      renderTravaux(travauxCache);
+    });
+
+    inputEl.addEventListener('blur', () => setTimeout(() => { sugEl.innerHTML = ''; }, 150));
+  }
+
+  bindAutocomplete(filterAffaire, sugAffaire, affairesCache, 'nom_affaire');
+  bindAutocomplete(filterSite, sugSite, sitesCache, 'nom_site');
+
+  // --- Drag & Drop pour changement d'état ---
+  let dragId = null;
+  let dragCard = null;
+
+  function clearDropStates() {
+    document.querySelectorAll('.col-body').forEach(c => c.classList.remove('drop-hover'));
+    if (dragCard) dragCard.classList.remove('dragging');
+  }
+
+  document.body.addEventListener('dragstart', (e) => {
+    const card = e.target.closest('.work-card');
+    if (!card || !card.dataset.travailId) return;
+
+    dragId = card.dataset.travailId;
+    dragCard = card;
+    card.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+
+  document.body.addEventListener('dragend', () => {
+    dragId = null;
+    clearDropStates();
+  });
+
+  document.querySelectorAll('.col-body').forEach(col => {
+    col.addEventListener('dragover', (e) => {
+      if (!dragId) return;
+      e.preventDefault();
+      col.classList.add('drop-hover');
+    });
+
+    col.addEventListener('dragleave', () => col.classList.remove('drop-hover'));
+
+    col.addEventListener('drop', async (e) => {
+      e.preventDefault();
+
+      const newEtat = col.parentElement?.querySelector('.board-col')?.dataset.etat
+        || col.closest('.board-col')?.dataset.etat
+        || col.id?.replace('col-','');
+
+      clearDropStates();
+
+      if (!dragId || !newEtat) return;
+
+      const currentEtat = dragCard?.dataset.etat;
+      if (currentEtat === newEtat) return;
+
+      try {
+        const res = await fetch(`/api/travaux/${dragId}`, {
+          method:'PUT',
+          headers: { 'Content-Type':'application/json', ...(headers||{}) },
+          credentials:'same-origin',
+          body: JSON.stringify({ etat:newEtat })
+        });
+
+        if (res.status===401||res.status===403){ location.href='/login.html'; return; }
+        if (!res.ok) throw new Error('Mise à jour impossible');
+
+        await loadTravaux();
+      } catch (err) {
+        console.error('Drag update failed', err);
+        alert(err.message || 'Erreur changement d’état');
+      } finally {
+        dragId = null;
+        dragCard = null;
+      }
+    });
+  });
+
+  // Start
+  loadTravaux();
+});
+</script>
+
   <!-- Modale de visualisation / création -->
   <div class="modal fade" id="travailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
