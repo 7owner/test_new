@@ -535,15 +535,27 @@
         let doeLabel = t.doe_titre || '';
         try {
           if (t.site_id && !siteLabel) {
-            const rs = await fetch(`/api/sites/${t.site_id}`, { headers, credentials:'same-origin' });
+            const rs = await fetch(`/api/sites/${t.site_id}?_=${Date.now()}`, {
+              headers: { ...headers, 'Cache-Control':'no-cache' },
+              credentials:'same-origin',
+              cache:'no-store'
+            });
             if (rs.ok) { const s = await rs.json(); siteLabel = s.nom_site || siteLabel; }
           }
           if (t.affaire_id && !affaireLabel) {
-            const ra = await fetch(`/api/affaires/${t.affaire_id}`, { headers, credentials:'same-origin' });
+            const ra = await fetch(`/api/affaires/${t.affaire_id}?_=${Date.now()}`, {
+              headers: { ...headers, 'Cache-Control':'no-cache' },
+              credentials:'same-origin',
+              cache:'no-store'
+            });
             if (ra.ok) { const a = await ra.json(); affaireLabel = a.nom_affaire || affaireLabel; }
           }
           if (t.doe_id && !doeLabel) {
-            const rd = await fetch(`/api/does/${t.doe_id}`, { headers, credentials:'same-origin' });
+            const rd = await fetch(`/api/does/${t.doe_id}?_=${Date.now()}`, {
+              headers: { ...headers, 'Cache-Control':'no-cache' },
+              credentials:'same-origin',
+              cache:'no-store'
+            });
             if (rd.ok) { const d = await rd.json(); doeLabel = d.titre || doeLabel; }
           }
         } catch(_) {}

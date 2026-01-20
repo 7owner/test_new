@@ -158,13 +158,17 @@
             const responsable = t.agent_nom
               ? `${t.agent_nom || ''} ${t.agent_prenom || ''}`.trim() || t.agent_matricule || '—'
               : (t.agent_matricule || t.responsable || '—');
-            const done = Number(t.taches_terminees ?? t.tasks_done);
-            const total = Number(t.taches_total ?? t.tasks_total);
-            const pct = Number.isFinite(t.progress_percent) ? Math.round(t.progress_percent) :
-              (Number.isFinite(done) && Number.isFinite(total) && total > 0 ? Math.round((done / total) * 100) : null);
-            const remaining = (Number.isFinite(done) && Number.isFinite(total) && total > 0) ? Math.max(total - done, 0) : null;
-            const progressLine = pct !== null
-              ? `Avancement: <strong>${pct}%</strong>${remaining !== null ? ` · Reste: ${remaining}` : ''}`
+            const done = Number(t.taches_terminees ?? t.tachesTerminees ?? t.tasks_done ?? t.tasksDone ?? t.taches_faites ?? t.tasksDoneCount);
+            const total = Number(t.taches_total ?? t.tachesTotal ?? t.tasks_total ?? t.tasksTotal ?? t.taches ?? t.tachesCount);
+            const explicitPct = Number.isFinite(t.progress_percent) ? t.progress_percent
+              : (Number.isFinite(t.avancement) ? t.avancement
+              : (Number.isFinite(t.progression) ? t.progression : null));
+            const pct = Number.isFinite(explicitPct) ? Math.round(explicitPct)
+              : (Number.isFinite(done) && Number.isFinite(total) && total > 0 ? Math.round((done / total) * 100) : null);
+            const remaining = Number.isFinite(t.taches_restantes ?? t.tachesRestantes) ? Number(t.taches_restantes ?? t.tachesRestantes)
+              : (Number.isFinite(done) && Number.isFinite(total) && total > 0 ? Math.max(total - done, 0) : null);
+            const progressLine = pct !== null || remaining !== null
+              ? `Avancement: <strong>${pct !== null ? pct + '%' : '—'}</strong>${remaining !== null ? ` · Reste: ${remaining}` : ''}`
               : 'Avancement: —';
             const badgeLinks = [];
             if (t.site_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="site-view.html?id=${t.site_id}" target="_blank"><i class="bi bi-geo"></i> ${t.site_nom || 'Site'}</a>`);
