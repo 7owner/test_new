@@ -584,13 +584,27 @@
         const agentsList = document.getElementById('agents-list');
         let agentsData = t.agents_assignes || [];
         let responsablesData = t.responsables || [];
+        // Relations étendues si dispos
+        let relations = null;
+        try {
+          relations = await fetchJSON(`/api/travaux/${id}/relations`);
+        } catch (err) {
+          console.warn('Relations travaux non chargées', err);
+        }
         try {
           const [agentsApi, respApi] = await Promise.all([
             fetchJSON(`/api/travaux/${id}/agents`).catch(()=>null),
             fetchJSON(`/api/travaux/${id}/responsables`).catch(()=>null)
           ]);
+          const relAgents = Array.isArray(relations?.agents) ? relations.agents
+            : Array.isArray(relations?.travaux_agents) ? relations.travaux_agents
+            : Array.isArray(relations?.agents_assignes) ? relations.agents_assignes : null;
+          const relResp = Array.isArray(relations?.responsables) ? relations.responsables
+            : Array.isArray(relations?.travaux_responsables) ? relations.travaux_responsables : null;
           if (Array.isArray(agentsApi)) agentsData = agentsApi;
+          else if (relAgents) agentsData = relAgents;
           if (Array.isArray(respApi)) responsablesData = respApi;
+          else if (relResp) responsablesData = relResp;
         } catch(err) {
           console.warn('Impossible de charger agents/responsables travaux', err);
         }
