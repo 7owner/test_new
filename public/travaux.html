@@ -144,18 +144,18 @@
     <div class="filters-section mb-3">
       <div class="row g-2">
         <div class="col-md-3">
-          <input id="filter-title" class="form-control form-control-sm" placeholder="🔍 Filtrer par titre...">
+          <input id="filter-title" class="form-control form-control-sm" placeholder="Filtrer par titre...">
         </div>
         <div class="col-md-3 position-relative">
-          <input id="filter-affaire" class="form-control form-control-sm" placeholder="💼 Filtrer par affaire...">
+          <input id="filter-affaire" class="form-control form-control-sm" placeholder="Filtrer par affaire...">
           <div id="sug-affaire" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
         </div>
         <div class="col-md-3 position-relative">
-          <input id="filter-site" class="form-control form-control-sm" placeholder="📍 Filtrer par site...">
+          <input id="filter-site" class="form-control form-control-sm" placeholder="Filtrer par site...">
           <div id="sug-site" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
         </div>
         <div class="col-md-3">
-          <input id="filter-global" class="form-control form-control-sm" placeholder="🔎 Recherche globale...">
+          <input id="filter-global" class="form-control form-control-sm" placeholder="Recherche globale...">
         </div>
       </div>
     </div>
@@ -348,14 +348,17 @@
             const responsable = t.agent_nom
               ? `${t.agent_nom || ''} ${t.agent_prenom || ''}`.trim() || t.agent_matricule || '—'
               : (t.agent_matricule || t.responsable || '—');
-            const done = Number(t.taches_terminees ?? t.tachesTerminees ?? t.tasks_done ?? t.tasksDone ?? t.taches_faites ?? t.tasksDoneCount);
-            const total = Number(t.taches_total ?? t.tachesTotal ?? t.tasks_total ?? t.tasksTotal ?? t.taches ?? t.tachesCount);
-            const explicitPct = Number.isFinite(t.progress_percent) ? t.progress_percent
+            const done = parseFloat(t.taches_terminees ?? t.tachesTerminees ?? t.tasks_done ?? t.tasksDone ?? t.taches_faites ?? t.tasksDoneCount);
+            const total = parseFloat(t.taches_total ?? t.tachesTotal ?? t.tasks_total ?? t.tasksTotal ?? t.taches ?? t.tachesCount);
+            const explicitPctVal = parseFloat(
+              Number.isFinite(t.progress_percent) ? t.progress_percent
               : (Number.isFinite(t.avancement) ? t.avancement
-              : (Number.isFinite(t.progression) ? t.progression : null));
+              : (Number.isFinite(t.progression) ? t.progression : null))
+            );
+            const explicitPct = Number.isFinite(explicitPctVal) ? explicitPctVal : NaN;
             const pct = Number.isFinite(explicitPct) ? Math.max(0, Math.min(100, Math.round(explicitPct)))
               : (Number.isFinite(done) && Number.isFinite(total) && total > 0 ? Math.max(0, Math.min(100, Math.round((done / total) * 100))) : null);
-            const remaining = Number.isFinite(t.taches_restantes ?? t.tachesRestantes) ? Number(t.taches_restantes ?? t.tachesRestantes)
+            const remaining = Number.isFinite(parseFloat(t.taches_restantes ?? t.tachesRestantes)) ? Number(t.taches_restantes ?? t.tachesRestantes)
               : (Number.isFinite(done) && Number.isFinite(total) && total > 0 ? Math.max(total - done, 0) : null);
             const progressLine = pct !== null || remaining !== null
               ? `Avancement: <strong>${pct !== null ? pct + '%' : '—'}</strong>${remaining !== null ? ` · Reste: ${remaining}` : ''}`
