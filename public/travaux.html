@@ -95,16 +95,30 @@
       const filterRow = document.createElement('div');
       filterRow.className = 'row g-2 mb-3';
       filterRow.innerHTML = `
-        <div class="col-md-6">
+        <div class="col-md-3">
           <input id="filter-title" class="form-control form-control-sm" placeholder="Filtrer par titre de travail...">
         </div>
-        <div class="col-md-6">
+        <div class="col-md-3 position-relative">
+          <input id="filter-affaire" class="form-control form-control-sm" placeholder="Filtrer par affaire...">
+          <div id="sug-affaire" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
+        </div>
+        <div class="col-md-3 position-relative">
+          <input id="filter-site" class="form-control form-control-sm" placeholder="Filtrer par site...">
+          <div id="sug-site" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
+        </div>
+        <div class="col-md-3">
           <input id="filter-global" class="form-control form-control-sm" placeholder="Recherche globale (DOE, affaire, site, demande)...">
         </div>`;
       container?.insertBefore(filterRow, document.getElementById('board'));
       const titleFilter = document.getElementById('filter-title');
       const searchInput = document.getElementById('filter-global');
+      const filterAffaire = document.getElementById('filter-affaire');
+      const filterSite = document.getElementById('filter-site');
+      const sugAffaire = document.getElementById('sug-affaire');
+      const sugSite = document.getElementById('sug-site');
       let travauxCache = [];
+      let affairesCache = [];
+      let sitesCache = [];
       const progressCache = new Map(); // travailId -> { pct, remaining }
 
       function formatProgressLine(pct, remaining) {
@@ -152,14 +166,23 @@
 
         const termTitle = (titleFilter?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
         const term = (searchInput?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+        const termTitle = (titleFilter?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+        const term = (searchInput?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+        const termAff = (filterAffaire?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+        const termSite = (filterSite?.value || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+
         const filtered = travaux.filter(t => {
           const hayTitle = (t.titre || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
           const matchTitle = !termTitle || hayTitle.includes(termTitle);
-          if (!term) return matchTitle;
+          const hayAff = (t.affaire_nom || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+          const haySite = (t.site_nom || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+          const matchAff = !termAff || hayAff.includes(termAff);
+          const matchSite = !termSite || haySite.includes(termSite);
+          if (!term) return matchTitle && matchAff && matchSite;
           const hay = [
             t.titre, t.description, t.doe_titre, t.affaire_nom, t.site_nom, t.demande_titre
           ].join(' ').toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
-          return matchTitle && hay.includes(term);
+          return matchTitle && matchAff && matchSite && hay.includes(term);
         });
 
         const groupByEtat = {};
@@ -241,9 +264,15 @@
           if (col) col.innerHTML = '<div class="empty-placeholder">Chargement...</div>';
         });
         try {
-          const res = await fetch('/api/travaux', { headers, credentials: 'same-origin' });
-          if (res.status === 401 || res.status === 403) { location.href = '/login.html'; return; }
-          travauxCache = res.ok ? await res.json() : [];
+          const [travRes, affRes, siteRes] = await Promise.all([
+            fetch('/api/travaux', { headers, credentials: 'same-origin' }),
+            fetch('/api/affaires', { headers, credentials: 'same-origin' }),
+            fetch('/api/sites', { headers, credentials: 'same-origin' })
+          ]);
+          if (travRes.status === 401 || travRes.status === 403) { location.href = '/login.html'; return; }
+          travauxCache = travRes.ok ? await travRes.json() : [];
+          affairesCache = affRes.ok ? await affRes.json() : [];
+          sitesCache = siteRes.ok ? await siteRes.json() : [];
           renderTravaux(Array.isArray(travauxCache) ? travauxCache : []);
         } catch (err) {
           console.error('Erreur chargement travaux', err);
@@ -304,6 +333,30 @@
       loadTravaux();
       searchInput?.addEventListener('input', () => renderTravaux(travauxCache));
       titleFilter?.addEventListener('input', () => renderTravaux(travauxCache));
+      filterAffaire?.addEventListener('input', () => renderTravaux(travauxCache));
+      filterSite?.addEventListener('input', () => renderTravaux(travauxCache));
+
+      function bindAutocomplete(inputEl, sugEl, source = [], labelKey = 'nom') {
+        if (!inputEl || !sugEl) return;
+        inputEl.addEventListener('input', () => {
+          const term = inputEl.value.toLowerCase();
+          if (!term) { sugEl.innerHTML = ''; return; }
+          const matches = source.filter(item => (item[labelKey] || '').toLowerCase().includes(term)).slice(0, 5);
+          sugEl.innerHTML = matches.length
+            ? matches.map(m => `<button type="button" class="list-group-item list-group-item-action">${m[labelKey] || ''}</button>`).join('')
+            : '<div class="list-group-item text-muted">Aucun résultat</div>';
+        });
+        sugEl.addEventListener('click', (e) => {
+          const btn = e.target.closest('button');
+          if (!btn) return;
+          inputEl.value = btn.textContent.trim();
+          sugEl.innerHTML = '';
+          renderTravaux(travauxCache);
+        });
+        inputEl.addEventListener('blur', () => setTimeout(() => { sugEl.innerHTML = ''; }, 150));
+      }
+      bindAutocomplete(filterAffaire, sugAffaire, affairesCache, 'nom_affaire');
+      bindAutocomplete(filterSite, sugSite, sitesCache, 'nom_site');
 
       // --- Drag & Drop pour changement d'état ---
       let dragId = null;

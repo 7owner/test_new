@@ -437,7 +437,7 @@
         return label || email || 'Utilisateur';
       }
 
-      function renderTeamInline(respMatricule, agents = []) {
+      function renderTeamInline(respMatricule, agents = [], responsables = []) {
         if (!teamInline) return;
         const chips = [];
         if (respMatricule) {
@@ -449,11 +449,33 @@
         });
         teamInline.innerHTML = chips.length ? chips.join('') : '<span class="text-white-50">Aucun responsable ou agent assigné</span>';
         const respInline = document.getElementById('responsables-inline');
-        if (respInline) respInline.innerHTML = respMatricule ? `<span class="chip">${respMatricule}</span>` : 'Aucun responsable';
+        if (respInline) {
+          if ((responsables || []).length) {
+            respInline.innerHTML = responsables.map(r => {
+              const label = formatMember(
+                (r.nom || '' ? `${r.prenom || ''} ${r.nom || ''}`.trim() : '') || r.agent_matricule || r.matricule,
+                r.email || r.actor_email
+              );
+              const matricule = r.agent_matricule || r.matricule || '';
+              const remove = isAdmin && matricule ? `<button class="btn btn-sm btn-outline-danger ms-1 p-0 del-resp" data-m="${matricule}" title="Retirer"><i class="bi bi-x-lg"></i></button>` : '';
+              return `<span class="chip d-inline-flex align-items-center gap-1">${label || 'Responsable'}${remove}</span>`;
+            }).join('');
+          } else if (respMatricule) {
+            const remove = isAdmin ? `<button class="btn btn-sm btn-outline-danger ms-1 p-0 del-resp" data-m="${respMatricule}" title="Retirer"><i class="bi bi-x-lg"></i></button>` : '';
+            respInline.innerHTML = `<span class="chip d-inline-flex align-items-center gap-1">${respMatricule}${remove}</span>`;
+          } else {
+            respInline.innerHTML = 'Aucun responsable';
+          }
+        }
         const agentsInline = document.getElementById('agents-inline');
         if (agentsInline) {
           if ((agents || []).length) {
-            agentsInline.innerHTML = agents.map(a => `<span class="chip">${formatMember(a.agent_matricule || a.matricule || a.actor_name, a.actor_email)}</span>`).join('');
+            agentsInline.innerHTML = agents.map(a => {
+              const label = formatMember(a.agent_matricule || a.matricule || a.actor_name, a.actor_email);
+              const matricule = a.agent_matricule || a.matricule || '';
+              const remove = isAdmin && matricule ? `<button class="btn btn-sm btn-outline-danger ms-1 p-0 del-agent" data-m="${matricule}" title="Retirer"><i class="bi bi-x-lg"></i></button>` : '';
+              return `<span class="chip d-inline-flex align-items-center gap-1">${label}${remove}</span>`;
+            }).join('');
           } else {
             agentsInline.innerHTML = 'Aucun agent';
           }
@@ -622,7 +644,7 @@
         set('resp-principal', responsableMatricule || '—');
         const infoRespEl = document.getElementById('info-resp');
         if (infoRespEl) infoRespEl.textContent = responsableMatricule || '—';
-        renderTeamInline(responsableMatricule, agentsData);
+        renderTeamInline(responsableMatricule, agentsData, responsablesData);
 
         // Actions alignées sur ticket-view
         if (!isAdmin) {
@@ -635,6 +657,47 @@
           if (btnAgent) btnAgent.onclick = () => { if (agentSearch) agentSearch.value=''; if (agentHidden) agentHidden.value=''; addAgentModal?.show(); };
           if (btnAffaire) btnAffaire.onclick = () => { createAffaireModal?.show(); };
           if (btnDoe) btnDoe.onclick = () => { createDoeModal?.show(); };
+
+          // Suppression responsable / agent (inline chips)
+          const respInline = document.getElementById('responsables-inline');
+          if (respInline) {
+            respInline.addEventListener('click', async (ev) => {
+              const btn = ev.target.closest('.del-resp');
+              if (!btn) return;
+              const mat = btn.getAttribute('data-m');
+              if (!mat || !confirm('Retirer ce responsable ?')) return;
+              try {
+                const del = await fetch(`/api/travaux/${id}/responsables/${mat}`, { method:'DELETE', headers, credentials:'same-origin' });
+                if (!del.ok) throw new Error('Suppression impossible');
+                location.reload();
+              } catch (err) {
+                try {
+                  // fallback : effacer le responsable principal
+                  await updateTravail({ agent_matricule: null });
+                  location.reload();
+                } catch(_) {
+                  alert(err.message || 'Erreur suppression responsable');
+                }
+              }
+            });
+          }
+
+          const agentsInline = document.getElementById('agents-inline');
+          if (agentsInline) {
+            agentsInline.addEventListener('click', async (ev) => {
+              const btn = ev.target.closest('.del-agent');
+              if (!btn) return;
+              const mat = btn.getAttribute('data-m');
+              if (!mat || !confirm('Retirer cet agent ?')) return;
+              try {
+                const del = await fetch(`/api/travaux/${id}/agents/${mat}`, { method:'DELETE', headers, credentials:'same-origin' });
+                if (!del.ok) throw new Error('Suppression impossible');
+                location.reload();
+              } catch (err) {
+                alert(err.message || 'Erreur suppression agent');
+              }
+            });
+          }
         }
 
         // Helpers pour mises à jour
