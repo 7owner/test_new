@@ -9,27 +9,87 @@
   <link rel="stylesheet" href="/custom.css?v=1">
   <script src="/nav.js?v=2"></script>
   <style>
-    body { background: linear-gradient(135deg,#eef2ff 0%,#f8fbff 100%); }
-    .board-col { min-height: 60vh; border-radius: 14px; padding: 12px; background: #ffffff; box-shadow: 0 14px 24px rgba(41,53,108,0.10); }
-    .col-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .col-header .badge { font-size: .9rem; }
-    .work-card { border-radius: 12px; border: 1px solid #e9ecf5; box-shadow: 0 8px 18px rgba(0,0,0,0.06); }
-    .tag { font-size: 0.8rem; padding: 2px 8px; border-radius: 999px; background: #eef2ff; color: #4353ff; }
-    .empty-placeholder { color: #8b93aa; font-style: italic; }
-    .drop-hover { outline: 2px dashed #6366f1; outline-offset: 4px; }
+    :root {
+      --bg:        #f8f9fc;
+      --card:      #ffffff;
+      --text:      #1e293b;
+      --muted:     #64748b;
+      --border:    #e2e8f0;
+      --todo:      #94a3b8;
+      --doing:     #f59e0b;
+      --waiting:   #6b7280;
+      --done:      #10b981;
+      --prio-high:   #ef4444;
+      --prio-med:    #f97316;
+      --prio-low:    #6b7280;
+    }
+    body {
+      background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+      color: var(--text);
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 2rem 1rem;
+    }
+    .board-col {
+      background: var(--card);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 25px -5px rgba(15,23,42,0.08);
+      padding: 1.25rem;
+      min-height: 65vh;
+      transition: all 0.22s ease;
+    }
+    .board-col:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 20px 35px -10px rgba(15,23,42,0.12);
+    }
+    .col-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; padding-bottom:.9rem; border-bottom:1px solid var(--border); }
+    .col-header h5 { margin:0; font-weight:600; font-size:1.1rem; }
+    .badge-count { font-weight:500; padding:0.4em 0.85em; border-radius:1.5rem; font-size:0.9rem; }
+    [data-etat="A_faire"]    { --state-color: var(--todo); }
+    [data-etat="En_cours"]   { --state-color: var(--doing); }
+    [data-etat="En_attente"] { --state-color: var(--waiting); }
+    [data-etat="Termine"]    { --state-color: var(--done); }
+    [data-etat] .col-header h5 { color: var(--state-color); }
+    [data-etat="A_faire"]    .badge-count { background: #e2e8f0; color: #475569; }
+    [data-etat="En_cours"]   .badge-count { background: #fef3c7; color: #92400e; }
+    [data-etat="En_attente"] .badge-count { background: #f3f4f6; color: #4b5563; }
+    [data-etat="Termine"]    .badge-count { background: #d1fae5; color: #065f46; }
+    .work-card {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 1rem;
+      transition: all 0.2s ease;
+      overflow: hidden;
+    }
+    .work-card:hover { transform: translateY(-4px); box-shadow: 0 14px 28px -8px rgba(0,0,0,0.14); }
+    .work-card .card-body { padding: 1.1rem; }
+    .tag { font-size: 0.8rem; padding: 0.25rem 0.65rem; border-radius: 2rem; font-weight: 500; }
+    .tag-haute   { background: #fee2e2; color: #991b1b; }
+    .tag-moyenne { background: #ffedd5; color: #9a3412; }
+    .tag-basse   { background: #e5e7eb; color: #4b5563; }
+    .progress { height: 8px; border-radius: 999px; background: #e2e8f0; margin: 0.5rem 0; }
+    .progress-bar { background: linear-gradient(90deg, #6366f1, #8b5cf6); border-radius: 999px; }
+    .drop-hover { background: #f1f5f9 !important; outline: 2px dashed #6366f1; outline-offset: -3px; }
     .dragging { opacity: 0.6; }
+    .empty-placeholder { color: #8b93aa; font-style: italic; }
+    @media (max-width: 992px) { .board-col { min-height: 50vh; margin-bottom: 1.5rem; } }
   </style>
 </head>
 <body>
   <div id="navbar-placeholder"></div>
   <main class="container my-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
-        <h1 class="h4 mb-0">Tableau des travaux</h1>
-        <small class="text-muted">Vue Kanban des travaux (comme les tickets, avec colonnes par état).</small>
+        <h1 class="h3 fw-bold">Tableau des travaux</h1>
+        <div class="text-muted">Vue Kanban – état des chantiers</div>
       </div>
       <div class="d-flex gap-2">
-        <button class="btn btn-primary btn-sm" id="btn-new-travail"><i class="bi bi-plus-lg me-1"></i>Nouveau travail</button>
+        <button class="btn btn-primary px-4" id="btn-new-travail">
+          <i class="bi bi-plus-lg me-2"></i>Nouveau travail
+        </button>
       </div>
     </div>
 
@@ -259,15 +319,16 @@
             if (t.demande_id) badgeLinks.push(`<a class="badge bg-light text-dark text-decoration-none" href="demande-client-admin.html?embed=1&id=${t.demande_id}" target="_blank"><i class="bi bi-chat"></i> Demande #${t.demande_id}</a>`);
             card.innerHTML = `
               <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-1">
+                <div class="d-flex justify-content-between align-items-start mb-2">
                   <div class="fw-semibold">${t.titre || '(Sans titre)'}</div>
-                  <span class="tag">${priorite}</span>
+                  <span class="tag ${priorite.toLowerCase() === 'haute' ? 'tag-haute' : priorite.toLowerCase() === 'basse' ? 'tag-basse' : 'tag-moyenne'}">${priorite}</span>
                 </div>
                 <div class="text-muted small mb-2">${t.description || ''}</div>
-                <div class="small text-muted mb-2"><i class="bi bi-person-badge"></i> Resp. ${responsable}</div>
-                <div class="small text-muted mb-2 progress-line">${progressLine}</div>
-                ${badgeLinks.length ? `<div class="d-flex flex-wrap gap-1 mb-2">${badgeLinks.join(' ')}</div>` : ''}
-                <div class="d-flex justify-content-end align-items-center gap-1">
+                <div class="small text-muted mb-2"><i class="bi bi-person me-1"></i>Resp. ${responsable}</div>
+                <div class="progress"><div class="progress-bar" style="width:${pct !== null ? pct : 0}%"></div></div>
+                <div class="small text-end fw-medium progress-line">${progressLine}</div>
+                ${badgeLinks.length ? `<div class="d-flex flex-wrap gap-1 mt-2">${badgeLinks.join(' ')}</div>` : ''}
+                <div class="d-flex justify-content-end align-items-center gap-1 mt-2">
                   <button class="btn btn-sm btn-outline-primary btn-open-travail" data-id="${t.id}"><i class="bi bi-eye"></i> Voir</button>
                   ${isAdmin ? `
                   <button class="btn btn-sm btn-outline-warning btn-edit-travail" data-id="${t.id}" title="Modifier"><i class="bi bi-pencil"></i></button>
