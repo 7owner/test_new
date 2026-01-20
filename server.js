@@ -5642,7 +5642,11 @@ app.get('/api/travaux/:id/materiels', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
     const r = await pool.query(
-      `SELECT * FROM travaux_materiel WHERE travaux_id=$1 ORDER BY id DESC`,
+      `SELECT tm.*, m.designation, m.reference
+       FROM travaux_materiel tm
+       LEFT JOIN materiel m ON m.id = tm.materiel_id
+       WHERE tm.travaux_id=$1
+       ORDER BY tm.id DESC`,
       [id]
     );
     res.json(r.rows);
@@ -5655,13 +5659,14 @@ app.get('/api/travaux/:id/materiels', authenticateToken, async (req, res) => {
 // Ajoute du matériel à un travail
 app.post('/api/travaux/:id/materiels', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
-  const { materiel, commentaire, quantite=1, commande=false } = req.body;
-  if (!materiel) return res.status(400).json({ error: 'materiel is required' });
+  const { materiel_id, materiel, commentaire, quantite=1, commande=false } = req.body;
+  const matId = materiel_id || materiel; // compat fallback
+  if (!matId) return res.status(400).json({ error: 'materiel_id is required' });
   try {
     const r = await pool.query(
-      `INSERT INTO travaux_materiel (travaux_id, materiel, commentaire, quantite, commande)
+      `INSERT INTO travaux_materiel (travaux_id, materiel_id, commentaire, quantite, commande)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [id, materiel, commentaire || null, quantite || 1, !!commande]
+      [id, matId, commentaire || null, quantite || 1, !!commande]
     );
     res.status(201).json(r.rows[0]);
   } catch (err) {
@@ -5673,15 +5678,16 @@ app.post('/api/travaux/:id/materiels', authenticateToken, authorizeAdmin, async 
 // Met à jour le statut commande ou la quantité / commentaire
 app.patch('/api/travaux/:travauxId/materiels/:matId', authenticateToken, authorizeAdmin, async (req, res) => {
   const { travauxId, matId } = req.params;
-  const { commande, quantite, commentaire } = req.body;
+  const { commande, quantite, commentaire, materiel_id } = req.body;
   try {
     const r = await pool.query(
       `UPDATE travaux_materiel
          SET commande = COALESCE($1, commande),
              quantite = COALESCE($2, quantite),
-             commentaire = COALESCE($3, commentaire)
-       WHERE id=$4 AND travaux_id=$5 RETURNING *`,
-      [commande === undefined ? null : !!commande, quantite || null, commentaire || null, matId, travauxId]
+             commentaire = COALESCE($3, commentaire),
+             materiel_id = COALESCE($4, materiel_id)
+       WHERE id=$5 AND travaux_id=$6 RETURNING *`,
+      [commande === undefined ? null : !!commande, quantite || null, commentaire || null, materiel_id || null, matId, travauxId]
     );
     if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(r.rows[0]);

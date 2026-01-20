@@ -474,8 +474,10 @@
           data.forEach(item => {
             const row = document.createElement('div');
             row.className = 'p-2 border rounded mb-2 bg-light';
+            const label = item.designation || item.materiel || `Matériel #${item.materiel_id || item.id}`;
             row.innerHTML = `
-              <div class="fw-semibold">${item.materiel || 'Matériel'}</div>
+              <div class="fw-semibold">${label}</div>
+              <div class="small text-muted">${item.reference ? `Ref: ${item.reference}` : ''}</div>
               <div class="small text-muted">${item.commentaire || ''}</div>
               <div class="d-flex justify-content-between align-items-center mt-1">
                 <div class="small text-muted">Quantité: ${item.quantite || 1}</div>
@@ -503,7 +505,7 @@
                 body: JSON.stringify({ commande: cb.checked })
               });
             } catch (err) { alert('Mise à jour impossible'); }
-          }, { once:true });
+          });
 
           tmList.addEventListener('click', async (ev) => {
             const btn = ev.target.closest('.tm-del');
@@ -515,7 +517,7 @@
               if (!del.ok) throw new Error();
               await loadTravauxMateriel();
             } catch (_) { alert('Suppression impossible'); }
-          }, { once:true });
+          });
         } catch (err) {
           tmList.innerHTML = '<div class="text-danger small">Erreur de chargement du matériel.</div>';
         }
@@ -525,15 +527,16 @@
         tmForm.addEventListener('submit', async (e) => {
           e.preventDefault();
           const mat = tmMat?.value.trim();
+          const matId = mat && !isNaN(mat) ? Number(mat) : null;
           const comment = tmComment?.value.trim();
           const qty = Number(tmQty?.value || 1) || 1;
-          if (!mat) { alert('Veuillez saisir un matériel.'); return; }
+          if (!matId) { alert('ID du matériel requis (materiel_id).'); return; }
           try {
             const r = await fetch(`/api/travaux/${id}/materiels`, {
               method:'POST',
               headers:{ ...headers, 'Content-Type':'application/json' },
               credentials:'same-origin',
-              body: JSON.stringify({ materiel: mat, commentaire: comment || null, quantite: qty })
+              body: JSON.stringify({ materiel_id: matId, commentaire: comment || null, quantite: qty })
             });
             if (!r.ok) {
               const d = await r.json().catch(()=>({}));
