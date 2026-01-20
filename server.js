@@ -5636,6 +5636,74 @@ app.delete('/api/travaux_taches/:id', authenticateToken, authorizeAdmin, async (
   } catch (err) { console.error('Error deleting travaux tache:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });
 
+// -------------------- Travaux Matériel --------------------
+// Liste le matériel lié à un travail
+app.get('/api/travaux/:id/materiels', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const r = await pool.query(
+      `SELECT * FROM travaux_materiel WHERE travaux_id=$1 ORDER BY id DESC`,
+      [id]
+    );
+    res.json(r.rows);
+  } catch (err) {
+    console.error('Error fetching travaux materiel:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Ajoute du matériel à un travail
+app.post('/api/travaux/:id/materiels', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { materiel, commentaire, quantite=1, commande=false } = req.body;
+  if (!materiel) return res.status(400).json({ error: 'materiel is required' });
+  try {
+    const r = await pool.query(
+      `INSERT INTO travaux_materiel (travaux_id, materiel, commentaire, quantite, commande)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [id, materiel, commentaire || null, quantite || 1, !!commande]
+    );
+    res.status(201).json(r.rows[0]);
+  } catch (err) {
+    console.error('Error creating travaux materiel:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Met à jour le statut commande ou la quantité / commentaire
+app.patch('/api/travaux/:travauxId/materiels/:matId', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { travauxId, matId } = req.params;
+  const { commande, quantite, commentaire } = req.body;
+  try {
+    const r = await pool.query(
+      `UPDATE travaux_materiel
+         SET commande = COALESCE($1, commande),
+             quantite = COALESCE($2, quantite),
+             commentaire = COALESCE($3, commentaire)
+       WHERE id=$4 AND travaux_id=$5 RETURNING *`,
+      [commande === undefined ? null : !!commande, quantite || null, commentaire || null, matId, travauxId]
+    );
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json(r.rows[0]);
+  } catch (err) {
+    console.error('Error updating travaux materiel:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Supprime un matériel lié à un travail
+app.delete('/api/travaux/:travauxId/materiels/:matId', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { travauxId, matId } = req.params;
+  try {
+    const r = await pool.query('DELETE FROM travaux_materiel WHERE id=$1 AND travaux_id=$2', [matId, travauxId]);
+    if (r.rowCount === 0) return res.status(404).json({ error: 'Not found' });
+    res.status(204).send();
+  } catch (err) {
+    console.error('Error deleting travaux materiel:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // -------------------- Travaux Relations API --------------------
 
 // Travaux: assign agent

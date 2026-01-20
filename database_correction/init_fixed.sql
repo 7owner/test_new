@@ -349,6 +349,14 @@ CREATE TABLE IF NOT EXISTS rendu_travaux_image (
     image_id BIGINT NOT NULL REFERENCES images(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS travaux_materiel (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    materiel_id BIGINT NOT NULL REFERENCES materiel(id) ON DELETE RESTRICT,
+    quantite INTEGER DEFAULT 1,
+    commentaire TEXT
+);
+
 CREATE TABLE IF NOT EXISTS ticket_agent (
     id SERIAL PRIMARY KEY,
     ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,

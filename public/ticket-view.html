@@ -295,45 +295,8 @@
     </div>
   </div>
 
-  <!--
-  Fichier: /c:/Users/takot/Desktop/Projet_app_V2/Projet_app_V1/symfony/projet_var_v4/public/ticket-view.html
-  Objet: Template "Rapports d'intervention" — affiche les cartes "matériel" et "commande".
-
-  Problème signalé:
-    - Les cartes "matériel" et "commande" restent en état de chargement (spinner/infinite loader).
-
-  Causes possibles:
-    1. Requête réseau bloquée ou en attente (API down, URL incorrecte, CORS).
-    2. Erreur JS empêchant la résolution de la promesse (exception, syntax error).
-    3. Réponse API vide/malformée ou format inattendu (JSON parse fail).
-    4. Auth/token manquant => backend renvoie 401/403 non géré.
-    5. Timeout non géré ou logique d'état (loader non désactivé après échec).
-    6. Sélecteur DOM/ID erroné => le code ne trouve pas l'élément à remplir.
-    7. Composant asynchrone non initialisé (promesse non retournée, callback non appelé).
-    8. CSS/JS du spinner jamais supprimé (classe/attribut restant actif).
-
-  Étapes de diagnostic rapides:
-    - Ouvrir la console du navigateur (F12) : vérifier erreurs JS et logs.
-    - Onglet Network : inspecter les requêtes XHR/fetch pour les endpoints des cartes.
-      * Statut HTTP, réponse, temps de réponse, en-têtes CORS.
-    - Vérifier le payload retourné par l'API et son JSON.
-    - Ajouter logs/debugging dans le code qui gère la promesse (then/catch/finally).
-    - Vérifier que le token/credentials sont envoyés si nécessaires.
-    - Tester l'URL API depuis Postman/curl pour isoler front/back.
-    - Confirmer que les sélecteurs DOM et noms de champs correspondent au template.
-    - Ajouter timeout et gestion d'erreur pour masquer le loader en cas d'échec.
-    - Consulter les logs serveur pour erreurs 5xx.
-
-  Actions correctives typiques:
-    - Corriger l'endpoint/CORS ou restaurer le backend.
-    - Gérer explicitement les erreurs et appeler une fonction pour retirer le loader en catch/finally.
-    - Valider et adapter le parsing de la réponse API.
-    - S'assurer que l'authentification est fournie et valide.
-    - Corriger sélecteurs DOM ou initialisation du composant.
-
-  -->
-  <!-- Rapports d'intervention (masqué temporairement) -->
-  <div class="main-card d-none">
+  <!-- Rapports d'intervention -->
+  <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
       <span class="d-flex align-items-center gap-2"><i class="bi bi-file-earmark-text me-1"></i>Rapports d'interventions</span>
       <button class="btn btn-sm btn-light toggle-card-btn" data-target="#rapports-card-body"><i class="bi bi-eye"></i> Voir</button>
@@ -343,8 +306,8 @@
     </div>
   </div>
 
-  <!-- Factures Financières (masqué temporairement) -->
-  <div class="main-card d-none">
+  <!-- Factures Financières -->
+  <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
       <span class="d-flex align-items-center gap-2"><i class="bi bi-receipt me-1"></i>Factures Financières</span>
       <button class="btn btn-sm btn-light toggle-card-btn" data-target="#financial-factures-card-body"><i class="bi bi-eye"></i> Voir</button>
@@ -410,9 +373,9 @@
       <span class="d-flex align-items-center gap-2"><i class="bi bi-box-seam me-1"></i>Matériels & commandes</span>
       <div class="d-flex gap-2">
         <button class="btn btn-sm btn-light toggle-card-btn" data-target="#materiels-card-body"><i class="bi bi-eye"></i> Voir</button>
-        <button class="btn btn-light btn-sm d-none" id="add-materiel-btn">
-          <i class="bi bi-plus-circle me-1"></i>Ajouter un matériel
-        </button>
+         <!--<button class="btn btn-light btn-sm d-none" id="add-materiel-btn">
+         <i class="bi bi-plus-circle me-1"></i>Ajouter un matériel
+        </button>-->
       </div>
     </div>
     <div class="card-body p-4" id="materiels-card-body">
