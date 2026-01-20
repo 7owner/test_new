@@ -5385,12 +5385,37 @@ app.get('/api/travaux', authenticateToken, async (req, res) => {
           d.titre AS doe_titre,
           af.nom_affaire AS affaire_nom,
           s.nom_site AS site_nom,
-          dc.titre AS demande_titre
+          dc.titre AS demande_titre,
+          resp.responsables,
+          ags.agents_assignes
       FROM travaux t
       LEFT JOIN doe d ON t.doe_id = d.id
       LEFT JOIN affaire af ON t.affaire_id = af.id
       LEFT JOIN site s ON t.site_id = s.id
       LEFT JOIN demande_client dc ON t.demande_id = dc.id
+      LEFT JOIN LATERAL (
+        SELECT json_agg(json_build_object(
+          'agent_matricule', tr.agent_matricule,
+          'role', tr.role,
+          'nom', ag.nom,
+          'prenom', ag.prenom,
+          'email', ag.email
+        ) ORDER BY tr.id DESC) AS responsables
+        FROM travaux_responsable tr
+        LEFT JOIN agent ag ON ag.matricule = tr.agent_matricule
+        WHERE tr.travaux_id = t.id
+      ) resp ON true
+      LEFT JOIN LATERAL (
+        SELECT json_agg(json_build_object(
+          'agent_matricule', ta.agent_matricule,
+          'nom', ag.nom,
+          'prenom', ag.prenom,
+          'email', ag.email
+        ) ORDER BY ta.id DESC) AS agents_assignes
+        FROM travaux_agent ta
+        LEFT JOIN agent ag ON ag.matricule = ta.agent_matricule
+        WHERE ta.travaux_id = t.id
+      ) ags ON true
     `;
 
     if (doe_id) {
