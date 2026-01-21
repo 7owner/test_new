@@ -455,6 +455,8 @@
               responsable = responsable || rel.responsable || rel.agent || rel.assignation || null;
               interventions = interventions || rel.interventions || rel.intervention || [];
               ticket = ticket || rel.ticket || null;
+            } else if (relRes.status !== 404) {
+              console.warn('relations fallback status', relRes.status);
             }
           } catch (e) {
             console.warn('relations fallback failed', e);

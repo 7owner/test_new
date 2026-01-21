@@ -438,8 +438,10 @@
             col.className = 'col-12 col-md-6 col-lg-4';
             const interLabel = d.intervention_titre || (d.intervention_id ? `Intervention #${d.intervention_id}` : null);
             const ticketLabel = d.ticket_titre || (d.ticket_id ? `Ticket #${d.ticket_id}` : null);
+            const travauxLabel = d.travaux_titre || (d.travaux_id ? `Travaux #${d.travaux_id}` : null);
             const interInfo = interLabel ? `<span class="badge bg-light text-dark">${interLabel}</span>` : '';
             const ticketInfo = ticketLabel ? `<span class="badge bg-secondary">${ticketLabel}</span>` : '';
+            const travauxInfo = travauxLabel ? `<span class="badge bg-info text-dark">${travauxLabel}</span>` : '';
             const linkedMateriels = Array.isArray(d.materiels) && d.materiels.length
               ? d.materiels.map(m => `<div class="small text-muted">- ${m.designation || m.reference || 'Matériel'} (${m.commande_status || '—'})</div>`).join('')
               : '<div class="small text-muted">Aucune commande liée.</div>';
@@ -450,7 +452,7 @@
                     <div class="fw-semibold">${d.titre}</div>
                     <div class="small text-muted">${d.commentaire || ''}</div>
                     <div class="small text-muted">Quantité: ${d.quantite || 1}</div>
-                    <div class="d-flex flex-wrap gap-1 mt-1">${interInfo} ${ticketInfo}</div>
+                    <div class="d-flex flex-wrap gap-1 mt-1">${interInfo} ${ticketInfo} ${travauxInfo}</div>
                     <div class="mt-2">${linkedMateriels}</div>
                   </div>
                   <div class="d-flex flex-column align-items-end gap-2">
