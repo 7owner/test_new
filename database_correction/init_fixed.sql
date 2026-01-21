@@ -357,12 +357,11 @@ CREATE TABLE IF NOT EXISTS travaux_materiel (
     commentaire TEXT
 );
 
-CREATE TABLE IF NOT EXISTS travaux_materiel (
+CREATE TABLE IF NOT EXISTS demande_client_travaux (
     id SERIAL PRIMARY KEY,
+    demande_id BIGINT NOT NULL REFERENCES demande_client(id) ON DELETE CASCADE,
     travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
-    materiel_id BIGINT NOT NULL REFERENCES materiel(id) ON DELETE RESTRICT,
-    quantite INTEGER DEFAULT 1,
-    commentaire TEXT
+    UNIQUE (demande_id, travaux_id)
 );
 
 CREATE TABLE IF NOT EXISTS ticket_agent (

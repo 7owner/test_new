@@ -5515,7 +5515,15 @@ app.get('/api/travaux/:id', authenticateToken, async (req, res) => {
       [id]
     )).rows;
 
-    res.json({ ...travail, agents_assignes, responsables });
+    const demandes_client = (await pool.query(
+      `SELECT dc.* FROM demande_client dc
+       JOIN demande_client_travaux dct ON dct.demande_id = dc.id
+       WHERE dct.travaux_id = $1
+       ORDER BY dc.created_at DESC`,
+      [id]
+    )).rows;
+
+    res.json({ ...travail, agents_assignes, responsables, demandes_client });
   } catch (err) {
     console.error('Error fetching travaux by id:', err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -5524,16 +5532,16 @@ app.get('/api/travaux/:id', authenticateToken, async (req, res) => {
 
 app.post('/api/travaux', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    let { doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance, agent_matricule } = req.body;
+    let { doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance } = req.body; // Removed agent_matricule
 
     if (!titre) return res.status(400).json({ error: 'Titre is required' });
 
     const r = await pool.query(
       `INSERT INTO travaux (
-        doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance, agent_matricule
-      ) VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7::etat_travaux, 'A_faire'::etat_travaux), $8, COALESCE($9::timestamp, CURRENT_TIMESTAMP), $10, $11, $12) RETURNING *`,
+        doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance
+      ) VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7::etat_travaux, 'A_faire'::etat_travaux), $8, COALESCE($9::timestamp, CURRENT_TIMESTAMP), $10, $11) RETURNING *`, // Corrected parameter indices
       [
-        doe_id || null, affaire_id || null, site_id || null, demande_id || null, titre, description || null, etat || null, priorite || null, date_debut || null, date_fin || null, date_echeance || null, agent_matricule || null
+        doe_id || null, affaire_id || null, site_id || null, demande_id || null, titre, description || null, etat || null, priorite || null, date_debut || null, date_fin || null, date_echeance || null
       ]
     );
     res.status(201).json(r.rows[0]);
@@ -5543,7 +5551,7 @@ app.post('/api/travaux', authenticateToken, authorizeAdmin, async (req, res) => 
 app.put('/api/travaux/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    let { doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance, agent_matricule } = req.body;
+    let { doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance } = req.body; // Removed agent_matricule
 
     if (!titre) return res.status(400).json({ error: 'Titre is required' });
 
@@ -5560,12 +5568,10 @@ app.put('/api/travaux/:id', authenticateToken, authorizeAdmin, async (req, res) 
         date_debut = COALESCE($9, date_debut),
         date_fin = COALESCE($10, date_fin),
         date_echeance = COALESCE($11, date_echeance),
-        agent_matricule = COALESCE($12, agent_matricule),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id=$13 RETURNING *`,
+      WHERE id=$12 RETURNING *`, // Corrected parameter indices
       [
         doe_id || null, affaire_id || null, site_id || null, demande_id || null, titre || null, description || null, etat || null, priorite || null, date_debut || null, date_fin || null, date_echeance || null,
-        agent_matricule || null,
         id
       ]
     );
@@ -6281,7 +6287,16 @@ app.get('/api/demandes_client/mine', authenticateToken, async (req, res) => {
       if (!clientRow) return res.json([]);
 
       const demandes = (await pool.query(
-        `SELECT d.*, s.nom_site AS site_nom
+        `SELECT d.*,
+                s.nom_site AS site_nom,
+                COALESCE(
+                  (
+                    SELECT json_agg(json_build_object('travaux_id', tr.id, 'travaux_titre', tr.titre, 'link_id', dct.id))
+                    FROM demande_client_travaux dct
+                    JOIN travaux tr ON tr.id = dct.travaux_id
+                    WHERE dct.demande_id = d.id
+                  ), '[]'::json
+                ) AS travaux_associes
          FROM demande_client d
          LEFT JOIN site s ON s.id = d.site_id
          WHERE d.client_id = $1
@@ -6362,7 +6377,16 @@ app.get('/api/demandes_client/:id/relations', authenticateToken, async (req, res
       [id, ticket ? ticket.id : null]
     )).rows;
 
-    res.json({ responsable, interventions, ticket });
+    // Travaux liés à la demande
+    const travaux = (await pool.query(
+      `SELECT tr.* FROM travaux tr
+       JOIN demande_client_travaux dct ON dct.travaux_id = tr.id
+       WHERE dct.demande_id = $1
+       ORDER BY tr.created_at DESC`,
+      [id]
+    )).rows;
+
+    res.json({ responsable, interventions, ticket, travaux });
   } catch (err) {
     console.error(`Error fetching demande_client relations ${id}:`, err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -6527,6 +6551,41 @@ app.get('/api/client/demandes/:id', authenticateToken, async (req, res) => {
   }
 });
 
+
+// Link demande_client to travaux
+app.post('/api/demandes-client/:demandeId/travaux', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { demandeId } = req.params;
+  const { travaux_id } = req.body;
+  if (!travaux_id) return res.status(400).json({ error: 'travaux_id is required' });
+  try {
+    const d = (await pool.query('SELECT id FROM demande_client WHERE id=$1', [demandeId])).rows[0];
+    if (!d) return res.status(404).json({ error: 'Demande client not found' });
+    const t = (await pool.query('SELECT id FROM travaux WHERE id=$1', [travaux_id])).rows[0];
+    if (!t) return res.status(404).json({ error: 'Travaux not found' });
+
+    const r = await pool.query(
+      'INSERT INTO demande_client_travaux (demande_id, travaux_id) VALUES ($1, $2) ON CONFLICT (demande_id, travaux_id) DO NOTHING RETURNING *',
+      [demandeId, travaux_id]
+    );
+    res.status(r.rows[0] ? 201 : 200).json(r.rows[0] || { message: 'Already linked' });
+  } catch (e) {
+    console.error('Error linking demande_client to travaux:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Unlink demande_client from travaux (delete junction record)
+app.delete('/api/demandes-client-travaux/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const r = await pool.query('DELETE FROM demande_client_travaux WHERE id=$1 RETURNING id', [id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.status(204).send();
+  } catch (e) {
+    console.error('Error unlinking demande_client from travaux:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 // --- Admin: demandes listing and workflow ---
 // List all demandes with client/site (admin)
