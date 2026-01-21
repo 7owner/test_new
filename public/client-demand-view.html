@@ -328,6 +328,7 @@
 
       const conversation_id = `demande-${demandeId}`;
       let receiver_id = null;
+      let responsableUserId = null;
 
       const messagesDisplay = document.getElementById('messages-display');
       const messageForm = document.getElementById('message-form');
@@ -375,7 +376,11 @@
 
       async function loadMessages() {
         try {
-          const res = await fetch(`/api/conversations/${conversation_id}`, { headers, credentials: 'same-origin' });
+          const res = await fetch(`/api/conversations/${conversation_id}`, { headers, credentials: 'same-origin', cache:'no-store' });
+          if (res.status === 304) {
+            messagesDisplay.innerHTML = '<p class="text-center text-muted py-4">Aucun message pour le moment.</p>';
+            return;
+          }
           if (!res.ok) throw new Error();
           const messages = await res.json();
 
@@ -389,6 +394,7 @@
                 ? counterpart.sender_id
                 : counterpart.receiver_id;
             }
+            if (!receiver_id && responsableUserId) receiver_id = responsableUserId;
           }
 
           messages.forEach(msg => {
@@ -422,8 +428,12 @@
         if (!body && !attachments.files.length) return;
 
         if (!receiver_id) {
-          alert("Destinataire inconnu. Impossible d'envoyer.");
-          return;
+          if (responsableUserId) {
+            receiver_id = responsableUserId;
+          } else {
+            alert("Destinataire inconnu. Impossible d'envoyer.");
+            return;
+          }
         }
 
         const formData = new FormData();
@@ -478,8 +488,9 @@
           }
         }
         // Fix destinataire/messages: si aucune trace, utiliser le responsable
-        if (!receiver_id && responsable && (responsable.user_id || responsable.id)) {
-          receiver_id = responsable.user_id || responsable.id;
+        if (responsable && (responsable.user_id || responsable.id)) {
+          responsableUserId = responsable.user_id || responsable.id;
+          if (!receiver_id) receiver_id = responsableUserId;
         }
         setInterlocuteur(responsable);
         if (!demande) throw new Error('Données de demande manquantes');

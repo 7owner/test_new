@@ -5536,7 +5536,7 @@ app.post('/api/travaux', authenticateToken, authorizeAdmin, async (req, res) => 
 
     if (!titre) return res.status(400).json({ error: 'Titre is required' });
 
-    const r = await pool.query(
+    let r = await pool.query(
       `INSERT INTO travaux (
         doe_id, affaire_id, site_id, demande_id, titre, description, etat, priorite, date_debut, date_fin, date_echeance
       ) VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7::etat_travaux, 'A_faire'::etat_travaux), $8, COALESCE($9::timestamp, CURRENT_TIMESTAMP), $10, $11) RETURNING *`, // Corrected parameter indices
@@ -5544,7 +5544,35 @@ app.post('/api/travaux', authenticateToken, authorizeAdmin, async (req, res) => 
         doe_id || null, affaire_id || null, site_id || null, demande_id || null, titre, description || null, etat || null, priorite || null, date_debut || null, date_fin || null, date_echeance || null
       ]
     );
-    res.status(201).json(r.rows[0]);
+    let created = r.rows[0];
+
+    // Auto-création d'une demande client liée au site si aucune demande fournie
+    if (!created.demande_id && created.site_id) {
+      try {
+        const siteRow = (await pool.query('SELECT id, client_id FROM site WHERE id=$1', [created.site_id])).rows[0];
+        if (siteRow && siteRow.client_id) {
+          const d = await pool.query(
+            `INSERT INTO demande_client (titre, description, client_id, site_id, status)
+             VALUES ($1, $2, $3, $4, 'En cours')
+             RETURNING id`,
+            [titre, description || titre || 'Demande travaux', siteRow.client_id, siteRow.id]
+          );
+          const demandeId = d.rows[0]?.id;
+          if (demandeId) {
+            await pool.query(
+              'INSERT INTO demande_client_travaux (demande_id, travaux_id) VALUES ($1,$2) ON CONFLICT (demande_id, travaux_id) DO NOTHING',
+              [demandeId, created.id]
+            );
+            const up = await pool.query('UPDATE travaux SET demande_id=$1 WHERE id=$2 RETURNING *', [demandeId, created.id]);
+            if (up.rows[0]) created = up.rows[0];
+          }
+        }
+      } catch (autoErr) {
+        console.warn('Auto-demande pour travaux échouée', autoErr.message || autoErr);
+      }
+    }
+
+    res.status(201).json(created);
   } catch (err) { console.error('Error creating travaux:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });
 

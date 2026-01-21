@@ -72,7 +72,7 @@ CREATE TYPE sujet_type          AS ENUM ('ticket','intervention');
 CREATE TYPE statut_rdv          AS ENUM ('Planifie','Confirme','Termine','Annule');
 CREATE TYPE doc_cible_type      AS ENUM (
     'Affaire','Agent','Agence','Adresse','Client','Site','RendezVous','DOE','Ticket','Intervention',
-    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention', 'DemandeClient', 'Contrat', 'Materiel', 'MaterielCatalogue', 'RenduTravaux'
+    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention', 'DemandeClient', 'Contrat', 'Materiel', 'MaterielCatalogue', 'RenduTravaux', 'Travaux'
 );
 CREATE TYPE doc_nature          AS ENUM ('Document','Video','Audio','Autre');
 CREATE TYPE statut_achat        AS ENUM ('Brouillon','Valide','Commande','Recu_partiel','Recu','Annule');
@@ -181,6 +181,7 @@ CREATE TABLE IF NOT EXISTS passeport (
     agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
     permis VARCHAR(50),
     habilitations TEXT,
+    certifications TEXT,
     date_expiration DATE
 );
 
@@ -456,6 +457,7 @@ CREATE TABLE IF NOT EXISTS materiel (
     commentaire TEXT,
     commande_status commande_status_type DEFAULT 'A commander',
     metier metier_type,
+    agence_id BIGINT REFERENCES agence(id) ON DELETE SET NULL, -- NEW: Link to agence
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
