@@ -194,6 +194,51 @@ CREATE TABLE IF NOT EXISTS formation (
     date_validite DATE
 );
 
+CREATE TABLE IF NOT EXISTS materiel_catalogue (
+    id SERIAL PRIMARY KEY,
+    titre TEXT,
+    reference TEXT UNIQUE,
+    designation TEXT,
+    categorie TEXT,
+    fabricant TEXT,
+    fournisseur TEXT,
+    remise_fournisseur NUMERIC(5, 2),
+    classe_materiel TEXT,
+    prix_achat NUMERIC(12,2),
+    commentaire TEXT,
+    metier metier_type,
+    actif BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS materiel (
+    id SERIAL PRIMARY KEY,
+    titre TEXT,
+    reference TEXT,
+    designation TEXT,
+    categorie TEXT,
+    fabricant TEXT,
+    fournisseur TEXT,
+    remise_fournisseur NUMERIC(5, 2),
+    classe_materiel TEXT,
+    prix_achat NUMERIC(12,2),
+    commentaire TEXT,
+    commande_status commande_status_type DEFAULT 'A commander',
+    metier metier_type,
+    agence_id BIGINT REFERENCES agence(id) ON DELETE SET NULL, -- NEW: Link to agence
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS gestion_demande_materiel (
+    id SERIAL PRIMARY KEY,
+    demande_materiel_id BIGINT NOT NULL REFERENCES demande_materiel(id) ON DELETE CASCADE,
+    materiel_id BIGINT NOT NULL REFERENCES materiel(id) ON DELETE CASCADE,
+    quantite_demandee INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (demande_materiel_id, materiel_id)
+);
+
+
 CREATE TABLE IF NOT EXISTS contrat (
     id SERIAL PRIMARY KEY,
     titre VARCHAR(255) NOT NULL UNIQUE,
@@ -325,17 +370,6 @@ CREATE TABLE IF NOT EXISTS travaux_tache (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS travaux_tache (
-    id SERIAL PRIMARY KEY,
-    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
-    titre VARCHAR(255) NOT NULL,
-    description TEXT,
-    etat etat_travaux DEFAULT 'A_faire',
-    priorite VARCHAR(50) DEFAULT 'Moyenne',
-    date_echeance TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 CREATE TABLE IF NOT EXISTS rendu_travaux (
     id SERIAL PRIMARY KEY,
@@ -415,50 +449,6 @@ CREATE TABLE IF NOT EXISTS demande_materiel (
     ticket_id INTEGER,
     travaux_id BIGINT REFERENCES travaux(id) ON DELETE SET NULL, -- NEW
     commentaire TEXT
-);
-
-CREATE TABLE IF NOT EXISTS gestion_demande_materiel (
-    id SERIAL PRIMARY KEY,
-    demande_materiel_id BIGINT NOT NULL REFERENCES demande_materiel(id) ON DELETE CASCADE,
-    materiel_id BIGINT NOT NULL REFERENCES materiel(id) ON DELETE CASCADE,
-    quantite_demandee INTEGER NOT NULL DEFAULT 1,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (demande_materiel_id, materiel_id)
-);
-
-CREATE TABLE IF NOT EXISTS materiel_catalogue (
-    id SERIAL PRIMARY KEY,
-    titre TEXT,
-    reference TEXT UNIQUE,
-    designation TEXT,
-    categorie TEXT,
-    fabricant TEXT,
-    fournisseur TEXT,
-    remise_fournisseur NUMERIC(5, 2),
-    classe_materiel TEXT,
-    prix_achat NUMERIC(12,2),
-    commentaire TEXT,
-    metier metier_type,
-    actif BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS materiel (
-    id SERIAL PRIMARY KEY,
-    titre TEXT,
-    reference TEXT,
-    designation TEXT,
-    categorie TEXT,
-    fabricant TEXT,
-    fournisseur TEXT,
-    remise_fournisseur NUMERIC(5, 2),
-    classe_materiel TEXT,
-    prix_achat NUMERIC(12,2),
-    commentaire TEXT,
-    commande_status commande_status_type DEFAULT 'A commander',
-    metier metier_type,
-    agence_id BIGINT REFERENCES agence(id) ON DELETE SET NULL, -- NEW: Link to agence
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS intervention_materiel (
@@ -757,43 +747,4 @@ CREATE TABLE IF NOT EXISTS ticket_satisfaction (
     comment TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     envoieok BOOLEAN DEFAULT FALSE
-);
-
-CREATE TABLE IF NOT EXISTS association (
-    id SERIAL PRIMARY KEY,
-    titre VARCHAR(255) NOT NULL,
-    email_comptabilite VARCHAR(255),
-    adresse_id INTEGER REFERENCES adresse(id) ON DELETE SET NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS association_responsable (
-    id SERIAL PRIMARY KEY,
-    association_id INTEGER NOT NULL REFERENCES association(id) ON DELETE CASCADE,
-    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
-    UNIQUE (association_id, agent_matricule)
-);
-
-CREATE TABLE IF NOT EXISTS association_agent (
-    id SERIAL PRIMARY KEY,
-    association_id INTEGER NOT NULL REFERENCES association(id) ON DELETE CASCADE,
-    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
-    UNIQUE (association_id, agent_matricule)
-);
-
-CREATE TABLE IF NOT EXISTS association_site (
-    id SERIAL PRIMARY KEY,
-    association_id INTEGER NOT NULL REFERENCES association(id) ON DELETE CASCADE,
-    site_id INTEGER NOT NULL REFERENCES site(id) ON DELETE CASCADE,
-    UNIQUE (association_id, site_id)
-);
-
-CREATE TABLE IF NOT EXISTS devis (
-    id SERIAL PRIMARY KEY,
-    titre VARCHAR(255) NOT NULL,
-    description TEXT,
-    montant NUMERIC(12, 2),
-    status devis_status DEFAULT 'Brouillon',
-    association_id INTEGER REFERENCES association(id) ON DELETE SET NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

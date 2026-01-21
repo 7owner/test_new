@@ -56,6 +56,7 @@ RESTART IDENTITY CASCADE;
 -- Dummy image for rendu_travaux_image reference (will get id=1 as identity is reset)
 INSERT INTO images (id, nom_fichier, type_mime, taille_octets, image_blob, commentaire_image, cible_type, cible_id) VALUES
 (1, 'dummy_image.jpg', 'image/jpeg', 1024, decode('000000', 'hex'), 'Image de placeholder', 'RenduTravaux', 1);
+SELECT SETVAL('images_id_seq', (SELECT MAX(id) FROM images), TRUE);
 
 -- --------------------------------------------------
 -- Data seeding for the application (Node.js compatible)
@@ -171,7 +172,7 @@ WHERE NOT EXISTS (
 );
 
 INSERT INTO intervention (ticket_id, description, date_debut, status)
-SELECT m.id, 'Intervention de suivi', CURRENT_DATE, 'En_cours'
+SELECT m.id, 'Intervention de suivi', CURRENT_DATE, 'En_attente'
 FROM (SELECT id FROM ticket WHERE titre = 'Ticket Semaine 42' LIMIT 1) m
 WHERE NOT EXISTS (
   SELECT 1 FROM intervention WHERE description = 'Intervention de suivi' AND ticket_id = m.id
@@ -183,8 +184,8 @@ SELECT 'AGT001', 'Permis B', 'H0B0, BR', 'SST'
 WHERE NOT EXISTS (SELECT 1 FROM passeport WHERE agent_matricule = 'AGT001');
 
 -- Seed formation for AGT001
-INSERT INTO formation (agent_matricule, type, libelle, date_obtention, date_expiration, organisme)
-SELECT 'AGT001', 'Certification', 'CACES R489', CURRENT_DATE - INTERVAL '200 days', CURRENT_DATE + INTERVAL '165 days', 'Organisme X'
+INSERT INTO formation (agent_matricule, type, libelle, date_obtention, date_validite)
+SELECT 'AGT001', 'Certification', 'CACES R489', CURRENT_DATE - INTERVAL '200 days', CURRENT_DATE + INTERVAL '165 days'
 WHERE NOT EXISTS (SELECT 1 FROM formation WHERE agent_matricule = 'AGT001' AND libelle = 'CACES R489');
 
 -- Seed rendu_intervention
