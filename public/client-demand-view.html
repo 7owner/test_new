@@ -360,7 +360,7 @@
 
       async function loadMessages() {
         try {
-          const res = await fetch(`/api/conversations/${conversation_id}`, { headers });
+          const res = await fetch(`/api/conversations/${conversation_id}`, { headers, credentials: 'same-origin' });
           if (!res.ok) throw new Error();
           const messages = await res.json();
 
@@ -421,6 +421,7 @@
           const res = await fetch(`/api/conversations/${conversation_id}/messages`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
+            credentials: 'same-origin',
             body: formData
           });
           if (!res.ok) throw new Error();
@@ -433,9 +434,9 @@
       });
 
       try {
-        let res = await fetch(`/api/demandes_client/${demandeId}`, { headers, cache: 'no-store' });
+        let res = await fetch(`/api/demandes_client/${demandeId}`, { headers, credentials: 'same-origin', cache: 'no-store' });
         if (res.status === 304) {
-          res = await fetch(`/api/demandes_client/${demandeId}`, { headers, cache: 'reload' });
+          res = await fetch(`/api/demandes_client/${demandeId}`, { headers, credentials: 'same-origin', cache: 'reload' });
         }
         if (!res.ok) {
           if ([401,403].includes(res.status)) location.href = '/login.html';
@@ -448,7 +449,7 @@
         // Fallback: récupérer les relations (responsable / interventions / ticket) si absents
         if ((!responsable || !interventions || !ticket) && demande?.id) {
           try {
-            const relRes = await fetch(`/api/demandes_client/${demande.id}/relations`, { headers, cache: 'no-store' });
+            const relRes = await fetch(`/api/demandes_client/${demande.id}/relations`, { headers, credentials: 'same-origin', cache: 'no-store' });
             if (relRes.ok) {
               const rel = await relRes.json();
               responsable = responsable || rel.responsable || rel.agent || rel.assignation || null;
