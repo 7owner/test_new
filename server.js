@@ -1493,16 +1493,26 @@ app.get('/api/demandes-materiel', authenticateToken, async (req, res) => {
               t.titre AS ticket_titre,
               tr.titre AS travaux_titre,
               (
-                SELECT json_agg(json_build_object(
-                  'id', m.id,
-                  'reference', m.reference,
-                  'designation', m.designation,
-                  'commande_status', m.commande_status,
-                  'quantite', gdm.quantite_demandee
-                ))
-                FROM gestion_demande_materiel gdm
-                JOIN materiel m ON m.id = gdm.materiel_id
-                WHERE gdm.demande_materiel_id = dm.id
+                SELECT json_agg(
+                  DISTINCT jsonb_build_object(
+                    'id', m.id,
+                    'reference', m.reference,
+                    'designation', m.designation,
+                    'commande_status', m.commande_status,
+                    'quantite', COALESCE(gdm.quantite_demandee, 1)
+                  )
+                )
+                FROM (
+                  SELECT m.*, gdm.quantite_demandee
+                  FROM gestion_demande_materiel gdm
+                  JOIN materiel m ON m.id = gdm.materiel_id
+                  WHERE gdm.demande_materiel_id = dm.id
+                  UNION ALL
+                  SELECT m.*, NULL::int AS quantite_demandee
+                  FROM materiel m
+                  WHERE (LOWER(m.designation) = LOWER(dm.titre) OR LOWER(m.reference) = LOWER(dm.titre))
+                ) AS m
+                LEFT JOIN gestion_demande_materiel gdm ON gdm.materiel_id = m.id AND gdm.demande_materiel_id = dm.id
               ) AS materiels
        FROM demande_materiel dm
        LEFT JOIN intervention i ON dm.intervention_id = i.id
@@ -6312,6 +6322,51 @@ app.get('/api/demandes_client/:id', authenticateToken, async (req, res) => {
         console.error(`Error fetching demande client ${id}:`, err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
+});
+
+// Relations for demande_client (responsable, interventions, ticket)
+app.get('/api/demandes_client/:id/relations', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const demand = (await pool.query('SELECT * FROM demande_client WHERE id = $1', [id])).rows[0];
+    if (!demand) return res.status(404).json({ error: 'Demande client not found' });
+
+    // Authorization check (admin or owner)
+    const isAdmin = req.user.roles.includes('ROLE_ADMIN');
+    if (!isAdmin) {
+      const client = (await pool.query('SELECT id, representant_email, user_id FROM client WHERE id=$1', [demand.client_id])).rows[0];
+      const owns = client && (
+        (client.user_id && client.user_id === req.user.id) ||
+        (client.representant_email && req.user.email && client.representant_email.toLowerCase() === req.user.email.toLowerCase())
+      );
+      if (!owns) return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    // Ticket lié à la demande (si existe)
+    const ticket = (await pool.query('SELECT * FROM ticket WHERE demande_id=$1 LIMIT 1', [id])).rows[0] || null;
+
+    // Responsable : à partir du ticket.responsable si disponible
+    let responsable = null;
+    if (ticket?.responsable) {
+      responsable = (await pool.query(
+        'SELECT matricule, nom, prenom, email, telephone AS tel, user_id FROM agent WHERE matricule=$1 LIMIT 1',
+        [ticket.responsable]
+      )).rows[0] || null;
+    }
+
+    // Interventions liées à la demande ou au ticket
+    const interventions = (await pool.query(
+      `SELECT * FROM intervention
+       WHERE demande_id=$1 OR ($2::bigint IS NOT NULL AND ticket_id=$2)
+       ORDER BY date_debut DESC NULLS LAST, id DESC`,
+      [id, ticket ? ticket.id : null]
+    )).rows;
+
+    res.json({ responsable, interventions, ticket });
+  } catch (err) {
+    console.error(`Error fetching demande_client relations ${id}:`, err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 app.post('/api/demandes_client', authenticateToken, async (req, res) => {
     const { site_id, titre, description, client_id } = req.body;
