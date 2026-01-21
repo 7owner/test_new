@@ -6349,7 +6349,7 @@ app.get('/api/demandes_client/:id/relations', authenticateToken, async (req, res
     let responsable = null;
     if (ticket?.responsable) {
       responsable = (await pool.query(
-        'SELECT matricule, nom, prenom, email, telephone AS tel, user_id FROM agent WHERE matricule=$1 LIMIT 1',
+        'SELECT matricule, nom, prenom, email, tel, user_id FROM agent WHERE matricule=$1 LIMIT 1',
         [ticket.responsable]
       )).rows[0] || null;
     }

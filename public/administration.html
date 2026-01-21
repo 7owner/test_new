@@ -122,6 +122,22 @@
         </div>
       </div>
 
+      <div class="col">
+        <div class="metric-card h-100">
+          <div class="d-flex align-items-center gap-3">
+            <div class="metric-icon icon-orange"><i class="bi bi-kanban"></i></div>
+            <div>
+              <div class="metric-label">Travaux</div>
+              <div class="metric-value" id="adminTravauxCount">-</div>
+              <div class="metric-sub text-warning-emphasis">Kanban / suivi</div>
+            </div>
+          </div>
+          <div class="mt-auto">
+            <a href="/travaux.html" class="btn btn-outline-warning btn-sm text-dark">Ouvrir</a>
+          </div>
+        </div>
+      </div>
+
       <!-- Catalogue matériel (accès direct) -->
       <div class="col">
         <div class="metric-card h-100">
@@ -169,6 +185,7 @@
       setText('adminFacturesCount', await fetchCount('/api/factures'));
       // Commandes matériel (basé sur les matériels référencés)
       setText('adminMaterielCount', await fetchCount('/api/materiels'));
+      setText('adminTravauxCount', await fetchCount('/api/travaux'));
       // Catalogue (si endpoint dédié, fallback sur matériels)
       let catalogueCount = await fetchCount('/api/catalogue-materiel');
       if (!catalogueCount) catalogueCount = await fetchCount('/api/materiels');
