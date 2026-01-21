@@ -358,6 +358,21 @@
         return att?.id ? `/api/attachments/${att.id}/view` : '#';
       }
 
+      function setInterlocuteur(resp) {
+        const interCard = document.getElementById('interlocuteur-card');
+        if (resp && (resp.nom || resp.prenom || resp.email || resp.tel)) {
+          interCard?.classList.remove('d-none');
+          set('interlocuteur-nom', `${resp.prenom || ''} ${resp.nom || ''}`.trim() || '—');
+          set('interlocuteur-email', resp.email || '—');
+          set('interlocuteur-tel', resp.tel || '—');
+        } else {
+          interCard?.classList.add('d-none');
+          set('interlocuteur-nom', '—');
+          set('interlocuteur-email', '—');
+          set('interlocuteur-tel', '—');
+        }
+      }
+
       async function loadMessages() {
         try {
           const res = await fetch(`/api/conversations/${conversation_id}`, { headers, credentials: 'same-origin' });
@@ -462,6 +477,11 @@
             console.warn('relations fallback failed', e);
           }
         }
+        // Fix destinataire/messages: si aucune trace, utiliser le responsable
+        if (!receiver_id && responsable && (responsable.user_id || responsable.id)) {
+          receiver_id = responsable.user_id || responsable.id;
+        }
+        setInterlocuteur(responsable);
         if (!demande) throw new Error('Données de demande manquantes');
 
         // Sections toujours visibles, même en modal (requis par la demande utilisateur)

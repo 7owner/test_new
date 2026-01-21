@@ -6386,6 +6386,31 @@ app.get('/api/demandes_client/:id/relations', authenticateToken, async (req, res
       [id]
     )).rows;
 
+    // Enrichir user_id du responsable si manquant
+    if (responsable && !responsable.user_id && responsable.email) {
+      try {
+        const u = await pool.query('SELECT id FROM users WHERE lower(email)=lower($1) LIMIT 1', [responsable.email]);
+        if (u.rows[0]?.id) responsable.user_id = u.rows[0].id;
+      } catch (_) {}
+    }
+    // Fallback admin si toujours absent
+    if (!responsable || !responsable.user_id) {
+      try {
+        const admin = (await pool.query(
+          "SELECT u.id, u.email, a.matricule, a.nom, a.prenom, a.tel FROM users u LEFT JOIN agent a ON a.user_id=u.id WHERE 'ROLE_ADMIN'=ANY(u.roles) LIMIT 1"
+        )).rows[0];
+        if (admin) {
+          responsable = responsable || {};
+          responsable.user_id = admin.id;
+          responsable.email = responsable.email || admin.email;
+          responsable.matricule = responsable.matricule || admin.matricule;
+          responsable.nom = responsable.nom || admin.nom;
+          responsable.prenom = responsable.prenom || admin.prenom;
+          responsable.tel = responsable.tel || admin.tel;
+        }
+      } catch (_) {}
+    }
+
     res.json({ responsable, interventions, ticket, travaux });
   } catch (err) {
     console.error(`Error fetching demande_client relations ${id}:`, err);
