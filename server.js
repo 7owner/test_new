@@ -1420,8 +1420,8 @@ app.get('/api/catalogue', authenticateToken, async (req, res) => {
       SELECT 
           mc.*,
           COALESCE(SUM(im.quantite), 0) AS total_quantite_used_in_interventions,
-          MAX(a.id)  AS agence_id,
-          MAX(a.nom) AS agence_nom
+          MAX(a.id)     AS agence_id,
+          MAX(a.titre)  AS agence_nom
       FROM materiel_catalogue mc
       LEFT JOIN materiel m ON mc.reference = m.reference -- Assuming materiel orders are linked by reference to catalogue
       LEFT JOIN agence a ON m.agence_id = a.id
