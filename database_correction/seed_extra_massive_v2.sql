@@ -6,7 +6,7 @@
 SET search_path TO public;
 
 -- Désactive FK le temps du seed (robuste)
-SET session_replication_role = replica;
+--SET session_replication_role = replica;
 
 -- 1) FONCTION
 INSERT INTO fonction (code, libelle) VALUES
@@ -51,17 +51,14 @@ JOIN agent ag ON ag.agence_id = agc.id
 ON CONFLICT DO NOTHING;
 
 -- 6) CONTRAT (schema init_fixed)
-INSERT INTO contrat (titre, client_id, site_id, metier, date_debut, date_fin)
+INSERT INTO contrat (titre, client_id, date_debut, date_fin, created_at)
 SELECT
-  ('Contrat - ' || c.nom),
+  'Contrat client #' || c.id,
   c.id,
-  s.id,
-  'GTB'::metier_type,
-  CURRENT_DATE - INTERVAL '60 days',
-  CURRENT_DATE + INTERVAL '305 days'
-FROM client c
-LEFT JOIN site s ON s.client_id = c.id
-ON CONFLICT DO NOTHING;
+  CURRENT_DATE - (random()*200)::int,
+  CURRENT_DATE + (random()*400)::int,
+  NOW()
+FROM client c;
 
 -- 7) CLIENT_CONTRAT
 INSERT INTO client_contrat (client_id, contrat_id)
@@ -263,4 +260,4 @@ FROM users u
 LIMIT 30;
 
 -- Réactive FK
-SET session_replication_role = origin;
+--SET session_replication_role = origin;
