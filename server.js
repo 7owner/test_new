@@ -11,6 +11,14 @@ const crypto = require('crypto');
 const multer = require('multer');
 
 const app = express();
+// Désactiver les ETag/304 sur l'API pour éviter les réponses vides côté fetch
+app.set('etag', false);
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
 const port = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'change_me_dev';
 const pathInitDefault = path.join(__dirname, 'database_correction', 'init_fixed.sql');
@@ -6220,26 +6228,15 @@ app.get('/api/client/profile', authenticateToken, async (req, res) => {
 
 // --- Client-owned sites ---
 const getClientIdFromUser = async (pool, user) => {
-    if (!user) return null;
-    // 1) direct link on client
-    const byClient = await pool.query('SELECT id FROM client WHERE user_id=$1 OR LOWER(representant_email)=LOWER($2) LIMIT 1', [user.id || null, user.email || null]);
-    if (byClient.rows[0]) return byClient.rows[0].id;
-    // 2) link via client_representant (user_id or email match)
-    const byRep = await pool.query(
-        `SELECT client_id FROM client_representant cr
-         LEFT JOIN users u ON u.id = cr.user_id
-         WHERE cr.user_id = $1 OR LOWER(cr.email) = LOWER($2) OR LOWER(u.email) = LOWER($2)
-         LIMIT 1`,
-        [user.id || null, user.email || null]
-    );
-    return byRep.rows[0] ? byRep.rows[0].client_id : null;
+    const ids = await getClientIdsForUser(user);
+    return ids && ids.length ? ids[0] : null;
 };
 
 app.get('/api/client/sites', authenticateToken, async (req, res) => {
   try {
-    const clientId = await getClientIdFromUser(pool, req.user);
-    if (!clientId) return res.json([]);
-    const r = await pool.query('SELECT * FROM site WHERE client_id=$1 ORDER BY id DESC', [clientId]);
+    const clientIds = await getClientIdsForUser(req.user);
+    if (!clientIds || !clientIds.length) return res.json([]);
+    const r = await pool.query('SELECT * FROM site WHERE client_id = ANY($1) ORDER BY id DESC', [clientIds]);
     return res.json(r.rows);
   } catch (e) { console.error('client sites list:', e); return res.status(500).json({ error: 'Internal Server Error' }); }
 });
@@ -6258,10 +6255,10 @@ app.post('/api/client/sites', authenticateToken, async (req, res) => {
 app.get('/api/client/sites/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     try {
-        const clientId = await getClientIdFromUser(pool, req.user);
-        if (!clientId) return res.status(403).json({ error: 'Client not found for user.' });
+        const clientIds = await getClientIdsForUser(req.user);
+        if (!clientIds || !clientIds.length) return res.status(403).json({ error: 'Client not found for user.' });
 
-        const siteResult = await pool.query('SELECT * FROM site WHERE id = $1 AND client_id = $2', [id, clientId]);
+        const siteResult = await pool.query('SELECT * FROM site WHERE id = $1 AND client_id = ANY($2)', [id, clientIds]);
         const site = siteResult.rows[0];
 
         if (!site) return res.status(404).json({ error: 'Site not found or access denied.' });
@@ -6276,10 +6273,10 @@ app.get('/api/client/sites/:id', authenticateToken, async (req, res) => {
 app.get('/api/client/sites/:id/relations', authenticateToken, async (req, res) => {
     const { id } = req.params;
     try {
-        const clientId = await getClientIdFromUser(pool, req.user);
-        if (!clientId) return res.status(403).json({ error: 'Client not found for user.' });
+        const clientIds = await getClientIdsForUser(req.user);
+        if (!clientIds || !clientIds.length) return res.status(403).json({ error: 'Client not found for user.' });
 
-        const siteResult = await pool.query('SELECT * FROM site WHERE id = $1 AND client_id = $2', [id, clientId]);
+        const siteResult = await pool.query('SELECT * FROM site WHERE id = $1 AND client_id = ANY($2)', [id, clientIds]);
         const site = siteResult.rows[0];
 
         if (!site) return res.status(404).json({ error: 'Site not found or access denied.' });
