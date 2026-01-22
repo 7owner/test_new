@@ -379,6 +379,22 @@ const authorizeAdmin = (req, res, next) => {
     next();
 };
 
+// Helper: clients accessibles par un utilisateur (propriétaire ou représentant)
+async function getClientIdsForUser(user) {
+    if (!user) return [];
+    const email = user.email ? user.email.toLowerCase() : null;
+    const uid = user.id || null;
+    const r = await pool.query(
+        `SELECT DISTINCT c.id
+         FROM client c
+         LEFT JOIN client_representant cr ON cr.client_id = c.id
+         WHERE (c.user_id = $1 OR (c.representant_email IS NOT NULL AND LOWER(c.representant_email) = $2)
+                OR cr.user_id = $1 OR (cr.email IS NOT NULL AND LOWER(cr.email) = $2))`,
+        [uid, email]
+    );
+    return r.rows.map(row => row.id);
+}
+
 // Simple audit helper
 async function logAudit(entity, entityId, action, actorEmail, details) {
     try {
@@ -6307,15 +6323,8 @@ app.put('/api/client/sites/:id', authenticateToken, async (req, res) => {
 // --- Client demandes (requests) ---
 app.get('/api/demandes_client/mine', authenticateToken, async (req, res) => {
     try {
-      const email = req.user && req.user.email;
-      if (!email) return res.status(401).json({ error: 'Unauthorized' });
-
-      // Identify the client linked to the logged in user (case-insensitive)
-      const clientRow = (await pool.query(
-        'SELECT id FROM client WHERE user_id=$1 OR LOWER(representant_email)=LOWER($2) LIMIT 1',
-        [req.user.id || null, email]
-      )).rows[0];
-      if (!clientRow) return res.json([]);
+      const clientIds = await getClientIdsForUser(req.user);
+      if (!clientIds || clientIds.length === 0) return res.json([]);
 
       const demandes = (await pool.query(
         `SELECT d.*,
@@ -6330,10 +6339,10 @@ app.get('/api/demandes_client/mine', authenticateToken, async (req, res) => {
                 ) AS travaux_associes
          FROM demande_client d
          LEFT JOIN site s ON s.id = d.site_id
-         WHERE d.client_id = $1
+         WHERE d.client_id = ANY($1)
            AND (d.status IS NULL OR d.status <> 'Supprimée')
          ORDER BY d.id DESC`,
-        [clientRow.id]
+        [clientIds]
       )).rows;
 
       res.json(demandes);
@@ -6354,12 +6363,8 @@ app.get('/api/demandes_client/:id', authenticateToken, async (req, res) => {
         // Authorization check: Admin or owner of the demand
         const isAdmin = req.user.roles.includes('ROLE_ADMIN');
         if (!isAdmin) {
-            const client = (await pool.query('SELECT id, representant_email, user_id FROM client WHERE id=$1', [demand.client_id])).rows[0];
-            const owns = client && (
-              (client.user_id && client.user_id === req.user.id) ||
-              (client.representant_email && req.user.email && client.representant_email.toLowerCase() === req.user.email.toLowerCase())
-            );
-            if (!owns) {
+            const clientIds = await getClientIdsForUser(req.user);
+            if (!clientIds.includes(demand.client_id)) {
                 return res.status(403).json({ error: 'Forbidden: You do not own this demand or lack admin privileges' });
             }
         }
@@ -6380,12 +6385,8 @@ app.get('/api/demandes_client/:id/relations', authenticateToken, async (req, res
     // Authorization check (admin or owner)
     const isAdmin = req.user.roles.includes('ROLE_ADMIN');
     if (!isAdmin) {
-      const client = (await pool.query('SELECT id, representant_email, user_id FROM client WHERE id=$1', [demand.client_id])).rows[0];
-      const owns = client && (
-        (client.user_id && client.user_id === req.user.id) ||
-        (client.representant_email && req.user.email && client.representant_email.toLowerCase() === req.user.email.toLowerCase())
-      );
-      if (!owns) return res.status(403).json({ error: 'Forbidden' });
+      const clientIds = await getClientIdsForUser(req.user);
+      if (!clientIds.includes(demand.client_id)) return res.status(403).json({ error: 'Forbidden' });
     }
 
     // Ticket lié à la demande (si existe)
