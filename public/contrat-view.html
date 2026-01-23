@@ -303,7 +303,12 @@
               <i class="bi bi-diagram-3"></i>
               <span>Associations liées</span>
             </div>
-            <span class="badge bg-light text-dark" id="asso-count">0</span>
+            <div class="d-flex gap-2 align-items-center">
+              <span class="badge bg-light text-dark" id="asso-count">0</span>
+              <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addAssociationModal">
+                <i class="bi bi-link-45deg me-1"></i> Associer
+              </button>
+            </div>
           </div>
           <div class="card-body" id="associations-body">
             <div class="empty-state">
@@ -400,6 +405,39 @@
     </div>
   </div>
 
+  <!-- Add Association Modal -->
+  <div class="modal fade" id="addAssociationModal" tabindex="-1" aria-labelledby="addAssociationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: 20px; border: none;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); color: white; border-radius: 20px 20px 0 0;">
+          <h5 class="modal-title" id="addAssociationModalLabel">
+            <i class="bi bi-link-45deg me-2"></i>Associer une association
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Association</label>
+            <select class="form-select" id="association-select">
+              <option value="">Choisir une association</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Site du contrat</label>
+            <select class="form-select" id="association-site-select">
+              <option value="">Sélectionner un site</option>
+            </select>
+          </div>
+          <div id="addAssociationFeedback" class="small text-danger d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-gradient-primary" id="save-association-btn">Associer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Create Contrat Modal -->
   <div class="modal fade" id="createContratModal" tabindex="-1" aria-labelledby="createContratModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
@@ -475,6 +513,12 @@
       const clientFrame = document.getElementById('clientFrame');
       const associationsBody = document.getElementById('associations-body');
       const assoCount = document.getElementById('asso-count');
+      const associationSelect = document.getElementById('association-select');
+      const associationSiteSelect = document.getElementById('association-site-select');
+      const addAssociationFeedback = document.getElementById('addAssociationFeedback');
+      const addAssociationModalEl = document.getElementById('addAssociationModal');
+      const addAssociationModal = addAssociationModalEl ? new bootstrap.Modal(addAssociationModalEl) : null;
+      const saveAssociationBtn = document.getElementById('save-association-btn');
       
       if (!id) { 
         feedback.className='text-danger'; 
@@ -486,13 +530,16 @@
       const headers = { 'Authorization': token ? `Bearer ${token}` : '', 'Content-Type': 'application/json' };
       
       async function api(url, options = {}) {
-        const r = await fetch(url, { headers, ...options });
+        const r = await fetch(url, { ...options, headers });
         const b = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(b.error || r.statusText);
         return b;
       }
       
       let agentMap = new Map();
+      let contractSites = [];
+      let contractAssociations = [];
+      let allAssociations = [];
 
       async function renderClient(clientId) {
         if (!clientId || !clientCard) { 
@@ -575,7 +622,9 @@
           : '—';
         
         renderClient(contrat.client_id);
-        renderAssociations(associations || []);
+        contractAssociations = associations || [];
+        renderAssociations(contractAssociations);
+        await loadAssociationCatalog();
         renderSitesGrid(sites);
       } catch (err) {
         feedback.className = 'text-danger';
@@ -619,6 +668,8 @@
       }
 
       function renderSitesGrid(sites) {
+        contractSites = sites || [];
+        refreshAssociationSiteSelect();
         const grid = document.getElementById('sites-grid');
         const count = document.getElementById('sites-count');
         if (count) count.textContent = `${(sites || []).length} site(s)`;
@@ -679,11 +730,60 @@
         });
       }
 
+      function refreshAssociationSiteSelect() {
+        if (!associationSiteSelect) return;
+        const placeholder = '<option value="">Sélectionner un site</option>';
+        associationSiteSelect.innerHTML = placeholder;
+        (contractSites || []).forEach(site => {
+          const option = document.createElement('option');
+          option.value = site.id;
+          option.textContent = site.nom_site || `Site #${site.id}`;
+          associationSiteSelect.appendChild(option);
+        });
+      }
+
+      function populateAssociationSelect() {
+        if (!associationSelect) return;
+        const existing = new Set((contractAssociations || []).map(a => String(a.id)));
+        associationSelect.innerHTML = '<option value="">Choisir une association</option>';
+        (allAssociations || []).forEach(a => {
+          const opt = document.createElement('option');
+          opt.value = a.id;
+          opt.textContent = a.titre || `Association #${a.id}`;
+          if (existing.has(String(a.id))) {
+            opt.disabled = true;
+            opt.textContent += ' (déjà lié)';
+          }
+          associationSelect.appendChild(opt);
+        });
+      }
+
+      async function loadAssociationCatalog() {
+        try {
+          const list = await api('/api/associations');
+          allAssociations = list || [];
+          populateAssociationSelect();
+        } catch (err) {
+          console.error('Erreur chargement des associations:', err);
+        }
+      }
+
+      async function reloadAssociationsList() {
+        try {
+          const refreshed = await api(`/api/contrats/${id}/associations`);
+          contractAssociations = refreshed || [];
+          renderAssociations(contractAssociations);
+          populateAssociationSelect();
+        } catch (err) {
+          console.error('Erreur rechargement des associations:', err);
+        }
+      }
+
       async function loadAllSites() {
         if (!siteSelect) return;
         sitesFeedback.textContent = '';
         try {
-          const all = await api('/api/sites');
+        const all = await api('/api/sites');
           siteSelect.innerHTML = '<option value="">Sélectionner un site...</option>';
           (all || []).forEach(s => {
             const opt = document.createElement('option');
@@ -751,6 +851,35 @@
           } catch (err) {
             createSiteFeedback.className = 'small text-danger';
             createSiteFeedback.textContent = err.message || 'Erreur lors de la création/association.';
+          }
+        });
+      }
+
+      if (saveAssociationBtn) {
+        saveAssociationBtn.addEventListener('click', async () => {
+          if (!associationSelect || !associationSiteSelect) return;
+          addAssociationFeedback.className = 'small text-danger';
+          addAssociationFeedback.textContent = '';
+          const associationId = associationSelect.value;
+          const siteId = associationSiteSelect.value;
+          if (!associationId) {
+            addAssociationFeedback.textContent = 'Choisissez une association.';
+            return;
+          }
+          if (!siteId) {
+            addAssociationFeedback.textContent = 'Sélectionnez un site lié au contrat.';
+            return;
+          }
+          try {
+            await api(`/api/contrats/${id}/associations`, {
+              method: 'POST',
+              body: JSON.stringify({ association_id: associationId, site_id: siteId }),
+            });
+            addAssociationFeedback.className = 'small text-success';
+            addAssociationFeedback.textContent = 'Association liée au contrat.';
+            await reloadAssociationsList();
+          } catch (err) {
+            addAssociationFeedback.textContent = err.message || 'Impossible d\'associer.';
           }
         });
       }
