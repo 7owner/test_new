@@ -1251,10 +1251,9 @@ app.get('/api/tickets/:id/relations', authenticateToken, async (req, res) => {
     const affaire = ticket.affaire_id ? (await pool.query('SELECT * FROM affaire WHERE id=$1', [ticket.affaire_id])).rows[0] : null;
     
     let site = null;
-    if (ticket.site_id) {
-        site = (await pool.query('SELECT * FROM site WHERE id=$1', [ticket.site_id])).rows[0] || null;
-    } else if (doe?.site_id) {
-        site = (await pool.query('SELECT * FROM site WHERE id=$1', [doe.site_id])).rows[0] || null;
+    const candidateSiteId = ticket.site_id || doe?.site_id || null;
+    if (candidateSiteId) {
+        site = (await pool.query('SELECT * FROM site WHERE id=$1', [candidateSiteId])).rows[0] || null;
     }
 
     let demande = null; // NEW: Declare demande here
