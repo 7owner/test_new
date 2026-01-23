@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modifier rendu de travail</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=3"></script>
+  <style>
+    body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); }
+    .embed header, .embed #navbar-placeholder { display:none !important; }
+    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+    .attachment-card { border: 2px solid #e5e7eb; border-radius: 12px; background: #fff; overflow: hidden; }
+    .attachment-preview { width:100%; height:180px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; }
+    .attachment-preview img { width:100%; height:100%; object-fit:cover; }
+    .attachment-body { padding: 12px 14px; }
+  </style>
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+  <main class="container my-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <div>
+        <h1 class="h4 mb-1"><i class="bi bi-pencil me-2"></i>Modifier le rendu</h1>
+        <div class="text-muted small">Travail <span id="travaux-title">-</span> · Rendu <span id="rendu-id">-</span></div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <form id="rendu-form" novalidate>
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <label class="form-label fw-semibold">Résumé détaillé (Markdown)</label>
+              <textarea id="resume" class="form-control" rows="10" placeholder="Rédigez un résumé détaillé en Markdown..."></textarea>
+              <div class="form-text">Utilisez Markdown pour un résumé détaillé (optionnel).</div>
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label fw-semibold">Aperçu</label>
+              <div id="resume-preview" class="border rounded p-3 bg-light" style="min-height: 220px;">
+                <em class="text-muted">Le résumé apparaîtra ici...</em>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Pièces jointes (images)</h5>
+            <span class="badge bg-primary" id="files-count">0 fichier(s)</span>
+          </div>
+          <p class="text-muted small mb-3">Modifiez le titre / commentaire, supprimez des images, ou ajoutez-en de nouvelles.</p>
+
+          <div class="mb-3">
+            <input class="form-control" type="file" id="files-input" accept="image/*" multiple>
+          </div>
+
+          <div class="row g-3" id="files-grid"></div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary" id="save-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
+            <button type="button" class="btn btn-secondary" id="cancel-btn">Annuler</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+  <script src="/js/rapport-travaux.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const qp = new URLSearchParams(location.search);
+      const renduId = qp.get('id');
+      const isEmbed = window.self !== window.top || qp.get('embed') === '1' || qp.get('modal') === '1';
+      if (isEmbed) document.body.classList.add('embed');
+
+      const token = localStorage.getItem('token');
+      if (!token) return (location.href = '/login.html');
+      const headersAuthOnly = { 'Authorization': `Bearer ${token}` };
+
+      if (!renduId) { alert('ID du rendu manquant.'); return (location.href = '/travaux.html'); }
+      document.getElementById('rendu-id').textContent = renduId;
+
+      const resumePreview = document.getElementById('resume-preview');
+      const filesInput = document.getElementById('files-input');
+      const filesGrid = document.getElementById('files-grid');
+      const filesCount = document.getElementById('files-count');
+      const saveBtn = document.getElementById('save-btn');
+
+      const fetchJSON = async (url, opts = {}) => {
+        const r = await fetch(url, { ...opts, headers: { ...(opts.headers || {}), ...headersAuthOnly }, credentials: 'same-origin' });
+        if (r.status === 401 || r.status === 403) { location.href = '/login.html'; return null; }
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+        return d;
+      };
+
+      // Editeur Markdown
+      const editor = new EasyMDE({
+        element: document.getElementById('resume'),
+        spellChecker: false,
+        status: false,
+        forceSync: true,
+        placeholder: "Rédigez un résumé détaillé en Markdown...",
+        toolbar: ['bold', 'italic', 'heading', '|', 'quote', 'unordered-list', 'ordered-list', '|', 'link', 'preview']
+      });
+
+      const updatePreview = () => {
+        const txt = editor.value().trim();
+        resumePreview.innerHTML = txt ? marked.parse(txt) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+      };
+      editor.codemirror.on('change', updatePreview);
+
+      // Modèle de données
+      const items = [];
+      const addExisting = (img) => {
+        items.push({
+          kind: 'existing',
+          id: img.id,
+          nom_fichier: img.nom_fichier,
+          previewUrl: `/api/images/${img.id}/view`,
+          titre: img.titre || img.nom_fichier || '',
+          commentaire: img.commentaire_image || '',
+          original: {
+            titre: img.titre || img.nom_fichier || '',
+            commentaire: img.commentaire_image || ''
+          }
+        });
+      };
+      const addNew = (file) => {
+        const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : '';
+        items.push({
+          kind: 'new',
+          file,
+          nom_fichier: file.name,
+          previewUrl,
+          titre: file.name,
+          commentaire: ''
+        });
+      };
+
+      const render = () => {
+        filesGrid.innerHTML = '';
+        filesCount.textContent = `${items.length} fichier(s)`;
+
+        items.forEach((it, idx) => {
+          const col = document.createElement('div');
+          col.className = 'col-12 col-md-6 col-lg-4';
+          const badge = it.kind === 'new'
+            ? '<span class="badge bg-primary">Nouveau</span>'
+            : '<span class="badge bg-secondary">Image</span>';
+
+          const safeTitre = (it.titre || '').replaceAll('"', '&quot;');
+          const safeNom = (it.nom_fichier || '').replaceAll('"', '&quot;');
+
+          col.innerHTML = `
+            <div class="attachment-card h-100">
+              <div class="attachment-preview">
+                ${it.previewUrl ? `<img src="${it.previewUrl}" alt="${safeNom}">` : '<i class="bi bi-image" style="font-size:3rem;color:#94a3b8;"></i>'}
+              </div>
+              <div class="attachment-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  ${badge}
+                  <button type="button" class="btn btn-sm btn-outline-danger js-remove" data-idx="${idx}" title="Supprimer">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label fw-semibold small">Titre</label>
+                  <input class="form-control form-control-sm js-title" data-idx="${idx}" value="${safeTitre}">
+                </div>
+                <div class="mb-2">
+                  <label class="form-label fw-semibold small">Commentaire</label>
+                  <textarea class="form-control form-control-sm js-comment" rows="2" data-idx="${idx}">${it.commentaire || ''}</textarea>
+                </div>
+                <div class="small text-muted text-truncate" title="${safeNom}">
+                  <i class="bi bi-paperclip me-1"></i>${safeNom}
+                </div>
+              </div>
+            </div>`;
+          filesGrid.appendChild(col);
+        });
+      };
+
+      filesInput?.addEventListener('change', () => {
+        const files = Array.from(filesInput.files || []);
+        for (const file of files) addNew(file);
+        filesInput.value = '';
+        render();
+      });
+
+      filesGrid?.addEventListener('input', (e) => {
+        const t = e.target;
+        if (!t?.dataset?.idx) return;
+        const idx = Number(t.dataset.idx);
+        const it = items[idx];
+        if (!it) return;
+        if (t.classList.contains('js-title')) it.titre = t.value;
+        if (t.classList.contains('js-comment')) it.commentaire = t.value;
+      });
+
+      filesGrid?.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.js-remove');
+        if (!btn) return;
+        const idx = Number(btn.dataset.idx);
+        const it = items[idx];
+        if (!it) return;
+
+        if (!confirm('Supprimer cette pièce jointe ?')) return;
+
+        if (it.kind === 'new') {
+          if (it.previewUrl) URL.revokeObjectURL(it.previewUrl);
+          items.splice(idx, 1);
+          render();
+          return;
+        }
+
+        try {
+          await fetchJSON(`/api/rendu_travaux/${renduId}/images/${it.id}`, { method: 'DELETE' });
+          items.splice(idx, 1);
+          render();
+        } catch (err) {
+          alert(err.message || 'Suppression impossible');
+        }
+      });
+
+      const back = async () => {
+        if (document.referrer) return history.back();
+        try {
+          const data = await fetchJSON(`/api/rendu_travaux/${renduId}`);
+          const tid = data?.rendu?.travaux_id;
+          if (tid) return (location.href = `/travaux-view.html?id=${tid}`);
+        } catch (_) {}
+        location.href = '/travaux.html';
+      };
+      document.getElementById('back-btn')?.addEventListener('click', back);
+      document.getElementById('cancel-btn')?.addEventListener('click', back);
+
+      // Charger rendu
+      let travauxId = null;
+      try {
+        const data = await fetchJSON(`/api/rendu_travaux/${renduId}`);
+        if (!data) return;
+        const rendu = data.rendu || {};
+        travauxId = rendu.travaux_id;
+        editor.value(rendu.resume || '');
+        updatePreview();
+
+        // Titre du travail (helper)
+        const meta = await window.fetchTravauxMeta({ travauxId, token });
+        document.getElementById('travaux-title').textContent = meta?.travaux || (travauxId ? `#${travauxId}` : '-');
+
+        const imgs = Array.isArray(data.images) ? data.images : [];
+        imgs.forEach(addExisting);
+        render();
+      } catch (err) {
+        alert(err.message || 'Erreur chargement rendu');
+        return back();
+      }
+
+      document.getElementById('rendu-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          saveBtn.disabled = true;
+          const prev = saveBtn.innerHTML;
+          saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enregistrement...';
+
+          // 1) Résumé
+          await fetchJSON(`/api/rendu_travaux/${renduId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ resume: editor.value().trim() })
+          });
+
+          // 2) MAJ métadonnées images existantes (titre/commentaire)
+          const toPatch = items
+            .filter(it => it.kind === 'existing')
+            .filter(it => (it.titre || '') !== (it.original?.titre || '') || (it.commentaire || '') !== (it.original?.commentaire || ''));
+
+          for (const it of toPatch) {
+            await fetchJSON(`/api/rendu_travaux/${renduId}/images/${it.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ titre: it.titre || '', commentaire: it.commentaire || '' })
+            });
+            it.original = { titre: it.titre || '', commentaire: it.commentaire || '' };
+          }
+
+          // 3) Upload nouvelles images
+          const newItems = items.filter(it => it.kind === 'new');
+          if (newItems.length) {
+            const fd = new FormData();
+            newItems.forEach((it) => {
+              fd.append('image_files[]', it.file);
+              fd.append('image_titles', it.titre || it.file.name);
+              fd.append('image_commentaires', it.commentaire || '');
+              fd.append('image_notes', '');
+            });
+            await fetchJSON(`/api/rendu_travaux/${renduId}/images`, { method: 'POST', body: fd });
+          }
+
+          // Refresh to sync IDs / display
+          if (travauxId) location.href = `/rendu-travaux-view.html?id=${renduId}&travaux_id=${travauxId}`;
+          else location.href = `/rendu-travaux-view.html?id=${renduId}`;
+          saveBtn.innerHTML = prev;
+        } catch (err) {
+          alert(err.message || "Erreur lors de l'enregistrement");
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<i class="bi bi-save me-1"></i>Enregistrer';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
+

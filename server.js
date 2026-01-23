@@ -6025,6 +6025,137 @@ app.get('/api/rendu_travaux/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// Ajouter des images (pièces jointes) à un rendu de travaux existant
+app.post('/api/rendu_travaux/:id/images', authenticateToken, authorizeAdmin, renduUpload.array('image_files[]'), async (req, res) => {
+    const { id: renduId } = req.params;
+    const { image_commentaires, image_notes, image_titles } = req.body;
+    const commentairesArr = Array.isArray(image_commentaires) ? image_commentaires : (image_commentaires ? [image_commentaires] : []);
+    const notesArr = Array.isArray(image_notes) ? image_notes : (image_notes ? [image_notes] : []);
+    const titlesArr = Array.isArray(image_titles) ? image_titles : (image_titles ? [image_titles] : []);
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const renduRes = await client.query('SELECT id FROM rendu_travaux WHERE id=$1', [renduId]);
+        if (!renduRes.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Rendu travaux not found' });
+        }
+
+        const createdIds = [];
+        if (req.files && req.files.length > 0) {
+            for (let i = 0; i < req.files.length; i++) {
+                const file = req.files[i];
+                const commentaire = commentairesArr[i] || null;
+                const note = notesArr[i] || null;
+                const fullComment = [commentaire, note].filter(Boolean).join('\\n\\n');
+                const titre = titlesArr[i] || null;
+
+                const imageResult = await client.query(
+                    `INSERT INTO images (nom_fichier, type_mime, taille_octets, image_blob, commentaire_image, auteur_matricule, cible_type, cible_id)
+                     VALUES ($1, $2, $3, $4, $5, $6, 'RenduTravaux', $7) RETURNING id`,
+                    [file.originalname, file.mimetype, file.size, file.buffer, fullComment, req.user.matricule || null, renduId]
+                );
+                const imageId = imageResult.rows[0].id;
+                createdIds.push(imageId);
+
+                await client.query(
+                    'INSERT INTO rendu_travaux_image (rendu_travaux_id, image_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+                    [renduId, imageId]
+                );
+
+                await client.query(
+                    `INSERT INTO documents_repertoire (cible_type, cible_id, nature, nom_fichier, type_mime, taille_octets, titre, commentaire)
+                     VALUES ('RenduTravaux', $1, 'Document', $2, $3, $4, $5, $6)`,
+                    [renduId, file.originalname, file.mimetype, file.size, titre || file.originalname, commentaire || null]
+                );
+            }
+        }
+
+        await client.query('COMMIT');
+        res.status(201).json({ message: 'Images ajoutées', imageIds: createdIds });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(`Error adding images to rendu_travaux ${renduId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    } finally {
+        client.release();
+    }
+});
+
+// Mettre à jour le titre/commentaire d'une image d'un rendu de travaux
+app.patch('/api/rendu_travaux/:id/images/:imageId', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id: renduId, imageId } = req.params;
+    const { titre, commentaire } = req.body || {};
+    try {
+        const imgRes = await pool.query(
+            `SELECT i.id, i.nom_fichier
+             FROM images i
+             JOIN rendu_travaux_image rti ON rti.image_id = i.id
+             WHERE rti.rendu_travaux_id = $1 AND i.id = $2`,
+            [renduId, imageId]
+        );
+        const img = imgRes.rows[0];
+        if (!img) return res.status(404).json({ error: 'Image not found for this rendu' });
+
+        if (commentaire !== undefined) {
+            await pool.query('UPDATE images SET commentaire_image = COALESCE($1, commentaire_image) WHERE id=$2', [commentaire, imageId]);
+        }
+
+        if (titre !== undefined || commentaire !== undefined) {
+            await pool.query(
+                `UPDATE documents_repertoire
+                 SET titre = COALESCE($1, titre),
+                     commentaire = COALESCE($2, commentaire)
+                 WHERE cible_type='RenduTravaux' AND cible_id=$3 AND nom_fichier=$4`,
+                [titre || null, commentaire || null, renduId, img.nom_fichier]
+            );
+        }
+
+        res.json({ ok: true });
+    } catch (err) {
+        console.error(`Error updating image meta for rendu_travaux ${renduId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Supprimer une image d'un rendu de travaux
+app.delete('/api/rendu_travaux/:id/images/:imageId', authenticateToken, authorizeAdmin, async (req, res) => {
+    const { id: renduId, imageId } = req.params;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const imgRes = await client.query(
+            `SELECT i.id, i.nom_fichier
+             FROM images i
+             JOIN rendu_travaux_image rti ON rti.image_id = i.id
+             WHERE rti.rendu_travaux_id = $1 AND i.id = $2`,
+            [renduId, imageId]
+        );
+        const img = imgRes.rows[0];
+        if (!img) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Image not found for this rendu' });
+        }
+
+        await client.query('DELETE FROM rendu_travaux_image WHERE rendu_travaux_id=$1 AND image_id=$2', [renduId, imageId]);
+        await client.query('DELETE FROM images WHERE id=$1', [imageId]);
+        await client.query(
+            "DELETE FROM documents_repertoire WHERE cible_type='RenduTravaux' AND cible_id=$1 AND nom_fichier=$2",
+            [renduId, img.nom_fichier]
+        );
+
+        await client.query('COMMIT');
+        res.status(204).send();
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(`Error deleting image ${imageId} for rendu_travaux ${renduId}:`, err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    } finally {
+        client.release();
+    }
+});
+
 app.patch('/api/rendu_travaux/:id', authenticateToken, authorizeAdmin, async (req, res) => {
     const { id: renduId } = req.params;
     const { resume, valeur } = req.body;

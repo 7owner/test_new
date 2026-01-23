@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Détails du rendu de travail</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <script src="/js/rapport-travaux.js"></script>
+  <link href="/custom.css?v=1" rel="stylesheet">
+  <script src="/nav.js?v=3"></script>
+  <style>
+    body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); }
+    .embed header, .embed #navbar-placeholder { display:none !important; }
+    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+    .attachment-card {
+      border: 2px solid #e5e7eb; border-radius: 12px; background: #fff;
+      transition: all 0.2s ease; height: 100%; overflow:hidden;
+    }
+    .attachment-card:hover { border-color:#3b82f6; box-shadow:0 8px 24px rgba(59,130,246,0.12); }
+    .attachment-preview { width:100%; height:180px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; }
+    .attachment-preview img { width:100%; height:100%; object-fit:cover; }
+    .attachment-info { padding:12px 14px; }
+    .attachment-comment { font-size:0.9rem; color:#374151; min-height:42px; }
+  </style>
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+  <main class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div>
+        <h1 class="h4 mb-1"><i class="bi bi-file-text me-2"></i>Rendu de travail</h1>
+        <div class="text-muted small">Travail <span id="travaux-title">-</span></div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-success btn-sm" id="download-html-btn"><i class="bi bi-download"></i> Télécharger (HTML)</button>
+        <button class="btn btn-outline-primary btn-sm" id="edit-btn"><i class="bi bi-pencil"></i> Modifier</button>
+        <button class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="text-uppercase text-muted small mb-2">Résumé</h6>
+        <div id="resume-view" class="small">—</div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Pièces jointes</h5>
+          <span class="badge bg-primary" id="attachments-count">0 pièce(s)</span>
+        </div>
+        <div class="row g-3" id="attachments-grid"></div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-secondary" id="back-to-travaux-btn">Retour au travail</button>
+      <a class="btn btn-outline-primary" id="open-new-btn"><i class="bi bi-plus-circle me-1"></i>Nouveau rendu</a>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const qp = new URLSearchParams(location.search);
+      const renduId = qp.get('id');
+      const autoDownload = qp.get('download') === '1';
+      const isEmbed = window.self !== window.top || qp.get('embed') === '1' || qp.get('modal') === '1';
+      if (isEmbed) document.body.classList.add('embed');
+
+      const token = localStorage.getItem('token');
+      if (!token) return (location.href = '/login.html');
+      const headers = { 'Authorization': `Bearer ${token}` };
+
+      if (!renduId) { alert('ID du rendu manquant.'); return (location.href = '/travaux.html'); }
+
+      const resumeEl = document.getElementById('resume-view');
+      const grid = document.getElementById('attachments-grid');
+      const countBadge = document.getElementById('attachments-count');
+      const travauxTitleEl = document.getElementById('travaux-title');
+      const backBtn = document.getElementById('back-btn');
+      const editBtn = document.getElementById('edit-btn');
+      const backTravauxBtn = document.getElementById('back-to-travaux-btn');
+      const newBtn = document.getElementById('open-new-btn');
+      const downloadBtn = document.getElementById('download-html-btn');
+
+      const fetchJSON = async (url) => {
+        const r = await fetch(url, { headers, credentials: 'same-origin' });
+        if (r.status === 401 || r.status === 403) { location.href = '/login.html'; return null; }
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+        return d;
+      };
+
+      let rendu = null;
+      let images = [];
+      let travauxId = qp.get('travaux_id');
+      try {
+        const data = await fetchJSON(`/api/rendu_travaux/${renduId}`);
+        if (!data) return;
+        rendu = data.rendu;
+        images = Array.isArray(data.images) ? data.images : [];
+        travauxId = travauxId || rendu.travaux_id;
+
+        const resumeMd = rendu.resume || '';
+        resumeEl.innerHTML = resumeMd ? marked.parse(resumeMd) : '—';
+
+        // Afficher le titre du travail (API helper)
+        const meta = await window.fetchTravauxMeta({ travauxId, token });
+        travauxTitleEl.textContent = meta?.travaux || `#${travauxId || '-'}`;
+
+        // Pièces jointes
+        countBadge.textContent = `${images.length} pièce(s)`;
+        grid.innerHTML = '';
+        if (!images.length) {
+          grid.innerHTML = '<div class="text-muted small">Aucune pièce jointe.</div>';
+        } else {
+          images.forEach((img) => {
+            const col = document.createElement('div');
+            col.className = 'col-12 col-md-6 col-lg-4';
+            const title = img.titre || img.nom_fichier || 'Image';
+            col.innerHTML = `
+              <div class="attachment-card">
+                <div class="attachment-preview">
+                  <img src="/api/images/${img.id}/view" alt="${title}">
+                </div>
+                <div class="attachment-info">
+                  <div class="fw-semibold">${title}</div>
+                  <div class="attachment-comment">${img.commentaire_image || ''}</div>
+                  <div class="small text-muted"><i class="bi bi-paperclip me-1"></i>${img.nom_fichier || ''}</div>
+                </div>
+              </div>`;
+            grid.appendChild(col);
+          });
+        }
+
+        // actions
+        editBtn.onclick = () => (location.href = `/rendu-travaux-edit.html?id=${renduId}`);
+        newBtn.href = `/rendu-travaux-new.html?id=${travauxId || ''}`;
+        backTravauxBtn.onclick = () => (location.href = `/travaux-view.html?id=${travauxId || ''}`);
+        backBtn.onclick = () => (document.referrer ? history.back() : (location.href = `/travaux-view.html?id=${travauxId || ''}`));
+
+        downloadBtn.onclick = async () => {
+          try {
+            downloadBtn.disabled = true;
+            const prev = downloadBtn.innerHTML;
+            downloadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Préparation...';
+            const meta = await window.fetchTravauxMeta({ travauxId, token });
+            const resumeHtml = resumeMd ? marked.parse(resumeMd) : '<em>Aucun résumé</em>';
+            const imagesForReport = images.map(i => ({
+              url: `/api/images/${i.id}/view`,
+              nom_fichier: i.nom_fichier,
+              titre: i.titre,
+              commentaire_image: i.commentaire_image
+            }));
+            const html = await window.buildTravauxReportHTML({ meta, images: imagesForReport, resumeHtml, token });
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `rendu_travaux_${renduId}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            downloadBtn.innerHTML = prev;
+          } catch (e) {
+            alert(`Échec du téléchargement : ${e.message || e}`);
+          } finally {
+            downloadBtn.disabled = false;
+          }
+        };
+
+        if (autoDownload && downloadBtn) {
+          setTimeout(() => downloadBtn.click(), 50);
+        }
+      } catch (err) {
+        alert(err.message || 'Erreur de chargement du rendu');
+        location.href = travauxId ? `/travaux-view.html?id=${travauxId}` : '/travaux.html';
+      }
+    });
+  </script>
+</body>
+</html>
