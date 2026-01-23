@@ -2352,37 +2352,71 @@ app.get('/api/associations', authenticateToken, async (req, res) => {
     }
 });
 
-// Associations liées à un contrat (liaison directe contrat_association)
-app.get('/api/contrats/:id/associations', authenticateToken, async (req, res) => {
-    const { id } = req.params;
-    try {
-        const result = await pool.query(`
-            SELECT a.*, ad.ligne1, ad.code_postal, ad.ville
-            FROM contrat_association ca
-            JOIN association a ON a.id = ca.association_id
-            LEFT JOIN adresse ad ON a.adresse_id = ad.id
-            WHERE ca.contrat_id = $1
-            ORDER BY ca.created_at DESC
-        `, [id]);
-        res.json(result.rows);
-    } catch (err) {
-        console.error('Error fetching associations for contract:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
+// Associations liées à un contrat
+// NOTE: En production (Heroku), la table `contrat_association` n'existe pas.
+// On remonte donc les associations via le client du contrat:
+// - contrat.client_id (si la colonne existe)
+// - sinon via client_contrat (contrat_id -> client_id)
+async function getClientIdForContrat(contratId) {
+  // 1) Essayer contrat.client_id si la colonne existe
+  try {
+    const r = await pool.query('SELECT client_id FROM contrat WHERE id = $1', [contratId]);
+    const clientId = r.rows?.[0]?.client_id;
+    if (clientId) return clientId;
+  } catch (e) {
+    // colonne absente sur certains schémas -> fallback
+    if (!/column .*client_id.* does not exist/i.test(String(e?.message || ''))) {
+      throw e;
     }
+  }
+
+  // 2) Fallback via client_contrat
+  const r2 = await pool.query(
+    'SELECT client_id FROM client_contrat WHERE contrat_id = $1 ORDER BY created_at DESC NULLS LAST, id DESC LIMIT 1',
+    [contratId]
+  );
+  return r2.rows?.[0]?.client_id || null;
+}
+
+app.get('/api/contrats/:id/associations', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const clientId = await getClientIdForContrat(id);
+    if (!clientId) return res.json([]);
+
+    const result = await pool.query(
+      `
+        SELECT a.*, ad.ligne1, ad.code_postal, ad.ville
+        FROM client_association ca
+        JOIN association a ON a.id = ca.association_id
+        LEFT JOIN adresse ad ON a.adresse_id = ad.id
+        WHERE ca.client_id = $1
+        ORDER BY ca.created_at DESC NULLS LAST, ca.id DESC
+      `,
+      [clientId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching associations for contract:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
-// Associer une association existante à un contrat (liaison directe, sans site)
+// Associer une association à un contrat (via le client du contrat)
 app.post('/api/contrats/:id/associations', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
   const { association_id } = req.body;
-  if (!association_id) {
-    return res.status(400).json({ error: 'association_id is required' });
-  }
+  if (!association_id) return res.status(400).json({ error: 'association_id is required' });
 
   try {
+    const clientId = await getClientIdForContrat(id);
+    if (!clientId) {
+      return res.status(400).json({ error: "Ce contrat n'est rattaché à aucun client (impossible d'associer une association)." });
+    }
+
     await pool.query(
-      'INSERT INTO contrat_association (contrat_id, association_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
-      [id, association_id]
+      'INSERT INTO client_association (client_id, association_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [clientId, association_id]
     );
     const result = await pool.query(
       'SELECT a.*, ad.ligne1, ad.code_postal, ad.ville FROM association a LEFT JOIN adresse ad ON a.adresse_id=ad.id WHERE a.id=$1',
@@ -2395,13 +2429,16 @@ app.post('/api/contrats/:id/associations', authenticateToken, authorizeAdmin, as
   }
 });
 
-// Dissocier une association d'un contrat
+// Dissocier une association d'un contrat (via le client du contrat)
 app.delete('/api/contrats/:id/associations/:association_id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id, association_id } = req.params;
   try {
+    const clientId = await getClientIdForContrat(id);
+    if (!clientId) return res.status(404).json({ error: 'Association link not found' });
+
     const result = await pool.query(
-      'DELETE FROM contrat_association WHERE contrat_id = $1 AND association_id = $2 RETURNING id',
-      [id, association_id]
+      'DELETE FROM client_association WHERE client_id = $1 AND association_id = $2 RETURNING id',
+      [clientId, association_id]
     );
     if (result.rowCount === 0) return res.status(404).json({ error: 'Association link not found' });
     res.status(204).send();
