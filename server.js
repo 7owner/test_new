@@ -7081,11 +7081,54 @@ app.get('/api/conversations/:conversation_id', authenticateToken, async (req, re
 // Send a message
 app.post('/api/conversations/:conversation_id/messages', authenticateToken, upload.array('attachments'), async (req, res) => {
     const { conversation_id } = req.params;
-    const { sender_id, receiver_id, body } = req.body;
+    // For legacy/front compatibility:
+    // - some pages only send receiver_id and rely on JWT for sender
+    // - some pages send message_body instead of body
+    const rawSenderId = req.body?.sender_id;
+    const rawReceiverId = req.body?.receiver_id;
+    const rawBody = req.body?.body ?? req.body?.message_body ?? '';
+
+    const senderId = rawSenderId ? Number(rawSenderId) : Number(req.user?.id);
+    let receiverId = rawReceiverId ? Number(rawReceiverId) : null;
+    const body = typeof rawBody === 'string' ? rawBody : String(rawBody ?? '');
     const files = req.files;
 
-    if (!sender_id || !receiver_id || (!body && (!files || files.length === 0))) {
-        return res.status(400).json({ error: 'Sender, receiver, and message body or attachments are required.' });
+    if (!senderId || Number.isNaN(senderId)) {
+        return res.status(400).json({ error: 'sender_id is required' });
+    }
+    if ((!body || !body.trim()) && (!files || files.length === 0)) {
+        return res.status(400).json({ error: 'Message body or attachments are required.' });
+    }
+
+    // Infer receiverId if missing (e.g. messagerie.html only sends receiver_id, or legacy conversation ids)
+    if (!receiverId || Number.isNaN(receiverId)) {
+        const m = /^user(\d+)-user(\d+)$/.exec(conversation_id || '');
+        if (m) {
+            const u1 = Number(m[1]);
+            const u2 = Number(m[2]);
+            if (senderId === u1) receiverId = u2;
+            else if (senderId === u2) receiverId = u1;
+        }
+    }
+    if (!receiverId || Number.isNaN(receiverId)) {
+        try {
+            const last = await pool.query(
+                'SELECT sender_id, receiver_id FROM messagerie WHERE conversation_id=$1 ORDER BY created_at DESC LIMIT 1',
+                [conversation_id]
+            );
+            if (last.rows[0]) {
+                const { sender_id: s, receiver_id: r } = last.rows[0];
+                receiverId = Number(s) === senderId ? Number(r) : Number(s);
+            }
+        } catch (e) {
+            console.warn('Could not infer receiver for conversation:', conversation_id, e.message);
+        }
+    }
+    if (!receiverId || Number.isNaN(receiverId)) {
+        return res.status(400).json({ error: 'receiver_id is required' });
+    }
+    if (receiverId === senderId) {
+        return res.status(400).json({ error: 'receiver_id must be different from sender_id' });
     }
 
     let ticketId = null;
@@ -7141,7 +7184,7 @@ app.post('/api/conversations/:conversation_id/messages', authenticateToken, uplo
         // Insert message with new FKs
         const messageResult = await client.query(
             'INSERT INTO messagerie (conversation_id, sender_id, receiver_id, ticket_id, demande_id, client_id, body) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-            [conversation_id, sender_id, receiver_id, ticketId, demandeId, clientId, body || null]
+            [conversation_id, senderId, receiverId, ticketId, demandeId, clientId, body || null]
         );
         const messageId = messageResult.rows[0].id;
 
