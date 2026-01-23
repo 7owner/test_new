@@ -48,11 +48,11 @@
       </div>
       <div class="card-body">
         <div class="row g-3">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label for="filterClient" class="form-label">Filtrer par Client:</label>
             <input type="text" id="filterClient" class="form-control" placeholder="Nom du client ou email">
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label for="filterStatus" class="form-label">Filtrer par Statut:</label>
             <select id="filterStatus" class="form-select">
               <option value="">Tous</option>
@@ -60,6 +60,14 @@
               <option value="Traité">Traité</option>
               <option value="Rejeté">Rejeté</option>
               <option value="Annulé">Annulé</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="filterType" class="form-label">Filtrer par Type:</label>
+            <select id="filterType" class="form-select">
+              <option value="">Tous</option>
+              <option value="Intervention">Intervention</option>
+              <option value="Travaux">Travaux</option>
             </select>
           </div>
         </div>
@@ -87,10 +95,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const demandsContainer = document.getElementById('demandsContainer');
   const filterClientInput = document.getElementById('filterClient');
   const filterStatusSelect = document.getElementById('filterStatus');
+  const filterTypeSelect = document.getElementById('filterType');
   const filtersRow = document.getElementById('filters-row'); // NEW
   const toggleFiltersBtn = document.getElementById('toggle-filters-btn'); // NEW
 
-  let currentFilter = { client: '', status: '' };
+  let currentFilter = { client: '', status: '', type: '' };
   let currentSort = { column: "id", direction: "desc" };
 
     const statusSel = ['En cours de traitement', 'Traité', 'En attente', 'Annulé'];
@@ -135,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </h5>
           <h6 class="card-subtitle mb-2 text-muted">${d.nom_client} (${d.representant_email})</h6>
           <p><strong>Site :</strong> ${d.nom_site || "N/A"}</p>
+          <p><strong>Type :</strong> ${d.type_demande || "Intervention"}</p>
           <p>${d.description || "Pas de description."}</p>
           ${d.commentaire ? `<p class="text-danger"><strong>Commentaire :</strong> ${d.commentaire}</p>` : ""}
           <small class="text-muted">Créée le : ${new Date(d.created_at).toLocaleDateString()}</small>
@@ -287,6 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let url = "/api/demandes_client?";
       if (currentFilter.client) url += `client=${encodeURIComponent(currentFilter.client)}&`;
       if (currentFilter.status) url += `status=${encodeURIComponent(currentFilter.status)}&`;
+      if (currentFilter.type) url += `type=${encodeURIComponent(currentFilter.type)}&`;
       url += `sort=${currentSort.column},${currentSort.direction}`;
 
       let data = await fetchJSON(url);
@@ -312,6 +323,13 @@ document.addEventListener('DOMContentLoaded', () => {
     currentFilter.status = filterStatusSelect.value;
     load();
   });
+
+  if (filterTypeSelect) {
+    filterTypeSelect.addEventListener("change", () => {
+      currentFilter.type = filterTypeSelect.value;
+      load();
+    });
+  }
 
   // NEW Toggle filters button logic
   if (toggleFiltersBtn && filtersRow) {

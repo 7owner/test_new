@@ -30,6 +30,7 @@ DROP TABLE IF EXISTS ticket_agent CASCADE;
 DROP TABLE IF EXISTS ticket CASCADE;
 DROP TABLE IF EXISTS demande_client CASCADE;
 DROP TABLE IF EXISTS site_affaire CASCADE;
+DROP TABLE IF EXISTS demande_type CASCADE;
 DROP TABLE IF EXISTS doe CASCADE;
 DROP TABLE IF EXISTS affaire CASCADE;
 DROP TABLE IF EXISTS client_representant CASCADE;
@@ -67,6 +68,7 @@ DROP TYPE IF EXISTS commande_status_type CASCADE;
 DROP TYPE IF EXISTS intervention_event_statut CASCADE;
 
 CREATE TYPE statut_intervention AS ENUM ('En_attente','Termine');
+CREATE TYPE demande_type AS ENUM ('Intervention', 'Travaux');
 CREATE TYPE etat_rapport        AS ENUM ('Pas_commence','En_cours','Termine');
 CREATE TYPE sujet_type          AS ENUM ('ticket','intervention');
 CREATE TYPE statut_rdv          AS ENUM ('Planifie','Confirme','Termine','Annule');
@@ -278,6 +280,7 @@ CREATE TABLE IF NOT EXISTS demande_client (
     titre VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'En cours de traitement',
+    type_demande demande_type DEFAULT 'Intervention' NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ticket_id INTEGER,

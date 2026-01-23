@@ -43,6 +43,14 @@
         </div>
         <ul id="agents-list" class="list-group list-group-flush"></ul>
       </div>
+      
+      <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5>Sites associés</h5>
+          <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addSiteModal">Ajouter</button>
+        </div>
+        <ul id="sites-list" class="list-group list-group-flush"></ul>
+      </div>
     </div>
   </div>
 
@@ -63,9 +71,9 @@
         </div>
       </div>
     </div>
-  </div>
+</div>
 
-  <div class="modal fade" id="addAgentModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="addAgentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -78,8 +86,26 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
           <button type="button" class="btn btn-primary" id="save-agent-btn">Ajouter</button>
+  </div>
+</div>
+
+  <div class="modal fade" id="addSiteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Ajouter un site</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <select id="site-select" class="form-select"></select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-site-btn">Ajouter</button>
         </div>
       </div>
+    </div>
+  </div>
     </div>
   </div>
 
@@ -100,8 +126,12 @@
       const agentListEl = document.getElementById('agents-list');
       const respSelectEl = document.getElementById('responsable-select');
       const agentSelectEl = document.getElementById('agent-select');
+      const siteListEl = document.getElementById('sites-list');
+      const siteSelectEl = document.getElementById('site-select');
 
       let allAgents = [];
+      let allSites = [];
+      let associatedSites = [];
 
       async function fetchJSON(url, options = {}) {
         const res = await fetch(url, { headers, ...options });
@@ -132,11 +162,22 @@
         });
       }
 
+      function populateSiteSelect() {
+        if (!siteSelectEl) return;
+        const assignedIds = new Set((associatedSites || []).map(s => s.id));
+        const options = allSites
+          .filter(s => !assignedIds.has(s.id))
+          .map(s => `<option value="${s.id}">${s.nom_site || s.nom || `Site #${s.id}`}</option>`)
+          .join('');
+        siteSelectEl.innerHTML = '<option value="">Sélectionnez un site...</option>' + options;
+      }
+
       async function loadData() {
         try {
           const data = await fetchJSON(`/api/associations/${associationId}/relations`);
           const agentsData = await fetchJSON('/api/agents');
           allAgents = agentsData || [];
+          allSites = await fetchJSON('/api/sites');
 
           // Populate main form
           titreEl.value = data.association.titre;
@@ -145,11 +186,14 @@
           // Populate lists
           renderList(respListEl, data.responsables, 'nom', 'matricule', removeResponsable);
           renderList(agentListEl, data.agents, 'nom', 'matricule', removeAgent);
+          associatedSites = data.sites || [];
+          renderList(siteListEl, associatedSites, 'nom_site', 'id', removeSite);
 
           // Populate select dropdowns
           const optionsHtml = allAgents.map(a => `<option value="${a.matricule}">${a.nom} ${a.prenom || ''}</option>`).join('');
           respSelectEl.innerHTML = optionsHtml;
           agentSelectEl.innerHTML = optionsHtml;
+          populateSiteSelect();
           
           loadingEl.classList.add('d-none');
           mainContentEl.classList.remove('d-none');
@@ -195,6 +239,21 @@
         }
       });
 
+      document.getElementById('save-site-btn').addEventListener('click', async () => {
+        const val = siteSelectEl?.value;
+        if (!val) {
+          alert('Sélectionnez un site.');
+          return;
+        }
+        try {
+          await fetchJSON(`/api/associations/${associationId}/sites`, { method: 'POST', body: JSON.stringify({ site_id: val }) });
+          bootstrap.Modal.getInstance(document.getElementById('addSiteModal')).hide();
+          loadData();
+        } catch (error) {
+          alert(`Erreur: ${error.message}`);
+        }
+      });
+
       async function removeResponsable(matricule) {
         if (!confirm('Voulez-vous retirer ce responsable ?')) return;
         try {
@@ -209,6 +268,16 @@
         if (!confirm('Voulez-vous retirer cet agent ?')) return;
         try {
           await fetchJSON(`/api/associations/${associationId}/agents/${matricule}`, { method: 'DELETE' });
+          loadData();
+        } catch (error) {
+          alert(`Erreur: ${error.message}`);
+        }
+      }
+
+      async function removeSite(siteId) {
+        if (!confirm('Voulez-vous dissocier ce site ?')) return;
+        try {
+          await fetchJSON(`/api/associations/${associationId}/sites/${siteId}`, { method: 'DELETE' });
           loadData();
         } catch (error) {
           alert(`Erreur: ${error.message}`);

@@ -6824,9 +6824,9 @@ app.delete('/api/demandes-client-travaux/:id', authenticateToken, authorizeAdmin
 // List all demandes with client/site (admin)
 app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    const { client, status, sort, direction, include_deleted } = req.query;
+    const { client, status, sort, direction, include_deleted, type } = req.query;
     let query = `
-      SELECT d.*, c.nom_client, c.representant_email, s.nom_site
+      SELECT d.*, c.nom_client, c.representant_email, s.nom_site, d.type_demande
       FROM demande_client d
       LEFT JOIN client c ON d.client_id=c.id
       LEFT JOIN site s   ON d.site_id=s.id
@@ -6844,6 +6844,10 @@ app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (req, r
     } else if (!String(include_deleted || '').toLowerCase().startsWith('t')) {
       conditions.push(`d.status <> 'Supprimée'`);
     }
+    if (type) {
+      conditions.push(`d.type_demande = $${params.length + 1}`);
+      params.push(type);
+    }
 
     if (conditions.length > 0) {
       query += ` WHERE ${conditions.join(' AND ')}`;
@@ -6853,7 +6857,7 @@ app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (req, r
     let orderDirection = 'DESC';
 
     if (sort) {
-      const allowedSortColumns = ['id', 'nom_client', 'site_id', 'status', 'created_at'];
+    const allowedSortColumns = ['id', 'nom_client', 'site_id', 'status', 'created_at', 'type_demande'];
       if (allowedSortColumns.includes(sort)) {
         orderBy = `d.${sort}`;
       }
