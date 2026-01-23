@@ -5076,24 +5076,28 @@ app.get('/api/factures', authenticateToken, async (req, res) => {
       SELECT
           f.*,
           f.titre,
-          c.nom_client,
+          COALESCE(c.nom_client, c_site.nom_client) AS nom_client,
           af.nom_affaire,
           asso.titre AS association_titre,
           i.id AS intervention_id,
           i.titre AS intervention_titre
       FROM facture f
       LEFT JOIN client c ON f.client_id = c.id
-      LEFT JOIN affaire af ON f.affaire_id = af.id
       LEFT JOIN association asso ON f.association_id = asso.id
       LEFT JOIN intervention i ON f.intervention_id = i.id
+      LEFT JOIN site s ON s.id = i.site_id
+      LEFT JOIN client c_site ON c_site.id = s.client_id
+      LEFT JOIN ticket tk ON tk.id = i.ticket_id
+      LEFT JOIN affaire af ON af.id = tk.affaire_id
     `;
 
     if (client_id) {
-      conditions.push(`f.client_id = $${paramIndex++}`);
+      conditions.push(`(f.client_id = $${paramIndex} OR s.client_id = $${paramIndex})`);
       params.push(client_id);
+      paramIndex++;
     }
     if (affaire_id) {
-      conditions.push(`f.affaire_id = $${paramIndex++}`);
+      conditions.push(`tk.affaire_id = $${paramIndex++}`);
       params.push(affaire_id);
     }
     if (association_id) {
@@ -5112,17 +5116,52 @@ app.get('/api/factures', authenticateToken, async (req, res) => {
   } catch (err) { console.error('Error fetching factures:', err); res.status(500).json({ error: 'Internal Server Error' }); }
 });
 app.get('/api/factures/:id', authenticateToken, async (req, res) => {
-  const { id } = req.params; try { const r = await pool.query('SELECT * FROM facture WHERE id=$1', [id]); if (!r.rows[0]) return res.status(404).json({ error: 'Not found' }); res.json(r.rows[0]); } catch (err) { console.error('Error fetching facture:', err); res.status(500).json({ error: 'Internal Server Error' }); }
+  const { id } = req.params;
+  try {
+    const r = await pool.query(
+      `SELECT
+          f.*,
+          COALESCE(c.nom_client, c_site.nom_client) AS nom_client,
+          af.nom_affaire,
+          asso.titre AS association_titre,
+          i.titre AS intervention_titre
+       FROM facture f
+       LEFT JOIN client c ON f.client_id = c.id
+       LEFT JOIN association asso ON f.association_id = asso.id
+       LEFT JOIN intervention i ON f.intervention_id = i.id
+       LEFT JOIN site s ON s.id = i.site_id
+       LEFT JOIN client c_site ON c_site.id = s.client_id
+       LEFT JOIN ticket tk ON tk.id = i.ticket_id
+       LEFT JOIN affaire af ON af.id = tk.affaire_id
+       WHERE f.id=$1`,
+      [id]
+    );
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json(r.rows[0]);
+  } catch (err) {
+    console.error('Error fetching facture:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
     const r = await pool.query(
-      `SELECT f.*, c.nom_client, af.nom_affaire
+      `SELECT
+         f.*,
+         COALESCE(c.nom_client, c_site.nom_client) AS nom_client,
+         af.nom_affaire,
+         i.titre AS intervention_titre,
+         i.site_id AS intervention_site_id,
+         i.ticket_id AS intervention_ticket_id
        FROM facture f
        LEFT JOIN client c ON f.client_id = c.id
-       LEFT JOIN affaire af ON f.affaire_id = af.id
+       LEFT JOIN intervention i ON f.intervention_id = i.id
+       LEFT JOIN site s ON s.id = i.site_id
+       LEFT JOIN client c_site ON c_site.id = s.client_id
+       LEFT JOIN ticket tk ON tk.id = i.ticket_id
+       LEFT JOIN affaire af ON af.id = tk.affaire_id
        WHERE f.id=$1`,
       [id]
     );
@@ -5144,20 +5183,20 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
     if (f.intervention_id) {
       const intRes = await pool.query('SELECT * FROM intervention WHERE id=$1', [f.intervention_id]);
       intervention = intRes.rows[0] || null;
-      // Compléter client/affaire via le site si nécessaire
-      if ((!clientName || !affaireName) && intervention?.site_id) {
+      // Compléter client/affaire via l'intervention -> ticket/site si nécessaire
+      if (!clientName || !affaireName) {
         try {
-          const siteRes = await pool.query(`
-            SELECT c.nom_client, a.nom_affaire
-            FROM site s
+          const extraRes = await pool.query(`
+            SELECT c.nom_client, af.nom_affaire
+            FROM intervention i
+            LEFT JOIN site s ON s.id = i.site_id
             LEFT JOIN client c ON c.id = s.client_id
-            LEFT JOIN contrat_site_association csa ON csa.site_id = s.id
-            LEFT JOIN contrat ct ON ct.id = csa.contrat_id
-            LEFT JOIN affaire a ON a.id = ct.affaire_id
-            WHERE s.id = $1
+            LEFT JOIN ticket tk ON tk.id = i.ticket_id
+            LEFT JOIN affaire af ON af.id = tk.affaire_id
+            WHERE i.id = $1
             LIMIT 1
-          `, [intervention.site_id]);
-          const extra = siteRes.rows[0] || {};
+          `, [f.intervention_id]);
+          const extra = extraRes.rows[0] || {};
           clientName = clientName || extra.nom_client || null;
           affaireName = affaireName || extra.nom_affaire || null;
         } catch (_) {}
@@ -5325,7 +5364,7 @@ app.get('/api/factures/:id/download', authenticateToken, async (req, res) => {
 });
 app.post('/api/factures', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    let { titre, reference, statut, date_emission, date_echeance, client_id, affaire_id, association_id,
+    let { titre, reference, statut, date_emission, date_echeance, client_id, association_id,
       heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
       deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id
     } = req.body;
@@ -5349,13 +5388,13 @@ app.post('/api/factures', authenticateToken, authorizeAdmin, async (req, res) =>
 
     const r = await pool.query(
       `INSERT INTO facture (
-        titre, reference, statut, date_emission, date_echeance, client_id, affaire_id, association_id,
+        titre, reference, statut, date_emission, date_echeance, client_id, association_id,
         heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
         deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id
-      ) VALUES ($1, $2, COALESCE($3::statut_facture,'Brouillon'::statut_facture), $4,$5,$6,$7,$8,
-                $9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23) RETURNING *`,
+      ) VALUES ($1, $2, COALESCE($3::statut_facture,'Brouillon'::statut_facture), $4,$5,$6,$7,
+                $8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING *`,
       [
-        titre||null, reference||null, statut||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null,
+        titre||null, reference||null, statut||null, date_emission||null, date_echeance||null, client_id||null, association_id||null,
         heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
         deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id||null
       ]
@@ -5365,7 +5404,7 @@ app.post('/api/factures', authenticateToken, authorizeAdmin, async (req, res) =>
 });
 app.put('/api/factures/:id', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params; try {
-    let { titre, reference, statut, date_emission, date_echeance, client_id, affaire_id, association_id,
+    let { titre, reference, statut, date_emission, date_echeance, client_id, association_id,
       heures_saisies, heures_calculees, taux_horaire, total_heures_ht, taux_majoration_materiel, total_materiel_ht,
       deplacement_qte, deplacement_pu, divers_ht, tva_taux, total_deplacement_ht, total_tva, total_ht, total_ttc, intervention_id
     } = req.body;
@@ -5378,26 +5417,25 @@ app.put('/api/factures/:id', authenticateToken, authorizeAdmin, async (req, res)
         date_emission = COALESCE($4, date_emission),
         date_echeance = COALESCE($5, date_echeance),
         client_id = COALESCE($6, client_id),
-        affaire_id = COALESCE($7, affaire_id),
-        association_id = COALESCE($8, association_id),
-        heures_saisies = COALESCE($9, heures_saisies),
-        heures_calculees = COALESCE($10, heures_calculees),
-        taux_horaire = COALESCE($11, taux_horaire),
-        total_heures_ht = COALESCE($12, total_heures_ht),
-        taux_majoration_materiel = COALESCE($13, taux_majoration_materiel),
-        total_materiel_ht = COALESCE($14, total_materiel_ht),
-        deplacement_qte = COALESCE($15, deplacement_qte),
-        deplacement_pu = COALESCE($16, deplacement_pu),
-        divers_ht = COALESCE($17, divers_ht),
-        tva_taux = COALESCE($18, tva_taux),
-        total_deplacement_ht = COALESCE($19, total_deplacement_ht),
-        total_tva = COALESCE($20, total_tva),
-        total_ht = COALESCE($21, total_ht),
-        total_ttc = COALESCE($22, total_ttc),
-        intervention_id = COALESCE($23, intervention_id)
-      WHERE id=$24 RETURNING *`,
+        association_id = COALESCE($7, association_id),
+        heures_saisies = COALESCE($8, heures_saisies),
+        heures_calculees = COALESCE($9, heures_calculees),
+        taux_horaire = COALESCE($10, taux_horaire),
+        total_heures_ht = COALESCE($11, total_heures_ht),
+        taux_majoration_materiel = COALESCE($12, taux_majoration_materiel),
+        total_materiel_ht = COALESCE($13, total_materiel_ht),
+        deplacement_qte = COALESCE($14, deplacement_qte),
+        deplacement_pu = COALESCE($15, deplacement_pu),
+        divers_ht = COALESCE($16, divers_ht),
+        tva_taux = COALESCE($17, tva_taux),
+        total_deplacement_ht = COALESCE($18, total_deplacement_ht),
+        total_tva = COALESCE($19, total_tva),
+        total_ht = COALESCE($20, total_ht),
+        total_ttc = COALESCE($21, total_ttc),
+        intervention_id = COALESCE($22, intervention_id)
+      WHERE id=$23 RETURNING *`,
       [
-        titre||null, reference||null, statut||null, date_emission||null, date_echeance||null, client_id||null, affaire_id||null, association_id||null,
+        titre||null, reference||null, statut||null, date_emission||null, date_echeance||null, client_id||null, association_id||null,
         num(heures_saisies), num(heures_calculees), num(taux_horaire), num(total_heures_ht), num(taux_majoration_materiel), num(total_materiel_ht),
         num(deplacement_qte), num(deplacement_pu), num(divers_ht), num(tva_taux), num(total_deplacement_ht), num(total_tva), num(total_ht), num(total_ttc),
         intervention_id||null,
@@ -6149,6 +6187,17 @@ app.post('/api/tickets/:id/responsables', authenticateToken, authorizeAdmin, asy
     const r = await pool.query("INSERT INTO ticket_responsable (ticket_id, agent_matricule, role) VALUES ($1,$2,$3) RETURNING *", [id, agent_matricule, role]);
     res.status(201).json(r.rows[0]);
   } catch (e) { console.error('ticket add responsable:', e); res.status(400).json({ error: e.message || 'Bad Request' }); }
+});
+app.delete('/api/tickets/:id/responsables/:matricule', authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    const { id, matricule } = req.params;
+    const r = await pool.query('DELETE FROM ticket_responsable WHERE ticket_id=$1 AND agent_matricule=$2 RETURNING id', [id, matricule]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('ticket remove responsable:', e);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 // Sites: assign agent
