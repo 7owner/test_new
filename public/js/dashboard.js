@@ -22,7 +22,9 @@ async function buildHeaders(json=false){
           if (!limited.length) { urgentMaintenancesDiv.innerHTML = '<p class="text-muted">Aucun ticket ouvert.</p>'; return; }
           urgentMaintenancesDiv.innerHTML = '';
           limited.forEach(t => {
-            const siteName = siteMap.get(String(t.site_id)) || (t.site_id ? `Site #${t.site_id}` : 'N/A');
+            if (t.site?.id && t.site?.nom_site) siteMap.set(String(t.site.id), t.site.nom_site);
+            const resolvedSiteId = t.site?.id ?? t.site_id;
+            const siteName = t.site?.nom_site ?? (resolvedSiteId ? (siteMap.get(String(resolvedSiteId)) || `Site #${resolvedSiteId}`) : 'N/A');
             const badge = (s => { switch(String(s||'')) { case 'Pas_commence': return 'bg-secondary'; case 'En_attente': return 'bg-info'; case 'En_cours': return 'bg-warning'; case 'Bloque': return 'bg-danger'; default: return 'bg-light text-dark'; } })(t.etat);
             const el = document.createElement('div'); el.className='card card-body mb-2';
             el.innerHTML = `

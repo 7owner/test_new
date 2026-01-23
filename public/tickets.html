@@ -232,16 +232,18 @@
         }
       } catch(_) {}
 
-      function getSiteName(site_id) {
+      function getSiteName(site_id, overrideName) {
+        if (overrideName) return overrideName;
         if (site_id == null) return 'N/A';
         const key = String(site_id);
         if (state.sites.has(key)) return state.sites.get(key) || `Site #${key}`;
         return `Site #${key}`;
       }
-      function siteLink(site_id) {
-        if (site_id == null) return 'N/A';
-        const key = String(site_id);
-        const label = getSiteName(site_id);
+      function siteLink(ticket) {
+        const siteId = ticket?.site?.id ?? ticket.site_id;
+        const label = getSiteName(siteId, ticket?.site?.nom_site);
+        if (siteId == null) return label;
+        const key = String(siteId);
         return `<a href="site-view.html?id=${key}">${label}</a>`;
       }
       async function fetchSites() {
@@ -327,7 +329,7 @@
                     <span>${ticket.titre}</span>
                     <span class="badge ${statusBadgeClass}">${displayStatus(ticket.etat)}</span>
                   </h5>
-                  <h6 class="card-subtitle mb-2 text-muted">Site: ${siteLink(ticket.site_id)}</h6>
+                  <h6 class="card-subtitle mb-2 text-muted">Site: ${siteLink(ticket)}</h6>
                   <p class="card-text">${renderMarkdown(ticket.description)}</p>
                   <small class="text-muted mt-auto">ID: ${ticket.id} | Responsable: ${responsableName} | Fin: ${endDisplay} | Temps écoulé: ${elapsed}</small>
                   <div class="mt-3">
@@ -361,7 +363,7 @@
               <td>${ticket.titre}</td>
               <td>${ticket.description}</td>
               <td><span class="badge ${statusBadgeClass}">${displayStatus(ticket.etat)}</span></td>
-              <td>${siteLink(ticket.site_id)}</td>
+              <td>${siteLink(ticket)}</td>
               <td>${responsableName}</td>
               <td class="satisfaction-cell" data-id="${ticket.id}"><span class="text-muted small">—</span></td>
               <td>
