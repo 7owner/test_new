@@ -2352,18 +2352,17 @@ app.get('/api/associations', authenticateToken, async (req, res) => {
     }
 });
 
-// Associations liées à un contrat (via les sites associés)
+// Associations liées à un contrat (liaison directe contrat_association)
 app.get('/api/contrats/:id/associations', authenticateToken, async (req, res) => {
     const { id } = req.params;
     try {
         const result = await pool.query(`
-            SELECT DISTINCT a.*, ad.ligne1, ad.code_postal, ad.ville
-            FROM association a
+            SELECT a.*, ad.ligne1, ad.code_postal, ad.ville
+            FROM contrat_association ca
+            JOIN association a ON a.id = ca.association_id
             LEFT JOIN adresse ad ON a.adresse_id = ad.id
-            JOIN association_site ats ON ats.association_id = a.id
-            JOIN contrat_site_association csa ON csa.site_id = ats.site_id
-            WHERE csa.contrat_id = $1
-            ORDER BY a.created_at DESC
+            WHERE ca.contrat_id = $1
+            ORDER BY ca.created_at DESC
         `, [id]);
         res.json(result.rows);
     } catch (err) {
@@ -2372,25 +2371,42 @@ app.get('/api/contrats/:id/associations', authenticateToken, async (req, res) =>
     }
 });
 
-// Associer une association existante à un contrat (en choisissant un site du contrat)
+// Associer une association existante à un contrat (liaison directe, sans site)
 app.post('/api/contrats/:id/associations', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
-  const { association_id, site_id } = req.body;
-  if (!association_id || !site_id) {
-    return res.status(400).json({ error: 'association_id and site_id are required' });
+  const { association_id } = req.body;
+  if (!association_id) {
+    return res.status(400).json({ error: 'association_id is required' });
   }
 
   try {
-    const siteRow = await pool.query('SELECT id FROM contrat_site_association WHERE contrat_id=$1 AND site_id=$2', [id, site_id]);
-    if (siteRow.rowCount === 0) {
-      return res.status(400).json({ error: 'Site is not linked to this contract' });
-    }
-
-    await pool.query('INSERT INTO association_site (association_id, site_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [association_id, site_id]);
-    const result = await pool.query('SELECT a.*, ad.ligne1, ad.code_postal, ad.ville FROM association a LEFT JOIN adresse ad ON a.adresse_id=ad.id WHERE a.id=$1', [association_id]);
+    await pool.query(
+      'INSERT INTO contrat_association (contrat_id, association_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [id, association_id]
+    );
+    const result = await pool.query(
+      'SELECT a.*, ad.ligne1, ad.code_postal, ad.ville FROM association a LEFT JOIN adresse ad ON a.adresse_id=ad.id WHERE a.id=$1',
+      [association_id]
+    );
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error linking association to contract:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Dissocier une association d'un contrat
+app.delete('/api/contrats/:id/associations/:association_id', authenticateToken, authorizeAdmin, async (req, res) => {
+  const { id, association_id } = req.params;
+  try {
+    const result = await pool.query(
+      'DELETE FROM contrat_association WHERE contrat_id = $1 AND association_id = $2 RETURNING id',
+      [id, association_id]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Association link not found' });
+    res.status(204).send();
+  } catch (err) {
+    console.error('Error unlinking association from contract:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

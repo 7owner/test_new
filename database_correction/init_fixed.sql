@@ -742,6 +742,15 @@ CREATE TABLE IF NOT EXISTS client_contrat (
     UNIQUE (client_id, contrat_id)
 );
 
+-- Liaison directe Contrat <-> Association (indépendante des sites)
+CREATE TABLE IF NOT EXISTS contrat_association (
+    id SERIAL PRIMARY KEY,
+    contrat_id BIGINT NOT NULL REFERENCES contrat(id) ON DELETE CASCADE,
+    association_id INTEGER NOT NULL REFERENCES association(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (contrat_id, association_id)
+);
+
 CREATE TABLE IF NOT EXISTS ticket_satisfaction (
     id SERIAL PRIMARY KEY,
     ticket_id BIGINT NOT NULL UNIQUE REFERENCES ticket(id) ON DELETE CASCADE,
