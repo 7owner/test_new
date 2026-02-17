@@ -7397,6 +7397,26 @@ app.post('/api/conversations/:conversation_id/messages', authenticateToken, uplo
             console.warn('Could not infer receiver for conversation:', conversation_id, e.message);
         }
     }
+    if ((!receiverId || Number.isNaN(receiverId)) && /^demande-\d+$/.test(conversation_id || '')) {
+        try {
+            const demandeIdFromConv = Number((conversation_id || '').split('-')[1]);
+            const r = await pool.query(
+                `SELECT a.user_id
+                 FROM demande_client d
+                 LEFT JOIN ticket t ON t.id = d.ticket_id
+                 LEFT JOIN agent a ON a.matricule = t.responsable
+                 WHERE d.id = $1
+                 LIMIT 1`,
+                [demandeIdFromConv]
+            );
+            const inferred = r.rows[0] && r.rows[0].user_id ? Number(r.rows[0].user_id) : null;
+            if (inferred && !Number.isNaN(inferred) && inferred !== senderId) {
+                receiverId = inferred;
+            }
+        } catch (e) {
+            console.warn('Could not infer receiver from demande responsable:', conversation_id, e.message);
+        }
+    }
     if (!receiverId || Number.isNaN(receiverId)) {
         return res.status(400).json({ error: 'receiver_id is required' });
     }

@@ -201,7 +201,7 @@
       <h1 class="mb-0">Suivi de la Demande #<span id="demande-id"></span></h1>
     </div>
 
-    <div class="card mb-4">
+    <div id="messagerie-section" class="card mb-4">
       <div class="card-body">
         <h2 class="card-title">Détails de votre demande</h2>
         <div class="row g-3">
@@ -463,9 +463,13 @@
       });
 
       try {
-        let res = await fetch(`/api/demandes_client/${demandeId}`, { headers, credentials: 'same-origin', cache: 'no-store' });
+        let res = await fetch(`/api/client/demandes/${demandeId}`, { headers, credentials: 'same-origin', cache: 'no-store' });
         if (res.status === 304) {
-          res = await fetch(`/api/demandes_client/${demandeId}`, { headers, credentials: 'same-origin', cache: 'reload' });
+          res = await fetch(`/api/client/demandes/${demandeId}`, { headers, credentials: 'same-origin', cache: 'reload' });
+        }
+        if (res.status === 404) {
+          // Fallback route (legacy payload shape)
+          res = await fetch(`/api/demandes_client/${demandeId}`, { headers, credentials: 'same-origin', cache: 'no-store' });
         }
         if (!res.ok) {
           if (res.status === 401) {
