@@ -263,27 +263,37 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (!rel.ok) throw new Error('Ticket introuvable');
       const data = await rel.json();
       const t = data.ticket || {};
+      const site = data.site || null;
+      const doe = data.doe || null;
+      const affaire = data.affaire || null;
 
       document.getElementById('titre').value = t.titre || '';
       document.getElementById('description').value = t.description || '';
       document.getElementById('date_debut').value = toLocal(t.date_debut);
       document.getElementById('date_fin').value = toLocal(t.date_fin);
 
-      if (t.site_id && t.nom_site) {
-        siteIdHidden.value = t.site_id;
-        siteSearchInput.value = t.nom_site;
+      const siteId = t.site_id || site?.id || '';
+      if (siteId) {
+        siteIdHidden.value = siteId;
+        siteSearchInput.value = site?.nom_site || `Site #${siteId}`;
         updateSitePreview();
       }
-      if (t.doe_id && t.nom_doe) {
-        doeIdHidden.value = t.doe_id;
-        doeSearchInput.value = t.nom_doe;
+
+      const doeId = t.doe_id || doe?.id || '';
+      if (doeId) {
+        doeIdHidden.value = doeId;
+        const doeLabel = doe?.titre || `DOE #${doeId}`;
+        doeSearchInput.value = doeLabel;
         doeDetailsDiv?.classList.remove('d-none');
-        doeTitleSpan.textContent = t.nom_doe;
-        viewDoeBtn.href = `doe-view.html?id=${t.doe_id}`;
+        doeTitleSpan.textContent = doeLabel;
+        doeDescriptionSpan.textContent = doe?.description || '';
+        viewDoeBtn.href = `doe-view.html?id=${doeId}`;
       }
-      if (t.affaire_id && t.nom_affaire) {
-        affaireIdHidden.value = t.affaire_id;
-        affaireSearchInput.value = t.nom_affaire;
+
+      const affaireId = t.affaire_id || affaire?.id || '';
+      if (affaireId) {
+        affaireIdHidden.value = affaireId;
+        affaireSearchInput.value = affaire?.nom_affaire || `Affaire #${affaireId}`;
       }
       if (t.responsable) {
         responsableIdHidden.value = t.responsable;
