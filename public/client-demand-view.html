@@ -347,8 +347,12 @@
       }
 
       function getStatusClass(status) {
-        const s = (status || '').toLowerCase();
-        if (s.includes('en cours')) return 'status-en-cours';
+        const s = String(status || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/_/g, ' ');
+        if (s.includes('en cours') || s.includes('en attente')) return 'status-en-cours';
         if (s.includes('trait'))    return 'status-traite';
         if (s.includes('rejet'))    return 'status-rejete';
         if (s.includes('annul'))    return 'status-annule';

@@ -573,12 +573,21 @@
       const notifBadge = document.getElementById("notif-badge");
 
       function getStatusClass(status) {
-        const s = (status || "En cours de traitement").toLowerCase();
+        const s = String(status || "En_cours")
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/\s+/g, '_');
         return {
-          "en cours de traitement": "status-en-cours",
-          "traité": "status-traite",
-          "rejeté": "status-rejete",
-          "annulé": "status-annule"
+          "en_cours_de_traitement": "status-en-cours",
+          "en_cours": "status-en-cours",
+          "en_attente": "status-en-cours",
+          "traitee": "status-traite",
+          "traite": "status-traite",
+          "rejetee": "status-rejete",
+          "rejete": "status-rejete",
+          "annule": "status-annule",
+          "annulee": "status-annule"
         }[s] || "status-en-cours";
       }
 

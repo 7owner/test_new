@@ -6897,6 +6897,32 @@ app.delete('/api/demandes-client-travaux/:id', authenticateToken, authorizeAdmin
 });
 
 // --- Admin: demandes listing and workflow ---
+function normalizeDemandeStatus(input) {
+  const raw = String(input || '').trim();
+  if (!raw) return '';
+  const key = raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+  const map = {
+    en_cours_de_traitement: 'En_cours',
+    en_cours: 'En_cours',
+    encours: 'En_cours',
+    traite: 'Traitee',
+    traitee: 'Traitee',
+    en_attente: 'En_attente',
+    attente: 'En_attente',
+    rejete: 'Rejetee',
+    rejetee: 'Rejetee',
+    annule: 'Annule',
+    annulee: 'Annule',
+    supprimee: 'Supprimée',
+    pas_commence: 'En_attente'
+  };
+  return map[key] || raw;
+}
+
 // List all demandes with client/site (admin)
 app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
@@ -6925,8 +6951,9 @@ app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (req, r
       params.push(`%${client}%`);
     }
     if (status) {
+      const normalizedStatus = normalizeDemandeStatus(status);
       conditions.push(`d.status = $${params.length + 1}`);
-      params.push(status);
+      params.push(normalizedStatus);
     } else if (!String(include_deleted || '').toLowerCase().startsWith('t')) {
       conditions.push(`d.status <> 'Supprimée'`);
     }
@@ -6971,15 +6998,16 @@ app.put('/api/demandes_client/:id/status', authenticateToken, authorizeAdmin, as
   try {
     const { id } = req.params;
     const { status, commentaire } = req.body || {};
-    const allowed = ['En cours de traitement', 'Traité', 'En attente', 'Annulé'];
-    if (!allowed.includes(String(status || '').trim())) {
+    const normalizedStatus = normalizeDemandeStatus(status);
+    const allowed = ['En_attente', 'En_cours', 'Traitee', 'Rejetee', 'Annule'];
+    if (!allowed.includes(normalizedStatus)) {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
     const updateFields = ['status=$1', 'updated_at=CURRENT_TIMESTAMP'];
-    const queryParams = [status];
+    const queryParams = [normalizedStatus];
 
-    if ((status === 'Rejeté' || status === 'Annulé')) {
+    if ((normalizedStatus === 'Rejetee' || normalizedStatus === 'Annule')) {
         updateFields.push(`commentaire=$${queryParams.length + 1}`);
         queryParams.push(commentaire || null); // Ensure comment can be null
     }
@@ -7076,7 +7104,7 @@ app.get('/api/demandes_client/deleted', authenticateToken, authorizeAdmin, async
 app.post('/api/demandes_client/:id/restore', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    const r = await pool.query("UPDATE demande_client SET status='En cours de traitement', updated_at=CURRENT_TIMESTAMP WHERE id=$1 AND status='Supprimée' RETURNING *", [id]);
+    const r = await pool.query("UPDATE demande_client SET status='En_cours', updated_at=CURRENT_TIMESTAMP WHERE id=$1 AND status='Supprimée' RETURNING *", [id]);
     if (!r.rows[0]) return res.status(404).json({ error: 'Demande not found or not deleted' });
     res.json(r.rows[0]);
   } catch (e) {
@@ -7090,7 +7118,7 @@ app.post('/api/demandes_client/:id/convert-to-ticket', authenticateToken, author
   const cx = await pool.connect();
   try {
     const { id } = req.params;
-    const connectedUserMatricule = req.user.matricule;
+    let connectedUserMatricule = req.user.matricule || null;
 
     await cx.query('BEGIN');
     
@@ -7099,6 +7127,15 @@ app.post('/api/demandes_client/:id/convert-to-ticket', authenticateToken, author
     if (!d) {
       await cx.query('ROLLBACK');
       return res.status(404).json({ error: 'Demande not found' });
+    }
+    if (d.ticket_id) {
+      await cx.query('ROLLBACK');
+      return res.status(409).json({ error: 'Demande already converted to ticket' });
+    }
+
+    if (!connectedUserMatricule && req.user?.email) {
+      const agentRow = (await cx.query('SELECT matricule FROM agent WHERE lower(email)=lower($1) LIMIT 1', [req.user.email])).rows[0];
+      connectedUserMatricule = agentRow?.matricule || null;
     }
 
     // 2. Find related DOE/Affaire from the site
@@ -7122,14 +7159,18 @@ app.post('/api/demandes_client/:id/convert-to-ticket', authenticateToken, author
         "INSERT INTO ticket_responsable (ticket_id, agent_matricule, role) VALUES ($1, $2, $3)",
         [t.id, connectedUserMatricule, 'Principal']
       );
+      await cx.query(
+        "INSERT INTO ticket_agent (ticket_id, agent_matricule) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        [t.id, connectedUserMatricule]
+      );
     }
 
-    // 5. Update the original request to link it to the new ticket (status aligné sur le ticket)
-    await cx.query("UPDATE demande_client SET status=$1, updated_at=CURRENT_TIMESTAMP, ticket_id=$2 WHERE id=$3", [t.etat || 'Traité', t.id, id]);
+    // 5. Update the original request to link it to the new ticket
+    await cx.query("UPDATE demande_client SET status='Traitee', updated_at=CURRENT_TIMESTAMP, ticket_id=$1 WHERE id=$2", [t.id, id]);
     
     await cx.query('COMMIT');
     
-    return res.status(201).json({ ticket: t, demande: { id: d.id, status: 'Traité', ticket_id: t.id } });
+    return res.status(201).json({ ticket: t, demande: { id: d.id, status: 'Traitee', ticket_id: t.id } });
   } catch (e) {
     try { await cx.query('ROLLBACK'); } catch(_) {}
     console.error('demande convert:', e);

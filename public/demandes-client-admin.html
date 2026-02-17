@@ -56,10 +56,11 @@
             <label for="filterStatus" class="form-label">Filtrer par Statut:</label>
             <select id="filterStatus" class="form-select">
               <option value="">Tous</option>
-              <option value="En cours de traitement">En cours de traitement</option>
-              <option value="Traité">Traité</option>
-              <option value="Rejeté">Rejeté</option>
-              <option value="Annulé">Annulé</option>
+              <option value="En_cours">En cours</option>
+              <option value="En_attente">En attente</option>
+              <option value="Traitee">Traitée</option>
+              <option value="Rejetee">Rejetée</option>
+              <option value="Annule">Annulée</option>
             </select>
           </div>
           <div class="col-md-4">
@@ -102,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentFilter = { client: '', status: '', type: '' };
   let currentSort = { column: "id", direction: "desc" };
 
-    const statusSel = ['En cours de traitement', 'Traité', 'En attente', 'Annulé'];
+    const statusSel = ['En_cours', 'En_attente', 'Traitee', 'Rejetee', 'Annule'];
 
 
   async function fetchJSON(url, opts = {}) {
@@ -126,12 +127,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const col = document.createElement("div");
     col.className = "col";
 
+    const normalizedStatus = String(d.status || "")
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/\s+/g, '_');
     const badgeClass = (() => {
-      switch ((d.status || "").toLowerCase()) {
-        case "en cours de traitement": return "bg-info";
-        case "traité": return "bg-success";
-        case "en attente": return "bg-secondary";
-        case "annulé": return "bg-warning text-dark";
+      switch (normalizedStatus) {
+        case "en_cours":
+        case "en_cours_de_traitement": return "bg-info";
+        case "traitee":
+        case "traite": return "bg-success";
+        case "en_attente": return "bg-secondary";
+        case "rejetee":
+        case "rejete": return "bg-danger";
+        case "annule":
+        case "annulee": return "bg-warning text-dark";
         default: return "bg-light text-dark";
       }
     })();
@@ -151,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
 
         <div class="card-footer d-flex flex-wrap justify-content-end">
-          <button class="btn btn-sm btn-success mb-1 convert-btn" data-id="${d.id}" ${d.status === "Traité" ? "disabled" : ""}>
+          <button class="btn btn-sm btn-success mb-1 convert-btn" data-id="${d.id}" ${(normalizedStatus.startsWith("trait") || d.ticket_id) ? "disabled" : ""}>
             Convertir en ticket
           </button>
           <button class="btn btn-sm btn-danger mb-1 delete-btn" data-id="${d.id}">
@@ -170,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   async function updateStatus(d, status) {
-    if (["Rejeté", "Annulé"].includes(status)) {
+    if (["Rejetee", "Annule", "Rejeté", "Annulé"].includes(status)) {
       currentDemandId = d.id;
       currentDemandStatus = status;
       if (commentTextArea) commentTextArea.value = d.commentaire || "";
@@ -298,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (currentFilter.client) url += `client=${encodeURIComponent(currentFilter.client)}&`;
       if (currentFilter.status) url += `status=${encodeURIComponent(currentFilter.status)}&`;
       if (currentFilter.type) url += `type=${encodeURIComponent(currentFilter.type)}&`;
-      url += `sort=${currentSort.column},${currentSort.direction}`;
+      url += `sort=${encodeURIComponent(currentSort.column)}&direction=${encodeURIComponent(currentSort.direction)}`;
 
       let data = await fetchJSON(url);
       // Masquer les demandes déjà converties en ticket
