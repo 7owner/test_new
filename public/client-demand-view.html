@@ -468,7 +468,13 @@
           res = await fetch(`/api/demandes_client/${demandeId}`, { headers, credentials: 'same-origin', cache: 'reload' });
         }
         if (!res.ok) {
-          if ([401,403].includes(res.status)) location.href = '/login.html';
+          if (res.status === 401) {
+            location.href = '/login.html';
+            return;
+          }
+          if (res.status === 403) {
+            throw new Error("Accès refusé à cette demande. Vérifiez le compte client utilisé.");
+          }
           throw new Error(`HTTP ${res.status}`);
         }
         const payload = await res.json();

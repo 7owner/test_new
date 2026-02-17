@@ -7189,7 +7189,7 @@ async function canAccessDemandConversation(conversation_id, user) {
   if (!Number.isFinite(demandId)) return false;
   try {
     const d = (await pool.query(`
-      SELECT d.id, d.client_id, d.ticket_id, c.representant_email, t.responsable
+      SELECT d.id, d.client_id, d.ticket_id, c.user_id AS client_user_id, c.representant_email, t.responsable
       FROM demande_client d
       LEFT JOIN client c ON c.id=d.client_id
       LEFT JOIN ticket t ON t.id=d.ticket_id
@@ -7198,7 +7198,9 @@ async function canAccessDemandConversation(conversation_id, user) {
     `, [demandId])).rows[0];
     if (!d) return false;
     const email = (user && user.email || '').toLowerCase();
-    const isClient = email && d.representant_email && d.representant_email.toLowerCase() === email;
+    const isClientByUserId = !!(user && user.id && d.client_user_id && Number(user.id) === Number(d.client_user_id));
+    const isClientByEmail = !!(email && d.representant_email && d.representant_email.toLowerCase() === email);
+    const isClient = isClientByUserId || isClientByEmail;
     const isAdmin = Array.isArray(user && user.roles) && user.roles.includes('ROLE_ADMIN');
     const isResponsable = !!(user && user.matricule && d.responsable && d.responsable === user.matricule);
     return isAdmin || isClient || isResponsable;
