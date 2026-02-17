@@ -403,6 +403,13 @@ async function getClientIdsForUser(user) {
     return r.rows.map(row => row.id);
 }
 
+async function userOwnsClientId(user, clientId) {
+    if (!user || clientId == null) return false;
+    const clientIds = await getClientIdsForUser(user);
+    const targetId = String(clientId);
+    return clientIds.map(id => String(id)).includes(targetId);
+}
+
 // Simple audit helper
 async function logAudit(entity, entityId, action, actorEmail, details) {
     try {
@@ -6615,8 +6622,8 @@ app.get('/api/demandes_client/:id', authenticateToken, async (req, res) => {
         // Authorization check: Admin or owner of the demand
         const isAdmin = req.user.roles.includes('ROLE_ADMIN');
         if (!isAdmin) {
-            const clientIds = await getClientIdsForUser(req.user);
-            if (!clientIds.includes(demand.client_id)) {
+            const owns = await userOwnsClientId(req.user, demand.client_id);
+            if (!owns) {
                 return res.status(403).json({ error: 'Forbidden: You do not own this demand or lack admin privileges' });
             }
         }
@@ -6637,8 +6644,8 @@ app.get('/api/demandes_client/:id/relations', authenticateToken, async (req, res
     // Authorization check (admin or owner)
     const isAdmin = req.user.roles.includes('ROLE_ADMIN');
     if (!isAdmin) {
-      const clientIds = await getClientIdsForUser(req.user);
-      if (!clientIds.includes(demand.client_id)) return res.status(403).json({ error: 'Forbidden' });
+      const owns = await userOwnsClientId(req.user, demand.client_id);
+      if (!owns) return res.status(403).json({ error: 'Forbidden' });
     }
 
     // Ticket lié à la demande (si existe)
@@ -6770,11 +6777,7 @@ app.put('/api/demandes_client/:id', authenticateToken, async (req, res) => {
 
         // Authorization check
         if (!isAdmin) {
-            const client = (await pool.query('SELECT id, representant_email, user_id FROM client WHERE id=$1', [demandOwnerClientId])).rows[0];
-            const owns = client && (
-              (client.user_id && client.user_id === req.user.id) ||
-              (client.representant_email && req.user.email && client.representant_email.toLowerCase() === req.user.email.toLowerCase())
-            );
+            const owns = await userOwnsClientId(req.user, demandOwnerClientId);
             if (!owns) {
                 return res.status(403).json({ error: 'Forbidden: You do not own this demand or lack admin privileges' });
             }
