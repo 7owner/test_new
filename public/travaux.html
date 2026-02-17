@@ -649,7 +649,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-      const res = await fetch(`/api/travaux/${travailId}/relations`, { headers, credentials: 'same-origin' });
+      const res = await fetch(`/api/travaux/${travailId}`, { headers, credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) { location.href = '/login.html'; return; }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
