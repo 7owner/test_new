@@ -6592,7 +6592,7 @@ app.get('/api/demandes_client/mine', authenticateToken, async (req, res) => {
          FROM demande_client d
          LEFT JOIN site s ON s.id = d.site_id
          WHERE d.client_id = ANY($1)
-           AND (d.status IS NULL OR d.status <> 'Supprimée')
+           AND (d.status IS NULL OR d.status NOT ILIKE 'Supprim%')
          ORDER BY d.id DESC`,
         [clientIds]
       )).rows;
@@ -6917,7 +6917,7 @@ function normalizeDemandeStatus(input) {
     rejetee: 'Rejetee',
     annule: 'Annule',
     annulee: 'Annule',
-    supprimee: 'Supprimée',
+    supprimee: 'Supprimee',
     pas_commence: 'En_attente'
   };
   return map[key] || raw;
@@ -6955,7 +6955,7 @@ app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (req, r
       conditions.push(`d.status = $${params.length + 1}`);
       params.push(normalizedStatus);
     } else if (!String(include_deleted || '').toLowerCase().startsWith('t')) {
-      conditions.push(`d.status <> 'Supprimée'`);
+      conditions.push(`d.status NOT ILIKE 'Supprim%'`);
     }
     if (type && hasTypeDemande) {
       conditions.push(`d.type_demande = $${params.length + 1}`);
@@ -7049,8 +7049,8 @@ app.delete('/api/demandes_client/:id', authenticateToken, authorizeAdmin, async 
     }
 
     await logAudit('demande_client', id, 'DELETE', req.user.email, { justification });
-    // Soft delete: mark as Supprimée and store justification in commentaire
-    await cx.query("UPDATE demande_client SET status='Supprimée', commentaire=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2", [justification, id]);
+    // Soft delete: mark as deleted and store justification in commentaire
+    await cx.query("UPDATE demande_client SET status='Supprimee', commentaire=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2", [justification, id]);
     await cx.query('COMMIT');
     res.status(200).json({ message: 'Demand marked as deleted.' });
   } catch (e) {
@@ -7071,7 +7071,7 @@ app.get('/api/demandes_client/deleted', authenticateToken, authorizeAdmin, async
        LEFT JOIN client c ON c.id=d.client_id
        LEFT JOIN site s ON s.id=d.site_id
        LEFT JOIN audit_log a ON a.entity='demande_client' AND a.action='DELETE' AND a.entity_id=CAST(d.id AS TEXT)
-       WHERE d.status='Supprimée'
+       WHERE d.status ILIKE 'Supprim%'
        ORDER BY d.updated_at DESC
        LIMIT 200`
     );
@@ -7104,7 +7104,7 @@ app.get('/api/demandes_client/deleted', authenticateToken, authorizeAdmin, async
 app.post('/api/demandes_client/:id/restore', authenticateToken, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    const r = await pool.query("UPDATE demande_client SET status='En_cours', updated_at=CURRENT_TIMESTAMP WHERE id=$1 AND status='Supprimée' RETURNING *", [id]);
+    const r = await pool.query("UPDATE demande_client SET status='En_cours', updated_at=CURRENT_TIMESTAMP WHERE id=$1 AND status ILIKE 'Supprim%' RETURNING *", [id]);
     if (!r.rows[0]) return res.status(404).json({ error: 'Demande not found or not deleted' });
     res.json(r.rows[0]);
   } catch (e) {
