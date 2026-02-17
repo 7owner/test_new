@@ -143,9 +143,14 @@
             <h1><i class="bi bi-kanban me-2"></i>Tableau des travaux</h1>
             <small>Gérez vos travaux par état — Glissez-déposez pour modifier</small>
           </div>
-          <button class="btn btn-primary btn-sm" id="btn-new-travail">
-            <i class="bi bi-plus-lg me-1"></i>Nouveau travail
-          </button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm" id="btn-open-rasci">
+              <i class="bi bi-grid-3x3-gap me-1"></i>Matrice RASCI
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-new-travail">
+              <i class="bi bi-plus-lg me-1"></i>Nouveau travail
+            </button>
+          </div>
         </div>
         <div class="filters-section">
           <div class="row g-2">
@@ -559,6 +564,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const modalEl = document.getElementById('travailModal');
   const modalFrame = document.getElementById('travailModalFrame');
   const travailModal = modalEl ? new bootstrap.Modal(modalEl) : null;
+  const rasciModalEl = document.getElementById('rasciModal');
+  const rasciModal = rasciModalEl ? new bootstrap.Modal(rasciModalEl) : null;
+  const rasciTravailFilter = document.getElementById('rasci-travail-filter');
+  const rasciBody = document.getElementById('rasci-table-body');
+  const rasciEmpty = document.getElementById('rasci-empty');
 
   function openInModal(url) {
     if (!travailModal || !modalFrame) { window.location.href = url; return; }
@@ -613,11 +623,110 @@ document.addEventListener('DOMContentLoaded', async () => {
   filterSite?.addEventListener('blur', () => setTimeout(() => { if (sugSite) sugSite.innerHTML=''; }, 150));
 
   const btnNew = document.getElementById('btn-new-travail');
+  const btnOpenRasci = document.getElementById('btn-open-rasci');
   if (btnNew) {
     btnNew.addEventListener('click', (e) => {
       e.preventDefault();
       openInModal('/travaux-new.html');
     });
+  }
+
+  function buildRasciRow(name, roles) {
+    const letters = ['R', 'A', 'S', 'C', 'I'];
+    const cells = letters.map(l => `<td class="text-center fw-semibold">${roles.has(l) ? l : ''}</td>`).join('');
+    return `<tr><td>${name}</td>${cells}</tr>`;
+  }
+
+  async function renderRasciForTravail(travailId) {
+    if (!rasciBody || !rasciEmpty) return;
+    rasciBody.innerHTML = '';
+    rasciEmpty.classList.add('d-none');
+
+    if (!travailId) {
+      rasciEmpty.textContent = 'Veuillez sélectionner un travail.';
+      rasciEmpty.classList.remove('d-none');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/travaux/${travailId}/relations`, { headers, credentials: 'same-origin' });
+      if (res.status === 401 || res.status === 403) { location.href = '/login.html'; return; }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const rel = await res.json();
+      const actorMap = new Map();
+      const ensure = (name) => {
+        const key = (name || '').trim();
+        if (!key) return null;
+        if (!actorMap.has(key)) actorMap.set(key, new Set());
+        return actorMap.get(key);
+      };
+
+      const responsables = Array.isArray(rel.responsables) ? rel.responsables : [];
+      responsables.forEach(r => {
+        const label = formatResp(r) || r?.agent_matricule || r?.matricule || r?.email || '';
+        const set = ensure(label);
+        if (!set) return;
+        const role = normalizeTxt(r?.role || '');
+        if (role.includes('principal')) {
+          set.add('A');
+          set.add('R');
+        } else {
+          set.add('R');
+        }
+      });
+
+      const agents = Array.isArray(rel.agents_assignes) ? rel.agents_assignes : [];
+      agents.forEach(a => {
+        const label = formatResp(a) || a?.agent_matricule || a?.matricule || '';
+        const set = ensure(label);
+        if (set) set.add('S');
+      });
+
+      const demandes = Array.isArray(rel.demandes_client) ? rel.demandes_client : [];
+      demandes.forEach(d => {
+        const label = d?.representant_email || d?.nom_client || (d?.client_id ? `Client #${d.client_id}` : '');
+        const set = ensure(label);
+        if (set) set.add('C');
+      });
+
+      const support = ensure('Support / Coordination');
+      if (support) support.add('I');
+
+      if (!actorMap.size) {
+        rasciEmpty.textContent = 'Aucune donnée RASCI disponible pour ce travail.';
+        rasciEmpty.classList.remove('d-none');
+        return;
+      }
+
+      actorMap.forEach((roles, actor) => {
+        rasciBody.insertAdjacentHTML('beforeend', buildRasciRow(actor, roles));
+      });
+    } catch (err) {
+      console.error('Erreur chargement RASCI', err);
+      rasciEmpty.textContent = `Erreur chargement RASCI: ${err.message || 'inconnue'}`;
+      rasciEmpty.classList.remove('d-none');
+    }
+  }
+
+  function openRasciModal() {
+    if (!rasciModal || !rasciTravailFilter) return;
+    rasciTravailFilter.innerHTML = '<option value="">Sélectionner un travail</option>' +
+      (travauxCache || []).map(t => `<option value="${t.id}">#${t.id} - ${t.titre || 'Sans titre'}</option>`).join('');
+    rasciTravailFilter.value = '';
+    renderRasciForTravail('');
+    rasciModal.show();
+  }
+
+  if (btnOpenRasci) {
+    btnOpenRasci.addEventListener('click', (e) => {
+      e.preventDefault();
+      openRasciModal();
+    });
+  }
+
+  if (rasciTravailFilter) {
+    rasciTravailFilter.addEventListener('change', () => renderRasciForTravail(rasciTravailFilter.value));
   }
 
   // Autres triggers
@@ -740,6 +849,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div class="modal-body p-0">
           <iframe id="travailModalFrame" src="about:blank" style="width:100%;height:80vh;border:none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Matrice RASCI -->
+  <div class="modal fade" id="rasciModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-grid-3x3-gap me-2"></i>Matrice RASCI (filtrée par travail)</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="rasci-travail-filter">Travail</label>
+            <select id="rasci-travail-filter" class="form-select">
+              <option value="">Sélectionner un travail</option>
+            </select>
+          </div>
+
+          <div id="rasci-empty" class="alert alert-secondary d-none mb-3"></div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Acteur</th>
+                  <th class="text-center">R</th>
+                  <th class="text-center">A</th>
+                  <th class="text-center">S</th>
+                  <th class="text-center">C</th>
+                  <th class="text-center">I</th>
+                </tr>
+              </thead>
+              <tbody id="rasci-table-body"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
