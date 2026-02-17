@@ -209,16 +209,9 @@
   <div class="main-card d-none" id="facture-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
       <h4 class="mb-0 d-flex align-items-center"><i class="bi bi-receipt me-2"></i>Facture intervention</h4>
-      <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-light text-primary fw-semibold shadow-sm" id="save-facture-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
-        <button class="btn btn-sm btn-outline-light border-light" id="toggle-facture-btn"><i class="bi bi-eye"></i> Voir</button>
-      </div>
+      <button class="btn btn-sm btn-outline-light" id="toggle-facture-btn"><i class="bi bi-eye"></i> Voir</button>
     </div>
     <div class="card-body p-4" id="facture-body" style="display:none;">
-      <div class="input-group input-group-sm mb-3" style="max-width:380px;">
-        <span class="input-group-text"><i class="bi bi-type"></i></span>
-        <input type="text" class="form-control" id="facture-title-input" placeholder="Titre / Référence de la facture">
-      </div>
       <div class="row g-3">
         <div class="col-md-6">
           <div class="p-3 bg-light border rounded h-100">
@@ -464,42 +457,6 @@
   </div>
 </div>
 
-<!-- Modal Représentant -->
-<div class="modal fade" id="repModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="repModalTitle">Ajouter un représentant</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="rep-id">
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Nom</label>
-          <input type="text" class="form-control" id="rep-nom">
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Email</label>
-          <input type="email" class="form-control" id="rep-email">
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Téléphone</label>
-          <input type="text" class="form-control" id="rep-tel">
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Fonction</label>
-          <input type="text" class="form-control" id="rep-fonction">
-        </div>
-        <div id="rep-feedback" class="small d-none"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-        <button type="button" class="btn btn-gradient" id="save-rep-btn">Enregistrer</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Modale ajout agent -->
 <div class="modal fade" id="addAgentModal" tabindex="-1" aria-labelledby="addAgentModalLabel" aria-hidden="true">
   <div class="modal-dialog">
@@ -629,7 +586,6 @@ document.addEventListener('DOMContentLoaded', async function () {
   const factureBody = document.getElementById('facture-body');
   const factureBtn = document.getElementById('toggle-facture-btn');
   // Inputs facture (sécurisés avec fallback null)
-  const factureTitleInput = document.getElementById('facture-title-input') || null;
   const factureHoursInput = document.getElementById('facture-hours-input') || null;
   const factureHoursAutoEl = document.getElementById('facture-hours-auto') || null;
   const factureRateInput = document.getElementById('facture-rate') || null;
@@ -956,9 +912,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   let ticketId = null;
   let demandeId = null;
-  let clientId = null;
-  let affaireId = null;
-  let factureRecordId = null;
   let interventionMetier = null; // To store the metier of the current intervention
   let allAgents = [];
   let materielsCache = []; // Materiels already linked to this intervention
@@ -1138,100 +1091,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   }
 
-  async function loadFactureForIntervention() {
-    if (!interventionId) return;
-    try {
-      const allFactures = await fetchJSON('/api/factures');
-      const existing = (allFactures || []).find(f => String(f.intervention_id) === String(interventionId));
-      if (existing) {
-        factureRecordId = existing.id;
-        factureCard?.classList.remove('d-none');
-        // Pré-remplir les champs si présents
-        if (factureTitleInput) factureTitleInput.value = existing.titre || existing.reference || '';
-        if (factureHoursInput && existing.heures_saisies != null) factureHoursInput.value = existing.heures_saisies;
-        if (factureRateInput && existing.taux_horaire != null) factureRateInput.value = existing.taux_horaire;
-        if (factureMatTauxInput && existing.taux_majoration_materiel != null) factureMatTauxInput.value = existing.taux_majoration_materiel;
-        if (factureDeplQtyInput && existing.deplacement_qte != null) factureDeplQtyInput.value = existing.deplacement_qte;
-        if (factureDeplPuInput && existing.deplacement_pu != null) factureDeplPuInput.value = existing.deplacement_pu;
-        if (factureDiversInput && existing.divers_ht != null) factureDiversInput.value = existing.divers_ht;
-        if (factureTvaInput && existing.tva_taux != null) factureTvaInput.value = existing.tva_taux;
-        renderFactureTotals();
-      }
-    } catch (e) {
-      console.warn('Impossible de charger la facture existante', e);
-    }
-  }
-
-  async function saveFacture() {
-    if (!interventionId || !isAdmin) {
-      alert('Action réservée aux administrateurs.');
-      return;
-    }
-    // Recalcule les totaux pour sauvegarder des valeurs cohérentes
-    renderFactureTotals();
-    const hours = parseFloat(factureHoursInput?.value || '0') || 0;
-    const rate = parseFloat(factureRateInput?.value || '0') || 0;
-    const matTaux = parseFloat(factureMatTauxInput?.value || '0') || 0;
-    const deplQty = parseFloat(factureDeplQtyInput?.value || '0') || 0;
-    const deplPu  = parseFloat(factureDeplPuInput?.value || '0') || 0;
-    const divers  = parseFloat(factureDiversInput?.value || '0') || 0;
-    const tva     = parseFloat(factureTvaInput?.value || '0') || 0;
-
-    const totalHeures = hours * rate;
-    const totalMatHT  = factureMatTotalValue + (factureMatTotalValue * (matTaux/100));
-    const totalDepl   = deplQty * deplPu;
-    const totalHT     = totalHeures + totalMatHT + totalDepl + divers;
-    const totalTVA    = totalHT * (tva/100);
-    const totalTTC    = totalHT + totalTVA;
-
-    // Heures calculées (auto) depuis l'élément affiché si dispo
-    let heuresCalculees = 0;
-    if (factureHoursAutoEl) {
-      const parsed = parseFloat((factureHoursAutoEl.textContent || '').replace(/[^\d.,-]/g,'').replace(',','.'));
-      if (!Number.isNaN(parsed)) heuresCalculees = parsed;
-    }
-
-    const titreFacture = factureTitleInput?.value?.trim() || null;
-
-    const payload = {
-      titre: titreFacture,
-      reference: titreFacture,
-      intervention_id: interventionId,
-      client_id: clientId || null,
-      affaire_id: affaireId || null,
-      heures_saisies: hours,
-      heures_calculees: heuresCalculees,
-      taux_horaire: rate,
-      total_heures_ht: totalHeures,
-      taux_majoration_materiel: matTaux,
-      total_materiel_ht: totalMatHT,
-      deplacement_qte: deplQty,
-      deplacement_pu: deplPu,
-      divers_ht: divers,
-      tva_taux: tva,
-      total_deplacement_ht: totalDepl,
-      total_tva: totalTVA,
-      total_ht: totalHT,
-      total_ttc: totalTTC,
-      statut: 'Emise'
-    };
-
-    try {
-      const url = factureRecordId ? `/api/factures/${factureRecordId}` : '/api/factures';
-      const method = factureRecordId ? 'PUT' : 'POST';
-      const res = await fetchJSON(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (res?.id) factureRecordId = res.id;
-      alert('Facture enregistrée avec succès.');
-    } catch (e) {
-      console.error(e);
-      alert(`Échec de l'enregistrement de la facture : ${e.message}`);
-    }
-  }
-
   // Matériels pour facture (liste validée)
   const factureMatList = document.getElementById('facture-mat-list');
   const factureMatTotal = document.getElementById('facture-mat-total');
@@ -1268,11 +1127,6 @@ document.addEventListener('DOMContentLoaded', async function () {
       factureBody.style.display = isHidden ? 'block' : 'none';
       factureBtn.innerHTML = isHidden ? '<i class="bi bi-eye-slash"></i> Masquer' : '<i class="bi bi-eye"></i> Voir';
     });
-  }
-
-  const saveFactureBtn = document.getElementById('save-facture-btn');
-  if (saveFactureBtn) {
-    saveFactureBtn.addEventListener('click', saveFacture);
   }
 
   // --- Material Request / Catalog Logic ---
@@ -1768,8 +1622,6 @@ document.addEventListener('DOMContentLoaded', async function () {
       const it = rel.intervention;
       ticketId  = rel.ticket ? rel.ticket.id : null;
       demandeId = rel.ticket ? rel.ticket.demande_id : null;
-      clientId  = rel.ticket ? rel.ticket.client_id : null;
-      affaireId = rel.ticket ? rel.ticket.affaire_id : null;
       interventionMetier = it.metier || null; // Store the metier of the current intervention
 
       const statusText = it.status || it.statut || '—';
@@ -1796,9 +1648,6 @@ document.addEventListener('DOMContentLoaded', async function () {
       if (it.date_fin && factureCard) {
         factureCard.classList.remove('d-none');
       }
-
-      // Charger la facture existante liée à cette intervention (si elle existe)
-      loadFactureForIntervention();
       // Heures auto (si début/fin connus)
       if (factureHoursAutoEl) {
         if (it.date_debut && it.date_fin) {

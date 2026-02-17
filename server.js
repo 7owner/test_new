@@ -6901,8 +6901,18 @@ app.delete('/api/demandes-client-travaux/:id', authenticateToken, authorizeAdmin
 app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
     const { client, status, sort, direction, include_deleted, type } = req.query;
+    const hasTypeDemande = (await pool.query(
+      `SELECT 1
+       FROM information_schema.columns
+       WHERE table_schema='public'
+         AND table_name='demande_client'
+         AND column_name='type_demande'
+       LIMIT 1`
+    )).rows.length > 0;
+
     let query = `
-      SELECT d.*, c.nom_client, c.representant_email, s.nom_site, d.type_demande
+      SELECT d.*, c.nom_client, c.representant_email, s.nom_site
+      ${hasTypeDemande ? ', d.type_demande' : ''}
       FROM demande_client d
       LEFT JOIN client c ON d.client_id=c.id
       LEFT JOIN site s   ON d.site_id=s.id
@@ -6920,7 +6930,7 @@ app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (req, r
     } else if (!String(include_deleted || '').toLowerCase().startsWith('t')) {
       conditions.push(`d.status <> 'Supprimée'`);
     }
-    if (type) {
+    if (type && hasTypeDemande) {
       conditions.push(`d.type_demande = $${params.length + 1}`);
       params.push(type);
     }
@@ -6933,9 +6943,16 @@ app.get('/api/demandes_client', authenticateToken, authorizeAdmin, async (req, r
     let orderDirection = 'DESC';
 
     if (sort) {
-    const allowedSortColumns = ['id', 'nom_client', 'site_id', 'status', 'created_at', 'type_demande'];
-      if (allowedSortColumns.includes(sort)) {
-        orderBy = `d.${sort}`;
+      const sortMap = {
+        id: 'd.id',
+        nom_client: 'c.nom_client',
+        site_id: 'd.site_id',
+        status: 'd.status',
+        created_at: 'd.created_at',
+        ...(hasTypeDemande ? { type_demande: 'd.type_demande' } : {})
+      };
+      if (sortMap[sort]) {
+        orderBy = sortMap[sort];
       }
     }
     if (direction && ['asc', 'desc'].includes(direction.toLowerCase())) {
