@@ -260,6 +260,10 @@
               <div>TVA : <span id="facture-total-tva">0€</span></div>
               <div>Total TTC : <strong id="facture-total-ttc">0€</strong></div>
             </div>
+            <div class="mt-3">
+              <label for="facture-title-input" class="form-label small mb-1">Titre de la facture</label>
+              <input type="text" class="form-control form-control-sm" id="facture-title-input" placeholder="Ex: Facture intervention site Lyon">
+            </div>
             <div class="mt-3 d-flex align-items-center gap-2">
               <button type="button" class="btn btn-primary btn-sm" id="save-facture-btn">
                 <i class="bi bi-save me-1"></i>Enregistrer la facture
@@ -574,6 +578,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const factureTotalHtEl = document.getElementById('facture-total-ht') || null;
   const factureTotalTvaEl = document.getElementById('facture-total-tva') || null;
   const factureTotalTtcEl = document.getElementById('facture-total-ttc') || null;
+  const factureTitleInput = document.getElementById('facture-title-input') || null;
   const saveFactureBtn = document.getElementById('save-facture-btn') || null;
   const factureSaveStatus = document.getElementById('facture-save-status') || null;
   const rendusBody = document.getElementById('rendus-body');
@@ -1097,8 +1102,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     const dd = String(now.getDate()).padStart(2, '0');
     const date_emission = `${yyyy}-${mm}-${dd}`;
 
+    const titre = (factureTitleInput?.value || '').trim();
     return {
-      titre: `Facture intervention #${interventionId}`,
+      titre: titre || `Facture intervention #${interventionId}`,
       reference: `FAC-INT-${interventionId}-${Date.now()}`,
       statut: 'Brouillon',
       date_emission,
@@ -1970,6 +1976,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     } else {
       saveFactureBtn.addEventListener('click', async () => {
         try {
+          const titre = (factureTitleInput?.value || '').trim();
+          if (!titre) {
+            alert('Veuillez renseigner un titre de facture avant enregistrement.');
+            factureTitleInput?.focus();
+            return;
+          }
           saveFactureBtn.disabled = true;
           if (factureSaveStatus) factureSaveStatus.textContent = 'Enregistrement...';
           const payload = buildFacturePayload();
