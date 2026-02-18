@@ -765,10 +765,20 @@
                   <i class="bi bi-lock me-1"></i>Verrouillée
                 </button>`;
             const siteLabel = d.nom_site || d.site_nom;
-            const travauxBadges = (Array.isArray(d.travaux_associes) ? d.travaux_associes : []).map(t => {
-              const lbl = t.travaux_titre || (t.travaux_id ? `Travaux #${t.travaux_id}` : 'Travaux');
-              return `<span class="badge bg-info text-dark">${lbl}</span>`;
-            }).join(' ');
+            const linkedTravaux = Array.isArray(d.travaux_associes) ? d.travaux_associes : [];
+            const travauxHtml = linkedTravaux.length
+              ? linkedTravaux.map(t => {
+                  const lbl = t.travaux_titre || (t.travaux_id ? `Travaux #${t.travaux_id}` : 'Travaux');
+                  const etat = t.travaux_etat || '—';
+                  const priorite = t.travaux_priorite || '—';
+                  return `
+                    <div class="small border rounded p-2 mb-1 bg-light">
+                      <div class="fw-semibold"><i class="bi bi-hammer me-1"></i>${lbl}</div>
+                      <div class="text-muted">Statut: ${etat} • Priorité: ${priorite}</div>
+                    </div>
+                  `;
+                }).join('')
+              : `<div class="small text-muted border rounded p-2 bg-light">Aucun travaux lié à cette demande.</div>`;
 
             return `
             <div class="demand-card animate-in">
@@ -784,7 +794,10 @@
                     <span><i class="bi bi-calendar-event me-1"></i>Créée le ${new Date(d.created_at).toLocaleDateString('fr-FR')}</span>
                     ${siteLabel ? `<span><i class="bi bi-geo-alt me-1"></i>${siteLabel}</span>` : ''}
                   </div>
-                  ${travauxBadges ? `<div class="d-flex flex-wrap gap-1 mt-1">${travauxBadges}</div>` : ''}
+                  <div class="mt-2">
+                    <div class="small fw-semibold mb-1"><i class="bi bi-link-45deg me-1"></i>Travaux liés (${linkedTravaux.length})</div>
+                    ${travauxHtml}
+                  </div>
                 </div>
               </div>
               <div class="d-flex flex-wrap gap-2 justify-content-end mt-3">

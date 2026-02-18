@@ -17,9 +17,9 @@ END $$;
 
 -- 2) Utilisateurs
 INSERT INTO users (email, roles, password, role, nom) VALUES
-('maboujunior777@gmail.com', '["ROLE_ADMIN"]'::jsonb, '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq', 'ADMIN', 'Admin Mabou'),
-('channelhongnia@gmail.com',   '["ROLE_ADMIN"]'::jsonb, '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq', 'ADMIN', 'Admin Channel'),
-('takotuemabou@outlook.com',   '["ROLE_USER"]'::jsonb,  '$2b$10$FzYl.RlTXgB/sPKe7phzJuXk.uUfXWDWnevVIB4MuXc2NoIOW2WKq', 'USER',  'Client Takot');
+('maboujunior777@gmail.com', '["ROLE_ADMIN"]'::jsonb, '$2b$10$ZVi8PZCnI9RKYxXlUW7kUu3M98YhUipLuqnCb/X0JB0MfgqsKBn1W', 'ADMIN', 'Admin Mabou'),
+('channelhongnia@gmail.com',   '["ROLE_ADMIN"]'::jsonb, '$2b$10$ZVi8PZCnI9RKYxXlUW7kUu3M98YhUipLuqnCb/X0JB0MfgqsKBn1W', 'ADMIN', 'Admin Channel'),
+('takotuemabou@outlook.com',   '["ROLE_CLIENT"]'::jsonb,  '$2b$10$ZVi8PZCnI9RKYxXlUW7kUu3M98YhUipLuqnCb/X0JB0MfgqsKBn1W', 'USER',  'Client Takot');
 
 -- 3) Adresses / agences
 INSERT INTO adresse (libelle, ligne1, code_postal, ville, pays) VALUES
@@ -71,6 +71,53 @@ INSERT INTO site_responsable (site_id, agent_matricule, role, date_debut)
 VALUES
 ((SELECT id FROM site WHERE nom_site='Site Paris 1'), 'AGT001', 'Principal', now()),
 ((SELECT id FROM site WHERE nom_site='Site Lyon 1'),  'AGT002', 'Principal', now());
+
+-- 6) Associations + relations
+INSERT INTO association (titre, email_comptabilite, adresse_id)
+VALUES
+('Association ACME Paris', 'compta-acme@example.com', (SELECT id FROM adresse WHERE libelle='Siege' LIMIT 1)),
+('Association BETA Lille', 'compta-beta@example.com', (SELECT id FROM adresse WHERE libelle='Entrepot' LIMIT 1));
+
+INSERT INTO client_association (client_id, association_id)
+VALUES
+((SELECT id FROM client WHERE nom_client='Client ACME'), (SELECT id FROM association WHERE titre='Association ACME Paris')),
+((SELECT id FROM client WHERE nom_client='Client BETA'), (SELECT id FROM association WHERE titre='Association BETA Lille'));
+
+INSERT INTO association_site (association_id, site_id)
+VALUES
+((SELECT id FROM association WHERE titre='Association ACME Paris'), (SELECT id FROM site WHERE nom_site='Site Paris 1')),
+((SELECT id FROM association WHERE titre='Association ACME Paris'), (SELECT id FROM site WHERE nom_site='Site Lyon 1')),
+((SELECT id FROM association WHERE titre='Association BETA Lille'), (SELECT id FROM site WHERE nom_site='Site Lille 1'));
+
+INSERT INTO association_responsable (association_id, agent_matricule)
+VALUES
+((SELECT id FROM association WHERE titre='Association ACME Paris'), 'AGT001'),
+((SELECT id FROM association WHERE titre='Association BETA Lille'), 'AGT002');
+
+INSERT INTO association_agent (association_id, agent_matricule)
+VALUES
+((SELECT id FROM association WHERE titre='Association ACME Paris'), 'AGT003'),
+((SELECT id FROM association WHERE titre='Association ACME Paris'), 'AGT005'),
+((SELECT id FROM association WHERE titre='Association BETA Lille'), 'AGT004');
+
+-- 6) Contrats + relations
+INSERT INTO contrat (titre, client_id, site_id, date_debut, date_fin, metier, type)
+VALUES
+('Contrat ACME Paris 2026', (SELECT id FROM client WHERE nom_client='Client ACME'), (SELECT id FROM site WHERE nom_site='Site Paris 1'), DATE '2026-01-01', DATE '2026-12-31', 'GTB', 'Maintenance'),
+('Contrat ACME Lyon 2026',  (SELECT id FROM client WHERE nom_client='Client ACME'), (SELECT id FROM site WHERE nom_site='Site Lyon 1'),  DATE '2026-01-01', DATE '2026-12-31', 'Video', 'Maintenance'),
+('Contrat BETA Lille 2026', (SELECT id FROM client WHERE nom_client='Client BETA'), (SELECT id FROM site WHERE nom_site='Site Lille 1'), DATE '2026-02-01', DATE '2026-12-31', 'GTB', 'Projet');
+
+INSERT INTO client_contrat (client_id, contrat_id)
+VALUES
+((SELECT id FROM client WHERE nom_client='Client ACME'), (SELECT id FROM contrat WHERE titre='Contrat ACME Paris 2026')),
+((SELECT id FROM client WHERE nom_client='Client ACME'), (SELECT id FROM contrat WHERE titre='Contrat ACME Lyon 2026')),
+((SELECT id FROM client WHERE nom_client='Client BETA'), (SELECT id FROM contrat WHERE titre='Contrat BETA Lille 2026'));
+
+INSERT INTO contrat_site_association (contrat_id, site_id)
+VALUES
+((SELECT id FROM contrat WHERE titre='Contrat ACME Paris 2026'), (SELECT id FROM site WHERE nom_site='Site Paris 1')),
+((SELECT id FROM contrat WHERE titre='Contrat ACME Lyon 2026'),  (SELECT id FROM site WHERE nom_site='Site Lyon 1')),
+((SELECT id FROM contrat WHERE titre='Contrat BETA Lille 2026'), (SELECT id FROM site WHERE nom_site='Site Lille 1'));
 
 -- 6) Affaires / DOE / rattachements
 INSERT INTO affaire (nom_affaire, numero_affaire, client_id, description) VALUES
@@ -223,12 +270,38 @@ VALUES
 ('DOE', (SELECT id FROM doe WHERE titre='DOE Paris 2026'), 'plan_site_paris.pdf', 'application/pdf', 'Plan detaille du site Paris', 'AGT002'),
 ('Ticket', (SELECT id FROM ticket WHERE titre='Ticket Semaine 42'), 'checklist_ticket_42.pdf', 'application/pdf', 'Checklist de suivi', 'AGT001');
 
+-- 13) Messagerie demande client
+INSERT INTO messagerie (conversation_id, sender_id, receiver_id, ticket_id, demande_id, client_id, body, is_read, created_at)
+VALUES
+('demande-1', (SELECT id FROM users WHERE email='takotuemabou@outlook.com'), (SELECT id FROM users WHERE email='maboujunior777@gmail.com'),
+ (SELECT id FROM ticket WHERE titre='Ticket Semaine 42'), (SELECT id FROM demande_client WHERE titre='Demande de capteurs'), (SELECT id FROM client WHERE nom_client='Client ACME'),
+ 'Bonjour, pouvez-vous confirmer la prise en charge de ma demande de capteurs ?', TRUE, now() - interval '3 days'),
+('demande-1', (SELECT id FROM users WHERE email='maboujunior777@gmail.com'), (SELECT id FROM users WHERE email='takotuemabou@outlook.com'),
+ (SELECT id FROM ticket WHERE titre='Ticket Semaine 42'), (SELECT id FROM demande_client WHERE titre='Demande de capteurs'), (SELECT id FROM client WHERE nom_client='Client ACME'),
+ 'Oui, la demande est bien prise en charge. Intervention planifiee.', TRUE, now() - interval '2 days 22 hours'),
+('demande-1', (SELECT id FROM users WHERE email='takotuemabou@outlook.com'), (SELECT id FROM users WHERE email='maboujunior777@gmail.com'),
+ (SELECT id FROM ticket WHERE titre='Ticket Semaine 42'), (SELECT id FROM demande_client WHERE titre='Demande de capteurs'), (SELECT id FROM client WHERE nom_client='Client ACME'),
+ 'Parfait, merci pour le retour.', FALSE, now() - interval '2 days 20 hours'),
+('demande-2', (SELECT id FROM users WHERE email='takotuemabou@outlook.com'), (SELECT id FROM users WHERE email='channelhongnia@gmail.com'),
+ (SELECT id FROM ticket WHERE titre='Ticket Urgent Camera'), (SELECT id FROM demande_client WHERE titre='Probleme camera'), (SELECT id FROM client WHERE nom_client='Client ACME'),
+ 'La camera est toujours en panne. Avez-vous une date ?', TRUE, now() - interval '1 day 8 hours'),
+('demande-2', (SELECT id FROM users WHERE email='channelhongnia@gmail.com'), (SELECT id FROM users WHERE email='takotuemabou@outlook.com'),
+ (SELECT id FROM ticket WHERE titre='Ticket Urgent Camera'), (SELECT id FROM demande_client WHERE titre='Probleme camera'), (SELECT id FROM client WHERE nom_client='Client ACME'),
+ 'Remplacement prevu demain matin.', FALSE, now() - interval '1 day 6 hours'),
+('demande-3', (SELECT id FROM users WHERE email='takotuemabou@outlook.com'), (SELECT id FROM users WHERE email='maboujunior777@gmail.com'),
+ (SELECT id FROM ticket WHERE titre='Ticket Preventif Paris'), (SELECT id FROM demande_client WHERE titre='Maintenance preventive'), (SELECT id FROM client WHERE nom_client='Client ACME'),
+ 'Merci pour la maintenance preventive.', TRUE, now() - interval '12 hours'),
+('demande-3', (SELECT id FROM users WHERE email='maboujunior777@gmail.com'), (SELECT id FROM users WHERE email='takotuemabou@outlook.com'),
+ (SELECT id FROM ticket WHERE titre='Ticket Preventif Paris'), (SELECT id FROM demande_client WHERE titre='Maintenance preventive'), (SELECT id FROM client WHERE nom_client='Client ACME'),
+ 'Avec plaisir, le ticket est cloture.', FALSE, now() - interval '10 hours');
+
 COMMIT;
 
--- 13) Contrôles de cohérence rapides
+-- 14) Contrôles de cohérence rapides
 SELECT 'users' AS table_name, count(*) AS n FROM users
 UNION ALL SELECT 'agent', count(*) FROM agent
 UNION ALL SELECT 'client', count(*) FROM client
+UNION ALL SELECT 'association', count(*) FROM association
 UNION ALL SELECT 'site', count(*) FROM site
 UNION ALL SELECT 'affaire', count(*) FROM affaire
 UNION ALL SELECT 'doe', count(*) FROM doe
@@ -237,4 +310,5 @@ UNION ALL SELECT 'ticket', count(*) FROM ticket
 UNION ALL SELECT 'ticket_agent', count(*) FROM ticket_agent
 UNION ALL SELECT 'intervention', count(*) FROM intervention
 UNION ALL SELECT 'travaux', count(*) FROM travaux
-UNION ALL SELECT 'demande_client_travaux', count(*) FROM demande_client_travaux;
+UNION ALL SELECT 'demande_client_travaux', count(*) FROM demande_client_travaux
+UNION ALL SELECT 'messagerie', count(*) FROM messagerie;

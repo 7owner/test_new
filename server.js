@@ -6590,7 +6590,16 @@ app.get('/api/demandes_client/mine', authenticateToken, async (req, res) => {
                 s.nom_site AS site_nom,
                 COALESCE(
                   (
-                    SELECT json_agg(json_build_object('travaux_id', tr.id, 'travaux_titre', tr.titre, 'link_id', dct.id))
+                    SELECT json_agg(
+                      json_build_object(
+                        'travaux_id', tr.id,
+                        'travaux_titre', tr.titre,
+                        'travaux_etat', tr.etat,
+                        'travaux_priorite', tr.priorite,
+                        'travaux_date_echeance', tr.date_echeance,
+                        'link_id', dct.id
+                      )
+                    )
                     FROM demande_client_travaux dct
                     JOIN travaux tr ON tr.id = dct.travaux_id
                     WHERE dct.demande_id = d.id

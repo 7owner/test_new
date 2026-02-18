@@ -359,38 +359,6 @@
     </div>
   </div>
 
-  <!-- ✅ Représentants client -->
-  <div class="main-card">
-    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <span class="d-flex align-items-center gap-2"><i class="bi bi-people-fill"></i>Représentants du client</span>
-      <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-outline-light" id="toggle-reps-btn"><i class="bi bi-eye"></i> Voir</button>
-        <button class="btn btn-sm btn-light" id="add-rep-btn"><i class="bi bi-person-plus"></i> Ajouter</button>
-      </div>
-    </div>
-    <div class="card-body p-4" id="reps-body">
-      <div id="reps-list" class="row g-3">
-        <div class="text-muted">Aucun représentant.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ✅ Documents associés -->
-  <div class="main-card">
-    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <span><i class="bi bi-folder2-open me-2"></i>Documents associés</span>
-      <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-outline-light" id="toggle-docs-btn"><i class="bi bi-eye"></i> Voir</button>
-        <button id="add-document-btn" class="btn btn-light btn-sm">
-          <i class="bi bi-plus-circle me-1"></i>Ajouter un document
-        </button>
-      </div>
-    </div>
-    <div class="card-body p-4" id="docs-body">
-      <div id="documents-list"></div>
-    </div>
-  </div>
-
 </div>
 
 <!-- Modal Demander Matériel -->
@@ -1514,6 +1482,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   }
 
   function displayDocuments(documents = []) {
+    if (!documentsList) return;
     documentsList.innerHTML = '';
     if (!documents.length) {
       documentsList.innerHTML = '<p class="text-muted mb-0">Aucun document associé.</p>';

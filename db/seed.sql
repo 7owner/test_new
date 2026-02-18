@@ -1,15 +1,15 @@
--- --------------------------------------------------
+﻿-- --------------------------------------------------
 -- Data seeding for the application (Node.js compatible)
 -- --------------------------------------------------
 
 -- Seed addresses
 INSERT INTO adresse (libelle, ligne1, code_postal, ville, pays)
-SELECT 'Siège', '10 Rue Centrale', '75001', 'Paris', 'France'
-WHERE NOT EXISTS (SELECT 1 FROM adresse WHERE libelle = 'Siège');
+SELECT 'SiÃ¨ge', '10 Rue Centrale', '75001', 'Paris', 'France'
+WHERE NOT EXISTS (SELECT 1 FROM adresse WHERE libelle = 'SiÃ¨ge');
 
 INSERT INTO adresse (libelle, ligne1, code_postal, ville, pays)
-SELECT 'Entrepôt', '25 Avenue des Champs', '69001', 'Lyon', 'France'
-WHERE NOT EXISTS (SELECT 1 FROM adresse WHERE libelle = 'Entrepôt');
+SELECT 'EntrepÃ´t', '25 Avenue des Champs', '69001', 'Lyon', 'France'
+WHERE NOT EXISTS (SELECT 1 FROM adresse WHERE libelle = 'EntrepÃ´t');
 
 -- Seed agencies
 INSERT INTO agence (titre, designation, telephone, email)
@@ -23,22 +23,22 @@ WHERE NOT EXISTS (SELECT 1 FROM agence WHERE titre = 'Agence Lyon');
 -- Seed users (for admin and non-admin roles)
 -- Passwords are bcrypt hashed (cost=10) to avoid storing plaintext credentials
 INSERT INTO users (email, roles, password)
-SELECT 'maboujunior777@gmail.com', '["ROLE_ADMIN"]', '$2b$10$366vQ5ecgqIKKzKy8uPd.u7S63i2ngqJkfkIxg6yPxF1ccmX3fDIq'
+SELECT 'maboujunior777@gmail.com', '["ROLE_ADMIN"]', '$2b$10$ZVi8PZCnI9RKYxXlUW7kUu3M98YhUipLuqnCb/X0JB0MfgqsKBn1W'
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'maboujunior777@gmail.com');
 
 INSERT INTO users (email, roles, password)
-SELECT 'takotuemabou@outlook.com', '["ROLE_USER"]', '$2b$10$FzYl.RlTXgB/sPKe7phzJuXk.uUfXWDWnevVIB4MuXc2NoIOW2WKq'
+SELECT 'takotuemabou@outlook.com', '["ROLE_CLIENT"]', '$2b$10$ZVi8PZCnI9RKYxXlUW7kUu3M98YhUipLuqnCb/X0JB0MfgqsKBn1W'
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'takotuemabou@outlook.com');
 
 -- Seed agents
--- AGT001 mappé à l'utilisateur ROLE_USER (takotuemabou@outlook.com)
+-- AGT001 mappÃ© Ã  l'utilisateur ROLE_USER (takotuemabou@outlook.com)
 INSERT INTO agent (matricule, nom, prenom, admin, email, tel, actif, agence_id, user_id)
 SELECT 'AGT001', 'Dupont', 'Jean', FALSE, 'takotuemabou@outlook.com', '0612345678', TRUE,
        (SELECT id FROM agence WHERE titre = 'Agence Paris' LIMIT 1),
        (SELECT id FROM users WHERE email = 'takotuemabou@outlook.com' LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM agent WHERE matricule = 'AGT001');
 
--- AGT002 mappé à l'utilisateur ROLE_ADMIN (maboujunior777@gmail.com)
+-- AGT002 mappÃ© Ã  l'utilisateur ROLE_ADMIN (maboujunior777@gmail.com)
 INSERT INTO agent (matricule, nom, prenom, admin, email, tel, actif, agence_id, user_id)
 SELECT 'AGT002', 'Martin', 'Sophie', TRUE, 'maboujunior777@gmail.com', '0687654321', TRUE,
        (SELECT id FROM agence WHERE titre = 'Agence Lyon' LIMIT 1),
@@ -62,11 +62,11 @@ WHERE NOT EXISTS (SELECT 1 FROM client WHERE nom_client = 'Client ACME');
 
 -- Seed sites
 INSERT INTO site (nom_site, commentaire, ticket, responsable_matricule)
-SELECT 'Site Paris 1', 'Site de démonstration à Paris', TRUE, NULL
+SELECT 'Site Paris 1', 'Site de dÃ©monstration Ã  Paris', TRUE, NULL
 WHERE NOT EXISTS (SELECT 1 FROM site WHERE nom_site = 'Site Paris 1');
 
 INSERT INTO site (nom_site, commentaire, ticket, responsable_matricule)
-SELECT 'Site Lyon 1', 'Site de démonstration à Lyon', TRUE, 'AGT001'
+SELECT 'Site Lyon 1', 'Site de dÃ©monstration Ã  Lyon', TRUE, 'AGT001'
 WHERE NOT EXISTS (SELECT 1 FROM site WHERE nom_site = 'Site Lyon 1');
 
 -- Seed affaires
@@ -85,14 +85,14 @@ WHERE NOT EXISTS (
 
 -- Seed DOE
 INSERT INTO doe (site_id, affaire_id, titre, description)
-SELECT s.id, a.id, 'DOE Paris 2025', 'Dossier des ouvrages exécutés'
+SELECT s.id, a.id, 'DOE Paris 2025', 'Dossier des ouvrages exÃ©cutÃ©s'
 FROM (SELECT id FROM site WHERE nom_site = 'Site Paris 1' LIMIT 1) s,
      (SELECT id FROM affaire WHERE nom_affaire = 'Contrat Ticket ACME' LIMIT 1) a
 WHERE NOT EXISTS (SELECT 1 FROM doe WHERE titre = 'DOE Paris 2025');
 
 -- Seed tickets (some ongoing and blocked)
 INSERT INTO ticket (doe_id, affaire_id, titre, description, etat, responsable, date_debut)
-SELECT d.id, a.id, 'Ticket Semaine 42', 'Vérifications périodiques', 'En_cours', 'AGT001', NOW() - INTERVAL '10 days'
+SELECT d.id, a.id, 'Ticket Semaine 42', 'VÃ©rifications pÃ©riodiques', 'En_cours', 'AGT001', NOW() - INTERVAL '10 days'
 FROM (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1) d,
      (SELECT id FROM affaire WHERE nom_affaire = 'Contrat Ticket ACME' LIMIT 1) a
 WHERE NOT EXISTS (SELECT 1 FROM ticket WHERE titre = 'Ticket Semaine 42');
@@ -130,33 +130,33 @@ WHERE NOT EXISTS (SELECT 1 FROM formation WHERE agent_matricule = 'AGT001' AND l
 
 -- Seed rendu_intervention
 INSERT INTO rendu_intervention (intervention_id, resume, valeur)
-SELECT i.id, 'Rapport de vérification OK.', 'Conforme'
+SELECT i.id, 'Rapport de vÃ©rification OK.', 'Conforme'
 FROM (SELECT id FROM intervention WHERE description = 'Intervention initiale' LIMIT 1) i
-WHERE NOT EXISTS (SELECT 1 FROM rendu_intervention WHERE resume = 'Rapport de vérification OK.');
+WHERE NOT EXISTS (SELECT 1 FROM rendu_intervention WHERE resume = 'Rapport de vÃ©rification OK.');
 
 -- Seed images for rendu_intervention
 INSERT INTO images (nom_fichier, type_mime, taille_octets, image_blob, commentaire_image, auteur_matricule, cible_type, cible_id)
-SELECT 'rapport_int001_1.jpg', 'image/jpeg', 102400, '\xDEADBEEF', 'Photo avant intervention.', 'AGT001', 'RenduIntervention', (SELECT id FROM rendu_intervention WHERE resume = 'Rapport de vérification OK.' LIMIT 1)
+SELECT 'rapport_int001_1.jpg', 'image/jpeg', 102400, '\xDEADBEEF', 'Photo avant intervention.', 'AGT001', 'RenduIntervention', (SELECT id FROM rendu_intervention WHERE resume = 'Rapport de vÃ©rification OK.' LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM images WHERE nom_fichier = 'rapport_int001_1.jpg');
 
 INSERT INTO images (nom_fichier, type_mime, taille_octets, image_blob, commentaire_image, auteur_matricule, cible_type, cible_id)
-SELECT 'rapport_int001_2.jpg', 'image/jpeg', 153600, '\xCAFEBABE', 'Photo après réparation.', 'AGT001', 'RenduIntervention', (SELECT id FROM rendu_intervention WHERE resume = 'Rapport de vérification OK.' LIMIT 1)
+SELECT 'rapport_int001_2.jpg', 'image/jpeg', 153600, '\xCAFEBABE', 'Photo aprÃ¨s rÃ©paration.', 'AGT001', 'RenduIntervention', (SELECT id FROM rendu_intervention WHERE resume = 'Rapport de vÃ©rification OK.' LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM images WHERE nom_fichier = 'rapport_int001_2.jpg');
 
 -- Seed documents for DOE
 INSERT INTO documents_repertoire (cible_type, cible_id, nom_fichier, type_mime, commentaire, auteur_matricule)
-SELECT 'DOE', (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1), 'plan_site_A.pdf', 'application/pdf', 'Plan détaillé du site A.', 'AGT002'
+SELECT 'DOE', (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1), 'plan_site_A.pdf', 'application/pdf', 'Plan dÃ©taillÃ© du site A.', 'AGT002'
 WHERE NOT EXISTS (SELECT 1 FROM documents_repertoire WHERE nom_fichier = 'plan_site_A.pdf');
 
 INSERT INTO documents_repertoire (cible_type, cible_id, nom_fichier, type_mime, commentaire, auteur_matricule)
-SELECT 'DOE', (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1), 'rapport_audit_B.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'Rapport d''audit de sécurité du site B.', 'AGT002'
+SELECT 'DOE', (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1), 'rapport_audit_B.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'Rapport d''audit de sÃ©curitÃ© du site B.', 'AGT002'
 WHERE NOT EXISTS (SELECT 1 FROM documents_repertoire WHERE nom_fichier = 'rapport_audit_B.docx');
 
 -- Seed images for DOE
 INSERT INTO images (nom_fichier, type_mime, taille_octets, image_blob, commentaire_image, auteur_matricule, cible_type, cible_id)
-SELECT 'image_doe_1.jpg', 'image/jpeg', 51200, '\x12345678', 'Vue générale du site.', 'AGT002', 'DOE', (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1)
+SELECT 'image_doe_1.jpg', 'image/jpeg', 51200, '\x12345678', 'Vue gÃ©nÃ©rale du site.', 'AGT002', 'DOE', (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM images WHERE nom_fichier = 'image_doe_1.jpg');
 
 INSERT INTO images (nom_fichier, type_mime, taille_octets, image_blob, commentaire_image, auteur_matricule, cible_type, cible_id)
-SELECT 'image_doe_2.jpg', 'image/jpeg', 76800, '\x87654321', 'Détail d''un équipement.', 'AGT002', 'DOE', (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1)
+SELECT 'image_doe_2.jpg', 'image/jpeg', 76800, '\x87654321', 'DÃ©tail d''un Ã©quipement.', 'AGT002', 'DOE', (SELECT id FROM doe WHERE titre = 'DOE Paris 2025' LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM images WHERE nom_fichier = 'image_doe_2.jpg');
