@@ -149,13 +149,15 @@
     const notifBadge = document.getElementById('notif-badge');
     const notifList = document.getElementById('notif-list');
     if (!notifBadge || !notifList || !userId) return;
+    const currentUserId = Number(userId);
+    if (!Number.isFinite(currentUserId)) return;
 
     const token = localStorage.getItem('token') || '';
 
-    const readKey = 'notifReads';
-  const getReadMap = () => {
-    try { return JSON.parse(localStorage.getItem(readKey) || '{}'); } catch (_) { return {}; }
-  };
+    const readKey = `notifReads:${currentUserId}`;
+    const getReadMap = () => {
+      try { return JSON.parse(localStorage.getItem(readKey) || '{}'); } catch (_) { return {}; }
+    };
     const setRead = (convId, ts) => {
       const map = getReadMap();
       map[convId] = ts;
@@ -198,7 +200,7 @@
           });
           if (!res.ok) continue;
           const msgs = await res.json().catch(() => []);
-          const incoming = (Array.isArray(msgs) ? msgs : []).filter(m => m.sender_id !== userId);
+          const incoming = (Array.isArray(msgs) ? msgs : []).filter(m => Number(m.sender_id) !== currentUserId);
           if (!incoming.length) continue;
           const last = incoming[incoming.length - 1];
           const lastTs = last && last.created_at ? new Date(last.created_at).getTime() : 0;
@@ -227,7 +229,7 @@
         btn.addEventListener('click', (e) => {
           const id = e.currentTarget.dataset.id;
           const ts = Number(e.currentTarget.dataset.ts || 0);
-          const dropdown = bootstrap.Dropdown.getInstance(document.getElementById('notif-toggle'));
+          const dropdown = bootstrap.Dropdown.getOrCreateInstance(document.getElementById('notif-toggle'));
           if (dropdown) dropdown.hide();
 
           const modalEl = document.getElementById('notifConversationModal');
@@ -250,7 +252,13 @@
       });
     }
 
-    updateNotifications();
+    const refreshNotifications = () => updateNotifications().catch(err => console.warn('notif refresh failed:', err?.message || err));
+    refreshNotifications();
+    setInterval(refreshNotifications, 30000);
+    const notifToggle = document.getElementById('notif-toggle');
+    if (notifToggle) {
+      notifToggle.addEventListener('shown.bs.dropdown', refreshNotifications);
+    }
   }
 
   async function ensureSessionAndCsrf() {
