@@ -185,40 +185,58 @@
     }
   }
 
+  async function fetchConversations() {
+    const opts = {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      credentials: 'same-origin'
+    };
+    try {
+      const r = await fetch('/api/conversations', opts);
+      if (!r.ok) return [];
+      const data = await r.json().catch(() => []);
+      return Array.isArray(data) ? data : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
     async function updateNotifications() {
       const demandes = await fetchDemandes();
+      const conversations = await fetchConversations();
+      const demandeMap = new Map((demandes || []).map(d => [`demande-${d.id}`, d]));
       const readMap = getReadMap();
       let total = 0;
       const items = [];
 
-      for (const d of demandes) {
-        const convId = `demande-${d.id}`;
-        try {
-          const res = await fetch(`/api/conversations/${convId}`, {
-            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-            credentials: 'same-origin'
-          });
-          if (!res.ok) continue;
-          const msgs = await res.json().catch(() => []);
-          const incoming = (Array.isArray(msgs) ? msgs : []).filter(m => Number(m.sender_id) !== currentUserId);
-          if (!incoming.length) continue;
-          const last = incoming[incoming.length - 1];
-          const lastTs = last && last.created_at ? new Date(last.created_at).getTime() : 0;
-          const lastRead = readMap[convId] ? Number(readMap[convId]) : 0;
-          if (lastTs && lastTs <= lastRead) continue;
+      for (const c of conversations) {
+        const convId = c && c.conversation_id ? String(c.conversation_id) : '';
+        if (!convId) continue;
+        const senderId = Number(c.sender_id);
+        const receiverId = Number(c.receiver_id);
+        const isIncoming = Number.isFinite(receiverId)
+          ? receiverId === currentUserId
+          : (Number.isFinite(senderId) && senderId !== currentUserId);
+        if (!isIncoming) continue;
 
-          total += 1;
-          items.push(`
-            <div class="list-group-item">
-              <div class="d-flex justify-content-between">
-                <strong>Demande #${d.id}${d.titre ? ' - ' + d.titre : ''}</strong>
-                <small>${last.created_at ? new Date(last.created_at).toLocaleString() : ''}</small>
-              </div>
-              <div class="text-truncate">${last.body || '(Pièce jointe)'}</div>
-              <button class="btn btn-sm btn-primary mt-2 open-conv-btn" data-id="${d.id}" data-ts="${lastTs}">Ouvrir</button>
+        const lastTs = c && c.created_at ? new Date(c.created_at).getTime() : 0;
+        const lastRead = readMap[convId] ? Number(readMap[convId]) : 0;
+        if (lastTs && lastTs <= lastRead) continue;
+
+        total += 1;
+        const d = demandeMap.get(convId);
+        const convLabel = d
+          ? `Demande #${d.id}${d.titre ? ' - ' + d.titre : ''}`
+          : (convId.startsWith('demande-') ? `Demande #${convId.replace('demande-', '')}` : convId);
+        items.push(`
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between">
+              <strong>${convLabel}</strong>
+              <small>${c.created_at ? new Date(c.created_at).toLocaleString() : ''}</small>
             </div>
-          `);
-        } catch (_) {}
+            <div class="text-truncate">${c.body || '(Pièce jointe)'}</div>
+            <button class="btn btn-sm btn-primary mt-2 open-conv-btn" data-conversation-id="${convId}" data-ts="${lastTs}">Ouvrir</button>
+          </div>
+        `);
       }
 
       notifBadge.textContent = total;
@@ -227,7 +245,7 @@
 
       notifList.querySelectorAll('.open-conv-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const id = e.currentTarget.dataset.id;
+          const convId = e.currentTarget.dataset.conversationId;
           const ts = Number(e.currentTarget.dataset.ts || 0);
           const dropdown = bootstrap.Dropdown.getOrCreateInstance(document.getElementById('notif-toggle'));
           if (dropdown) dropdown.hide();
@@ -235,11 +253,11 @@
           const modalEl = document.getElementById('notifConversationModal');
           const frame = document.getElementById('notifConversationFrame');
           if (modalEl && frame) {
-            frame.src = `/messagerie.html?conversation=demande-${id}`;
+            frame.src = `/messagerie.html?conversation=${encodeURIComponent(convId || '')}`;
             bootstrap.Modal.getOrCreateInstance(modalEl).show();
           }
 
-          setRead(`demande-${id}`, ts || Date.now());
+          setRead(convId || '', ts || Date.now());
           const item = e.currentTarget.closest('.list-group-item');
           if (item) item.remove();
           const remaining = notifList.querySelectorAll('.open-conv-btn').length;
