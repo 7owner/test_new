@@ -1,0 +1,359 @@
+document.addEventListener('DOMContentLoaded', async function() {
+      const msg = document.getElementById('msg');
+      function showMsg(text, type) { if (!msg) return; msg.className = `alert alert-${type||'info'}`; msg.textContent = text; msg.classList.remove('d-none'); }
+
+      const token = localStorage.getItem('token');
+      let isAdmin = false;
+      if (token) { try { const p=JSON.parse(atob(token.split('.')[1])); isAdmin = Array.isArray(p.roles) && p.roles.includes('ROLE_ADMIN'); } catch(_){} }
+      if (!isAdmin) { const f=document.getElementById('ticket-new-form'); if (f) f.innerHTML = '<div class="alert alert-danger">Accès refusé. Seuls les administrateurs peuvent créer des tickets.</div>'; return; }
+
+      const headers = token ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } : { 'Content-Type': 'application/json' };
+
+      // Autocomplete setup function
+      function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey, idKey, extraParams = {}) {
+        let timeout;
+        let selectedLabel = '';
+        let selectedId = '';
+        const getLabel = (item) => (typeof displayKey === 'function') ? displayKey(item) : (item?.[displayKey] || '');
+        const getId = (item) => (typeof idKey === 'function') ? idKey(item) : (item?.[idKey] ?? '');
+        const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+
+        searchInput.addEventListener('input', () => {
+          clearTimeout(timeout);
+          const query = searchInput.value.trim();
+          if (query.length < 2) {
+            suggestionsContainer.innerHTML = '';
+            // Si l'utilisateur efface réellement le champ, on réinitialise la sélection
+            if (query.length === 0) {
+              hiddenInput.value = '';
+              selectedLabel = '';
+              selectedId = '';
+            }
+            return;
+          }
+
+          timeout = setTimeout(async () => {
+            try {
+              const url = new URL(fetchUrl, window.location.origin);
+              url.searchParams.append('query', query);
+              const params = typeof extraParams === 'function' ? extraParams() : extraParams;
+              for (const key in params) {
+                if (params[key]) url.searchParams.append(key, params[key]);
+              }
+
+              const response = await fetch(url.toString(), {
+                headers: { ...headers, 'Cache-Control': 'no-cache' },
+                credentials: 'same-origin',
+                cache: 'no-store'
+              });
+              if (response.status === 304) {
+                displaySuggestions([], query); // pas de corps, on ne casse pas l'UI
+                return;
+              }
+              if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+              const text = await response.text();
+              const items = text ? JSON.parse(text) : [];
+              displaySuggestions(items, query);
+            } catch (error) {
+              console.error('Autocomplete fetch error:', error);
+              suggestionsContainer.innerHTML = `<div class="list-group-item list-group-item-danger">Erreur de chargement.</div>`;
+            }
+          }, 300); // Debounce time
+
+          function displaySuggestions(items, queryStr) {
+            suggestionsContainer.innerHTML = '';
+            const qNorm = norm(queryStr);
+            const filtered = (items || []).filter(it => norm(getLabel(it)).includes(qNorm));
+            if (!filtered.length) {
+              suggestionsContainer.innerHTML = '<div class="list-group-item">Aucun résultat.</div>';
+              return;
+            }
+            filtered.forEach(item => {
+              const itemElement = document.createElement('button');
+              itemElement.type = 'button';
+              itemElement.classList.add('list-group-item', 'list-group-item-action');
+              itemElement.textContent = getLabel(item);
+              // mousedown pour éviter le blur avant sélection
+              itemElement.addEventListener('mousedown', (ev) => {
+                ev.preventDefault();
+                const label = getLabel(item) || '';
+                const val = getId(item) || '';
+                selectedLabel = label;
+                selectedId = val;
+                searchInput.value = label;
+                hiddenInput.value = val;
+                suggestionsContainer.innerHTML = '';
+                searchInput.dispatchEvent(new Event('change'));
+                hiddenInput.dispatchEvent(new Event('change'));
+                setTimeout(() => { searchInput.blur(); searchInput.value = label; }, 0);
+              });
+              suggestionsContainer.appendChild(itemElement);
+            });
+          }
+        });
+
+        searchInput.addEventListener('blur', () => {
+          setTimeout(() => {
+            suggestionsContainer.innerHTML = '';
+            // Si une sélection existe, ne pas toucher à la valeur
+          }, 100); // Allow click event to fire
+        });
+
+        // Clear hidden input if search input is cleared
+        searchInput.addEventListener('change', () => {
+          // Si le champ est vidé manuellement, on efface la sélection
+          if (!searchInput.value.trim()) {
+            hiddenInput.value = '';
+            selectedLabel = '';
+            selectedId = '';
+          } else if (selectedLabel) {
+            // Assure que la valeur affichée reste celle de la sélection
+            searchInput.value = selectedLabel;
+          }
+        });
+      }
+
+      // Variable declarations for new inputs
+      const siteSearchInput = document.getElementById('site-search-input');
+      const siteIdHidden = document.getElementById('site_id');
+      const siteSuggestionsContainer = document.getElementById('site-suggestions');
+
+      const doeSearchInput = document.getElementById('doe-search-input');
+      const doeIdHidden = document.getElementById('doe_id');
+      const doeSuggestionsContainer = document.getElementById('doe-suggestions');
+
+      const affaireSearchInput = document.getElementById('affaire-search-input');
+      const affaireIdHidden = document.getElementById('affaire_id');
+      const affaireSuggestionsContainer = document.getElementById('affaire-suggestions');
+
+      const responsableSearchInput = document.getElementById('responsable-search-input');
+      const responsableIdHidden = document.getElementById('responsable');
+      const responsableSuggestionsContainer = document.getElementById('responsable-suggestions');
+
+      const doeDetailsDiv = document.getElementById('doe-details');
+      const doeTitleSpan = document.getElementById('doe-title');
+      const doeDescriptionSpan = document.getElementById('doe-description');
+      const viewDoeBtn = document.getElementById('view-doe-btn');
+      const siteCard = document.getElementById('site-card');
+      const siteViewLink = document.getElementById('site-view-link');
+      let siteUpdateLocked = false;
+
+      // Setup autocompletes
+      setupAutocomplete(siteSearchInput, siteIdHidden, siteSuggestionsContainer, '/api/sites', 'nom_site', 'id'); // Site no longer filtered by client
+      setupAutocomplete(doeSearchInput, doeIdHidden, doeSuggestionsContainer, '/api/does', 'titre', 'id', () => ({ site_id: siteIdHidden.value })); // DOE filtré dynamiquement par site
+      setupAutocomplete(affaireSearchInput, affaireIdHidden, affaireSuggestionsContainer, '/api/affaires', 'nom_affaire', 'id');
+      setupAutocomplete(responsableSearchInput, responsableIdHidden, responsableSuggestionsContainer, '/api/agents', (item) => `${item.prenom} ${item.nom} (${item.matricule})`, 'matricule');
+
+      // Update filters and preview on change
+      siteIdHidden.addEventListener('change', () => {
+        if (!siteUpdateLocked) {
+          // Clear DOE selection et aperçu seulement si changement manuel
+          doeSearchInput.value = '';
+          doeIdHidden.value = '';
+          doeDetailsDiv.classList.add('d-none'); // Hide DOE details
+        }
+        updateSitePreview(); // Update site preview based on selected site
+      });
+
+      
+
+      doeIdHidden.addEventListener('change', () => {
+        const selDoeId = doeIdHidden.value;
+        if (selDoeId) {
+          fetch(`/api/does/${selDoeId}/relations`, { headers, credentials: 'same-origin' })
+            .then(res => res.json())
+            .then(data => {
+              const doe = data?.doe || data || {};
+              if (doe.affaire_id) {
+                fetch(`/api/affaires/${doe.affaire_id}`, { headers, credentials: 'same-origin' })
+                  .then(res => res.json())
+                  .then(affaire => {
+                    if (affaire) {
+                      affaireSearchInput.value = affaire.nom_affaire;
+                      affaireIdHidden.value = affaire.id;
+                    }
+                  });
+              }
+              if (doe.site_id) {
+                siteUpdateLocked = true;
+                if (siteSearchInput) {
+                  siteSearchInput.value = doe.site_nom || `Site #${doe.site_id}`;
+                }
+                siteIdHidden.value = doe.site_id;
+                siteIdHidden.dispatchEvent(new Event('change')); // Dispatch change event sans reset DOE
+                siteUpdateLocked = false;
+              }
+              doeTitleSpan.textContent = doe.titre || '';
+              doeDescriptionSpan.textContent = doe.description || '';
+              viewDoeBtn.href = `doe-view.html?id=${selDoeId}`;
+              doeDetailsDiv.classList.remove('d-none');
+            });
+        } else {
+          doeDetailsDiv.classList.add('d-none');
+        }
+      });
+
+      
+
+            // Function to update the site preview card
+
+            async function updateSitePreview() {
+
+              const currentSiteId = siteIdHidden.value;
+
+              if (currentSiteId) {
+
+                try {
+
+                  const resSite = await fetch(`/api/sites/${currentSiteId}/relations`, { headers, credentials: 'same-origin' });
+
+                  if (resSite.ok) {
+
+                    const siteData = await resSite.json();
+
+                    const { site = {}, adresse = {}, representants = [] } = siteData;
+
+                    if (siteCard) siteCard.classList.remove('d-none');
+
+                    if (siteViewLink) { siteViewLink.href = `site-view.html?id=${site.id || currentSiteId}`; }
+
+                    // Renseigne le champ de recherche avec le nom du site quand il provient du DOE
+                    const siteLabel = site.nom_site || `Site #${site.id || currentSiteId}`;
+                    if (siteSearchInput) {
+                      siteSearchInput.value = siteLabel;
+                    }
+
+                    document.getElementById('site-name').textContent = site.nom_site || `Site #${site.id || currentSiteId}`;
+
+                    document.getElementById('site-client').textContent = site.nom_client || 'Non assigné';
+
+                    const contactStr = `${site.representant_nom || ''} ${site.representant_tel || ''}`.trim();
+
+                    document.getElementById('site-contact').textContent = contactStr || 'Non spécifié';
+
+                    const adrHtml = [
+
+                      adresse.ligne1,
+
+                      adresse.ligne2,
+
+                      [adresse.code_postal, adresse.ville].filter(Boolean).join(' '),
+
+                      adresse.pays
+
+                    ].filter(Boolean).join('<br>');
+
+                    document.getElementById('site-adresse').innerHTML = adrHtml || 'Non renseignée';
+
+                    document.getElementById('site-commentaire').textContent = site.commentaire || 'Aucun commentaire';
+
+                    const repsEl = document.getElementById('site-representants');
+
+                    if (repsEl) {
+
+                      repsEl.innerHTML = '';
+
+                      if (!representants.length) {
+
+                        repsEl.innerHTML = '<div class="text-muted small">Aucun représentant.</div>';
+
+                      } else {
+
+                        representants.forEach(rep => {
+
+                          const badge = (rep.nom || rep.email || 'N')[0].toUpperCase();
+
+                          const tel = rep.tel ? `<span class="ms-2"><i class="bi bi-phone me-1"></i>${rep.tel}</span>` : '';
+
+                          repsEl.innerHTML += `
+
+                            <div class="d-flex align-items-start p-2 border rounded">
+
+                              <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;">${badge}</div>
+
+                              <div class="ms-2">
+
+                                <div class="fw-semibold">${rep.nom || 'Inconnu'}</div>
+
+                                <div class="small text-muted">${rep.fonction || ''}</div>
+
+                                <div class="small text-muted"><i class="bi bi-envelope me-1"></i>${rep.email || 'N/A'} ${tel}</div>
+
+                              </div>
+
+                            </div>`;
+
+                        });
+
+                      }
+
+                    }
+
+                  } else {
+
+                    siteCard.classList.add('d-none');
+
+                  }
+
+                } catch (error) {
+
+                  console.error('Error fetching site relations for preview:', error);
+
+                  siteCard.classList.add('d-none');
+
+                }
+
+              } else {
+
+                siteCard.classList.add('d-none');
+
+              }
+
+            }
+
+      
+
+            
+
+      
+
+      
+
+      // Submit
+      const form = document.getElementById('ticket-new-form');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Champs requis côté client
+        const titreVal = (document.getElementById('titre')?.value || '').trim();
+        const dateDebutVal = (document.getElementById('date_debut')?.value || '').trim();
+        if (!titreVal) { alert('Le titre est obligatoire.'); return; }
+        if (!dateDebutVal) { alert('La date de début est obligatoire.'); return; }
+
+        const payload = {
+          titre: titreVal,
+          description: (document.getElementById('description')?.value || '').trim() || null,
+          site_id: Number(siteIdHidden.value) || null,
+          doe_id: Number(doeIdHidden.value) || null,
+          affaire_id: Number(affaireIdHidden.value) || null,
+          etat: (document.getElementById('etat')?.value || null),
+          responsable: (responsableIdHidden.value || null),
+        };
+
+        // Optional dates: send ISO strings if provided
+        try {
+          const dd = dateDebutVal;
+          const df = (document.getElementById('date_fin')?.value || '').trim();
+          payload.date_debut = dd ? new Date(dd).toISOString() : null;
+          payload.date_fin = df ? new Date(df).toISOString() : null;
+        } catch(_) { payload.date_debut = payload.date_debut || null; payload.date_fin = payload.date_fin || null; }
+
+        try {
+          const r = await fetch('/api/tickets', { method:'POST', headers, credentials:'same-origin', body: JSON.stringify(payload) });
+          if (!r.ok) { const d=await r.json().catch(()=>({})); throw new Error(d && d.error ? d.error : `HTTP ${r.status}`); }
+          const created = await r.json();
+          if (created && created.id) { alert('Ticket créé avec succès'); location.href = `ticket-view.html?id=${created.id}`; }
+          else { throw new Error('Réponse invalide du serveur'); }
+        } catch(err) { console.error(err); alert(`Échec de la création: ${err.message}`); }
+      });
+    });

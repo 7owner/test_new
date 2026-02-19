@@ -109,15 +109,15 @@
       <div class="col">
         <div class="metric-card h-100">
           <div class="d-flex align-items-center gap-3">
-            <div class="metric-icon icon-blue"><i class="bi bi-cash-coin"></i></div>
+            <div class="metric-icon icon-green"><i class="bi bi-box-seam"></i></div>
             <div>
-              <div class="metric-label">Règlements</div>
-              <div class="metric-value" id="adminReglementsCount">-</div>
-              <div class="metric-sub text-primary">Encaissements</div>
+              <div class="metric-label">Gestion commande</div>
+              <div class="metric-value" id="adminMaterielCount">-</div>
+              <div class="metric-sub text-success">Suivi des statuts</div>
             </div>
           </div>
           <div class="mt-auto">
-            <a href="/factures.html" class="btn btn-outline-primary btn-sm">Ouvrir</a>
+            <a href="/gestion-commande.html" class="btn btn-outline-success btn-sm">Ouvrir</a>
           </div>
         </div>
       </div>
@@ -125,15 +125,32 @@
       <div class="col">
         <div class="metric-card h-100">
           <div class="d-flex align-items-center gap-3">
-            <div class="metric-icon icon-green"><i class="bi bi-box-seam"></i></div>
+            <div class="metric-icon icon-orange"><i class="bi bi-kanban"></i></div>
             <div>
-              <div class="metric-label">Commandes matériel</div>
-              <div class="metric-value" id="adminMaterielCount">-</div>
-              <div class="metric-sub text-success">Suivi des statuts</div>
+              <div class="metric-label">Travaux</div>
+              <div class="metric-value" id="adminTravauxCount">-</div>
+              <div class="metric-sub text-warning-emphasis">Kanban / suivi</div>
             </div>
           </div>
           <div class="mt-auto">
-            <a href="/catalogue-materiel.html" class="btn btn-outline-success btn-sm">Ouvrir</a>
+            <a href="/travaux.html" class="btn btn-outline-warning btn-sm text-dark">Ouvrir</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Catalogue matériel (accès direct) -->
+      <div class="col">
+        <div class="metric-card h-100">
+          <div class="d-flex align-items-center gap-3">
+            <div class="metric-icon icon-purple"><i class="bi bi-journal-bookmark-fill"></i></div>
+            <div>
+              <div class="metric-label">Catalogue materiel</div>
+              <div class="metric-value" id="adminCatalogueCount">-</div>
+              <div class="metric-sub text-primary">Références disponibles</div>
+            </div>
+          </div>
+          <div class="mt-auto">
+            <a href="/catalogue-materiel.html" class="btn btn-outline-primary btn-sm">Ouvrir</a>
           </div>
         </div>
       </div>
@@ -166,9 +183,13 @@
 
       setText('adminAgentsCount', await fetchCount('/api/agents'));
       setText('adminFacturesCount', await fetchCount('/api/factures'));
-      setText('adminReglementsCount', await fetchCount('/api/reglements'));
       // Commandes matériel (basé sur les matériels référencés)
       setText('adminMaterielCount', await fetchCount('/api/materiels'));
+      setText('adminTravauxCount', await fetchCount('/api/travaux'));
+      // Catalogue (si endpoint dédié, fallback sur matériels)
+      let catalogueCount = await fetchCount('/api/catalogue-materiel');
+      if (!catalogueCount) catalogueCount = await fetchCount('/api/materiels');
+      setText('adminCatalogueCount', catalogueCount);
     });
   </script>
 </body>

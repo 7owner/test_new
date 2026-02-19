@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nouveau travail</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/custom.css?v=1">
+  <script src="/nav.js?v=2"></script>
+</head>
+<body class="app-bg">
+  <div id="navbar-placeholder"></div>
+  <main class="container my-4" style="max-width: 960px;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h1 class="h4 mb-0">Créer un nouveau travail</h1>
+        <small class="text-muted">Un travail correspond à un ticket, avec agent responsable, état et échéances.</small>
+      </div>
+      <a href="/travaux.html" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Retour au tableau</a>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div id="msg" class="alert d-none" role="alert"></div>
+        <form id="work-form" class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Titre *</label>
+            <input type="text" class="form-control" id="titre" required placeholder="Ex: Remplacement automate GTB">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea class="form-control" id="description" rows="3" placeholder="Détail du travail..."></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Site</label>
+            <input type="text" class="form-control" id="site-search-input" placeholder="Rechercher un site...">
+            <input type="hidden" id="site_id">
+            <div id="site-suggestions" class="list-group position-absolute w-100"></div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">DOE</label>
+            <input type="text" class="form-control" id="doe-search-input" placeholder="Rechercher un DOE...">
+            <input type="hidden" id="doe_id">
+            <div id="doe-suggestions" class="list-group position-absolute w-100"></div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Affaire</label>
+            <input type="text" class="form-control" id="affaire-search-input" placeholder="Rechercher une affaire...">
+            <input type="hidden" id="affaire_id">
+            <div id="affaire-suggestions" class="list-group position-absolute w-100"></div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Demande client</label>
+            <input type="text" class="form-control" id="demande-search-input" placeholder="Rechercher une demande client...">
+            <input type="hidden" id="demande_id">
+            <div id="demande-suggestions" class="list-group position-absolute w-100"></div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Priorité</label>
+            <select class="form-select" id="priorite">
+              <option value="Haute">Haute</option>
+              <option value="Moyenne" selected>Moyenne</option>
+              <option value="Basse">Basse</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">État</label>
+            <select class="form-select" id="etat">
+              <option value="A_faire" selected>À faire</option>
+              <option value="En_cours">En cours</option>
+              <option value="En_attente">En attente</option>
+              <option value="Termine">Terminé</option>
+              <option value="Annule">Annulé</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Date de début</label>
+            <input type="datetime-local" class="form-control" id="date_debut">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Date de fin</label>
+            <input type="datetime-local" class="form-control" id="date_fin">
+          </div>
+          <div class="col-12 d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Créer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('work-form');
+      const msg = document.getElementById('msg');
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
+
+      function flash(text, type='info') {
+        if (!msg) return;
+        msg.className = `alert alert-${type}`;
+        msg.textContent = text;
+        msg.classList.remove('d-none');
+      }
+
+      // Autocomplete util
+      function setupAutocomplete(searchInput, hiddenInput, suggestionsContainer, fetchUrl, displayKey='nom', idKey='id') {
+        let timeout;
+        const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu,'');
+        searchInput.addEventListener('input', () => {
+          clearTimeout(timeout);
+          const q = searchInput.value.trim();
+          if (q.length < 2) { suggestionsContainer.innerHTML=''; return; }
+          timeout = setTimeout(async () => {
+            try {
+              const url = new URL(fetchUrl, window.location.origin);
+              url.searchParams.append('query', q);
+              const r = await fetch(url.toString(), { headers, credentials:'same-origin' });
+              if (!r.ok) throw new Error(r.status);
+              const items = await r.json();
+              const filtered = (items || []).filter(it => norm(it[displayKey] || '').includes(norm(q)));
+              suggestionsContainer.innerHTML = '';
+              if (!filtered.length) { suggestionsContainer.innerHTML='<div class="list-group-item">Aucun résultat.</div>'; return; }
+              filtered.forEach(it => {
+                const btn = document.createElement('button');
+                btn.type='button';
+                btn.className='list-group-item list-group-item-action';
+                btn.textContent = it[displayKey] || '';
+                btn.addEventListener('click', () => {
+                  searchInput.value = it[displayKey] || '';
+                  hiddenInput.value = it[idKey] || '';
+                  suggestionsContainer.innerHTML='';
+                });
+                suggestionsContainer.appendChild(btn);
+              });
+            } catch (err) {
+              suggestionsContainer.innerHTML = '<div class="list-group-item list-group-item-danger">Erreur de chargement</div>';
+            }
+          }, 250);
+        });
+        searchInput.addEventListener('blur', () => setTimeout(()=> suggestionsContainer.innerHTML='', 120));
+      }
+
+      // Autocomplete initialisation
+      setupAutocomplete(
+        document.getElementById('site-search-input'),
+        document.getElementById('site_id'),
+        document.getElementById('site-suggestions'),
+        '/api/sites',
+        'nom_site',
+        'id'
+      );
+      setupAutocomplete(
+        document.getElementById('doe-search-input'),
+        document.getElementById('doe_id'),
+        document.getElementById('doe-suggestions'),
+        '/api/does',
+        'titre',
+        'id'
+      );
+      setupAutocomplete(
+        document.getElementById('affaire-search-input'),
+        document.getElementById('affaire_id'),
+        document.getElementById('affaire-suggestions'),
+        '/api/affaires',
+        'nom_affaire',
+        'id'
+      );
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+          titre: document.getElementById('titre').value.trim(),
+          description: document.getElementById('description').value.trim() || null,
+          agent_matricule: document.getElementById('agent_matricule').value.trim() || null,
+          priorite: document.getElementById('priorite').value || null,
+          etat: document.getElementById('etat').value || null,
+          date_debut: document.getElementById('date_debut').value || null,
+          date_fin: document.getElementById('date_fin').value || null,
+          site_id: Number(document.getElementById('site_id').value) || null,
+          doe_id: Number(document.getElementById('doe_id').value) || null,
+          affaire_id: Number(document.getElementById('affaire_id').value) || null
+        };
+        if (!payload.titre) { flash('Le titre est obligatoire.', 'danger'); return; }
+        try {
+          const res = await fetch('/api/travaux', {
+            method: 'POST',
+            headers,
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+          });
+          if (res.status === 401 || res.status === 403) { location.href = '/login.html'; return; }
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || 'Échec de la création');
+          flash('Travail créé avec succès.', 'success');
+          setTimeout(() => { location.href = `/travaux-view.html?id=${data.id}`; }, 600);
+        } catch (err) {
+          flash(err.message || 'Erreur serveur', 'danger');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

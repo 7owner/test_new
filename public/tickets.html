@@ -29,8 +29,7 @@
       </div>
       <div class="d-flex gap-2">
         <button class="btn btn-primary btn-sm shadow-sm" id="toggle-filters-btn"><i class="bi bi-funnel-fill me-1"></i> Masquer les filtres</button>
-        <!--<button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#createDemandeClientModal"><i class="bi bi-plus-circle me-2"></i>Créer une demande client</button>-->
-        <!--<a href="ticket-new.html" class="btn btn-primary" id="create-ticket-btn"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau ticket</a>-->
+        <button class="btn btn-primary" id="create-ticket-btn" data-bs-toggle="modal" data-bs-target="#createTicketModal"><i class="bi bi-plus-circle me-2"></i>Créer un nouveau ticket</button>
         <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#demandesClientModal" title="Demandes clients (Admin)"><i class="bi bi-inbox me-2"></i>Demandes clients</button>
       </div>
     </div>
@@ -106,7 +105,8 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <iframe src="/demandes-client-admin.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+          <!-- Embed sans navbar -->
+          <iframe id="demandes-client-iframe" src="/demandes-client-admin.html?embed=1" style="width: 100%; height: 80vh; border: none;"></iframe>
         </div>
       </div>
     </div>
@@ -165,6 +165,21 @@
     </div>
   </div>
 
+  <!-- Modal Créer Ticket -->
+  <div class="modal fade" id="createTicketModal" tabindex="-1" aria-labelledby="createTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createTicketModalLabel">Créer un nouveau Ticket</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="createTicketFrame" src="/ticket-new.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Bootstrap -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
@@ -184,6 +199,21 @@
       const dateEndInput = document.getElementById('ticket-date-end');
       const filtersRow = document.getElementById('filters-row');
       const toggleFiltersBtn = document.getElementById('toggle-filters-btn');
+      // Masquer la navbar dans l'iframe des demandes client (modal)
+      const demandesIframe = document.getElementById('demandes-client-iframe');
+      if (demandesIframe) {
+        demandesIframe.addEventListener('load', () => {
+          try {
+            const doc = demandesIframe.contentDocument || demandesIframe.contentWindow?.document;
+            if (!doc) return;
+            // cible le placeholder nav ou toute nav/header éventuelle
+            const nav = doc.querySelector('#navbar-placeholder, nav, header');
+            if (nav) nav.style.display = 'none';
+          } catch (e) {
+            console.warn('Impossible de masquer la navbar de la modal demandes', e);
+          }
+        });
+      }
 
       function buildHeaders(json=false){
         const h = json? { 'Content-Type':'application/json' } : {};
@@ -202,16 +232,18 @@
         }
       } catch(_) {}
 
-      function getSiteName(site_id) {
+      function getSiteName(site_id, overrideName) {
+        if (overrideName) return overrideName;
         if (site_id == null) return 'N/A';
         const key = String(site_id);
         if (state.sites.has(key)) return state.sites.get(key) || `Site #${key}`;
         return `Site #${key}`;
       }
-      function siteLink(site_id) {
-        if (site_id == null) return 'N/A';
-        const key = String(site_id);
-        const label = getSiteName(site_id);
+      function siteLink(ticket) {
+        const siteId = ticket?.site?.id ?? ticket.site_id;
+        const label = getSiteName(siteId, ticket?.site?.nom_site);
+        if (siteId == null) return label;
+        const key = String(siteId);
         return `<a href="site-view.html?id=${key}">${label}</a>`;
       }
       async function fetchSites() {
@@ -297,12 +329,13 @@
                     <span>${ticket.titre}</span>
                     <span class="badge ${statusBadgeClass}">${displayStatus(ticket.etat)}</span>
                   </h5>
-                  <h6 class="card-subtitle mb-2 text-muted">Site: ${siteLink(ticket.site_id)}</h6>
+                  <h6 class="card-subtitle mb-2 text-muted">Site: ${siteLink(ticket)}</h6>
                   <p class="card-text">${renderMarkdown(ticket.description)}</p>
                   <small class="text-muted mt-auto">ID: ${ticket.id} | Responsable: ${responsableName} | Fin: ${endDisplay} | Temps écoulé: ${elapsed}</small>
                   <div class="mt-3">
                     <button class="btn btn-sm btn-info me-1" data-bs-toggle="modal" data-bs-target="#viewTicketModal" data-id="${ticket.id}"><i class="bi bi-eye"></i> Voir</button>
                     ${state.isAdmin ? `
+                      <button class="btn btn-sm btn-success me-1" data-action="finish" data-id="${ticket.id}"><i class="bi bi-check2-circle"></i> Terminer</button>
                       <button class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editTicketModal" data-id="${ticket.id}"><i class="bi bi-pencil"></i> Modifier</button>
                       <button class="btn btn-sm btn-danger" data-action="delete" data-id="${ticket.id}"><i class="bi bi-trash"></i> Supprimer</button>
                     ` : ''}
@@ -312,6 +345,8 @@
             `;
             openTicketsContainer.appendChild(cardCol);
             if (state.isAdmin) {
+              const btnFinish = cardCol.querySelector('button[data-action="finish"]');
+              if (btnFinish) btnFinish.addEventListener('click', () => finishTicket(ticket.id));
               const btn = cardCol.querySelector('button[data-action="delete"]');
               if (btn) btn.addEventListener('click', () => deleteTicket(ticket.id));
             }
@@ -331,7 +366,7 @@
               <td>${ticket.titre}</td>
               <td>${ticket.description}</td>
               <td><span class="badge ${statusBadgeClass}">${displayStatus(ticket.etat)}</span></td>
-              <td>${siteLink(ticket.site_id)}</td>
+              <td>${siteLink(ticket)}</td>
               <td>${responsableName}</td>
               <td class="satisfaction-cell" data-id="${ticket.id}"><span class="text-muted small">—</span></td>
               <td>
@@ -502,6 +537,31 @@
 
         confirmBtn.onclick = handleConfirm;
         deleteTicketModal.show();
+      }
+
+      async function finishTicket(id) {
+        const token = localStorage.getItem('token');
+        if (!token) return alert('Non autorisé.');
+        try {
+          const nowIso = new Date().toISOString();
+          const res = await fetch(`/api/tickets/${id}`, {
+            method: 'PUT',
+            headers: buildHeaders(true),
+            credentials: 'same-origin',
+            body: JSON.stringify({ etat: 'Termine', date_fin: nowIso })
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || `HTTP ${res.status}`);
+          }
+          state.tickets = state.tickets.map(t => String(t.id) === String(id)
+            ? { ...t, etat: 'Termine', date_fin: nowIso }
+            : t);
+          applyFilters();
+        } catch (e) {
+          console.error('Erreur fin ticket:', e);
+          alert(`Impossible de terminer le ticket: ${e.message}`);
+        }
       }
 
       try {

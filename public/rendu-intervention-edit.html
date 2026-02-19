@@ -38,8 +38,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
       <h1 class="h4 mb-0"><i class="bi bi-file-text me-2"></i>Modifier un rendu d'intervention</h1>
       <div class="d-flex gap-2 no-print">
-        <button class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>
-        <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer</button>
+        <button class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour à l'intervention</button>
       </div>
     </div>
 
@@ -47,16 +46,8 @@
       <div class="card-body">
         <form id="rendu-edit-form" novalidate>
           <div class="mb-4">
-            <label class="form-label fw-bold">Valeur de l'intervention</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-currency-euro"></i></span>
-              <input type="text" class="form-control" id="valeur" placeholder="Ex: 1500">
-            </div>
-          </div>
-
-          <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Résumé</h5>
+              <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Résumé détaillé (Markdown)</h5>
               <small class="text-muted">Markdown autorisé</small>
             </div>
             <div class="row g-3">
@@ -85,7 +76,7 @@
             <p class="text-muted small mb-3">Cliquez sur une carte pour ouvrir la pièce jointe. Ajoutez de nouveaux fichiers via le bouton + (redirigé vers l’éditeur avancé).</p>
             <div class="row g-2 align-items-center mb-3">
               <div class="col-md-4">
-                <input type="text" class="form-control form-control-sm" id="filter-search" placeholder="Rechercher (nom, commentaire, note)...">
+                <input type="text" class="form-control form-control-sm" id="filter-search" placeholder="Rechercher (nom, commentaire)...">
               </div>
               <div class="col-md-4">
                 <select class="form-select form-select-sm" id="filter-source">
@@ -128,8 +119,12 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label">Nom du fichier</label>
-            <input type="text" class="form-control" id="att-name-input" readonly>
+            <label class="form-label mb-1">Nom du fichier</label>
+            <div class="form-control bg-light" id="att-filename-display" aria-label="Nom du fichier" readonly></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Titre (affiché)</label>
+            <input type="text" class="form-control" id="att-title-input" placeholder="Titre lisible (facultatif)">
           </div>
           <div class="mb-3">
             <label class="form-label">Commentaire</label>
@@ -142,6 +137,7 @@
           </div>
         </div>
         <div class="modal-footer">
+          <button type="button" class="btn btn-danger me-auto" id="delete-att-btn"><i class="bi bi-trash"></i> Supprimer</button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
           <button type="button" class="btn btn-primary" id="save-att-btn"><i class="bi bi-check"></i> Enregistrer</button>
         </div>
@@ -162,7 +158,6 @@
 
       const headers = { 'Authorization': 'Bearer '+token, 'Content-Type': 'application/json' };
       const form = document.getElementById('rendu-edit-form');
-      const valeurInput = document.getElementById('valeur');
       const resumeInput = document.getElementById('resume');
       const resumePreview = document.getElementById('resume-preview');
       const attachmentsGrid = document.getElementById('attachments-grid');
@@ -176,14 +171,53 @@
       const addFileInput = document.getElementById('add-file-input');
       const attModalEl = document.getElementById('attachmentModal');
       const attModal = attModalEl ? new bootstrap.Modal(attModalEl) : null;
-      const attNameInput = document.getElementById('att-name-input');
+      const attTitleInput = document.getElementById('att-title-input');
+      const attFilenameDisplay = document.getElementById('att-filename-display');
       const attCommentInput = document.getElementById('att-comment-input');
       const attFileInput = document.getElementById('att-file-input');
       const saveAttBtn = document.getElementById('save-att-btn');
+      const deleteAttBtn = document.getElementById('delete-att-btn');
 
       let interventionId = null;
       let attachments = [];
       let currentEditIndex = null;
+      let mainResumeEditor = null;
+
+      // Vérifie qu'un lien /view répond (pour nettoyer les entrées orphelines 404)
+      const validateAttachments = async (list) => {
+        const checks = await Promise.all(list.map(async (att) => {
+          if (att.url && att.kind === 'doc') {
+            try {
+              const res = await fetch(att.url, { method: 'HEAD', headers });
+              return res.ok;
+            } catch (_) { return false; }
+          }
+          return true;
+        }));
+        return list.filter((_, idx) => checks[idx]);
+      };
+
+      // Éditeur markdown (résumé détaillé)
+      if (typeof EasyMDE !== 'undefined') {
+        mainResumeEditor = new EasyMDE({
+          element: resumeInput,
+          spellChecker: false,
+          forceSync: true,
+          placeholder: 'Rédigez un résumé détaillé en Markdown...',
+          toolbar: ['bold','italic','heading','|','quote','unordered-list','ordered-list','|','link','preview'],
+          status: false,
+          minHeight: '180px'
+        });
+        mainResumeEditor.codemirror.on('change', () => {
+          const txt = mainResumeEditor.value();
+          resumePreview.innerHTML = txt ? marked.parse(txt) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+        });
+      } else {
+        resumeInput.addEventListener('input', () => {
+          const text = resumeInput.value;
+          resumePreview.innerHTML = text ? marked.parse(text) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+        });
+      }
 
       const fetchJSON = async (url) => {
         const res = await fetch(url, { headers });
@@ -201,33 +235,48 @@
         reader.readAsDataURL(file);
       });
 
-      const uploadDocument = async (file) => {
+      // Upload générique (image => /api/images, sinon /api/documents) en conservant titre/commentaire
+      const uploadDocument = async (file, { titre = '', commentaire = '' } = {}) => {
+        const isImage = file.type && file.type.startsWith('image/');
         const base64 = await toBase64(file);
         const payload = {
           base64,
           nom_fichier: file.name,
-          nature: file.type || 'Document',
-          type_mime: file.type || 'application/octet-stream',
+          type_mime: file.type || (isImage ? 'image/png' : 'application/octet-stream'),
           cible_type: 'RenduIntervention',
           cible_id: renduId
         };
-        const res = await fetch('/api/documents', {
+        if (isImage) {
+          payload.commentaire_image = commentaire || '';
+          if (titre) payload.titre = titre;
+        } else {
+          payload.nature = file.type || 'Document';
+          payload.commentaire = commentaire || '';
+          if (titre) payload.titre = titre;
+        }
+
+        const endpoint = isImage ? '/api/images' : '/api/documents';
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...headers },
           body: JSON.stringify(payload)
         });
         const data = await res.json().catch(()=> ({}));
         if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-        // Ajoute dans la grille locale
-        attachments.push({
-          kind: file.type.startsWith('image/') ? 'image' : 'doc',
-          url: `/api/documents/${data.id || ''}/view`,
+
+        const created = {
+          id: data.id,
+          kind: isImage ? 'image' : 'doc',
+          url: `${endpoint}/${data.id || ''}/view`,
           nom_fichier: file.name,
-          commentaire_image: payload.nature || 'Document',
-          type: 'Upload',
-          note: ''
-        });
+          titre: titre || '',
+          commentaire_image: isImage ? (commentaire || '') : (commentaire || 'Document'),
+          type: 'Nouveau',
+          type_mime: payload.type_mime
+        };
+        attachments.push(created);
         refreshAttachments();
+        return created;
       };
 
       if (saveAttBtn) {
@@ -238,42 +287,73 @@
           const newComment = attCommentInput ? attCommentInput.value : att.commentaire_image;
           const file = attFileInput && attFileInput.files && attFileInput.files[0];
           try {
-            if (file) {
-              // upload immédiat du nouveau fichier
-              const base64 = await toBase64(file);
-              const payload = {
-                base64,
-                nom_fichier: file.name,
-                nature: newComment || file.type || 'Document',
-                type_mime: file.type || 'application/octet-stream',
-                cible_type: 'RenduIntervention',
-                cible_id: renduId
-              };
-              const res = await fetch('/api/documents', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...headers },
-                body: JSON.stringify(payload)
-              });
-              const data = await res.json().catch(()=> ({}));
-              if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-              attachments[currentEditIndex] = {
-                kind: file.type.startsWith('image/') ? 'image' : 'doc',
-                url: `/api/documents/${data.id || ''}/view`,
-                nom_fichier: file.name,
-                commentaire_image: payload.nature || 'Document',
-                type: 'Upload',
-                note: att.note || ''
-              };
-            } else {
-              attachments[currentEditIndex].commentaire_image = newComment;
-            }
+          if (file) {
+            // upload immédiat du nouveau fichier (image ou doc)
+            const created = await uploadDocument(file, {
+              titre: (attTitleInput?.value || ''),
+              commentaire: newComment || file.type || ''
+            });
+            // remplacer l'ancienne entrée par la nouvelle
+            attachments.splice(currentEditIndex, 1, created);
             refreshAttachments();
-            if (attModal) attModal.hide();
-          } catch (e) {
+          } else {
+            attachments[currentEditIndex].commentaire_image = newComment;
+            attachments[currentEditIndex].titre = attTitleInput?.value || '';
+            // Patch meta côté API si on dispose d'un id
+            const target = attachments[currentEditIndex];
+            if (target.id) {
+              const endpoint = target.kind === 'image' ? '/api/images/' : '/api/documents/';
+              try {
+                await fetch(endpoint + target.id, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json', ...headers },
+                  body: JSON.stringify(target.kind === 'image'
+                    ? {
+                        titre: target.titre || target.nom_fichier,
+                        nom_fichier: target.nom_fichier,
+                        commentaire_image: target.commentaire_image
+                      }
+                    : {
+                        titre: target.titre || target.nom_fichier,
+                        nom_fichier: target.nom_fichier,
+                        nature: target.nature || 'Document',
+                        commentaire: target.commentaire_image
+                      })
+                });
+              } catch (_) {
+                // en cas d'échec, on garde les valeurs locales (affichage) mais l'API restera inchangée
+              }
+            }
+          }
+          refreshAttachments();
+          if (attModal) attModal.hide();
+        } catch (e) {
             console.error(e);
             alert(`Échec de l'ajout du fichier: ${e.message}`);
           } finally {
             if (attFileInput) attFileInput.value = '';
+          }
+        });
+      }
+
+      // Suppression d'une pièce jointe
+      if (deleteAttBtn) {
+        deleteAttBtn.addEventListener('click', async () => {
+          if (currentEditIndex === null) return;
+          const att = attachments[currentEditIndex];
+          if (!att) return;
+          if (!confirm('Supprimer cette pièce jointe ?')) return;
+          try {
+            if (att.id) {
+              const endpoint = att.kind === 'image' ? '/api/images/' : '/api/documents/';
+              await fetch(endpoint + att.id, { method: 'DELETE', headers });
+            }
+            attachments.splice(currentEditIndex, 1);
+            refreshAttachments();
+            attModal?.hide();
+          } catch (err) {
+            console.error(err);
+            alert(`Échec de la suppression: ${err.message}`);
           }
         });
       }
@@ -299,7 +379,8 @@
         currentEditIndex = idx;
         const att = attachments[idx];
         if (!att || !attModal) return;
-        if (attNameInput) attNameInput.value = att.nom_fichier || '';
+        if (attFilenameDisplay) attFilenameDisplay.textContent = att.nom_fichier || '(fichier)';
+        if (attTitleInput) attTitleInput.value = att.titre || att.nom_fichier || '';
         if (attCommentInput) attCommentInput.value = att.commentaire_image || '';
         if (attFileInput) attFileInput.value = '';
         attModal.show();
@@ -312,7 +393,7 @@
         const src  = filterSource?.value || '';
         const kind = filterKind?.value || '';
         const filtered = attachments.filter(att => {
-          const txt = `${att.nom_fichier||''} ${att.commentaire_image||''} ${att.note||''}`.toLowerCase();
+          const txt = `${att.titre||att.nom_fichier||''} ${att.commentaire_image||''}`.toLowerCase();
           const matchTerm = !term || txt.includes(term);
           const matchSrc  = !src || att.type === src;
           const matchKind = !kind || att.kind === kind;
@@ -327,14 +408,17 @@
           card.onclick = () => openEditModal(idx);
           const prev = document.createElement('div');
           prev.className = 'attachment-preview' + (att.kind === 'doc' ? ' doc-preview' : '');
-          prev.innerHTML = att.kind === 'image' ? `<img src="${att.url}" alt="${att.nom_fichier}">` : '<i class="bi bi-file-earmark-text"></i>';
+          prev.innerHTML = att.kind === 'image'
+            ? `<img src="${att.url}" alt="${att.nom_fichier || att.titre || ''}">`
+            : '<i class="bi bi-file-earmark-text"></i>';
           const info = document.createElement('div');
           info.className = 'attachment-info';
           info.innerHTML = `
+            <div class="fw-semibold">${att.titre || att.nom_fichier || 'Fichier'}</div>
             <div class="attachment-comment">${att.commentaire_image || 'Aucun commentaire'}</div>
             <div class="attachment-meta">
               <span class="badge badge-source bg-secondary">${att.type || 'Upload'}</span>
-              <span><i class="bi bi-file-earmark"></i> ${att.nom_fichier || 'Fichier'}</span>
+              <span><i class="bi bi-file-earmark"></i> ${att.nom_fichier || att.titre || 'Fichier'}</span>
             </div>`;
           card.append(prev, info);
           col.append(card);
@@ -360,40 +444,56 @@
       const loadData = async () => {
         const { rendu, images, documents, message_attachments } = await fetchJSON(`/api/rendus/${renduId}`);
         interventionId = rendu.intervention_id;
-        valeurInput.value = rendu.valeur || '';
-        resumeInput.value = rendu.resume || '';
-        resumePreview.innerHTML = rendu.resume ? marked.parse(rendu.resume) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+        if (mainResumeEditor) {
+          mainResumeEditor.value(rendu.resume || '');
+          resumePreview.innerHTML = rendu.resume ? marked.parse(rendu.resume) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+        } else {
+          resumeInput.value = rendu.resume || '';
+          resumePreview.innerHTML = rendu.resume ? marked.parse(rendu.resume) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+        }
         cancelBtn.href = `intervention-view.html?id=${interventionId}`;
         backBtn.onclick = () => location.href = `intervention-view.html?id=${interventionId}`;
 
         attachments = [];
         (images || []).forEach(img => attachments.push({
-          kind: 'image',
+          id: img.id,
+          kind: (img.type_mime && img.type_mime.startsWith('image/')) ? 'image' : 'image',
           url: `/api/images/${img.id}/view`,
           nom_fichier: img.nom_fichier,
+          titre: img.titre || img.nom_fichier,
           commentaire_image: img.commentaire_image,
           type: 'Image',
-          note: img.note || ''
+          type_mime: img.type_mime || ''
         }));
-        (documents || []).forEach(doc => attachments.push({
-          kind: 'doc',
-          url: `/api/documents/${doc.id}/view`,
-          nom_fichier: doc.nom_fichier,
-          commentaire_image: doc.nature || 'Document',
-          type: 'Document',
-          note: doc.note || ''
-        }));
+        (documents || []).forEach(doc => {
+          const isImg = doc.type_mime && doc.type_mime.startsWith('image/');
+          // éviter les doublons si une image existe déjà pour le même nom
+          if (isImg && attachments.find(a => a.nom_fichier === doc.nom_fichier)) return;
+          attachments.push({
+            id: doc.id,
+            kind: isImg ? 'image' : 'doc',
+            url: doc.chemin_fichier ? `/${doc.chemin_fichier}` : `/api/documents/${doc.id}/view`,
+            nom_fichier: doc.nom_fichier,
+            titre: doc.titre || doc.nom_fichier,
+            commentaire_image: doc.commentaire_image || doc.commentaire || doc.nature || 'Document',
+            type: doc.cible_type || 'Document',
+            type_mime: doc.type_mime || ''
+          });
+        });
         (message_attachments || []).forEach(att => {
           const kind = (att.file_type || '').startsWith('image/') ? 'image' : 'doc';
           attachments.push({
+            id: att.id,
             kind,
             url: `/api/attachments/${att.id}/view`,
             nom_fichier: att.file_name,
+            titre: att.titre || att.file_name,
             commentaire_image: `PJ message: ${(att.message || '').substring(0,50)}...`,
             type: 'Message',
-            note: att.note || att.message || ''
+            type_mime: att.file_type || ''
           });
         });
+        attachments = await validateAttachments(attachments);
         refreshAttachments();
       };
 
@@ -407,12 +507,24 @@
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const payload = { valeur: valeurInput.value || '', resume: resumeInput.value || '' };
-        try {
-          const res = await fetch(`/api/rendus/${renduId}`, { method:'PUT', headers, body: JSON.stringify(payload) });
+        const resumeVal = mainResumeEditor ? mainResumeEditor.value() : (resumeInput.value || '');
+        const payload = { resume: resumeVal };
+        const trySave = async (method) => {
+          const res = await fetch(`/api/rendus/${renduId}`, { method, headers, body: JSON.stringify(payload) });
           if (!res.ok) {
             const err = await res.json().catch(()=>({}));
             throw new Error(err.error || `HTTP ${res.status}`);
+          }
+        };
+        try {
+          try {
+            await trySave('PATCH');
+          } catch (_) {
+            try {
+              await trySave('PUT');
+            } catch (_) {
+              await trySave('POST');
+            }
           }
           alert('Rendu mis à jour avec succès');
           if (interventionId) location.href = `intervention-view.html?id=${interventionId}`; else location.href='interventions.html';

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -212,11 +212,19 @@
   <!-- ✅ HEADER -->
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <h4 class="mb-0 d-flex align-items-center">
-        <i class="bi bi-ticket-detailed me-2"></i>
-        <span id="header-title">Ticket</span>
-      </h4>
-      <!--<div class="small opacity-75" id="header-status-text"></div>-->
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <h4 class="mb-0 d-flex align-items-center">
+          <i class="bi bi-ticket-detailed me-2"></i>
+          <span id="header-title">Ticket</span>
+        </h4>
+        <div class="small opacity-75" id="header-status-text"></div>
+      </div>
+      <div class="d-flex flex-wrap gap-2 d-none" id="header-actions-bar">
+        <button class="btn btn-light btn-sm" id="header-add-resp"><i class="bi bi-person-plus me-1"></i>Responsable</button>
+        <button class="btn btn-light btn-sm" id="header-add-agent"><i class="bi bi-people me-1"></i>Agent</button>
+        <button class="btn btn-light btn-sm" id="header-create-affaire"><i class="bi bi-briefcase me-1"></i>Affaire</button>
+        <button class="btn btn-light btn-sm" id="header-create-doe"><i class="bi bi-journal-text me-1"></i>DOE</button>
+      </div>
     </div>
 
     <!-- ✅ Ticket Infos -->
@@ -224,8 +232,8 @@
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
        <!-- <h3 class="mb-0 fw-semibold d-flex align-items-center"><i class="bi bi-info-circle me-2"></i><span id="view_titre">-</span></h3>-->
         <div class="d-flex gap-2">
-          <!--<a href="tickets.html" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Retour</a>
-          <a id="edit-ticket-btn" href="#" class="btn btn-primary btn-sm d-none"><i class="bi bi-pencil-square me-1"></i>Modifier</a>-->
+          <!--<a href="tickets.html" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Retour</a>-->
+          <a id="edit-ticket-btn" href="#" class="btn btn-primary btn-sm d-none"><i class="bi bi-pencil-square me-1"></i>Modifier</a>
         </div>
       </div>
       <div class="info-grid">
@@ -243,6 +251,28 @@
         <label class="text-muted small fw-bold"><i class="bi bi-text-paragraph me-1"></i>Description :</label>
         <div class="p-3 bg-light rounded" id="view_description">-</div>
       </div>
+
+      <!-- Infos intégrées (ex-cartes Responsables / Agents / Actions) -->
+      <div class="row g-3 mt-4">
+        <div class="col-lg-6">
+          <div class="info-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="mb-0">Responsables</label>
+              <button class="btn btn-sm btn-outline-primary d-none" id="inline-add-resp"><i class="bi bi-plus"></i></button>
+            </div>
+            <div id="inline-responsables" class="value text-muted small">Aucun responsable</div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="info-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="mb-0">Agents assignés</label>
+              <button class="btn btn-sm btn-outline-primary d-none" id="inline-add-agent"><i class="bi bi-plus"></i></button>
+            </div>
+            <div id="inline-agents" class="value text-muted small">Aucun agent</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -250,11 +280,14 @@
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
       <span><i class="bi bi-wrench-adjustable me-2"></i>Interventions</span>
-      <button id="add-intervention-btn" class="btn btn-light btn-sm d-none" data-bs-toggle="modal" data-bs-target="#createInterventionModal">
-        <i class="bi bi-plus-circle me-1"></i>Ajouter
-      </button>
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-light toggle-card-btn" data-target="#interventions-card-body"><i class="bi bi-eye"></i> Voir</button>
+        <button id="add-intervention-btn" class="btn btn-light btn-sm d-none" data-bs-toggle="modal" data-bs-target="#createInterventionModal">
+          <i class="bi bi-plus-circle me-1"></i>Ajouter
+        </button>
+      </div>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body p-4" id="interventions-card-body">
       <h3 class="mb-3 fw-semibold"><i class="bi bi-list-task me-2"></i>Suivi des interventions</h3>
       <div id="ticket-interventions-list">
         <div class="loading-spinner"><div class="spinner-border text-primary"></div></div>
@@ -262,16 +295,39 @@
     </div>
   </div>
 
+  <!-- Rapports d'intervention -->
+  <!--<div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center">
+      <span class="d-flex align-items-center gap-2"><i class="bi bi-file-earmark-text me-1"></i>Rapports d'interventions</span>
+      <button class="btn btn-sm btn-light toggle-card-btn" data-target="#rapports-card-body"><i class="bi bi-eye"></i> Voir</button>
+    </div>
+    <div class="card-body p-4" id="rapports-card-body">
+      <div id="rapports-list" class="text-muted">Chargement...</div>
+    </div>
+  </div>-->
+
+  <!-- Factures Financières -->
+  <!--<div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center">
+      <span class="d-flex align-items-center gap-2"><i class="bi bi-receipt me-1"></i>Factures Financières</span>
+      <button class="btn btn-sm btn-light toggle-card-btn" data-target="#financial-factures-card-body"><i class="bi bi-eye"></i> Voir</button>
+    </div>
+    <div class="card-body p-4" id="financial-factures-card-body">
+      <div id="financial-factures-list" class="text-muted">Chargement...</div>
+    </div>
+  </div>-->
+
   <!-- Site associé -->
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
       <span class="d-flex align-items-center gap-2"><i class="bi bi-building me-1"></i>Site associé</span>
       <div class="d-flex align-items-center gap-2">
         <span class="badge bg-light text-dark" id="site-statut">-</span>
+        <button class="btn btn-sm btn-light toggle-card-btn" data-target="#site-card-body"><i class="bi bi-eye"></i> Voir</button>
         <a id="site-view-link" class="btn btn-light btn-sm d-none" href="#"><i class="bi bi-eye"></i> Voir le site</a>
       </div>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body p-4" id="site-card-body">
       <div class="hero mb-3">
         <div class="d-flex justify-content-between align-items-start">
           <div>
@@ -315,11 +371,14 @@
   <div class="main-card">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
       <span class="d-flex align-items-center gap-2"><i class="bi bi-box-seam me-1"></i>Matériels & commandes</span>
-      <button class="btn btn-light btn-sm d-none" id="add-materiel-btn">
-        <i class="bi bi-plus-circle me-1"></i>Ajouter un matériel
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-light toggle-card-btn" data-target="#materiels-card-body"><i class="bi bi-eye"></i> Voir</button>
+         <!--<button class="btn btn-light btn-sm d-none" id="add-materiel-btn">
+         <i class="bi bi-plus-circle me-1"></i>Ajouter un matériel
+        </button>-->
+      </div>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body p-4" id="materiels-card-body">
       <div id="materiels-list">
         <div class="text-muted">Chargement...</div>
       </div>
@@ -327,7 +386,7 @@
   </div>
 
   <!-- Responsables / Agents -->
-  <div class="row g-4 mb-4">
+  <div class="row g-4 mb-4 d-none" id="resp-agent-row">
     <div class="col-lg-6">
       <div class="main-card h-100">
         <div class="card-header-gradient d-flex justify-content-between align-items-center">
@@ -394,12 +453,12 @@
           </div>
           <div class="row g-3">
             <div class="col-md-6">
-              <label for="intervention-date-debut" class="form-label fw-bold">Date début</label>
-              <input type="date" id="intervention-date-debut" class="form-control" required>
+              <label for="intervention-date-debut" class="form-label fw-bold">Date et heure de début</label>
+              <input type="datetime-local" id="intervention-date-debut" class="form-control" required>
             </div>
             <div class="col-md-6">
               <label for="intervention-date-fin" class="form-label fw-bold">Date fin (optionnel)</label>
-              <input type="date" id="intervention-date-fin" class="form-control">
+              <input type="datetime-local" id="intervention-date-fin" class="form-control">
             </div>
           </div>
           <input type="hidden" id="intervention-status" value="En_attente">
@@ -423,10 +482,10 @@
       <div class="modal-body">
         <form id="addResponsableForm">
           <div class="mb-3">
-            <label for="responsable-select" class="form-label fw-bold">Sélectionner un agent admin</label>
-            <select id="responsable-select" class="form-select" required>
-              <option value="">-- Sélectionner --</option>
-            </select>
+            <label for="responsable-search-input" class="form-label fw-bold">Rechercher un responsable</label>
+            <input type="text" id="responsable-search-input" class="form-control" placeholder="Nom, matricule..." autocomplete="off">
+            <input type="hidden" id="responsable-mat">
+            <div id="responsable-suggestions" class="list-group mt-1" style="max-height:200px;overflow:auto;"></div>
           </div>
         </form>
       </div>
@@ -451,10 +510,10 @@
       <div class="modal-body">
         <form id="addAgentForm">
           <div class="mb-3">
-            <label for="agent-select" class="form-label fw-bold">Sélectionner un agent</label>
-            <select id="agent-select" class="form-select" required>
-              <option value="">-- Sélectionner --</option>
-            </select>
+            <label for="agent-search-input" class="form-label fw-bold">Rechercher un agent</label>
+            <input type="text" id="agent-search-input" class="form-control" placeholder="Nom, matricule..." autocomplete="off">
+            <input type="hidden" id="agent-mat">
+            <div id="agent-suggestions" class="list-group mt-1" style="max-height:200px;overflow:auto;"></div>
           </div>
         </form>
       </div>
@@ -683,13 +742,119 @@
       const addMaterielBtn = document.getElementById('add-materiel-btn');
       const materielModalEl = document.getElementById('materielModal');
       const materielModal = materielModalEl ? new bootstrap.Modal(materielModalEl) : null;
-      const matStatusOptions = ['En attente','Commande en cours','Reçue','Installée','Annulée'];
+      const rapportsList = document.getElementById('rapports-list');
+      const financialFacturesList = document.getElementById('financial-factures-list');
+      const matStatusOptions = ['A commander','Commande','En livraison','Reçu','Installé'];
       let interventionsCache = [];
+
+      // Rapports d'intervention (liens vers les rendus téléchargeables)
+      function renderInterventionReports(interventions = []) {
+        if (!rapportsList) {
+          console.warn('[ticket-view] rapportsList introuvable');
+          return;
+        }
+        if (!interventions.length) {
+          rapportsList.innerHTML = '<div class="text-muted">Aucune intervention, aucune facture.</div>';
+          return;
+        }
+        rapportsList.innerHTML = '';
+        console.log('[ticket-view] renderInterventionReports ->', interventions.length);
+        interventions.forEach(inter => {
+          const card = document.createElement('div');
+          card.className = 'card card-body mb-2';
+          card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div>
+                <div class="fw-semibold">${inter.titre || 'Intervention #${inter.id}'}</div>
+                <div class="small text-muted">${inter.description || ''}</div>
+              </div>
+              <div class="d-flex gap-2">
+                <a class="btn btn-sm btn-outline-primary" href="intervention-view.html?id=${inter.id}" target="_blank">
+                  <i class="bi bi-eye"></i> Voir
+                </a>
+                <a class="btn btn-sm btn-success" href="rendu-intervention-view.html?id=${inter.id}" target="_blank">
+                  <i class="bi bi-download"></i> Télécharger (HTML)
+                </a>
+              </div>
+            </div>
+          `;
+          rapportsList.appendChild(card);
+        });
+        if (!rapportsList.innerHTML.trim()) {
+          rapportsList.innerHTML = '<div class="text-muted">Aucune intervention, aucune facture.</div>';
+        }
+        if (rapportsList.textContent.trim().toLowerCase().includes('chargement')) {
+          rapportsList.innerHTML = '<div class="text-muted">Aucune intervention, aucune facture.</div>';
+        }
+        console.log('[ticket-view] rapports HTML updated');
+      }
+
+      function renderFinancialInvoices(factures = []) {
+        if (!financialFacturesList) return;
+        if (!factures.length) {
+          financialFacturesList.innerHTML = '<div class="text-muted">Aucune facture financière liée.</div>';
+          return;
+        }
+        financialFacturesList.innerHTML = '';
+        factures.forEach(facture => {
+          const titre = facture.titre || facture.reference || `Facture #${facture.id}`;
+          const inter = facture.intervention_titre || (facture.intervention_id ? `Intervention #${facture.intervention_id}` : '—');
+          const ttc  = facture.total_ttc || facture.montant_ttc || 0;
+          const card = document.createElement('div');
+          card.className = 'card card-body mb-2';
+          card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div>
+                <div class="fw-semibold">${titre}</div>
+                <div class="small text-muted">Intervention: ${inter}</div>
+                <div class="small fw-semibold">Montant TTC: ${Number(ttc).toFixed(2)} €</div>
+              </div>
+              <div class="d-flex gap-2">
+                <a class="btn btn-sm btn-outline-primary" href="facture-view.html?id=${facture.id}" target="_blank">
+                  <i class="bi bi-eye"></i> Voir
+                </a>
+                <a class="btn btn-sm btn-success" href="/api/factures/${facture.id}/download" target="_blank" title="Télécharger la facture">
+                  <i class="bi bi-download"></i>
+                </a>
+              </div>
+            </div>
+          `;
+          financialFacturesList.appendChild(card);
+        });
+        if (financialFacturesList.textContent.trim().toLowerCase().includes('chargement')) {
+          financialFacturesList.innerHTML = '<div class="text-muted">Aucune facture financière liée.</div>';
+        }
+      }
+
+      async function loadFinancialInvoices(clientId, affaireId, associationId) {
+        if (!financialFacturesList) return;
+        financialFacturesList.innerHTML = '<div class="text-muted">Chargement des factures...</div>';
+        try {
+          const params = new URLSearchParams();
+          if (clientId) params.append('client_id', clientId);
+          if (affaireId) params.append('affaire_id', affaireId);
+          if (associationId) params.append('association_id', associationId);
+
+          const url = `/api/factures?${params.toString()}`;
+          console.log('[ticket-view] fetch factures financières', url);
+          const factures = await fetchJSON(url);
+          console.log('[ticket-view] factures financières', factures);
+          renderFinancialInvoices(factures || []);
+        } catch (e) {
+          console.error('Erreur chargement factures financières:', e);
+          financialFacturesList.innerHTML = '<div class="text-danger">Erreur de chargement des factures.</div>';
+        } finally {
+          if (financialFacturesList && !financialFacturesList.innerHTML.trim()) {
+            financialFacturesList.innerHTML = '<div class="text-muted">Aucune facture financière liée.</div>';
+          }
+        }
+      }
       try {
         const res = await fetch(`/api/tickets/${ticketId}/relations`, { headers, credentials: 'same-origin' });
         if (res.status===401||res.status===403){ location.href='/login.html'; return; }
         const data = await res.json();
         if (!res.ok) throw new Error(data && data.error || `HTTP ${res.status}`);
+        console.log('[ticket-view] relations', { ticketId, interventions: data.interventions?.length, demandes: data.demandes?.length, site: data.site?.id });
         const t = data.ticket; if (!t) throw new Error('Not found');
         let demandeId = t.demande_id || null;
         if (!demandeId && Array.isArray(data.demandes) && data.demandes.length) {
@@ -867,13 +1032,17 @@
         if (!interventionsCache.length && ticketId) {
           try {
             const extraInter = await fetchJSON(`/api/interventions?ticket_id=${ticketId}`);
-            if (Array.isArray(extraInter)) interventionsCache = extraInter;
+            if (Array.isArray(extraInter)) {
+              interventionsCache = extraInter;
+            }
           } catch (err) {
             console.warn('Impossible de récupérer les interventions du ticket', err);
           }
         }
-        if (!items.length) list.innerHTML = '<p class="text-muted">Aucune intervention associée.</p>';
-        items.forEach(inter => {
+        console.log('[ticket-view] interventionsCache', interventionsCache);
+        const interToDisplay = interventionsCache;
+        if (!interToDisplay.length) list.innerHTML = '<p class="text-muted">Aucune intervention associée.</p>';
+        interToDisplay.forEach(inter => {
           const el = document.createElement('div'); el.className='card card-body mb-2';
           const interElapsed = inter.date_debut ? formatElapsed((inter.date_fin ? new Date(inter.date_fin).getTime() : Date.now()) - new Date(inter.date_debut).getTime()) : '';
           el.innerHTML = `
@@ -885,11 +1054,27 @@
               </div>
               <div class="text-end">
                 <div class="small text-muted mb-1">Temps écoulé: ${interElapsed || '—'}</div>
-                <a href="intervention-view.html?id=${inter.id}" class="btn btn-sm btn-info me-1"><i class="bi bi-eye"></i> Voir</a>
+                <div class="btn-group">
+                  <a href="intervention-view.html?id=${inter.id}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i> Voir</a>
+                  ${isAdmin ? `
+                    <a class="btn btn-sm btn-secondary edit-inter" href="intervention-edit.html?id=${inter.id}"><i class="bi bi-pencil-square"></i> Modifier</a>
+                    <button class="btn btn-sm btn-warning cancel-inter" data-id="${inter.id}"><i class="bi bi-slash-circle"></i> Annuler</button>
+                  ` : ''}
+                </div>
               </div>
             </div>`;
           list.appendChild(el);
         });
+
+        // Rapports d'intervention (liens vers les rendus téléchargeables)
+        console.log('[ticket-view] render reports with', interventionsCache.length);
+        renderInterventionReports(interventionsCache);
+
+        // Extract IDs for financial invoices
+        const currentClientId = data.site?.client_id || data.client?.id || t.client_id;
+        const currentAffaireId = data.affaire?.id || t.affaire_id;
+        const currentAssociationId = data.ticket?.association_id || data.site?.association_id || data.affaire?.association_id; // Prioritize from ticket, then site, then affaire
+        loadFinancialInvoices(currentClientId, currentAffaireId, currentAssociationId);
 
         // Responsables et agents assignés
         const responsablesList = document.getElementById('responsables-list');
@@ -907,7 +1092,7 @@
             li.className = 'list-group-item d-flex justify-content-between align-items-center';
             const label = (r.actor_email || r.actor_name || r.agent_matricule || 'Responsable')
               + (r.role ? ` (${r.role})` : '');
-            li.textContent = label;
+            li.innerHTML = `<span>${label}</span>` + (isAdmin ? `<button class="btn btn-sm btn-outline-danger del-resp" data-m="${r.agent_matricule || r.matricule || ''}"><i class="bi bi-x-lg"></i></button>` : '');
             responsablesList.appendChild(li);
           });
         }
@@ -924,7 +1109,7 @@
           arr.forEach(a => {
             const li = document.createElement('li');
             li.className = 'list-group-item d-flex justify-content-between align-items-center';
-            li.textContent = a.agent_matricule || a.matricule || 'Agent';
+            li.innerHTML = `<span>${a.agent_matricule || a.matricule || 'Agent'}</span>` + (isAdmin ? `<button class="btn btn-sm btn-outline-danger del-agent" data-m="${a.agent_matricule || a.matricule || ''}"><i class="bi bi-x-lg"></i></button>` : '');
             agentsList.appendChild(li);
           });
         }
@@ -934,22 +1119,154 @@
         renderResponsables(responsables);
         renderAgents(agentsAssignes);
         await loadMaterielsSection(interventionsCache);
+        // Actions annuler/supprimer intervention (admin)
+        const interListEl = document.getElementById('ticket-interventions-list');
+        if (interListEl) {
+          interListEl.addEventListener('click', async (ev) => {
+            const btn = ev.target.closest('button.cancel-inter, button.delete-inter');
+            if (!btn) return;
+            const id = btn.getAttribute('data-id');
+            if (!id) return;
+            if (btn.classList.contains('cancel-inter')) {
+              if (!confirm('Annuler cette intervention ?')) return;
+              const motif = prompt('Motif d’annulation (obligatoire) :');
+              if (!motif || !motif.trim()) return;
+              const inter = (interventionsCache || []).find(i => String(i.id) === String(id)) || {};
+              const newDesc = inter.description
+                ? `${inter.description}\n[Annulation] ${motif.trim()}`
+                : `[Annulation] ${motif.trim()}`;
+              try {
+                await fetch(`/api/interventions/${id}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json', ...headers },
+                  credentials: 'same-origin',
+                  body: JSON.stringify({ status: 'Termine', date_fin: new Date().toISOString(), description: newDesc })
+                });
+                alert('Intervention annulée.');
+                location.reload();
+              } catch (e) {
+                alert('Erreur lors de l’annulation: ' + e.message);
+              }
+            }
+          });
+        }
+        // Inline recap in main card
+        const inlineResp = document.getElementById('inline-responsables');
+        const inlineAg = document.getElementById('inline-agents');
+        const inlineAddResp = document.getElementById('inline-add-resp');
+        const inlineAddAgent = document.getElementById('inline-add-agent');
+        if (inlineResp) {
+          if (responsables.length) {
+            inlineResp.innerHTML = responsables.map(r => {
+              const label = r.agent_matricule || r.matricule || 'Resp';
+              const link = `<a href="/agent-view.html?matricule=${encodeURIComponent(label)}" class="text-decoration-none text-reset">${label}</a>`;
+              return isAdmin
+                ? `<span class="badge bg-secondary me-1 d-inline-flex align-items-center gap-1">${link}<button class="btn btn-xs btn-link p-0 text-white del-resp" data-m="${label}"><i class="bi bi-x-lg"></i></button></span>`
+                : `<a class="badge bg-secondary me-1 text-decoration-none text-reset" href="/agent-view.html?matricule=${encodeURIComponent(label)}">${label}</a>`;
+            }).join(' ');
+          } else {
+            inlineResp.textContent = 'Aucun responsable';
+          }
+        }
+        if (inlineAg) {
+          if (agentsAssignes.length) {
+            inlineAg.innerHTML = agentsAssignes.map(a => {
+              const label = a.agent_matricule || a.matricule || 'Agent';
+              const link = `<a href="/agent-view.html?matricule=${encodeURIComponent(label)}" class="text-decoration-none text-reset">${label}</a>`;
+              return isAdmin
+                ? `<span class="badge bg-light text-dark me-1 d-inline-flex align-items-center gap-1">${link}<button class="btn btn-xs btn-link p-0 text-dark del-agent" data-m="${label}"><i class="bi bi-x-lg"></i></button></span>`
+                : `<a class="badge bg-light text-dark me-1 text-decoration-none" href="/agent-view.html?matricule=${encodeURIComponent(label)}">${label}</a>`;
+            }).join(' ');
+          } else {
+            inlineAg.textContent = 'Aucun agent';
+          }
+        }
+        if (inlineAddResp) {
+          inlineAddResp.addEventListener('click', () => {
+            if (respHidden) respHidden.value='';
+            if (respSearch) respSearch.value='';
+            const modal = new bootstrap.Modal(document.getElementById('addResponsableModal'));
+            modal.show();
+          });
+        }
+        if (inlineAddAgent) {
+          inlineAddAgent.addEventListener('click', () => {
+            if (agentHidden) agentHidden.value='';
+            if (agentSearch) agentSearch.value='';
+            const modal = new bootstrap.Modal(document.getElementById('addAgentModal'));
+            modal.show();
+          });
+        }
 
-        // Admin features
+       // Admin features
         if (isAdmin) {
           const addInt = document.getElementById('add-intervention-btn');
           if (addInt) addInt.classList.remove('d-none');
-          const addResp = document.getElementById('add-responsable-btn');
-          if (addResp) addResp.classList.remove('d-none');
-          const addAgent = document.getElementById('add-agent-btn');
-          if (addAgent) addAgent.classList.remove('d-none');
           if (addMaterielBtn) addMaterielBtn.classList.remove('d-none');
           const editBtn = document.getElementById('edit-ticket-btn');
-          if (editBtn) editBtn.classList.remove('d-none');
-          const adminActions = document.getElementById('admin-actions-card');
-          if (adminActions) adminActions.classList.remove('d-none');
+          if (editBtn) {
+            editBtn.classList.remove('d-none');
+            editBtn.href = `ticket-edit.html?id=${ticketId}`;
+          }
 
-          // Chargement des agents pour les sélecteurs
+          const addResp = document.getElementById('add-responsable-btn');
+          const addAgent = document.getElementById('add-agent-btn');
+          // Les cartes dédiées restent masquées; on utilise les boutons inline
+          if (inlineAddResp) { inlineAddResp.classList.remove('d-none'); inlineAddResp.addEventListener('click', () => addResp?.click()); }
+          if (inlineAddAgent) { inlineAddAgent.classList.remove('d-none'); inlineAddAgent.addEventListener('click', () => addAgent?.click()); }
+          const bar = document.getElementById('header-actions-bar');
+          if (bar) {
+            bar.classList.remove('d-none');
+            bar.style.display = 'flex';
+            document.getElementById('header-add-resp')?.addEventListener('click', () => addResp?.click());
+            document.getElementById('header-add-agent')?.addEventListener('click', () => addAgent?.click());
+            document.getElementById('header-create-affaire')?.addEventListener('click', () => document.querySelector('[data-bs-target="#createAffaireModal"]')?.click());
+            document.getElementById('header-create-doe')?.addEventListener('click', () => document.querySelector('[data-bs-target="#createDoeModal"]')?.click());
+          }
+
+          // Suppression Responsable (inline badges et éventuelle liste)
+          const handleRespDelete = async (matricule) => {
+            if (!matricule) return;
+            if (!confirm('Supprimer ce responsable ?')) return;
+            try {
+              const resDel = await fetch(`/api/tickets/${ticketId}/responsables/${matricule}`, { method:'DELETE', headers: { ...headers }, credentials:'same-origin' });
+              if (!resDel.ok) throw new Error('Erreur suppression responsable');
+              location.reload();
+            } catch (err) { alert(err.message); }
+          };
+          inlineResp?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.del-resp');
+            if (!btn) return;
+            handleRespDelete(btn.dataset.m);
+          });
+          responsablesList?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.del-resp');
+            if (!btn) return;
+            handleRespDelete(btn.dataset.m);
+          });
+
+          // Suppression Agent (inline badges et éventuelle liste)
+          const handleAgentDelete = async (matricule) => {
+            if (!matricule) return;
+            if (!confirm('Supprimer cet agent ?')) return;
+            try {
+              const resDel = await fetch(`/api/tickets/${ticketId}/agents/${matricule}`, { method:'DELETE', headers: { ...headers }, credentials:'same-origin' });
+              if (!resDel.ok) throw new Error('Erreur suppression agent');
+              location.reload();
+            } catch (err) { alert(err.message); }
+          };
+          inlineAg?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.del-agent');
+            if (!btn) return;
+            handleAgentDelete(btn.dataset.m);
+          });
+          agentsList?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.del-agent');
+            if (!btn) return;
+            handleAgentDelete(btn.dataset.m);
+          });
+
+          // Chargement des agents pour les sélecteurs (modales masquées mais accessibles si besoin)
           let allAgents = [];
           try {
             const agentsRes = await fetch('/api/agents', { headers, credentials: 'same-origin' });
@@ -958,33 +1275,53 @@
             }
           } catch {}
 
-          const responsableSelect = document.getElementById('responsable-select');
-          const agentSelect = document.getElementById('agent-select');
+        const respSearch = document.getElementById('responsable-search-input');
+        const respHidden = document.getElementById('responsable-mat');
+        const respSug = document.getElementById('responsable-suggestions');
+        const agentSearch = document.getElementById('agent-search-input');
+        const agentHidden = document.getElementById('agent-mat');
+        const agentSug = document.getElementById('agent-suggestions');
 
-          function populateSelect(selectEl, filterFn) {
-            if (!selectEl) return;
-            selectEl.innerHTML = '<option value="">-- Sélectionner --</option>';
-            (allAgents || [])
-              .filter(filterFn || (() => true))
-              .forEach(a => {
-                const opt = document.createElement('option');
-                opt.value = a.matricule;
-                opt.textContent = `${a.matricule} - ${a.nom} ${a.prenom}`;
-                selectEl.appendChild(opt);
-              });
+          function setupAgentAutocomplete(inputEl, hiddenEl, sugEl, filterFn) {
+            if (!inputEl || !hiddenEl || !sugEl) return;
+            let timer;
+            inputEl.addEventListener('input', () => {
+              clearTimeout(timer);
+              const q = inputEl.value.trim();
+              hiddenEl.value = '';
+              if (q.length < 1) { sugEl.innerHTML=''; return; }
+              timer = setTimeout(async () => {
+                try {
+                  const r = await fetch(`/api/agents?query=${encodeURIComponent(q)}`, { headers, credentials:'same-origin' });
+                  let agents = r.ok ? await r.json() : [];
+                  if (filterFn) agents = agents.filter(filterFn);
+                  sugEl.innerHTML = '';
+                  (agents || []).forEach(a => {
+                    const btn = document.createElement('button');
+                    btn.type='button';
+                    btn.className='list-group-item list-group-item-action';
+                    const full = `${a.prenom || ''} ${a.nom || ''}`.trim() || a.matricule || 'Agent';
+                    btn.textContent = `${full}${a.matricule ? ' ('+a.matricule+')' : ''}`;
+                    btn.addEventListener('click', () => {
+                      inputEl.value = full;
+                      hiddenEl.value = a.matricule || '';
+                      sugEl.innerHTML='';
+                    });
+                    sugEl.appendChild(btn);
+                  });
+                  if (!sugEl.innerHTML) sugEl.innerHTML = '<div class="list-group-item text-muted">Aucun résultat</div>';
+                } catch(err){ sugEl.innerHTML='<div class="list-group-item text-danger">Erreur</div>'; }
+              }, 200);
+            });
+            inputEl.addEventListener('blur', () => setTimeout(() => { sugEl.innerHTML=''; }, 200));
           }
-
-          // Responsable : admin + Chef
-          populateSelect(responsableSelect, a =>
-            Array.isArray(a.roles) && a.roles.includes('ROLE_ADMIN')
-          );
-          // Agents : tous
-          populateSelect(agentSelect);
+          setupAgentAutocomplete(respSearch, respHidden, respSug, a => Array.isArray(a.roles) && a.roles.includes('ROLE_ADMIN'));
+          setupAgentAutocomplete(agentSearch, agentHidden, agentSug);
 
           const saveResponsableBtn = document.getElementById('save-responsable-btn');
-          if (saveResponsableBtn && responsableSelect) {
+          if (saveResponsableBtn) {
             saveResponsableBtn.addEventListener('click', async () => {
-              const matricule = responsableSelect.value;
+              const matricule = respHidden?.value;
               if (!matricule) return alert('Veuillez sélectionner un responsable.');
               try {
                 const resPost = await fetch(`/api/tickets/${ticketId}/responsables`, {
@@ -998,7 +1335,8 @@
                 });
                 const body = await resPost.json().catch(() => ({}));
                 if (!resPost.ok) throw new Error(body.error || 'Erreur lors de l\'ajout du responsable');
-                alert('Responsable ajouté avec succès.');
+                if(respHidden) respHidden.value='';
+                if(respSearch) respSearch.value='';
                 location.reload();
               } catch (err) {
                 alert(`Erreur: ${err.message}`);
@@ -1007,9 +1345,9 @@
           }
 
           const saveAgentBtn = document.getElementById('save-agent-btn');
-          if (saveAgentBtn && agentSelect) {
+          if (saveAgentBtn) {
             saveAgentBtn.addEventListener('click', async () => {
-              const matricule = agentSelect.value;
+              const matricule = agentHidden?.value;
               if (!matricule) return alert('Veuillez sélectionner un agent.');
               try {
                 const resPost = await fetch(`/api/tickets/${ticketId}/agents`, {
@@ -1023,7 +1361,8 @@
                 });
                 const body = await resPost.json().catch(() => ({}));
                 if (!resPost.ok) throw new Error(body.error || 'Erreur lors de l\'assignation de l\'agent');
-                alert('Agent assigné avec succès.');
+                if(agentHidden) agentHidden.value='';
+                if(agentSearch) agentSearch.value='';
                 location.reload();
               } catch (err) {
                 alert(`Erreur: ${err.message}`);
@@ -1073,11 +1412,21 @@
           if (interventionForm) {
             interventionForm.addEventListener('submit', async (e) => {
               e.preventDefault();
+              const ddRaw = (document.getElementById('intervention-date-debut')?.value || '').trim();
+              const dfRaw = (document.getElementById('intervention-date-fin')?.value || '').trim();
+              if (!ddRaw) {
+                alert('La date/heure de début est obligatoire.');
+                return;
+              }
+              let dateDebutIso = null; let dateFinIso = null;
+              try { dateDebutIso = new Date(ddRaw).toISOString(); } catch(_) { dateDebutIso = null; }
+              if (dfRaw) { try { dateFinIso = new Date(dfRaw).toISOString(); } catch(_) { dateFinIso = null; } }
+
               const payload = {
                 titre: document.getElementById('intervention-titre').value,
                 description: document.getElementById('intervention-description').value,
-                date_debut: document.getElementById('intervention-date-debut').value,
-                date_fin: document.getElementById('intervention-date-fin').value || null,
+                date_debut: dateDebutIso,
+                date_fin: dateFinIso,
                 ticket_id: ticketId,
                 status: 'En_attente'
               };
@@ -1141,76 +1490,90 @@
         set('ticket-title', 'Ticket introuvable');
       }
 
-      async function loadMaterielsSection(interventions = []) {
-        if (!materielsListEl) return;
-        if (!interventions.length) {
-          materielsListEl.innerHTML = '<div class="text-muted">Aucune intervention, aucun matériel.</div>';
-          return;
-        }
-        materielsListEl.innerHTML = '<div class="text-muted">Chargement des matériels...</div>';
-        const all = [];
-        for (const inter of interventions) {
-          if (!inter?.id) continue;
-          try {
-            const mats = await fetchJSON(`/api/materiels?intervention_id=${inter.id}`);
-            (mats || []).forEach(m => all.push({ ...m, _intervention: inter }));
-          } catch (err) {
-            console.warn('Materiels non chargés pour intervention', inter.id, err);
-          }
-        }
-        if (!all.length) {
-          materielsListEl.innerHTML = '<div class="text-muted">Aucun matériel lié aux interventions de ce ticket.</div>';
-          return;
-        }
-        materielsListEl.innerHTML = '';
-        all.forEach(m => {
-          const card = document.createElement('div');
-          card.className = 'card mb-2';
-          const status = m.commande_status || m.status_commande || '—';
-          const interLabel = m._intervention ? (m._intervention.titre || `Intervention #${m._intervention.id}`) : 'Intervention';
-          card.innerHTML = `
-            <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
-              <div>
-                <div class="fw-semibold">${m.designation || 'Matériel'}</div>
-                <div class="small text-muted">${m.reference || ''}${m.categorie ? ' • ' + m.categorie : ''}</div>
-                <div class="small text-muted">Intervention : <a href="intervention-view.html?id=${m.intervention_id || m._intervention?.id || ''}" class="link-button">${interLabel}</a></div>
-                ${m.fabricant ? `<div class="small text-muted">Fabricant : ${m.fabricant}</div>` : ''}
-                ${m.prix_achat ? `<div class="small text-muted">Prix achat : ${m.prix_achat} €</div>` : ''}
-                ${m.commentaire ? `<div class="small text-muted">Commentaire : ${m.commentaire}</div>` : ''}
-              </div>
-              <div class="text-end" style="min-width:180px;">
-                <label class="small text-muted">Statut commande</label>
-                <div class="d-flex gap-2 align-items-center">
-                  ${isAdmin ? `
-                    <select class="form-select form-select-sm mat-status">
-                      ${['', ...matStatusOptions].map(opt => `<option value="${opt}" ${opt===status?'selected':''}>${opt || '—'}</option>`).join('')}
-                    </select>
-                  ` : `<span class="badge bg-light text-dark">${status}</span>`}
-                </div>
-              </div>
-            </div>
-          `;
-          materielsListEl.appendChild(card);
-          if (isAdmin) {
-            const select = card.querySelector('.mat-status');
-            if (select) {
-              select.addEventListener('change', async () => {
-                try {
-                  await fetchJSON(`/api/materiels/${m.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ commande_status: select.value || null })
-                  });
-                } catch (err) {
-                  alert(err.message || 'Mise à jour impossible');
-                  select.value = status;
+            async function loadMaterielsSection(interventions = []) {
+              if (!materielsListEl) return;
+              materielsListEl.innerHTML = '<div class="text-muted">Chargement des matériels...</div>'; // Always show loading initially
+              try {
+                if (!interventions.length) {
+                  materielsListEl.innerHTML = '<div class="text-muted">Aucune intervention, aucun matériel.</div>';
+                  return;
+                }
+                const all = [];
+                for (const inter of interventions) {
+                  if (!inter?.id) {
+                    console.warn('Intervention without valid ID found, skipping material fetch:', inter);
+                    continue;
+                  }
+                  try {
+                    const mats = await fetchJSON(`/api/interventions/${inter.id}/materiels`);
+                    (mats || []).forEach(m => all.push({ ...m, _intervention: inter }));
+                  } catch (err) {
+                    console.warn(`Materiels non chargés pour intervention ${inter.id}:`, err);
+                    // Decide if you want to show an error for individual intervention or just skip
+                  }
+                }
+                if (!all.length) {
+                  materielsListEl.innerHTML = '<div class="text-muted">Aucun matériel lié aux interventions de ce ticket.</div>';
+                  return;
+                }
+                materielsListEl.innerHTML = ''; // Clear loading and potential error from individual fetches
+                all.forEach(m => {
+                  const card = document.createElement('div');
+                  card.className = 'card mb-2';
+                  const status = m.commande_status || m.status_commande || '—';
+                  const interLabel = m._intervention ? (m._intervention.titre || `Intervention #${m._intervention.id}`) : 'Intervention';
+                  card.innerHTML = `
+                    <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
+                      <div>
+                        <div class="fw-semibold">${m.designation || 'Matériel'}</div>
+                        <div class="small text-muted">${m.reference || ''}${m.categorie ? ' • ' + m.categorie : ''}</div>
+                        <div class="small text-muted">Intervention : <a href="intervention-view.html?id=${m.intervention_id || m._intervention?.id || ''}" class="link-button">${interLabel}</a></div>
+                        ${m.fabricant ? `<div class="small text-muted">Fabricant : ${m.fabricant}</div>` : ''}
+                        ${m.prix_achat ? `<div class="small text-muted">Prix achat : ${m.prix_achat} €</div>` : ''}
+                        ${m.quantite ? `<div class="small text-muted">Quantité : ${m.quantite}</div>` : ''}
+                        ${m.commentaire ? `<div class="small text-muted">Commentaire : ${m.commentaire}</div>` : ''}
+                      </div>
+                      <div class="text-end" style="min-width:180px;">
+                        <label class="small text-muted">Statut commande</label>
+                        <div class="d-flex gap-2 align-items-center">
+                         ${isAdmin ? `
+                            <select class="form-select form-select-sm mat-status">
+                              ${['', ...matStatusOptions].map(opt => `<option value="${opt}" ${opt===status?'selected':''}>${opt || '—'}</option>`).join('')}
+                          </select>
+                        ` : `<span class="badge bg-light text-dark">${status}</span>`}
+                      </div>
+                    </div>
+                  </div>
+                `;
+                materielsListEl.appendChild(card);
+                if (isAdmin) {
+                  const select = card.querySelector('.mat-status');
+                  if (select) {
+                    select.addEventListener('change', async () => {
+                      try {
+                        await fetchJSON(`/api/materiels/${m.id}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ commande_status: select.value || null })
+                        });
+                      } catch (err) {
+                        alert(err.message || 'Mise à jour impossible');
+                        select.value = status;
+                      }
+                    });
+                  }
                 }
               });
+              } catch (err) {
+                console.error('[ticket-view] Erreur chargement matériels', err);
+                materielsListEl.innerHTML = '<div class="text-danger">Erreur de chargement des matériels.</div>';
+              } finally {
+                // This ensures that the loading message is always cleared or replaced.
+                if (materielsListEl && materielsListEl.textContent.trim().toLowerCase().includes('chargement')) {
+                  materielsListEl.innerHTML = '<div class="text-muted">Aucun matériel lié aux interventions de ce ticket.</div>';
+                }
+              }
             }
-          }
-        });
-      }
-
       function populateInterventionSelect() {
         const select = document.getElementById('mat-intervention');
         if (!select) return;
@@ -1224,14 +1587,28 @@
         });
       }
 
-      if (addMaterielBtn && materielModal) {
-        addMaterielBtn.addEventListener('click', () => {
-          populateInterventionSelect();
-          const form = document.getElementById('materiel-form');
-          if (form) form.reset();
-          materielModal.show();
-        });
-      }
+      // Affichage des factures / rapports intervention
+  if (addMaterielBtn && materielModal) {
+    addMaterielBtn.addEventListener('click', () => {
+      populateInterventionSelect();
+      const form = document.getElementById('materiel-form');
+      if (form) form.reset();
+      materielModal.show();
+    });
+  }
+
+  // Boutons toggle pour replier/afficher certaines cartes
+  document.querySelectorAll('.toggle-card-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetSel = btn.getAttribute('data-target');
+      if (!targetSel) return;
+      const target = document.querySelector(targetSel);
+      if (!target) return;
+      const hidden = target.style.display === 'none';
+      target.style.display = hidden ? '' : 'none';
+      btn.innerHTML = hidden ? '<i class="bi bi-eye-slash"></i> Masquer' : '<i class="bi bi-eye"></i> Voir';
+    });
+  });
 
       const saveMatBtn = document.getElementById('save-materiel-btn');
       if (saveMatBtn && materielModal) {

@@ -1,6 +1,9 @@
 -- --------------------------------------------------
 -- ✅ PostgreSQL Schema Initialization (Corrected Order for Heroku)
+-- -- Forcing update --
 -- --------------------------------------------------
+
+SET search_path TO public;
 
 -- Reset all previous tables (reverse dependency order)
 DROP TABLE IF EXISTS rendu_intervention_image CASCADE;
@@ -27,6 +30,7 @@ DROP TABLE IF EXISTS ticket_agent CASCADE;
 DROP TABLE IF EXISTS ticket CASCADE;
 DROP TABLE IF EXISTS demande_client CASCADE;
 DROP TABLE IF EXISTS site_affaire CASCADE;
+DROP TABLE IF EXISTS demande_type CASCADE;
 DROP TABLE IF EXISTS doe CASCADE;
 DROP TABLE IF EXISTS affaire CASCADE;
 DROP TABLE IF EXISTS client_representant CASCADE;
@@ -58,14 +62,19 @@ DROP TYPE IF EXISTS mode_reglement CASCADE;
 DROP TYPE IF EXISTS role_agence CASCADE;
 DROP TYPE IF EXISTS type_formation CASCADE;
 DROP TYPE IF EXISTS site_status CASCADE;
+DROP TYPE IF EXISTS devis_status CASCADE;
+DROP TYPE IF EXISTS metier_type CASCADE;
+DROP TYPE IF EXISTS commande_status_type CASCADE;
+DROP TYPE IF EXISTS intervention_event_statut CASCADE;
 
 CREATE TYPE statut_intervention AS ENUM ('En_attente','Termine');
+CREATE TYPE demande_type AS ENUM ('Intervention', 'Travaux');
 CREATE TYPE etat_rapport        AS ENUM ('Pas_commence','En_cours','Termine');
 CREATE TYPE sujet_type          AS ENUM ('ticket','intervention');
 CREATE TYPE statut_rdv          AS ENUM ('Planifie','Confirme','Termine','Annule');
 CREATE TYPE doc_cible_type      AS ENUM (
     'Affaire','Agent','Agence','Adresse','Client','Site','RendezVous','DOE','Ticket','Intervention',
-    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention', 'DemandeClient', 'Contrat', 'Materiel', 'MaterielCatalogue'
+    'RapportTicket','Achat','Facture','Reglement','Formation','Fonction','RenduIntervention', 'DemandeClient', 'Contrat', 'Materiel', 'MaterielCatalogue', 'RenduTravaux', 'Travaux'
 );
 CREATE TYPE doc_nature          AS ENUM ('Document','Video','Audio','Autre');
 CREATE TYPE statut_achat        AS ENUM ('Brouillon','Valide','Commande','Recu_partiel','Recu','Annule');
@@ -77,6 +86,8 @@ CREATE TYPE site_status AS ENUM ('Actif', 'Inactif');
 CREATE TYPE devis_status AS ENUM ('Brouillon', 'Envoye', 'Accepte', 'Refuse');
 CREATE TYPE metier_type AS ENUM ('GTB', 'Video', 'Intrusion', 'Control_Acces');
 CREATE TYPE commande_status_type AS ENUM ('A commander', 'Commande', 'En livraison', 'Reçu', 'Installé');
+CREATE TYPE intervention_event_statut AS ENUM ('Planifie','En_cours','Termine','Annule','Reporte');
+CREATE TYPE etat_travaux AS ENUM ('A_faire','En_cours','Termine','En_attente','Annule');
 
 -- --------------------------------------------------
 -- CORE ENTITIES
@@ -172,6 +183,7 @@ CREATE TABLE IF NOT EXISTS passeport (
     agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
     permis VARCHAR(50),
     habilitations TEXT,
+    certifications TEXT,
     date_expiration DATE
 );
 
@@ -182,91 +194,6 @@ CREATE TABLE IF NOT EXISTS formation (
     libelle VARCHAR(255) NOT NULL,
     date_obtention DATE,
     date_validite DATE
-);
-
-CREATE TABLE IF NOT EXISTS contrat (
-    id SERIAL PRIMARY KEY,
-    titre VARCHAR(255) NOT NULL UNIQUE,
-    client_id BIGINT REFERENCES client(id) ON DELETE SET NULL,
-    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
-    date_debut DATE NOT NULL,
-    date_fin DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS contrat_site_association (
-    id SERIAL PRIMARY KEY,
-    contrat_id BIGINT NOT NULL REFERENCES contrat(id) ON DELETE CASCADE,
-    site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
-    UNIQUE (contrat_id, site_id)
-);
-
-CREATE TABLE IF NOT EXISTS site_affaire (
-    id SERIAL PRIMARY KEY,
-    site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
-    affaire_id BIGINT REFERENCES affaire(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS doe (
-    id SERIAL PRIMARY KEY,
-    site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
-    affaire_id BIGINT REFERENCES affaire(id) ON DELETE CASCADE,
-    titre VARCHAR(255) NOT NULL,
-    description TEXT
-);
-
-CREATE TABLE IF NOT EXISTS demande_client (
-    id SERIAL PRIMARY KEY,
-    client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
-    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
-    titre VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    status VARCHAR(50) DEFAULT 'En cours de traitement',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ticket_id INTEGER,
-    commentaire TEXT
-);
-
-CREATE TABLE IF NOT EXISTS ticket (
-    id SERIAL PRIMARY KEY,
-    doe_id BIGINT REFERENCES doe(id) ON DELETE SET NULL,
-    affaire_id BIGINT REFERENCES affaire(id) ON DELETE SET NULL,
-    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
-    demande_id BIGINT REFERENCES demande_client(id) ON DELETE SET NULL,
-    responsable VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
-    titre VARCHAR(255) NOT NULL,
-    description TEXT,
-    etat etat_rapport DEFAULT 'Pas_commence',
-    date_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    date_fin TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-ALTER TABLE demande_client ADD FOREIGN KEY (ticket_id) REFERENCES ticket(id) ON DELETE SET NULL;
-
-CREATE TABLE IF NOT EXISTS ticket_agent (
-    id SERIAL PRIMARY KEY,
-    ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
-    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
-    date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    date_fin TIMESTAMP WITHOUT TIME ZONE NULL
-);
-
-CREATE TABLE IF NOT EXISTS intervention (
-    id SERIAL PRIMARY KEY,
-    ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
-    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
-    demande_id BIGINT REFERENCES demande_client(id) ON DELETE SET NULL,
-    titre VARCHAR(255),
-    description TEXT,
-    date_debut DATE NOT NULL,
-    date_fin DATE,
-    intervention_precedente_id BIGINT REFERENCES intervention(id) ON DELETE SET NULL,
-    status statut_intervention DEFAULT 'En_attente' NOT NULL,
-    ticket_agent_id INTEGER REFERENCES ticket_agent(id) ON DELETE SET NULL,
-    metier metier_type
 );
 
 CREATE TABLE IF NOT EXISTS materiel_catalogue (
@@ -300,7 +227,231 @@ CREATE TABLE IF NOT EXISTS materiel (
     commentaire TEXT,
     commande_status commande_status_type DEFAULT 'A commander',
     metier metier_type,
+    agence_id BIGINT REFERENCES agence(id) ON DELETE SET NULL, -- NEW: Link to agence
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS gestion_demande_materiel (
+    id SERIAL PRIMARY KEY,
+    demande_materiel_id BIGINT NOT NULL REFERENCES demande_materiel(id) ON DELETE CASCADE,
+    materiel_id BIGINT NOT NULL REFERENCES materiel(id) ON DELETE CASCADE,
+    quantite_demandee INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (demande_materiel_id, materiel_id)
+);
+
+
+CREATE TABLE IF NOT EXISTS contrat (
+    id SERIAL PRIMARY KEY,
+    titre VARCHAR(255) NOT NULL UNIQUE,
+    client_id BIGINT REFERENCES client(id) ON DELETE SET NULL,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    metier metier_type,
+    date_debut DATE NOT NULL,
+    date_fin DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS contrat_site_association (
+    id SERIAL PRIMARY KEY,
+    contrat_id BIGINT NOT NULL REFERENCES contrat(id) ON DELETE CASCADE,
+    site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
+    UNIQUE (contrat_id, site_id)
+);
+
+CREATE TABLE IF NOT EXISTS site_affaire (
+    id SERIAL PRIMARY KEY,
+    site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
+    affaire_id BIGINT REFERENCES affaire(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS doe (
+    id SERIAL PRIMARY KEY,
+    site_id BIGINT NOT NULL REFERENCES site(id) ON DELETE CASCADE,
+    affaire_id BIGINT REFERENCES affaire(id) ON DELETE CASCADE,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT
+);
+
+CREATE TABLE IF NOT EXISTS demande_client (
+    id SERIAL PRIMARY KEY,
+    client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'En cours de traitement',
+    type_demande demande_type DEFAULT 'Intervention' NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ticket_id INTEGER,
+    commentaire TEXT
+);
+
+
+
+CREATE TABLE IF NOT EXISTS ticket (
+    id SERIAL PRIMARY KEY,
+    doe_id BIGINT REFERENCES doe(id) ON DELETE SET NULL,
+    affaire_id BIGINT REFERENCES affaire(id) ON DELETE SET NULL,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    demande_id BIGINT REFERENCES demande_client(id) ON DELETE SET NULL,
+    responsable VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    etat etat_rapport DEFAULT 'Pas_commence',
+    date_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_fin TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE demande_client ADD FOREIGN KEY (ticket_id) REFERENCES ticket(id) ON DELETE SET NULL;
+
+CREATE TABLE IF NOT EXISTS travaux (
+    id SERIAL PRIMARY KEY,
+    doe_id BIGINT REFERENCES doe(id) ON DELETE SET NULL,
+    affaire_id BIGINT REFERENCES affaire(id) ON DELETE SET NULL,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    demande_id BIGINT REFERENCES demande_client(id) ON DELETE SET NULL,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    etat etat_travaux DEFAULT 'A_faire',
+    priorite VARCHAR(50) DEFAULT 'Moyenne',
+    date_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_fin TIMESTAMP,
+    date_echeance TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS travaux_agent (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    date_fin TIMESTAMP WITHOUT TIME ZONE NULL
+);
+
+CREATE TABLE IF NOT EXISTS travaux_historique_responsable (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    ancien_responsable_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
+    nouveau_responsable_matricule VARCHAR(20) REFERENCES agent(matricule) ON DELETE SET NULL,
+    modifie_par_matricule VARCHAR(20),
+    date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS travaux_responsable (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    role TEXT DEFAULT 'Secondaire',
+    date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    date_fin TIMESTAMP WITHOUT TIME ZONE NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS travaux_satisfaction (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL UNIQUE REFERENCES travaux(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    rating INT,
+    comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    envoieok BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS travaux_tache (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    etat etat_travaux DEFAULT 'A_faire',
+    priorite VARCHAR(50) DEFAULT 'Moyenne',
+    date_echeance TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE IF NOT EXISTS rendu_travaux (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    resume TEXT,
+    valeur TEXT
+);
+
+CREATE TABLE IF NOT EXISTS rendu_travaux_image (
+    id SERIAL PRIMARY KEY,
+    rendu_travaux_id BIGINT NOT NULL REFERENCES rendu_travaux(id) ON DELETE CASCADE,
+    image_id BIGINT NOT NULL REFERENCES images(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS travaux_materiel (
+    id SERIAL PRIMARY KEY,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    materiel_id BIGINT NOT NULL REFERENCES materiel(id) ON DELETE RESTRICT,
+    quantite INTEGER DEFAULT 1,
+    commentaire TEXT
+);
+
+CREATE TABLE IF NOT EXISTS demande_client_travaux (
+    id SERIAL PRIMARY KEY,
+    demande_id BIGINT NOT NULL REFERENCES demande_client(id) ON DELETE CASCADE,
+    travaux_id BIGINT NOT NULL REFERENCES travaux(id) ON DELETE CASCADE,
+    UNIQUE (demande_id, travaux_id)
+);
+
+CREATE TABLE IF NOT EXISTS ticket_agent (
+    id SERIAL PRIMARY KEY,
+    ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    date_debut TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    date_fin TIMESTAMP WITHOUT TIME ZONE NULL
+);
+
+CREATE TABLE IF NOT EXISTS intervention (
+    id SERIAL PRIMARY KEY,
+    ticket_id BIGINT NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    demande_id BIGINT REFERENCES demande_client(id) ON DELETE SET NULL,
+    titre VARCHAR(255),
+    description TEXT,
+    date_debut TIMESTAMP NOT NULL,
+    date_fin TIMESTAMP,
+    intervention_precedente_id BIGINT REFERENCES intervention(id) ON DELETE SET NULL,
+    status statut_intervention DEFAULT 'En_attente' NOT NULL,
+    ticket_agent_id INTEGER REFERENCES ticket_agent(id) ON DELETE SET NULL,
+    metier metier_type
+);
+
+CREATE TABLE IF NOT EXISTS intervention_event (
+    id SERIAL PRIMARY KEY,
+    intervention_id BIGINT NOT NULL REFERENCES intervention(id) ON DELETE CASCADE,
+    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    statut intervention_event_statut NOT NULL DEFAULT 'Planifie',
+    date_heure_debut_prevue TIMESTAMP WITH TIME ZONE NOT NULL,
+    date_heure_fin_prevue TIMESTAMP WITH TIME ZONE,
+    date_heure_debut_reelle TIMESTAMP WITH TIME ZONE,
+    date_heure_fin_reelle TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS demande_materiel (
+    id SERIAL PRIMARY KEY,
+    client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
+    site_id BIGINT REFERENCES site(id) ON DELETE SET NULL,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'En cours de traitement',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ticket_id INTEGER,
+    travaux_id BIGINT REFERENCES travaux(id) ON DELETE SET NULL, -- NEW
+    commentaire TEXT
 );
 
 CREATE TABLE IF NOT EXISTS intervention_materiel (
@@ -468,9 +619,27 @@ CREATE TABLE IF NOT EXISTS achat (
 
 CREATE TABLE IF NOT EXISTS facture (
     id SERIAL PRIMARY KEY,
+    intervention_id BIGINT REFERENCES intervention(id) ON DELETE SET NULL,
     client_id BIGINT REFERENCES client(id) ON DELETE SET NULL,
-    affaire_id BIGINT REFERENCES affaire(id) ON DELETE SET NULL,
     association_id INTEGER REFERENCES association(id) ON DELETE SET NULL,
+    titre VARCHAR(255),
+    reference VARCHAR(50),
+    date_emission DATE,
+    date_echeance DATE,
+    heures_saisies NUMERIC(12,2) DEFAULT 0,
+    heures_calculees NUMERIC(12,2) DEFAULT 0,
+    taux_horaire NUMERIC(10,2) DEFAULT 0,
+    total_heures_ht NUMERIC(12,2) DEFAULT 0,
+    taux_majoration_materiel NUMERIC(6,2) DEFAULT 0,
+    total_materiel_ht NUMERIC(12,2) DEFAULT 0,
+    deplacement_qte NUMERIC(10,2) DEFAULT 0,
+    deplacement_pu NUMERIC(10,2) DEFAULT 0,
+    divers_ht NUMERIC(12,2) DEFAULT 0,
+    tva_taux NUMERIC(6,2) DEFAULT 20,
+    total_deplacement_ht NUMERIC(12,2) DEFAULT 0,
+    total_tva NUMERIC(12,2) DEFAULT 0,
+    total_ht NUMERIC(12,2) DEFAULT 0,
+    total_ttc NUMERIC(12,2) DEFAULT 0,
     statut statut_facture DEFAULT 'Brouillon'
 );
 
@@ -534,6 +703,8 @@ CREATE TABLE IF NOT EXISTS documents_repertoire (
     id SERIAL PRIMARY KEY,
     cible_type doc_cible_type,
     cible_id BIGINT,
+    titre VARCHAR(255),
+    commentaire TEXT,
     nature doc_nature DEFAULT 'Document',
     nom_fichier VARCHAR(255),
     type_mime VARCHAR(100),
@@ -555,6 +726,31 @@ CREATE TABLE IF NOT EXISTS client_representant (
     UNIQUE (client_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS client_association (
+    id SERIAL PRIMARY KEY,
+    client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
+    association_id INTEGER NOT NULL REFERENCES association(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (client_id, association_id)
+);
+
+CREATE TABLE IF NOT EXISTS client_contrat (
+    id SERIAL PRIMARY KEY,
+    client_id BIGINT NOT NULL REFERENCES client(id) ON DELETE CASCADE,
+    contrat_id BIGINT NOT NULL REFERENCES contrat(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (client_id, contrat_id)
+);
+
+-- Liaison directe Contrat <-> Association (indépendante des sites)
+CREATE TABLE IF NOT EXISTS contrat_association (
+    id SERIAL PRIMARY KEY,
+    contrat_id BIGINT NOT NULL REFERENCES contrat(id) ON DELETE CASCADE,
+    association_id INTEGER NOT NULL REFERENCES association(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (contrat_id, association_id)
+);
+
 CREATE TABLE IF NOT EXISTS ticket_satisfaction (
     id SERIAL PRIMARY KEY,
     ticket_id BIGINT NOT NULL UNIQUE REFERENCES ticket(id) ON DELETE CASCADE,
@@ -563,43 +759,4 @@ CREATE TABLE IF NOT EXISTS ticket_satisfaction (
     comment TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     envoieok BOOLEAN DEFAULT FALSE
-);
-
-CREATE TABLE IF NOT EXISTS association (
-    id SERIAL PRIMARY KEY,
-    titre VARCHAR(255) NOT NULL,
-    email_comptabilite VARCHAR(255),
-    adresse_id INTEGER REFERENCES adresse(id) ON DELETE SET NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS association_responsable (
-    id SERIAL PRIMARY KEY,
-    association_id INTEGER NOT NULL REFERENCES association(id) ON DELETE CASCADE,
-    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
-    UNIQUE (association_id, agent_matricule)
-);
-
-CREATE TABLE IF NOT EXISTS association_agent (
-    id SERIAL PRIMARY KEY,
-    association_id INTEGER NOT NULL REFERENCES association(id) ON DELETE CASCADE,
-    agent_matricule VARCHAR(20) NOT NULL REFERENCES agent(matricule) ON DELETE CASCADE,
-    UNIQUE (association_id, agent_matricule)
-);
-
-CREATE TABLE IF NOT EXISTS association_site (
-    id SERIAL PRIMARY KEY,
-    association_id INTEGER NOT NULL REFERENCES association(id) ON DELETE CASCADE,
-    site_id INTEGER NOT NULL REFERENCES site(id) ON DELETE CASCADE,
-    UNIQUE (association_id, site_id)
-);
-
-CREATE TABLE IF NOT EXISTS devis (
-    id SERIAL PRIMARY KEY,
-    titre VARCHAR(255) NOT NULL,
-    description TEXT,
-    montant NUMERIC(12, 2),
-    status devis_status DEFAULT 'Brouillon',
-    association_id INTEGER REFERENCES association(id) ON DELETE SET NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

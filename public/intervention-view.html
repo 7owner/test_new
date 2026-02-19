@@ -126,8 +126,15 @@
         <i class="bi bi-tools me-2"></i>
         <span id="header-title">Intervention</span>
       </h4>
-      <div class="small opacity-75">
-        <!--<span id="header-status-text"></span>-->
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button type="button" class="btn btn-sm btn-outline-light" id="back-inline-btn">
+          <i class="bi bi-arrow-left"></i> Retour
+        </button>
+        <button class="btn btn-sm btn-light" id="download-ppsps-btn"><i class="bi bi-download"></i> Télécharger PPSPS</button>
+        <button class="btn btn-sm btn-success" id="finish-inter-btn"><i class="bi bi-flag-fill"></i> Fin d'intervention</button>
+        <div class="small opacity-75">
+          <!--<span id="header-status-text"></span>-->
+        </div>
       </div>
     </div>
     <div class="card-body p-4">
@@ -162,6 +169,137 @@
           <div class="value" id="view_ticket_link">Non lié</div>
         </div>-->
       </div>
+
+      <!-- Inline responsables / agents -->
+      <div class="row g-3 mt-4">
+        <div class="col-lg-6">
+          <div class="info-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="mb-0">Responsables</label>
+              <button class="btn btn-sm btn-outline-primary d-none" id="inline-add-resp"><i class="bi bi-plus"></i></button>
+            </div>
+            <div id="inline-responsables" class="value text-muted small">Aucun responsable</div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="info-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="mb-0">Agents assignés</label>
+              <button class="btn btn-sm btn-outline-primary d-none" id="inline-add-agent"><i class="bi bi-plus"></i></button>
+            </div>
+            <div id="inline-agents" class="value text-muted small">Aucun agent</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Planning / événements par agent -->
+  <div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h4 class="mb-0 d-flex align-items-center"><i class="bi bi-calendar-event me-2"></i>Planning des agents</h4>
+      <button class="btn btn-sm btn-outline-light" id="toggle-planning-btn"><i class="bi bi-eye"></i> Voir</button>
+    </div>
+    <div class="card-body p-4" id="planning-body">
+      <div id="events-list" class="table-responsive"></div>
+    </div>
+  </div>
+
+  <!-- ✅ Facture / récap coût -->
+  <div class="main-card d-none" id="facture-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h4 class="mb-0 d-flex align-items-center"><i class="bi bi-receipt me-2"></i>Facture intervention</h4>
+      <button class="btn btn-sm btn-outline-light" id="toggle-facture-btn"><i class="bi bi-eye"></i> Voir</button>
+    </div>
+    <div class="card-body p-4" id="facture-body" style="display:none;">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="p-3 bg-light border rounded h-100">
+            <h6 class="fw-semibold mb-3">Descriptif</h6>
+            <div class="small text-muted mb-1">Heures d'intervention (calcul automatique si début/fin connus)</div>
+            <input type="number" step="0.25" min="0" class="form-control form-control-sm mb-2" id="facture-hours-input" value="0">
+            <div class="small text-muted">Durée calculée : <span id="facture-hours-auto">0 h</span></div>
+            <hr>
+            <div class="small text-muted mb-2">Matériel validé</div>
+            <ul class="list-unstyled small mb-2" id="facture-mat-list">
+              <li class="text-muted">Aucun matériel validé.</li>
+            </ul>
+            <div class="fw-bold">Matériel Total HT : <span id="facture-mat-total">0€</span></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="p-3 bg-light border rounded h-100">
+            <h6 class="fw-semibold mb-3">Comptabilité</h6>
+            <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
+              <span>Heures intervention</span>
+              <input type="number" id="facture-rate" class="form-control form-control-sm" style="max-width:90px;" value="65"> <span>€/h</span>
+            </div>
+            <div class="fw-bold mb-2">Total heures HT : <span id="facture-hours-total">0€</span></div>
+            <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
+              <span>Majoration matériel</span>
+              <input type="number" id="facture-mat-taux" class="form-control form-control-sm" style="max-width:90px;" value="0"> <span>%</span>
+            </div>
+            <div class="fw-bold mb-2">Total matériel HT : <span id="facture-mat-total-ht">0€</span></div>
+            <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
+              <span>Déplacement</span>
+              <input type="number" id="facture-depl-qty" class="form-control form-control-sm" style="max-width:70px;" value="0"> 
+              <input type="number" id="facture-depl-pu" class="form-control form-control-sm" style="max-width:90px;" value="0"> <span>€</span>
+              <span class="fw-semibold" id="facture-depl-total">= 0€ HT</span>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
+              <span>Divers</span>
+              <input type="number" id="facture-divers" class="form-control form-control-sm" style="max-width:100px;" value="0"> <span>€</span>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
+              <span>TVA</span>
+              <input type="number" id="facture-tva" class="form-control form-control-sm" style="max-width:90px;" value="20"> <span>%</span>
+            </div>
+            <div class="fw-semibold mt-3">Montant total</div>
+            <div class="small">
+              <div>Total HT : <strong id="facture-total-ht">0€</strong></div>
+              <div>TVA : <span id="facture-total-tva">0€</span></div>
+              <div>Total TTC : <strong id="facture-total-ttc">0€</strong></div>
+            </div>
+            <div class="mt-3">
+              <label for="facture-title-input" class="form-label small mb-1">Titre de la facture</label>
+              <input type="text" class="form-control form-control-sm" id="facture-title-input" placeholder="Ex: Facture intervention site Lyon">
+            </div>
+            <div class="mt-3 d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-primary btn-sm" id="save-facture-btn">
+                <i class="bi bi-save me-1"></i>Enregistrer la facture
+              </button>
+              <span class="small text-muted" id="facture-save-status"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Demandes de matériel -->
+  <div class="main-card">
+    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h4 class="mb-0 d-flex align-items-center"><i class="bi bi-boxes me-2"></i>Demandes matériel</h4>
+    </div>
+    <div class="card-body p-4">
+      <div class="row g-3 align-items-end mb-3">
+        <div class="col-md-5">
+          <label class="form-label">Matériel</label>
+          <input type="text" class="form-control" id="demande-titre" placeholder="Ex: Etiquette, Casque...">
+        </div>
+        <div class="col-md-5">
+          <label class="form-label">Commentaire</label>
+          <input type="text" class="form-control" id="demande-commentaire" placeholder="Détail de la demande">
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+          <div class="flex-grow-1">
+            <label class="form-label">Quantité</label>
+            <input type="number" min="1" class="form-control" id="demande-quantite" value="1">
+          </div>
+          <button class="btn btn-primary align-self-end" id="demande-submit-btn">Ajouter</button>
+        </div>
+      </div>
+      <div id="demandes-materiel-list"></div>
     </div>
   </div>
 
@@ -172,36 +310,17 @@
         <i class="bi bi-journal-text me-2"></i>Rendus d'intervention
       </h4>
       <div class="d-flex gap-2">
-        <button type="button" class="btn btn-light btn-sm" id="request-materiel-btn">
-          <i class="bi bi-box-seam me-1"></i>Demander du matériel
-        </button>
+        <button type="button" class="btn btn-sm btn-outline-light" id="toggle-rendus-btn"><i class="bi bi-eye"></i> Voir</button>
         <a href="#" class="btn btn-light btn-sm" id="add-rendu-btn">
           <i class="bi bi-plus-circle me-1"></i>Ajouter un rendu
         </a>
       </div>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body p-4" id="rendus-body">
       <div id="rendu-intervention-list"></div>
       <button type="button" class="btn btn-outline-gradient mt-3 d-none" id="show-materiels-btn">
         <i class="bi bi-box-seam me-1"></i> Voir matériels utilisés
       </button>
-    </div>
-  </div>
-
-  <!-- ✅ Commandes / matériels liés -->
-  <div class="main-card">
-    <div class="card-header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <h4 class="mb-0 d-flex align-items-center">
-        <i class="bi bi-box-seam me-2"></i>Commandes matériel
-      </h4>
-      <div class="d-flex gap-2">
-        <button type="button" class="btn btn-light btn-sm" id="inline-request-materiel-btn">
-          <i class="bi bi-plus-circle me-1"></i>Demander du matériel
-        </button>
-      </div>
-    </div>
-    <div class="card-body p-4" id="materiels-inline-list">
-      <div class="text-muted">Chargement...</div>
     </div>
   </div>
 
@@ -224,8 +343,8 @@
     </div>
   </div>
 
-  <!-- ✅ Responsables -->
-  <div class="main-card">
+  <!-- ✅ Responsables (masqué, on gère en inline) -->
+  <div class="main-card d-none">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
       <span><i class="bi bi-people me-2"></i>Responsables</span>
       <button id="add-responsable-btn" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addResponsableModal">
@@ -237,8 +356,8 @@
     </div>
   </div>
 
-  <!-- ✅ Agents assignés -->
-  <div class="main-card">
+  <!-- ✅ Agents assignés (masqué, on gère en inline) -->
+  <div class="main-card d-none">
     <div class="card-header-gradient d-flex justify-content-between align-items-center">
       <span><i class="bi bi-person-badge me-2"></i>Agents assignés</span>
       <button id="add-agent-btn" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addAgentModal">
@@ -247,19 +366,6 @@
     </div>
     <div class="card-body p-4">
       <ul id="agents-list" class="list-group mb-0"></ul>
-    </div>
-  </div>
-
-  <!-- ✅ Documents associés -->
-  <div class="main-card">
-    <div class="card-header-gradient d-flex justify-content-between align-items-center">
-      <span><i class="bi bi-folder2-open me-2"></i>Documents associés</span>
-      <button id="add-document-btn" class="btn btn-light btn-sm">
-        <i class="bi bi-plus-circle me-1"></i>Ajouter un document
-      </button>
-    </div>
-    <div class="card-body p-4">
-      <div id="documents-list"></div>
     </div>
   </div>
 
@@ -409,712 +515,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', async function () {
-  const urlParams = new URLSearchParams(window.location.search);
-  const interventionId = urlParams.get('id');
-  const token = localStorage.getItem('token');
-  const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-
-  const rendusList = document.getElementById('rendu-intervention-list');
-  const responsablesList = document.getElementById('responsables-list');
-  const agentsList = document.getElementById('agents-list');
-  const documentsList = document.getElementById('documents-list');
-  const responsableSelect = document.getElementById('responsable-select');
-  const agentSelect = document.getElementById('agent-select');
-  const showMaterielsBtn = document.getElementById('show-materiels-btn');
-  const materielsModal = document.getElementById('materielsModal');
-  const materielsModalInstance = materielsModal ? new bootstrap.Modal(materielsModal) : null;
-  const materielsGrid = document.getElementById('materiels-grid');
-  const materielsEmpty = document.getElementById('materiels-empty');
-  const materielFilter = document.getElementById('materiel-filter');
-
-  // New elements for material request modal
-  const requestMaterielBtn = document.getElementById('request-materiel-btn');
-  const requestMaterielModalEl = document.getElementById('requestMaterielModal');
-  const requestMaterielModalInstance = requestMaterielModalEl ? new bootstrap.Modal(requestMaterielModalEl) : null;
-  const requestMaterielSearch = document.getElementById('request-materiel-search');
-  const requestMaterielMetierFilter = document.getElementById('request-materiel-metier-filter');
-  const requestMaterielCatalog = document.getElementById('request-materiel-catalog');
-  const requestMaterielEmpty = document.getElementById('request-materiel-empty');
-  const addSelectedMaterielsBtn = document.getElementById('add-selected-materiels-btn');
-  const materielsInlineList = document.getElementById('materiels-inline-list');
-  const inlineRequestBtn = document.getElementById('inline-request-materiel-btn');
-
-
-  let ticketId = null;
-  let demandeId = null;
-  let interventionMetier = null; // To store the metier of the current intervention
-  let allAgents = [];
-  let materielsCache = []; // Materiels already linked to this intervention
-  let materielCatalog = []; // All available materials for the catalog
-  let isAdmin = false;
-  try {
-    const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
-    isAdmin = Array.isArray(payload?.roles) && payload.roles.includes('ROLE_ADMIN');
-  } catch {}
-
-  // Masquer certains boutons pour non-admin
-  if (!isAdmin) {
-    const addRespBtn = document.getElementById('add-responsable-btn');
-    const addAgentBtn = document.getElementById('add-agent-btn');
-    const addDocBtn  = document.getElementById('add-document-btn');
-    if (addRespBtn) addRespBtn.style.display = 'none';
-    if (addAgentBtn) addAgentBtn.style.display = 'none';
-    if (addDocBtn)  addDocBtn.style.display  = 'none';
-    if (requestMaterielBtn) requestMaterielBtn.style.display = 'none'; // Hide for non-admin
-  } else {
-    if (showMaterielsBtn) showMaterielsBtn.classList.remove('d-none');
-    if (requestMaterielBtn) requestMaterielBtn.style.display = ''; // Ensure visible for admin
-    if (inlineRequestBtn) inlineRequestBtn.classList.remove('d-none');
-  }
-
-  const renderMd = (txt='') => { try { return marked.parse(txt); } catch { return txt; } };
-
-  async function fetchJSON(url, opts = {}) {
-    const res = await fetch(url, { ...opts, headers: { ...headers, ...opts.headers } });
-    if (!res.ok) {
-      if (res.status === 401 || res.status === 403) {
-        location.href = '/login.html';
-        return;
-      }
-      const err = await res.json().catch(() => ({ error: 'HTTP ' + res.status }));
-      throw new Error(err.error || 'HTTP ' + res.status);
-    }
-    if (res.status === 204) return null;
-    return res.json();
-  }
-
-  const formatElapsed = (startStr, endStr, status) => {
-    if (!startStr) return '—';
-    const start = new Date(startStr).getTime();
-    if (Number.isNaN(start)) return '—';
-    const isClosed = status === 'Termine' || status === 'Termifié' || status === 'Fermé';
-    const end = endStr ? new Date(endStr).getTime() : Date.now();
-    if (Number.isNaN(end)) return '—';
-    const diff = Math.max(0, end - start);
-    const totalMin = Math.floor(diff / 60000);
-    const days  = Math.floor(totalMin / (60 * 24));
-    const hours = Math.floor((totalMin % (60 * 24)) / 60);
-    const mins  = totalMin % 60;
-    const parts = [];
-    if (days) parts.push(days + ' j');
-    parts.push(String(hours).padStart(2,'0') + ' h ' + String(mins).padStart(2,'0') + ' min');
-    return parts.join(' ');
-  };
-
-  // --- Material Request / Catalog Logic ---
-  const renderCatalogMaterials = () => {
-    if (!requestMaterielCatalog) return;
-    const searchTerm = (requestMaterielSearch.value || '').toLowerCase();
-    const selectedMetier = requestMaterielMetierFilter.value;
-
-    requestMaterielCatalog.innerHTML = '';
-    let count = 0;
-
-    const filteredMaterials = materielCatalog.filter(m => {
-      const matchesSearch =
-        (m.reference && m.reference.toLowerCase().includes(searchTerm)) ||
-        (m.designation && m.designation.toLowerCase().includes(searchTerm)) ||
-        (m.categorie && m.categorie.toLowerCase().includes(searchTerm)) ||
-        (m.commentaire && m.commentaire.toLowerCase().includes(searchTerm));
-
-      const matchesMetier = !selectedMetier || (m.metier === selectedMetier);
-      return matchesSearch && matchesMetier;
-    });
-
-    if (filteredMaterials.length === 0) {
-      requestMaterielEmpty.classList.remove('d-none');
-    } else {
-      requestMaterielEmpty.classList.add('d-none');
-    }
-
-    filteredMaterials.forEach(m => {
-      count++;
-      const col = document.createElement('div');
-      col.className = 'col';
-      col.innerHTML = `
-        <div class="card h-100 shadow-sm">
-          <div class="card-body d-flex flex-column">
-            <h6 class="card-title">${m.designation || 'Matériel sans désignation'}</h6>
-            <p class="card-text small text-muted mb-1">
-              Référence: ${m.reference || 'N/A'}<br>
-              Catégorie: ${m.categorie || 'N/A'}<br>
-              Métier: ${m.metier || 'N/A'}<br>
-              Fournisseur: ${m.fournisseur || 'N/A'}<br>
-              Prix unitaire: ${m.prix_achat ? m.prix_achat + ' €' : 'N/A'}<br>
-              Statut commande: ${m.commande_status || 'N/A'}
-            </p>
-            <div class="mt-auto pt-2">
-              <label for="qty-${m.id}" class="form-label visually-hidden">Quantité</label>
-              <input type="number" id="qty-${m.id}" class="form-control form-control-sm" value="1" min="1" data-materiel-id="${m.id}">
-            </div>
-          </div>
-        </div>
-      `;
-      requestMaterielCatalog.appendChild(col);
-    });
-  };
-
-  const loadCatalogMaterials = async () => {
-    try {
-      // Fetch all materials from the catalog
-      const allMaterials = await fetchJSON('/api/materiels');
-      materielCatalog = allMaterials || [];
-      renderCatalogMaterials();
-    } catch (e) {
-      console.error('Error loading material catalog:', e);
-      requestMaterielCatalog.innerHTML = '<div class="col-12 text-danger">Erreur de chargement du catalogue de matériel.</div>';
-    }
-  };
-
-  // Rendu inline des matériels avec possibilité de changer le statut (admin)
-  const renderMaterielsInline = () => {
-    if (!materielsInlineList) return;
-    if (!materielsCache.length) {
-      materielsInlineList.innerHTML = '<div class="text-muted">Aucun matériel lié à cette intervention.</div>';
-      return;
-    }
-    materielsInlineList.innerHTML = '';
-    materielsCache.forEach(m => {
-      const status = m.commande_status || '—';
-      const card = document.createElement('div');
-      card.className = 'card mb-2 shadow-sm';
-      card.innerHTML = `
-        <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
-          <div>
-            <div class="fw-semibold">${m.designation || 'Matériel'}</div>
-            <div class="small text-muted">Ref: ${m.reference || '—'}${m.categorie ? ' • ' + m.categorie : ''}${m.metier ? ' • ' + m.metier : ''}</div>
-            <div class="small text-muted">Quantité: ${m.quantite || 1}</div>
-            ${m.commentaire ? `<div class="small text-muted">Commentaire: ${m.commentaire}</div>` : ''}
-          </div>
-          <div class="text-end" style="min-width:190px;">
-            <label class="small text-muted d-block">Statut commande</label>
-            ${isAdmin ? `
-              <select class="form-select form-select-sm mat-inline-status">
-                ${['', 'En attente', 'Commande en cours', 'Reçue', 'Installée', 'Annulée'].map(opt => `<option value="${opt}" ${opt===status?'selected':''}>${opt || '—'}</option>`).join('')}
-              </select>
-            ` : `<span class="badge bg-light text-dark">${status}</span>`}
-          </div>
-        </div>
-      `;
-      materielsInlineList.appendChild(card);
-      if (isAdmin) {
-        const select = card.querySelector('.mat-inline-status');
-        if (select) {
-          select.addEventListener('change', async () => {
-            try {
-              await fetchJSON(`/api/materiels/${m.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ commande_status: select.value || null })
-              });
-            } catch (e) {
-              alert(e.message || 'Mise à jour impossible');
-              select.value = status;
-            }
-          });
-        }
-      }
-    });
-  };
-
-  const addSelectedMateriels = async () => {
-    const selected = [];
-    requestMaterielCatalog.querySelectorAll('input[type="number"][data-materiel-id]').forEach(input => {
-      const materielId = input.dataset.materielId;
-      const quantity = parseInt(input.value, 10);
-      if (quantity > 0) {
-        selected.push({ materiel_id: materielId, quantite: quantity });
-      }
-    });
-
-    if (selected.length === 0) {
-      alert('Veuillez sélectionner au moins un matériel avec une quantité positive.');
-      return;
-    }
-
-    addSelectedMaterielsBtn.disabled = true;
-    addSelectedMaterielsBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Ajout...';
-
-    try {
-      for (const item of selected) {
-        await fetchJSON(`/api/interventions/${interventionId}/materiels`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item)
-        });
-      }
-      alert('Matériels ajoutés avec succès à l\'intervention.');
-      requestMaterielModalInstance.hide();
-      fetchAndPopulateAll(); // Refresh all intervention data, including materiels
-    } catch (e) {
-      console.error('Error adding materiels to intervention:', e);
-      alert(`Erreur lors de l\'ajout des matériels: ${e.message}`);
-    } finally {
-      addSelectedMaterielsBtn.disabled = false;
-      addSelectedMaterielsBtn.innerHTML = 'Ajouter les sélectionnés';
-    }
-  };
-
-  // --- End Material Request / Catalog Logic ---
-
-  function renderMateriels(filterTerm = '') {
-    if (!materielsGrid || !materielsEmpty) return;
-    const norm = s => (s || '').toString().toLowerCase();
-    const term = norm(filterTerm);
-
-    const group = { consommables: [], cables: [], outils: [], autres: [] };
-    const classify = cat => {
-      const c = norm(cat);
-      if (c.includes('consomm')) return 'consommables';
-      if (c.includes('cabl'))    return 'cables';
-      if (c.includes('outil'))   return 'outils';
-      return 'autres';
-    };
-
-    materielsCache
-      .filter(m => {
-        const txt = norm(`${m.reference} ${m.designation} ${m.categorie} ${m.commentaire}`);
-        return !term || txt.includes(term);
-      })
-      .forEach(m => {
-        group[classify(m.categorie)].push(m);
-      });
-
-    const sections = [
-      { key: 'consommables', label: 'Consommables' },
-      { key: 'cables',       label: 'Câbles' },
-      { key: 'outils',       label: 'Outils' },
-      { key: 'autres',       label: 'Autres' }
-    ];
-
-    materielsGrid.innerHTML = '';
-    let count = 0;
-    sections.forEach(sec => {
-      const items = group[sec.key] || [];
-      if (!items.length) return;
-      const header = document.createElement('div');
-      header.className = 'col-12';
-      header.innerHTML = `<h6 class="mt-2 mb-2">${sec.label} (${items.length})</h6>`;
-      materielsGrid.appendChild(header);
-      items.forEach(m => {
-        count++;
-        const col = document.createElement('div');
-        col.className = 'col-12 col-md-6';
-        col.innerHTML = `
-          <div class="border rounded p-2 mb-2">
-            <div class="fw-semibold">${m.designation || 'Matériel'}</div>
-            <div class="text-muted small">Ref: ${m.reference || '—'} • Catégorie: ${m.categorie || '—'} • Métier: ${m.metier || '—'}</div>
-            <div class="small">Qté: ${m.quantite || 1} • Statut Commande: ${m.commande_status || '—'} ${m.commentaire ? '• ' + m.commentaire : ''}</div>
-          </div>`;
-        materielsGrid.appendChild(col);
-      });
-    });
-
-    if (count === 0) {
-      materielsEmpty.classList.remove('d-none');
-    } else {
-      materielsEmpty.classList.add('d-none');
-    }
-  }
-
-  async function loadMateriels() {
-    materielsCache = [];
-    try {
-      const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
-      if (rel && Array.isArray(rel.materiels)) {
-        materielsCache = rel.materiels;
-      } else {
-        const res = await fetch(`/api/interventions/${interventionId}/materiels`, { headers });
-        if (res.ok) {
-          const data = await res.json().catch(() => []);
-          if (Array.isArray(data)) materielsCache = data;
-        }
-      }
-    } catch (e) {
-      console.warn('Chargement materiels:', e);
-    } finally {
-      renderMateriels(materielFilter ? materielFilter.value : '');
-      renderMaterielsInline();
-    }
-  }
-
-  function displayResponsables(responsables = []) {
-    responsablesList.innerHTML = '';
-    if (!responsables.length) {
-      responsablesList.innerHTML = '<li class="list-group-item text-muted">Aucun responsable assigné.</li>';
-      return;
-    }
-    responsables.forEach(r => {
-      const li = document.createElement('li');
-      li.className = 'list-group-item';
-      li.textContent = `${r.prenom || ''} ${r.nom || ''} (${r.matricule || r.agent_matricule || ''})${r.role ? ' - ' + r.role : ''}`;
-      responsablesList.appendChild(li);
-    });
-  }
-
-  function displayAgents(agents = []) {
-    agentsList.innerHTML = '';
-    if (!agents.length) {
-      agentsList.innerHTML = '<li class="list-group-item text-muted">Aucun agent assigné.</li>';
-      return;
-    }
-    agents.forEach(a => {
-      const li = document.createElement('li');
-      li.className = 'list-group-item d-flex justify-content-between align-items-center';
-      li.textContent = `${a.prenom || ''} ${a.nom || ''} (${a.agent_matricule || a.matricule || ''})`;
-      if (isAdmin) {
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'btn btn-danger btn-sm';
-        removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
-        removeBtn.onclick = () => removeAgent(a.agent_matricule || a.matricule);
-        li.appendChild(removeBtn);
-      }
-      agentsList.appendChild(li);
-    });
-  }
-
-  async function removeAgent(agentMatricule) {
-    if (!ticketId || !agentMatricule || !confirm(`Retirer l'agent ${agentMatricule} de ce ticket ?`)) return;
-    try {
-      await fetchJSON(`/api/tickets/${ticketId}/agents/${agentMatricule}`, { method: 'DELETE' });
-      fetchAndDisplayTicketRelations();
-    } catch (e) {
-      console.error('Error removing agent:', e);
-      alert('Erreur lors du retrait de l\'agent.');
-    }
-  }
-
-  function displayDocuments(documents = []) {
-    documentsList.innerHTML = '';
-    if (!documents.length) {
-      documentsList.innerHTML = '<p class="text-muted mb-0">Aucun document associé.</p>';
-      return;
-    }
-    documents.forEach(doc => {
-      const viewUrl = `/api/documents/${doc.id}/view`;
-      const el = document.createElement('div');
-      el.className = 'document-item mb-2 p-2 d-flex justify-content-between align-items-center';
-      el.innerHTML = `
-        <div>
-          <a href="${viewUrl}" target="_blank">${doc.nom_fichier}</a>
-          <span class="text-muted small"> (${doc.nature || 'Document'})</span>
-        </div>`;
-      documentsList.appendChild(el);
-    });
-  }
-
-  function renderRendus(rendus = []) {
-    if (!rendusList) return;
-    if (!rendus.length) {
-      rendusList.innerHTML = '<p class="text-muted mb-0">Aucun rendu enregistré pour cette intervention.</p>';
-      return;
-    }
-    rendusList.innerHTML = '';
-    rendus.forEach(r => {
-      const card = document.createElement('div');
-      card.className = 'card card-body mb-2';
-      const resumeFull = r.resume || '';
-      const resumeSnippet = resumeFull.length > 150 ? resumeFull.substring(0, 150) + '…' : resumeFull;
-      card.innerHTML = `
-        <div class="d-flex justify-content-between align-items-start">
-          <div>
-            <h6 class="mb-1">Rendu</h6>
-            <p class="small text-muted mb-2">Valeur : ${r.valeur || 'Non spécifiée'}</p>
-            <div class="markdown-body small">${renderMd(resumeSnippet)}</div>
-          </div>
-          <a href="rendu-intervention-view.html?id=${r.id}" class="btn btn-sm btn-outline-primary ms-3">
-            <i class="bi bi-eye me-1"></i>Voir
-          </a>
-        </div>`;
-      rendusList.appendChild(card);
-    });
-  }
-
-  async function fetchAndDisplayTicketRelations() {
-    if (!ticketId) {
-      displayResponsables([]);
-      displayAgents([]);
-      return;
-    }
-    try {
-      const relations = await fetchJSON(`/api/tickets/${ticketId}/relations`);
-      displayResponsables(relations.responsables || []);
-      displayAgents(relations.agents_assignes || []);
-    } catch (e) {
-      console.error('Error fetching ticket relations:', e);
-    }
-  }
-
-  async function fetchAndPopulateAll() {
-    try {
-      const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
-      if (!rel || !rel.intervention) {
-        document.body.innerHTML = '<div class="container mt-5"><div class="alert alert-danger">Intervention introuvable.</div></div>';
-        return;
-      }
-
-      const it = rel.intervention;
-      ticketId  = rel.ticket ? rel.ticket.id : null;
-      demandeId = rel.ticket ? rel.ticket.demande_id : null;
-      interventionMetier = it.metier || null; // Store the metier of the current intervention
-
-      const statusText = it.status || it.statut || '—';
-      const elapsed = formatElapsed(it.date_debut, it.date_fin, statusText);
-
-      const descEl   = document.getElementById('view_description');
-      const debEl    = document.getElementById('view_date_debut');
-      const finEl    = document.getElementById('view_date_fin');
-      const statEl   = document.getElementById('view_status');
-      const elapsedEl= document.getElementById('view_elapsed');
-      const headerStatusText = document.getElementById('header-status-text');
-      const headerTitle = document.getElementById('header-title');
-      const ticketLinkEl = document.getElementById('view_ticket_link');
-
-      if (descEl)   descEl.textContent    = it.description || '—';
-      if (debEl)    debEl.textContent     = it.date_debut || '—';
-      if (finEl)    finEl.textContent     = it.date_fin || '—';
-      if (statEl)   statEl.textContent    = statusText;
-      if (elapsedEl)elapsedEl.textContent = elapsed;
-      if (headerStatusText) headerStatusText.textContent = statusText;
-      if (headerTitle) headerTitle.textContent = it.titre || it.description || `Intervention #${it.id || ''}`;
-
-      if (ticketLinkEl) {
-        if (ticketId) {
-          ticketLinkEl.innerHTML = `<a href="ticket-view.html?id=${ticketId}" class="link-button">Voir le ticket</a>`;
-        } else {
-          ticketLinkEl.textContent = 'Non lié';
-        }
-      }
-
-      // Display assigned agent for the intervention
-      const interventionAgentEl = document.getElementById('view_intervention_agent');
-      if (interventionAgentEl) {
-        if (rel.assigned_agent) {
-          interventionAgentEl.textContent = `${rel.assigned_agent.prenom || ''} ${rel.assigned_agent.nom || ''} (${rel.assigned_agent.matricule})`.trim();
-        } else {
-          interventionAgentEl.textContent = 'Non assigné';
-        }
-      }
-
-      // Documents / materiels / rendus / agents / responsables
-      displayDocuments(rel.documents || []);
-
-      if (Array.isArray(rel.materiels)) {
-        materielsCache = rel.materiels;
-        renderMateriels(materielFilter ? materielFilter.value : '');
-      }
-
-      try {
-        const rendus = await fetchJSON(`/api/interventions/${interventionId}/rendus`);
-        renderRendus(rendus || []);
-      } catch (e) {
-        console.error('Failed to load rendus:', e);
-        rendusList.innerHTML = '<p class="text-danger">Erreur de chargement des rendus.</p>';
-      }
-
-      allAgents = await fetchJSON('/api/agents');
-      const options = (allAgents || []).map(agent =>
-        `<option value="${agent.matricule}">${agent.nom} ${agent.prenom || ''} (${agent.matricule})</option>`
-      ).join('');
-      if (responsableSelect) responsableSelect.innerHTML = options;
-      if (agentSelect)       agentSelect.innerHTML       = options;
-
-      fetchAndDisplayTicketRelations();
-
-    } catch (e) {
-      console.error('Erreur chargement initial', e);
-      document.body.innerHTML = `<div class="container mt-5"><div class="alert alert-danger">${e.message}</div></div>`;
-    }
-  }
-
-  // Bouton ajouter responsable
-  const saveResponsableBtn = document.getElementById('save-responsable-btn');
-  if (saveResponsableBtn) {
-    saveResponsableBtn.addEventListener('click', async () => {
-      const agent_matricule = responsableSelect.value;
-      if (!ticketId || !agent_matricule) return;
-      try {
-        await fetchJSON(`/api/tickets/${ticketId}/responsables`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent_matricule })
-        });
-        bootstrap.Modal.getInstance(document.getElementById('addResponsableModal')).hide();
-        fetchAndDisplayTicketRelations();
-      } catch (e) {
-        console.error('Error adding responsable:', e);
-        alert(`Erreur: ${e.message}`);
-      }
-    });
-  }
-
-  // Bouton ajouter agent
-  const saveAgentBtn = document.getElementById('save-agent-btn');
-  if (saveAgentBtn) {
-    saveAgentBtn.addEventListener('click', async () => {
-      const agent_matricule = agentSelect.value;
-      if (!ticketId || !agent_matricule) return;
-      try {
-        await fetchJSON(`/api/tickets/${ticketId}/agents`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent_matricule })
-        });
-        bootstrap.Modal.getInstance(document.getElementById('addAgentModal')).hide();
-        fetchAndDisplayTicketRelations();
-      } catch (e) {
-        console.error('Error adding agent:', e);
-        alert('Erreur lors de l\'ajout de l\'agent.');
-      }
-    });
-  }
-
-  // Bouton ajouter rendu
-  const addRenduBtn = document.getElementById('add-rendu-btn');
-  if (addRenduBtn) {
-    addRenduBtn.addEventListener('click', e => {
-      e.preventDefault();
-      if (!interventionId) {
-        alert('Intervention inconnue.');
-        return;
-      }
-      let url = `rendu-intervention-new.html?id=${interventionId}`;
-      if (demandeId) url += `&demande_id=${demandeId}`;
-      window.location.href = url;
-    });
-  }
-
-  // Bouton voir matériels
-  if (showMaterielsBtn) {
-    showMaterielsBtn.addEventListener('click', e => {
-      e.preventDefault();
-      if (materielsModalInstance) materielsModalInstance.show();
-      if (!materielsCache.length) loadMateriels();
-      else renderMateriels(materielFilter ? materielFilter.value : '');
-      renderMaterielsInline();
-    });
-  }
-  if (materielFilter) {
-    materielFilter.addEventListener('input', () => renderMateriels(materielFilter.value));
-  }
-
-  // Documents : ajout
-  const addDocumentModalEl = document.getElementById('addDocumentModal');
-  const addDocumentModal = addDocumentModalEl ? new bootstrap.Modal(addDocumentModalEl) : null;
-  const addDocumentBtn = document.getElementById('add-document-btn');
-  const saveDocumentBtn = document.getElementById('save-document-btn');
-
-  if (addDocumentBtn && addDocumentModal) {
-    addDocumentBtn.addEventListener('click', () => {
-      const form = document.getElementById('add-document-form');
-      if (form) form.reset();
-      addDocumentModal.show();
-    });
-  }
-
-  function toBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload  = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = error => reject(error);
-    });
-  }
-
-  if (saveDocumentBtn) {
-    saveDocumentBtn.addEventListener('click', async () => {
-      const fileInput = document.getElementById('doc-file-input');
-      const file = fileInput.files[0];
-      if (!file) {
-        alert('Veuillez sélectionner un fichier.');
-        return;
-      }
-
-      const base64 = await toBase64(file);
-      const nom_fichier = (document.getElementById('doc-name-input').value || '').trim() || file.name;
-      const nature = document.getElementById('doc-nature-input').value;
-
-      const payload = {
-        base64,
-        nom_fichier,
-        nature,
-        type_mime: file.type,
-        cible_type: 'Intervention',
-        cible_id: interventionId
-      };
-
-      saveDocumentBtn.disabled = true;
-      saveDocumentBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enregistrement...';
-
-      try {
-        await fetchJSON('/api/documents', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (addDocumentModal) addDocumentModal.hide();
-        fetchAndPopulateAll();
-      } catch (e) {
-        alert(`Échec de l'ajout: ${e.message}`);
-      } finally {
-        saveDocumentBtn.disabled = false;
-        saveDocumentBtn.textContent = 'Enregistrer';
-      }
-    });
-  }
-
-  // --- Event Listeners for Materiel Request Modal ---
-  if (requestMaterielBtn) {
-    requestMaterielBtn.addEventListener('click', async e => {
-      e.preventDefault();
-      if (!interventionId) {
-        alert('Intervention inconnue.');
-        return;
-      }
-      requestMaterielSearch.value = ''; // Reset search
-      if (interventionMetier && requestMaterielMetierFilter) {
-        requestMaterielMetierFilter.value = interventionMetier; // Pre-fill metier filter
-      } else {
-        requestMaterielMetierFilter.value = ''; // Reset metier filter
-      }
-      await loadCatalogMaterials(); // Load and render all materials
-      if (requestMaterielModalInstance) requestMaterielModalInstance.show();
-    });
-  }
-  if (inlineRequestBtn) {
-    inlineRequestBtn.addEventListener('click', async e => {
-      e.preventDefault();
-      if (requestMaterielBtn) requestMaterielBtn.click();
-    });
-  }
-
-  if (requestMaterielSearch) {
-    requestMaterielSearch.addEventListener('input', renderCatalogMaterials);
-  }
-
-  if (requestMaterielMetierFilter) {
-    requestMaterielMetierFilter.addEventListener('change', renderCatalogMaterials);
-  }
-
-  if (addSelectedMaterielsBtn) {
-    addSelectedMaterielsBtn.addEventListener('click', addSelectedMateriels);
-  }
-
-  // Reset inputs when modal closes
-  if (requestMaterielModalEl) {
-    requestMaterielModalEl.addEventListener('hidden.bs.modal', () => {
-      requestMaterielSearch.value = '';
-      requestMaterielMetierFilter.value = '';
-      requestMaterielCatalog.innerHTML = '';
-      requestMaterielEmpty.classList.add('d-none');
-    });
-  }
-
-  fetchAndPopulateAll();
-  renderMaterielsInline();
-});
-</script>
+<script src="/js/pages/intervention-view.page.js?v=1"></script>
 </body>
 </html>
+
+

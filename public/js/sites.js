@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   const isAdmin = (() => { try { const p = token? JSON.parse(atob(token.split('.')[1])):null; return Array.isArray(p?.roles) && p.roles.includes('ROLE_ADMIN'); } catch { return false; } })();
   let apiSites = [];
   let apiAgents = [];
-  let apiAssociations = []; // To store associations
+  let apiAssociations = [];
   let openDemandSites = new Set();
   let sortAsc = true;
 
@@ -20,19 +20,21 @@ document.addEventListener('DOMContentLoaded', async function() {
   function getAgentName(m) { const a=(apiAgents||[]).find(x=> String(x.matricule)===String(m)); return a? `${a.nom||''} ${a.prenom||''}`.trim() : 'Non assigné'; }
 
   async function load() {
-    tableBody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-3">Chargement...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="7" class="text-muted text-center py-3">Chargement...</td></tr>';
     const headers = token? { 'Authorization': `Bearer ${token}` } : {};
+    const params = new URLSearchParams(window.location.search);
+    const preselectAssociationId = params.get('association_id');
     try {
       const [sRes, aRes, dRes, assoRes] = await Promise.all([
         fetch('/api/sites', { headers, credentials:'same-origin' }),
         fetch('/api/agents', { headers, credentials:'same-origin' }),
         fetch('/api/demandes_client?include_deleted=false', { headers, credentials:'same-origin' }),
-        fetch('/api/associations', { headers, credentials:'same-origin' }) // Fetch associations
+        fetch('/api/associations', { headers, credentials:'same-origin' })
       ]);
       if (sRes.status===401||sRes.status===403){ try{ location.replace('/login.html'); }catch{ location.href='/login.html'; } return; }
       apiSites = sRes.ok ? await sRes.json() : [];
       apiAgents = aRes && aRes.ok ? await aRes.json() : [];
-      apiAssociations = assoRes && assoRes.ok ? await assoRes.json() : []; // Store associations
+      apiAssociations = assoRes && assoRes.ok ? await assoRes.json() : [];
       openDemandSites = new Set();
       if (dRes && dRes.ok) {
         const demands = await dRes.json();
@@ -40,27 +42,29 @@ document.addEventListener('DOMContentLoaded', async function() {
           if (!d.ticket_id && d.site_id) openDemandSites.add(String(d.site_id));
         });
       }
-
       // Populate association filter
-      associationFilter.innerHTML = '<option value="">Toutes les associations</option>';
-      apiAssociations.forEach(asso => {
-        const option = document.createElement('option');
-        option.value = asso.id;
-        option.textContent = asso.titre;
-        associationFilter.appendChild(option);
-      });
+      if (associationFilter) {
+        associationFilter.innerHTML = '<option value="">Toutes les associations</option>';
+        apiAssociations.forEach(asso => {
+          const option = document.createElement('option');
+          option.value = asso.id;
+          option.textContent = asso.titre;
+          associationFilter.appendChild(option);
+        });
+        if (preselectAssociationId) associationFilter.value = preselectAssociationId;
+      }
 
       applyFilters();
     } catch (e) {
       console.error(e);
-      tableBody.innerHTML = '<tr><td colspan="8" class="text-danger text-center py-3">Erreur de chargement.</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="7" class="text-danger text-center py-3">Erreur de chargement.</td></tr>';
     }
   }
 
   function render(rows) {
     tableBody.innerHTML = '';
     if (countBadge) countBadge.textContent = `${rows.length} site(s)`;
-    if (!rows.length) { tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Aucun site trouvé.</td></tr>'; return; }
+    if (!rows.length) { tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Aucun site trouvé.</td></tr>'; return; }
     rows.forEach(site => {
       const tr = document.createElement('tr');
       const debut = fmt(site.date_debut); const fin = site.date_fin? fmt(site.date_fin) : 'En cours';
@@ -71,7 +75,10 @@ document.addEventListener('DOMContentLoaded', async function() {
       const searchQuery = [site.ligne1, site.code_postal, site.ville, site.pays].filter(Boolean).join(', ');
       const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`;
 
-      const associatedAssociations = (site.associations || []).map(asso => `<span class="badge bg-secondary me-1">${asso.titre}</span>`).join('');
+      const associatedAssociations = (site.associations || []).map(asso => {
+        if (!asso.id) return `<span class="badge bg-secondary me-1">Sans ID</span>`;
+        return `<button type="button" class="badge bg-secondary me-1 border-0 assoc-link" data-id="${asso.id}" title="Voir l'association">${asso.titre}</button>`;
+      }).join('');
 
       tr.innerHTML = `
         <td><strong>${site.nom_site||'Site'}</strong><br><small class="text-muted">ID: ${site.id}</small></td>
@@ -80,8 +87,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         <td>${associatedAssociations || '<span class="text-muted">—</span>'}</td> <!-- New column for associations -->
         <td><span class="badge ${hasTicket? 'bg-danger':'bg-success'}">${hasTicket? 'Oui':'Non'}</span></td>
         <td>${site.responsable_matricule? getAgentName(site.responsable_matricule): 'Non assigné'}</td>
-        <td><small>Début: ${debut||''}<br>Fin: ${fin||''}</small></td>
-        <td class="d-flex gap-2 flex-wrap">
+        <td class="d-flex gap-2 flex-wrap justify-content-center align-items-center">
           <button class="btn btn-sm btn-info view-site" data-id="${site.id}"><i class="bi bi-eye"></i></button>
           ${isAdmin ? `<button class="btn btn-sm btn-warning edit-site" data-id="${site.id}"><i class="bi bi-pencil"></i></button>` : ''}
         </td>`;
@@ -91,7 +97,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       function applyFilters(){
         const term = (searchInput.value||'').toLowerCase();
-        const selectedAssociationId = associationFilter.value; // Get selected association
+        const associationId = associationFilter.value || '';
         const startDate = dateStartInput.value ? new Date(dateStartInput.value) : null;
         const endDate = dateEndInput.value ? new Date(dateEndInput.value) : null;
 
@@ -108,8 +114,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             || String(s.id||'').toLowerCase().includes(term)
             || addressText.includes(term);
           
-          // Filter by association
-          const matchesAssociation = !selectedAssociationId || (s.associations && s.associations.some(asso => String(asso.id) === selectedAssociationId));
+          // Filter by association id (if selected)
+          const matchesAssociation = !associationId || (s.associations && s.associations.some(asso => String(asso.id) === String(associationId)));
           
           const siteStart = s.date_debut ? new Date(s.date_debut) : null;
           const siteEnd = s.date_fin ? new Date(s.date_fin) : null;
@@ -129,19 +135,20 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
 
       searchInput.addEventListener('input', applyFilters);
-      associationFilter.addEventListener('change', applyFilters); // New event listener for association filter
+      associationFilter.addEventListener('change', applyFilters);
       dateStartInput.addEventListener('change', applyFilters);
       dateEndInput.addEventListener('change', applyFilters);
       
       tableBody.addEventListener('click', (e) => {
         const viewBtn = e.target.closest('.view-site');
         const editBtn = e.target.closest('.edit-site');
+        const assocBtn = e.target.closest('.assoc-link');
         if (viewBtn) {
           const siteId = viewBtn.getAttribute('data-id');
           const viewSiteModal = document.getElementById('viewSiteModal');
           const viewSiteFrame = document.getElementById('viewSiteFrame');
           if (viewSiteModal && viewSiteFrame) {
-            viewSiteFrame.src = `/site-view.html?id=${siteId}`;
+            viewSiteFrame.src = `/site-view.html?id=${siteId}&embed=1`;
             const m = bootstrap.Modal.getOrCreateInstance(viewSiteModal);
             m.show();
           }
@@ -151,8 +158,18 @@ document.addEventListener('DOMContentLoaded', async function() {
           const editSiteModal = document.getElementById('editSiteModal');
           const editSiteFrame = document.getElementById('editSiteFrame');
           if (editSiteModal && editSiteFrame) {
-            editSiteFrame.src = `/site-edit.html?id=${siteId}`;
+            editSiteFrame.src = `/site-edit.html?id=${siteId}&embed=1`;
             const m = bootstrap.Modal.getOrCreateInstance(editSiteModal);
+            m.show();
+          }
+        }
+        if (assocBtn) {
+          const assocId = assocBtn.getAttribute('data-id');
+          const associationModal = document.getElementById('associationModal');
+          const associationFrame = document.getElementById('associationFrame');
+          if (associationModal && associationFrame && assocId) {
+            associationFrame.src = `/association-view.html?id=${assocId}&embed=1`;
+            const m = bootstrap.Modal.getOrCreateInstance(associationModal);
             m.show();
           }
         }
@@ -180,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         createSiteModal.addEventListener('show.bs.modal', function (event) {
           const createSiteFrame = createSiteModal.querySelector('iframe');
           if (createSiteFrame) {
-            createSiteFrame.src = '/site-new.html';
+            createSiteFrame.src = '/site-new.html?embed=1';
           }
         });
         createSiteModal.addEventListener('hidden.bs.modal', load);
@@ -190,7 +207,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         viewSiteModal.addEventListener('show.bs.modal', function (event) {
           const button = event.relatedTarget;
           const siteId = button.getAttribute('data-id');
-          viewSiteFrame.src = `/site-view.html?id=${siteId}`;
+          viewSiteFrame.src = `/site-view.html?id=${siteId}&embed=1`;
         });
       }
 
@@ -198,7 +215,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         editSiteModal.addEventListener('show.bs.modal', function (event) {
           const button = event.relatedTarget;
           const siteId = button.getAttribute('data-id');
-          editSiteFrame.src = `/site-edit.html?id=${siteId}`;
+          editSiteFrame.src = `/site-edit.html?id=${siteId}&embed=1`;
         });
         editSiteModal.addEventListener('hidden.bs.modal', load);
       }

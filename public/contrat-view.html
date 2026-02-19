@@ -7,69 +7,396 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="/custom.css?v=1" rel="stylesheet">
-  <script src="/nav.js?v=2"></script>
+  <script src="/nav.js?v=3"></script>
+  <style>
+    body { 
+      background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%); 
+      min-height: 100vh;
+    }
+    .embed header, .embed #navbar-placeholder { display: none !important; }
+    .hero-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 20px;
+      border: none;
+      box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+      overflow: hidden;
+      position: relative;
+    }
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 400px;
+      height: 400px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero-card .card-body {
+      position: relative;
+      z-index: 1;
+      padding: 2rem;
+    }
+    .contract-title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .contract-dates {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      padding: 1rem;
+      border-radius: 12px;
+      margin-top: 1.5rem;
+    }
+    .date-block { flex: 1; text-align: center; }
+    .date-label {
+      font-size: 0.75rem;
+      opacity: 0.9;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .date-value { font-size: 1.25rem; font-weight: 600; margin-top: 0.25rem; }
+    .date-separator { font-size: 1.5rem; opacity: 0.7; }
+    .info-card {
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      height: 100%;
+      overflow: hidden;
+    }
+    .info-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); }
+    .info-card .card-header {
+      font-weight: 600;
+      border: none;
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .gradient-header-blue { background: linear-gradient(135deg, #2563eb, #6366f1); color: white; }
+    .gradient-header-green { background: linear-gradient(135deg, #10b981, #0ea5e9); color: white; }
+    .site-card {
+      border: none;
+      border-radius: 16px;
+      background: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      height: 100%;
+      overflow: hidden;
+      border-left: 4px solid #667eea;
+    }
+    .site-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 28px rgba(102, 126, 234, 0.2);
+      border-left-color: #764ba2;
+    }
+    .site-header {
+      background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+      padding: 1.25rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .site-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .site-body { padding: 1.25rem; }
+    .info-row { margin-bottom: 1rem; }
+    .info-row:last-child { margin-bottom: 0; }
+    .info-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748b;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .info-value { color: #1e293b; font-size: 0.95rem; line-height: 1.5; }
+    .info-value a { color: #667eea; text-decoration: none; transition: color 0.2s; }
+    .info-value a:hover { color: #764ba2; text-decoration: underline; }
+    .badge-status {
+      padding: 0.5rem 1rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .action-btn {
+      border-radius: 10px;
+      font-weight: 600;
+      padding: 0.6rem 1.25rem;
+      transition: all 0.3s;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+    .btn-gradient-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .btn-gradient-secondary { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); color: white; }
+    .section-card {
+      border: none;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      background: white;
+    }
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .section-title i { color: #667eea; font-size: 1.5rem; }
+    .badge-count {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.4rem 0.8rem;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .form-modern {
+      background: #f8f9ff;
+      padding: 1.5rem;
+      border-radius: 16px;
+      border: 2px dashed #cbd5e1;
+    }
+    .form-modern label {
+      font-weight: 600;
+      color: #475569;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    .form-modern input, .form-modern select {
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 0.75rem;
+      transition: all 0.3s;
+    }
+    .form-modern input:focus, .form-modern select:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #94a3b8;
+    }
+    .empty-state i { font-size: 4rem; margin-bottom: 1rem; opacity: 0.5; }
+    .client-info-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .client-info-item i { color: rgba(255, 255, 255, 0.8); font-size: 1.1rem; }
+    .association-item {
+      padding: 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      margin-bottom: 0.75rem;
+      background: white;
+      transition: all 0.3s;
+    }
+    .association-item:hover { border-color: #667eea; transform: translateX(4px); }
+    .association-item:last-child { margin-bottom: 0; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-in { animation: fadeInUp 0.5s ease-out; }
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+      border-radius: 12px;
+    }
+    @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  </style>
 </head>
-<body class="app-bg p-3">
-  <div class="card mb-3 shadow-sm">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-start gap-3">
-        <div>
-          <h4 class="mb-1" id="titre">Contrat</h4>
-          <div class="text-muted small">Période</div>
-          <div class="fw-semibold mb-2"><span id="date-debut">-</span> &rarr; <span id="date-fin">-</span></div>
-          <div id="feedback" class="small"></div>
+<body>
+  <div id="navbar-placeholder"></div>
+
+  <main class="container mt-4 mb-5">
+    <!-- Hero Card -->
+    <div class="card hero-card mb-4 animate-in">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div class="flex-grow-1">
+            <h1 class="contract-title" id="titre">Contrat</h1>
+            <div id="feedback" class="small"></div>
+            
+            <div class="contract-dates">
+              <div class="date-block">
+                <div class="date-label">Début</div>
+                <div class="date-value" id="date-debut">—</div>
+              </div>
+              <div class="date-separator">
+                <i class="bi bi-arrow-right"></i>
+              </div>
+              <div class="date-block">
+                <div class="date-label">Fin</div>
+                <div class="date-value" id="date-fin">—</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="action-btn btn-gradient-primary" id="open-new-contrat" data-bs-toggle="modal" data-bs-target="#createContratModal">
+              <i class="bi bi-plus-circle"></i> Nouveau
+            </button>
+            <button class="action-btn btn-gradient-secondary" id="edit-contrat-btn">
+              <i class="bi bi-pencil"></i> Modifier
+            </button>
+          </div>
         </div>
-        <button class="btn btn-primary btn-sm" id="open-new-contrat"><i class="bi bi-plus-circle me-1"></i>Créer un contrat</button>
       </div>
     </div>
-  </div>
 
-  <div class="card shadow-sm">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="card-title mb-0">Sites associés</h5>
-        <span class="badge bg-primary" id="sites-count">0 site(s)</span>
+    <!-- Info Cards Row -->
+    <div class="row g-4 mb-4">
+      <div class="col-lg-6">
+        <div class="info-card d-none animate-in" id="client-card" style="animation-delay: 0.1s;">
+          <div class="card-header gradient-header-blue">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-person-circle"></i>
+              <span>Client associé</span>
+            </div>
+            <button class="btn btn-light btn-sm" id="client-view-btn" type="button">
+              <i class="bi bi-box-arrow-up-right me-1"></i> Ouvrir
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="client-info-item">
+              <i class="bi bi-building text-primary"></i>
+              <div class="fw-semibold" id="client-name">—</div>
+            </div>
+            <div class="client-info-item" id="client-email-container">
+              <i class="bi bi-envelope text-primary"></i>
+              <div class="small" id="client-email"></div>
+            </div>
+            <div class="client-info-item" id="client-contact-container">
+              <i class="bi bi-telephone text-primary"></i>
+              <div class="small" id="client-contact"></div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div id="sites-grid" class="row g-3"></div>
-      <hr class="my-4">
-      <div class="row g-2 align-items-end mb-3">
-        <div class="col-md-8">
-          <label class="form-label fw-semibold">Associer un site existant</label>
-          <select id="site-select" class="form-select">
-            <option value="">Sélectionner un site...</option>
-          </select>
-        </div>
-        <div class="col-md-4 d-grid">
-          <button class="btn btn-outline-primary" id="add-site-btn"><i class="bi bi-link-45deg me-1"></i>Associer</button>
+      
+      <div class="col-lg-6">
+        <div class="info-card animate-in" style="animation-delay: 0.2s;">
+          <div class="card-header gradient-header-green">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-diagram-3"></i>
+              <span>Associations liées</span>
+            </div>
+              <div class="d-flex gap-2 align-items-center">
+                <span class="badge bg-light text-dark" id="asso-count">0</span>
+                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addAssociationModal">
+                  <i class="bi bi-link-45deg me-1"></i> Associer
+                </button>
+              </div>
+          </div>
+          <div class="card-body" id="associations-body">
+            <div class="empty-state">
+              <i class="bi bi-inbox"></i>
+              <p class="mb-0">Aucune association liée</p>
+            </div>
+          </div>
         </div>
       </div>
-      <div id="sites-feedback" class="small mb-3"></div>
-
-      <h6 class="fw-bold mt-3">Créer et associer un site</h6>
-      <form id="create-site-form" class="row g-2">
-        <div class="col-md-6">
-          <label class="form-label fw-semibold">Nom du site</label>
-          <input class="form-control" id="new-site-nom" placeholder="Ex: Site principal" required>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label fw-semibold">Commentaire (optionnel)</label>
-          <input class="form-control" id="new-site-commentaire" placeholder="Notes...">
-        </div>
-        <div class="col-12 d-grid d-md-block">
-          <button type="submit" class="btn btn-outline-success"><i class="bi bi-plus-circle me-1"></i>Créer et associer</button>
-        </div>
-      </form>
-      <div id="create-site-feedback" class="small mt-2"></div>
     </div>
-  </div>
+
+    <!-- Sites Section -->
+    <div class="section-card animate-in" style="animation-delay: 0.3s;">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2 class="section-title">
+            <i class="bi bi-geo-alt-fill"></i>
+            Sites associés
+          </h2>
+          <span class="badge-count" id="sites-count">0 site(s)</span>
+        </div>
+        
+        <div id="sites-grid" class="row g-4 mb-4">
+          <div class="col-12">
+            <div class="skeleton" style="height: 200px;"></div>
+          </div>
+        </div>
+        
+        <hr class="my-4">
+        
+        <!-- Associer un site existant -->
+        <div class="form-modern mb-4">
+          <h6 class="fw-bold mb-3">
+            <i class="bi bi-link-45deg me-2"></i>
+            Associer un site existant
+          </h6>
+          <div class="row g-3 align-items-end">
+            <div class="col-md-8">
+              <label class="form-label">Sélectionner un site</label>
+              <select id="site-select" class="form-select">
+                <option value="">Choisir un site...</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-gradient-primary w-100" id="add-site-btn">
+                <i class="bi bi-link-45deg me-1"></i>Associer
+              </button>
+            </div>
+          </div>
+          <div id="sites-feedback" class="small mt-2"></div>
+        </div>
+
+        <!-- Créer un nouveau site -->
+        <div class="form-modern">
+          <h6 class="fw-bold mb-3">
+            <i class="bi bi-plus-circle me-2"></i>
+            Créer et associer un nouveau site
+          </h6>
+          <form id="create-site-form" class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Nom du site <span class="text-danger">*</span></label>
+              <input class="form-control" id="new-site-nom" placeholder="Ex: Site principal" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Commentaire</label>
+              <input class="form-control" id="new-site-commentaire" placeholder="Notes additionnelles...">
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-gradient-primary">
+                <i class="bi bi-plus-circle me-1"></i>Créer et associer
+              </button>
+            </div>
+          </form>
+          <div id="create-site-feedback" class="small mt-2"></div>
+        </div>
+      </div>
+    </div>
+  </main>
 
   <!-- Site Modal -->
   <div class="modal fade" id="siteModal" tabindex="-1" aria-labelledby="siteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="siteModalLabel">Détails du Site</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-content" style="border-radius: 20px; border: none;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 20px 20px 0 0;">
+          <h5 class="modal-title" id="siteModalLabel">
+            <i class="bi bi-geo-alt-fill me-2"></i>Détails du Site
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body p-0">
           <iframe id="siteModalFrame" src="about:blank" style="width: 100%; height: 80vh; border: none;"></iframe>
@@ -78,42 +405,79 @@
     </div>
   </div>
 
-  <!-- Nouveau Contrat Modal -->
-  <div class="modal fade" id="contratModal" tabindex="-1" aria-labelledby="contratModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="contratModalLabel">Nouveau contrat</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <!-- Add Association Modal -->
+  <div class="modal fade" id="addAssociationModal" tabindex="-1" aria-labelledby="addAssociationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: 20px; border: none;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); color: white; border-radius: 20px 20px 0 0;">
+          <h5 class="modal-title" id="addAssociationModalLabel">
+            <i class="bi bi-link-45deg me-2"></i>Associer une association
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label for="contrat-titre" class="form-label fw-semibold">Titre</label>
-            <input type="text" class="form-control" id="contrat-titre" placeholder="Ex: Contrat maintenance 2025">
-          </div>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label for="contrat-debut" class="form-label fw-semibold">Début</label>
-              <input type="date" class="form-control" id="contrat-debut">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Association</label>
+              <select class="form-select" id="association-select">
+                <option value="">Choisir une association</option>
+              </select>
             </div>
-            <div class="col-md-6">
-              <label for="contrat-fin" class="form-label fw-semibold">Fin (optionnel)</label>
-              <input type="date" class="form-control" id="contrat-fin">
-            </div>
+            <div id="addAssociationFeedback" class="small text-danger d-none"></div>
           </div>
-          <div class="mt-3">
-            <label for="contrat-comment" class="form-label fw-semibold">Commentaire (optionnel)</label>
-            <textarea id="contrat-comment" class="form-control" rows="3" placeholder="Notes..."></textarea>
-          </div>
-          <div class="mt-3">
-            <label for="contrat-client" class="form-label fw-semibold">Client ID (optionnel)</label>
-            <input type="number" class="form-control" id="contrat-client" placeholder="Laisser vide pour lier manuellement plus tard">
-          </div>
-          <div class="alert d-none mt-3" id="contrat-feedback"></div>
-        </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="save-contrat-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-gradient-primary" id="save-association-btn">Associer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Contrat Modal -->
+  <div class="modal fade" id="createContratModal" tabindex="-1" aria-labelledby="createContratModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content" style="border-radius: 20px; border: none;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 20px 20px 0 0;">
+          <h5 class="modal-title" id="createContratModalLabel">
+            <i class="bi bi-plus-circle me-2"></i>Créer un nouveau Contrat
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0">
+          <iframe id="createContratFrame" src="/contrat-new.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Contrat Modal -->
+  <div class="modal fade" id="editContratModal" tabindex="-1" aria-labelledby="editContratModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content" style="border-radius: 20px; border: none;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); color: white; border-radius: 20px 20px 0 0;">
+          <h5 class="modal-title" id="editContratModalLabel">
+            <i class="bi bi-pencil me-2"></i>Modifier le Contrat
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0">
+          <iframe id="editContratFrame" src="about:blank" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client Modal -->
+  <div class="modal fade" id="clientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content" style="border-radius: 20px; border: none;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #2563eb, #6366f1); color: white; border-radius: 20px 20px 0 0;">
+          <h5 class="modal-title">
+            <i class="bi bi-person-circle me-2"></i>Détails Client
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0">
+          <iframe id="clientFrame" src="about:blank" style="width:100%;height:80vh;border:none;"></iframe>
         </div>
       </div>
     </div>
@@ -124,44 +488,136 @@
     document.addEventListener('DOMContentLoaded', async () => {
       const params = new URLSearchParams(location.search);
       const id = params.get('id');
+      const isEmbed = window.self !== window.top || params.get('embed') === '1' || params.get('modal') === '1';
+      if (isEmbed) document.body.classList.add('embed');
       const feedback = document.getElementById('feedback');
       const sitesFeedback = document.getElementById('sites-feedback');
       const createSiteFeedback = document.getElementById('create-site-feedback');
       const siteSelect = document.getElementById('site-select');
       const createSiteForm = document.getElementById('create-site-form');
-      if (!id) { feedback.className='text-danger'; feedback.textContent='ID manquant'; return; }
+      const clientCard = document.getElementById('client-card');
+      const clientName = document.getElementById('client-name');
+      const clientEmail = document.getElementById('client-email');
+      const clientContact = document.getElementById('client-contact');
+      const clientEmailContainer = document.getElementById('client-email-container');
+      const clientContactContainer = document.getElementById('client-contact-container');
+      const clientViewBtn = document.getElementById('client-view-btn');
+      const clientModalEl = document.getElementById('clientModal');
+      const clientModal = clientModalEl ? new bootstrap.Modal(clientModalEl) : null;
+      const clientFrame = document.getElementById('clientFrame');
+      const associationsBody = document.getElementById('associations-body');
+      const assoCount = document.getElementById('asso-count');
+      const associationSelect = document.getElementById('association-select');
+      const addAssociationFeedback = document.getElementById('addAssociationFeedback');
+      const addAssociationModalEl = document.getElementById('addAssociationModal');
+      const addAssociationModal = addAssociationModalEl ? new bootstrap.Modal(addAssociationModalEl) : null;
+      const saveAssociationBtn = document.getElementById('save-association-btn');
+      
+      if (!id) { 
+        feedback.className='text-danger'; 
+        feedback.textContent='ID manquant'; 
+        return; 
+      }
+      
       const token = localStorage.getItem('token');
-      const headers = { 'Authorization': token? `Bearer ${token}` : '' };
-      async function api(url) {
-        const r = await fetch(url, { headers });
-        const b = await r.json().catch(()=>({}));
+      const headers = { 'Authorization': token ? `Bearer ${token}` : '', 'Content-Type': 'application/json' };
+      
+      async function api(url, options = {}) {
+        const r = await fetch(url, { ...options, headers });
+        const b = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(b.error || r.statusText);
         return b;
       }
-      const openContratBtn = document.getElementById('open-new-contrat');
-      const contratModalEl = document.getElementById('contratModal');
-      const contratModal = contratModalEl ? new bootstrap.Modal(contratModalEl) : null;
-      const contratFeedback = document.getElementById('contrat-feedback');
-      const saveContratBtn = document.getElementById('save-contrat-btn');
+      
       let agentMap = new Map();
+      let contractAssociations = [];
+      let allAssociations = [];
+
+      async function renderClient(clientId) {
+        if (!clientId || !clientCard) { 
+          clientCard?.classList.add('d-none'); 
+          return; 
+        }
+        try {
+          const c = await api(`/api/clients/${clientId}`);
+          clientName.textContent = c.nom_client || `Client #${clientId}`;
+          
+          if (c.email) {
+            clientEmail.textContent = c.email;
+            clientEmailContainer.style.display = 'flex';
+          } else {
+            clientEmailContainer.style.display = 'none';
+          }
+          
+          if (c.telephone) {
+            clientContact.textContent = c.telephone;
+            clientContactContainer.style.display = 'flex';
+          } else {
+            clientContactContainer.style.display = 'none';
+          }
+          
+          if (clientFrame && clientModal && clientViewBtn) {
+            clientViewBtn.onclick = () => {
+              clientFrame.src = `/client-view.html?id=${clientId}`;
+              clientModal.show();
+            };
+          }
+          clientCard.classList.remove('d-none');
+        } catch {
+          clientCard?.classList.add('d-none');
+        }
+      }
+
+      function renderAssociations(list = []) {
+        if (!associationsBody) return;
+        associationsBody.innerHTML = '';
+        
+        if (!list.length) {
+          associationsBody.innerHTML = `
+            <div class="empty-state">
+              <i class="bi bi-inbox"></i>
+              <p class="mb-0">Aucune association liée</p>
+            </div>`;
+        } else {
+          list.forEach(a => {
+            const el = document.createElement('div');
+            el.className = 'association-item';
+            el.innerHTML = `
+              <div class="fw-semibold mb-1">${a.titre || 'Association'}</div>
+              ${a.email_comptabilite ? `<div class="small text-muted"><i class="bi bi-envelope me-1"></i>${a.email_comptabilite}</div>` : ''}
+            `;
+            associationsBody.appendChild(el);
+          });
+        }
+        
+        if (assoCount) assoCount.textContent = `${list.length}`;
+      }
 
       try {
         const contrat = await api(`/api/contrats/${id}`);
         const sites = await api(`/api/contrats/${id}/sites`);
         const agents = await api('/api/agents').catch(() => []);
+        const associations = await api(`/api/contrats/${id}/associations`).catch(() => []);
 
-        // cache agents par matricule pour éviter les undefined
         agentMap = new Map();
         (Array.isArray(agents) ? agents : []).forEach(a => {
           const full = `${a.nom || ''} ${a.prenom || ''}`.trim();
           agentMap.set(String(a.matricule), full || a.matricule || 'Non assigné');
         });
+        
         document.getElementById('titre').textContent = contrat.titre || 'Contrat';
-        document.getElementById('date-debut').textContent = contrat.date_debut ? new Date(contrat.date_debut).toLocaleDateString() : '—';
-        document.getElementById('date-fin').textContent = contrat.date_fin ? new Date(contrat.date_fin).toLocaleDateString() : '—';
-
+        document.getElementById('date-debut').textContent = contrat.date_debut 
+          ? new Date(contrat.date_debut).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+          : '—';
+        document.getElementById('date-fin').textContent = contrat.date_fin 
+          ? new Date(contrat.date_fin).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+          : '—';
+        
+        renderClient(contrat.client_id);
+        contractAssociations = associations || [];
+        renderAssociations(contractAssociations);
+        await loadAssociationCatalog();
         renderSitesGrid(sites);
-        await loadAllSites();
       } catch (err) {
         feedback.className = 'text-danger';
         feedback.textContent = err.message || 'Erreur de chargement';
@@ -179,100 +635,136 @@
         });
       }
 
-      if (openContratBtn && contratModal) {
-        openContratBtn.addEventListener('click', () => {
-          contratFeedback.classList.add('d-none');
-          contratFeedback.textContent = '';
-          document.getElementById('contrat-titre').value = '';
-          document.getElementById('contrat-debut').value = '';
-          document.getElementById('contrat-fin').value = '';
-          document.getElementById('contrat-comment').value = '';
-          document.getElementById('contrat-client').value = '';
-          contratModal.show();
+      const createContratModal = document.getElementById('createContratModal');
+      if (createContratModal) {
+        createContratModal.addEventListener('hidden.bs.modal', async () => {
+          location.reload();
+        });
+      }
+      
+      const editContratModal = document.getElementById('editContratModal');
+      if (editContratModal) {
+        editContratModal.addEventListener('hidden.bs.modal', async () => {
+          location.reload();
         });
       }
 
-      async function createContrat() {
-        const titre = document.getElementById('contrat-titre').value.trim();
-        const date_debut = document.getElementById('contrat-debut').value || null;
-        const date_fin = document.getElementById('contrat-fin').value || null;
-        const commentaire = document.getElementById('contrat-comment').value.trim();
-        const client_id = document.getElementById('contrat-client').value ? Number(document.getElementById('contrat-client').value) : undefined;
-        if (!titre) {
-          contratFeedback.className = 'alert alert-warning';
-          contratFeedback.textContent = 'Le titre est requis.';
-          contratFeedback.classList.remove('d-none');
-          return;
-        }
-        try {
-          await api('/api/contrats', {
-            method: 'POST',
-            body: JSON.stringify({ titre, date_debut, date_fin, commentaire, client_id })
-          });
-          contratFeedback.className = 'alert alert-success';
-          contratFeedback.textContent = 'Contrat créé.';
-          contratFeedback.classList.remove('d-none');
-          setTimeout(() => contratModal.hide(), 700);
-        } catch (e) {
-          contratFeedback.className = 'alert alert-danger';
-          contratFeedback.textContent = e.message || 'Erreur lors de la création';
-          contratFeedback.classList.remove('d-none');
-        }
+      const editContratBtn = document.getElementById('edit-contrat-btn');
+      if (editContratBtn) {
+        editContratBtn.addEventListener('click', () => {
+          const editContratModalBootstrap = new bootstrap.Modal(document.getElementById('editContratModal'));
+          const editContratFrame = document.getElementById('editContratFrame');
+          editContratFrame.src = `/contrat-edit.html?id=${id}`;
+          editContratModalBootstrap.show();
+        });
       }
 
-      if (saveContratBtn && contratModal) {
-        saveContratBtn.addEventListener('click', createContrat);
-      }
-
-      // --- Gestion des sites (associer / créer) ---
       function renderSitesGrid(sites) {
         const grid = document.getElementById('sites-grid');
         const count = document.getElementById('sites-count');
         if (count) count.textContent = `${(sites || []).length} site(s)`;
         grid.innerHTML = '';
+        
         if (!sites || !sites.length) {
-          grid.innerHTML = '<div class="col-12 text-muted small">Aucun site lié.</div>';
+          grid.innerHTML = `
+            <div class="col-12 empty-state">
+              <i class="bi bi-geo-alt"></i>
+              <p class="mb-0">Aucun site associé</p>
+            </div>`;
           return;
         }
-        sites.forEach(s => {
+        
+        sites.forEach((s, index) => {
           const col = document.createElement('div');
-          col.className = 'col-12 col-md-6';
-          const line1 = s.adresse_ligne1 || s.ligne1 || (s.adresse && (s.adresse.ligne1 || s.adresse.ligne_1)) || s.adresse_libelle || s.adresse_id || '';
-          const lineFull = [
-            line1,
-            s.adresse_ligne2 || '',
-            [s.adresse_code_postal || '', s.adresse_ville || ''].filter(Boolean).join(' '),
-            s.adresse_pays || ''
-          ].filter(Boolean).join(' ');
-          const query = encodeURIComponent(lineFull || line1 || '');
-          const addressLink = query ? `<a href="https://www.google.com/maps/search/?api=1&query=${query}" target="_blank" rel="noopener noreferrer">${lineFull || 'Adresse non renseignée'}</a>` : (lineFull || 'Adresse non renseignée');
+          col.className = 'col-12 col-lg-6';
+          col.style.animationDelay = `${0.4 + index * 0.1}s`;
+          col.classList.add('animate-in');
+          
+          const displayAddressParts = [s.ligne1, `${s.code_postal || ''} ${s.ville || ''}`.trim(), s.pays].filter(Boolean);
+          const displayAddress = displayAddressParts.length ? displayAddressParts.join('<br>') : 'Adresse non renseignée';
+          const searchQuery = [s.ligne1, s.code_postal, s.ville, s.pays].filter(Boolean).join(', ');
+          const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`;
+          const responsableLabel = s.responsable_matricule
+            ? `${agentMap.get(String(s.responsable_matricule)) || 'Non assigné'} (${s.responsable_matricule})`
+            : 'Non assigné';
+
           col.innerHTML = `
-            <div class="border rounded p-3 h-100 d-flex flex-column shadow-sm">
-              <div class="fw-semibold mb-1">${s.nom_site || 'Site'}</div>
-              <div class="mb-2">
-                <div class="text-uppercase text-muted small">Adresse</div>
-                <div>${addressLink}</div>
+            <div class="site-card h-100">
+              <div class="site-header d-flex justify-content-between align-items-start">
+                <div class="site-title">
+                  <i class="bi bi-building"></i>
+                  <span>${s.nom_site || 'Site'}</span>
+                </div>
+                <span class="badge-status bg-light text-dark">${s.statut || 'N/A'}</span>
               </div>
-              <div class="mb-2">
-                <div class="text-uppercase text-muted small">Responsable</div>
-                <div>${s.responsable_matricule ? `${agentMap.get(String(s.responsable_matricule)) || 'Non assigné'} (${s.responsable_matricule})` : 'Non assigné'}</div>
-              </div>
-              <div class="mt-auto d-flex justify-content-between align-items-center">
-                <span class="badge bg-light text-dark">${s.statut || 'N/A'}</span>
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#siteModal" data-site-id="${s.site_id}">
-                  Voir le site
-                </button>
+              <div class="site-body">
+                <div class="info-row">
+                  <div class="info-label">Adresse</div>
+                  <div class="info-value">
+                    <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer">${displayAddress}</a>
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Responsable</div>
+                  <div class="info-value">${responsableLabel}</div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                  <div class="small text-muted">ID: ${s.id}</div>
+                  <button class="btn btn-sm btn-gradient-primary" data-bs-toggle="modal" data-bs-target="#siteModal" data-site-id="${s.id}">
+                    <i class="bi bi-box-arrow-up-right me-1"></i>Voir le site
+                  </button>
+                </div>
               </div>
             </div>`;
           grid.appendChild(col);
         });
       }
 
+      function populateAssociationSelect() {
+        if (!associationSelect) return;
+        const getAssociationId = (a) => (a?.id ?? a?.association_id ?? a?.associationId ?? a?.asso_id);
+        const existing = new Set((contractAssociations || []).map(a => String(getAssociationId(a))));
+        associationSelect.innerHTML = '<option value="">Choisir une association</option>';
+        (allAssociations || []).forEach(a => {
+          const associationId = getAssociationId(a);
+          if (associationId == null) return;
+          const opt = document.createElement('option');
+          opt.value = associationId;
+          opt.textContent = a.titre || `Association #${associationId}`;
+          if (existing.has(String(associationId))) {
+            opt.disabled = true;
+            opt.textContent += ' (déjà lié)';
+          }
+          associationSelect.appendChild(opt);
+        });
+      }
+
+      async function loadAssociationCatalog() {
+        try {
+          const list = await api('/api/associations');
+          allAssociations = list || [];
+          populateAssociationSelect();
+        } catch (err) {
+          console.error('Erreur chargement des associations:', err);
+        }
+      }
+
+      async function reloadAssociationsList() {
+        try {
+          const refreshed = await api(`/api/contrats/${id}/associations`);
+          contractAssociations = refreshed || [];
+          renderAssociations(contractAssociations);
+          populateAssociationSelect();
+        } catch (err) {
+          console.error('Erreur rechargement des associations:', err);
+        }
+      }
+
       async function loadAllSites() {
         if (!siteSelect) return;
         sitesFeedback.textContent = '';
         try {
-          const all = await api('/api/sites');
+        const all = await api('/api/sites');
           siteSelect.innerHTML = '<option value="">Sélectionner un site...</option>';
           (all || []).forEach(s => {
             const opt = document.createElement('option');
@@ -340,6 +832,31 @@
           } catch (err) {
             createSiteFeedback.className = 'small text-danger';
             createSiteFeedback.textContent = err.message || 'Erreur lors de la création/association.';
+          }
+        });
+      }
+
+      if (saveAssociationBtn) {
+        saveAssociationBtn.addEventListener('click', async () => {
+          addAssociationFeedback.className = 'small text-danger';
+          addAssociationFeedback.textContent = '';
+          const associationId = associationSelect?.value;
+          if (!associationId) {
+            addAssociationFeedback.textContent = 'Choisissez une association.';
+            return;
+          }
+          try {
+            await api(`/api/contrats/${id}/associations`, {
+              method: 'POST',
+              body: JSON.stringify({ association_id: associationId }),
+            });
+            addAssociationFeedback.className = 'small text-success';
+            addAssociationFeedback.textContent = 'Association liée au contrat.';
+            await reloadAssociationsList();
+            associationSelect.value = '';
+            addAssociationModal?.hide();
+          } catch (err) {
+            addAssociationFeedback.textContent = err.message || 'Impossible d\'associer.';
           }
         });
       }

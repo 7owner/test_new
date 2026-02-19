@@ -10,17 +10,63 @@
   <script src="/nav.js?v=2"></script>
   <style>
     body { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); }
-    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+    .card { border: 1px solid rgba(102,126,234,0.18); border-radius: 16px; box-shadow: 0 14px 32px rgba(0,0,0,0.12); }
+    .order-card { transition: transform 0.2s, box-shadow 0.2s; border: 1px solid rgba(102,126,234,0.28); }
+    .order-card:hover { transform: translateY(-3px); box-shadow: 0 18px 38px rgba(0,0,0,0.18); border-color: rgba(102,126,234,0.45); }
+    .summary-card { color: #fff; border: none; box-shadow: 0 12px 28px rgba(0,0,0,0.15); }
+    .summary-value { font-size: 1.8rem; font-weight: 700; }
+    .summary-label { opacity: 0.9; font-weight: 600; }
   </style>
 </head>
 <body class="dashboard-bg">
   <div id="navbar-placeholder"></div>
 
   <main class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    
+   <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
       <h1 class="h4 mb-0">Gestion des Commandes</h1>
-      <a href="/catalogue-materiel.html" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i>Nouvelle commande depuis le catalogue</a>
+      <div class="d-flex gap-2">
+        <a href="/catalogue-materiel.html" class="btn btn-outline-primary btn-sm"><i class="bi bi-box-seam me-1"></i>Depuis le catalogue</a>
+        <button class="btn btn-primary btn-sm" id="new-order-btn"><i class="bi bi-plus-circle me-1"></i>Nouvelle commande</button>
+      </div>
     </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-sm-6 col-lg-3">
+        <div class="card summary-card" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);">
+          <div class="card-body">
+            <div class="summary-value" id="stats-total">0</div>
+            <div class="summary-label">Total commandes</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="card summary-card" style="background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 100%);">
+          <div class="card-body text-dark">
+            <div class="summary-value" id="stats-pending">0</div>
+            <div class="summary-label">À commander</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="card summary-card" style="background:linear-gradient(135deg,#22d3ee 0%,#06b6d4 100%);">
+          <div class="card-body text-dark">
+            <div class="summary-value" id="stats-transit">0</div>
+            <div class="summary-label">En transit</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="card summary-card" style="background:linear-gradient(135deg,#22c55e 0%,#16a34a 100%);">
+          <div class="card-body">
+            <div class="summary-value" id="stats-received">0</div>
+            <div class="summary-label">Reçues / Installées</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+ 
 
     <div class="card mb-3">
       <div class="card-body">
@@ -44,30 +90,92 @@
       </div>
     </div>
 
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Demandes matériel</h5>
+        <div id="demandes-cards" class="row g-3">
+          <div class="col-12 text-muted">Chargement...</div>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-body">
         <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>Référence</th>
-                <th>Désignation</th>
-                <th>Fabricant</th>
-                <th>Fournisseur</th>
-                <th>Prix achat</th>
-                <th>Remise %</th>
-                <th>Statut Commande</th>
-                <th class="text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="orders-tbody">
-              <tr><td colspan="8" class="text-muted text-center py-4">Chargement...</td></tr>
-            </tbody>
-          </table>
+          <div id="orders-cards" class="row g-3">
+            <div class="col-12 text-center text-muted py-4">Chargement...</div>
+          </div>
         </div>
       </div>
     </div>
   </main>
+
+  <!-- Modal nouvelle commande manuelle -->
+  <div class="modal fade" id="newOrderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Nouvelle commande</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Référence</label>
+              <input type="text" class="form-control" id="new-ref" placeholder="REF123">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Désignation</label>
+              <input type="text" class="form-control" id="new-designation" placeholder="Désignation du matériel">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Catégorie</label>
+              <input type="text" class="form-control" id="new-categorie" placeholder="Catégorie">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Fabricant</label>
+              <input type="text" class="form-control" id="new-fabricant" placeholder="Fabricant">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Fournisseur</label>
+              <input type="text" class="form-control" id="new-fournisseur" placeholder="Fournisseur">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Prix achat (€)</label>
+              <input type="number" step="0.01" class="form-control" id="new-prix" placeholder="0.00">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Remise (%)</label>
+              <input type="number" step="0.01" class="form-control" id="new-remise" placeholder="0">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Quantité</label>
+              <input type="number" min="1" step="1" class="form-control" id="new-quantite" placeholder="1">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Statut commande</label>
+              <select class="form-select" id="new-status">
+                <option value="A commander">À commander</option>
+                <option value="Commande">Commandé</option>
+                <option value="En livraison">En livraison</option>
+                <option value="Reçu">Reçu</option>
+                <option value="Installé">Installé</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Commentaire</label>
+              <input type="text" class="form-control" id="new-commentaire" placeholder="Commentaire (optionnel)">
+            </div>
+          </div>
+          <div class="alert alert-danger d-none mt-3" id="new-order-error"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="new-order-save"><i class="bi bi-save me-1"></i>Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal edit -->
   <div class="modal fade" id="orderModal" tabindex="-1" aria-hidden="true">
@@ -117,6 +225,30 @@
     </div>
   </div>
 
+  <!-- Modal réception -->
+  <div class="modal fade" id="receiveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Marquer comme reçu</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2 text-muted" id="receive-ref">Référence : -</p>
+          <div class="mb-3">
+            <label class="form-label">Quantité reçue</label>
+            <input type="number" min="0" step="1" class="form-control" id="receive-qty" placeholder="Ex: 5">
+            <small class="text-muted">Cette quantité sera enregistrée dans le commentaire de la commande.</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-success" id="receive-save-btn"><i class="bi bi-check-circle me-1"></i>Valider reçu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal consultation documents -->
   <div class="modal fade" id="docsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -139,7 +271,8 @@
       if (!token) { window.location.href='/login.html'; return; }
       const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' };
       
-      const tbody = document.getElementById('orders-tbody');
+      const cardsContainer = document.getElementById('orders-cards');
+      const demandesContainer = document.getElementById('demandes-cards');
       const searchInput = document.getElementById('search-input');
       const statusFilter = document.getElementById('filter-status');
       
@@ -152,9 +285,35 @@
       const docsModal = new bootstrap.Modal(docsModalEl);
       const docsList = document.getElementById('docs-list');
       const docsModalLabel = document.getElementById('docsModalLabel');
+      const receiveModalEl = document.getElementById('receiveModal');
+      const receiveModal = new bootstrap.Modal(receiveModalEl);
+      const receiveRef = document.getElementById('receive-ref');
+      const receiveQty = document.getElementById('receive-qty');
+      const receiveSaveBtn = document.getElementById('receive-save-btn');
+      const newOrderBtn = document.getElementById('new-order-btn');
+      const newOrderModalEl = document.getElementById('newOrderModal');
+      const newOrderModal = newOrderModalEl ? new bootstrap.Modal(newOrderModalEl) : null;
+      const newOrderError = document.getElementById('new-order-error');
+      const newOrderSave = document.getElementById('new-order-save');
+      let linkedDemandeId = null;
+      let linkedDemandeQty = null;
+      const newFields = {
+        reference: document.getElementById('new-ref'),
+        designation: document.getElementById('new-designation'),
+        categorie: document.getElementById('new-categorie'),
+        fabricant: document.getElementById('new-fabricant'),
+        fournisseur: document.getElementById('new-fournisseur'),
+        prix: document.getElementById('new-prix'),
+        remise: document.getElementById('new-remise'),
+        quantite: document.getElementById('new-quantite'),
+        status: document.getElementById('new-status'),
+        commentaire: document.getElementById('new-commentaire')
+      };
       
       let orders = [];
       let editingOrderId = null;
+      let receivingOrderId = null;
+      let demandes = [];
 
       const fields = {
           reference: document.getElementById('ord-reference'),
@@ -198,6 +357,18 @@
           return data;
       };
 
+      function updateStats() {
+        const total = orders.length;
+        const pending = orders.filter(o => o.commande_status === 'A commander').length;
+        const transit = orders.filter(o => ['Commande', 'En livraison'].includes(o.commande_status)).length;
+        const received = orders.filter(o => ['Reçu', 'Installé'].includes(o.commande_status)).length;
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        set('stats-total', total);
+        set('stats-pending', pending);
+        set('stats-transit', transit);
+        set('stats-received', received);
+      }
+
       function render() {
         const term = searchInput.value.toLowerCase();
         const status = statusFilter.value;
@@ -207,40 +378,205 @@
             return matchesTerm && matchesStatus;
         });
 
-        tbody.innerHTML = '';
-        if (!filtered.length) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-4">Aucune commande.</td></tr>';
-            return;
-        }
+        cardsContainer.innerHTML = '';
+      if (!filtered.length) {
+        cardsContainer.innerHTML = '<div class="col-12 text-center text-muted py-4">Aucune commande.</div>';
+        return;
+      }
 
         filtered.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td class="fw-semibold">${item.reference || '-'}</td>
-              <td>${item.designation || '-'}</td>
-              <td>${item.fabricant || '-'}</td>
-              <td>${item.fournisseur || '-'}</td>
-              <td>${formatPrice(item.prix_achat)}</td>
-              <td>${formatPercent(item.remise_fournisseur)}</td>
-              <td><span class="badge ${statusClass(item.commande_status)}">${(item.commande_status || '').replace('_', ' ')}</span></td>
-              <td class="text-center">
-                <button class="btn btn-sm btn-outline-primary docs-btn" data-id="${item.id}" title="Pièces jointes"><i class="bi bi-paperclip"></i></button>
-                <button class="btn btn-sm btn-outline-secondary edit-btn" data-id="${item.id}" title="Détails"><i class="bi bi-pencil"></i></button>
-                <button class="btn btn-sm btn-outline-danger del-btn" data-id="${item.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
-              </td>`;
-            tbody.appendChild(tr);
+            const col = document.createElement('div');
+            col.className = 'col-12 col-md-6 col-lg-4';
+            const card = document.createElement('div');
+            card.className = 'card h-100 shadow-sm order-card';
+            card.innerHTML = `
+              <div class="card-body d-flex flex-column gap-2">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <div class="fw-semibold">${item.reference || '-'}</div>
+                    <div class="text-muted">${item.designation || '-'}</div>
+                    <div class="small text-muted">Fabricant: ${item.fabricant || '—'}</div>
+                    <div class="small text-muted">Fournisseur: ${item.fournisseur || '—'}</div>
+                    <div class="small text-muted">Quantité (interventions): ${item.total_quantite_used_in_interventions ?? 0}</div>
+                    <div class="small text-muted">Prix: ${formatPrice(item.prix_achat)}</div>
+                    <div class="small text-muted">Remise: ${formatPercent(item.remise_fournisseur)}</div>
+                  </div>
+                  <span class="badge ${statusClass(item.commande_status)}">${(item.commande_status || '').replace('_', ' ')}</span>
+                </div>
+                <div class="d-flex flex-wrap gap-2 justify-content-end">
+                  <button class="btn btn-sm btn-outline-success receive-btn" data-id="${item.id}" title="Marquer reçu"><i class="bi bi-box-seam"></i></button>
+                  <button class="btn btn-sm btn-outline-primary docs-btn" data-id="${item.id}" title="Pièces jointes"><i class="bi bi-paperclip"></i></button>
+                  <button class="btn btn-sm btn-outline-secondary edit-btn" data-id="${item.id}" title="Détails"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-sm btn-outline-danger del-btn" data-id="${item.id}" title="Supprimer"><i class="bi bi-trash"></i></button>
+                </div>
+              </div>`;
+            col.appendChild(card);
+            cardsContainer.appendChild(col);
         });
+        updateStats();
       }
 
       async function loadOrders() {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-4">Chargement...</td></tr>';
+        cardsContainer.innerHTML = '<div class="col-12 text-center text-muted py-4">Chargement...</div>';
         try {
           orders = await api('/api/materiels');
           render();
         } catch(e) {
-          tbody.innerHTML = `<tr><td colspan="8" class="text-danger text-center py-4">Erreur: ${e.message}</td></tr>`;
+          cardsContainer.innerHTML = `<div class="col-12 text-danger text-center py-4">Erreur: ${e.message}</div>`;
         }
       }
+
+      async function loadDemandes() {
+        if (!demandesContainer) return;
+        demandesContainer.innerHTML = '<div class="col-12 text-muted">Chargement...</div>';
+        try {
+          demandes = await api('/api/demandes-materiel');
+          if (!demandes.length) { demandesContainer.innerHTML = '<div class="col-12 text-muted">Aucune demande.</div>'; return; }
+          demandesContainer.innerHTML = '';
+          demandes.forEach(d => {
+            const col = document.createElement('div');
+            col.className = 'col-12 col-md-6 col-lg-4';
+            const interLabel = d.intervention_titre || (d.intervention_id ? `Intervention #${d.intervention_id}` : null);
+            const ticketLabel = d.ticket_titre || (d.ticket_id ? `Ticket #${d.ticket_id}` : null);
+            const travauxLabel = d.travaux_titre || (d.travaux_id ? `Travaux #${d.travaux_id}` : null);
+            const interInfo = interLabel ? `<span class="badge bg-light text-dark">${interLabel}</span>` : '';
+            const ticketInfo = ticketLabel ? `<span class="badge bg-secondary">${ticketLabel}</span>` : '';
+            const travauxInfo = travauxLabel ? `<span class="badge bg-info text-dark">${travauxLabel}</span>` : '';
+            const linkedMateriels = Array.isArray(d.materiels) && d.materiels.length
+              ? d.materiels.map(m => `<div class="small text-muted">- ${m.designation || m.reference || 'Matériel'} (${m.commande_status || '—'})</div>`).join('')
+              : '<div class="small text-muted">Aucune commande liée.</div>';
+            col.innerHTML = `
+              <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-start gap-2">
+                  <div>
+                    <div class="fw-semibold">${d.titre}</div>
+                    <div class="small text-muted">${d.commentaire || ''}</div>
+                    <div class="small text-muted">Quantité: ${d.quantite || 1}</div>
+                    <div class="d-flex flex-wrap gap-1 mt-1">${interInfo} ${ticketInfo} ${travauxInfo}</div>
+                    <div class="mt-2">${linkedMateriels}</div>
+                  </div>
+                  <div class="d-flex flex-column align-items-end gap-2">
+                    <div class="form-check">
+                      <input class="form-check-input demande-check" type="checkbox" data-id="${d.id}" ${d.commande_complete ? 'checked' : ''}>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary btn-create-order" data-id="${d.id}" title="Créer une commande"><i class="bi bi-plus-circle"></i></button>
+                  </div>
+                </div>
+                <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+                  <span class="badge bg-secondary">${d.statut || 'En_attente'}</span>
+                  <button class="btn btn-sm btn-outline-danger del-demande" data-id="${d.id}"><i class="bi bi-trash"></i></button>
+                </div>
+              </div>`;
+            demandesContainer.appendChild(col);
+          });
+          demandesContainer.querySelectorAll('.demande-check').forEach(cb => {
+            cb.addEventListener('change', async () => {
+              const id = cb.dataset.id;
+              const checked = cb.checked;
+              try {
+                await api(`/api/demandes-materiel/${id}`, {
+                  method: 'PATCH',
+                  body: JSON.stringify({ commande_complete: checked, statut: checked ? 'Commandé' : 'En_attente' })
+                });
+              } catch (err) {
+                alert(err.message);
+                cb.checked = !checked;
+              }
+            });
+          });
+          demandesContainer.querySelectorAll('.del-demande').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              if (!confirm('Supprimer cette demande ?')) return;
+              const id = btn.dataset.id;
+              try { await api(`/api/demandes-materiel/${id}`, { method: 'DELETE' }); loadDemandes(); }
+              catch (err) { alert(err.message); }
+            });
+          });
+        } catch (e) {
+          demandesContainer.innerHTML = `<div class="col-12 text-danger">Erreur: ${e.message}</div>`;
+        }
+      }
+
+      // Nouvelle commande (manuelle)
+      if (newOrderBtn && newOrderModal) {
+        newOrderBtn.addEventListener('click', () => {
+          Object.values(newFields).forEach(input => { if (input) input.value = ''; });
+          if (newFields.status) newFields.status.value = 'A commander';
+          if (newFields.quantite) newFields.quantite.value = '1';
+          linkedDemandeId = null;
+          linkedDemandeQty = null;
+          if (newOrderError) newOrderError.classList.add('d-none');
+          newOrderModal.show();
+        });
+      }
+
+      if (newOrderSave) {
+        newOrderSave.addEventListener('click', async () => {
+          const body = {
+            reference: newFields.reference?.value?.trim() || null,
+            designation: newFields.designation?.value?.trim() || null,
+            categorie: newFields.categorie?.value?.trim() || null,
+            fabricant: newFields.fabricant?.value?.trim() || null,
+            fournisseur: newFields.fournisseur?.value?.trim() || null,
+            prix_achat: newFields.prix?.value ? Number(newFields.prix.value) : null,
+            remise_fournisseur: newFields.remise?.value ? Number(newFields.remise.value) : null,
+            commande_status: newFields.status?.value || 'A commander',
+            commentaire: newFields.commentaire?.value?.trim() || null,
+            quantite_demandee: newFields.quantite?.value ? Number(newFields.quantite.value) : 1,
+            demande_materiel_id: linkedDemandeId || null
+          };
+          if (!body.reference || !body.designation) {
+            if (newOrderError) {
+              newOrderError.textContent = 'Référence et désignation sont obligatoires.';
+              newOrderError.classList.remove('d-none');
+            }
+            return;
+          }
+          try {
+            newOrderSave.disabled = true;
+            await api('/api/materiels', {
+              method: 'POST',
+              body: JSON.stringify(body)
+            });
+            newOrderModal.hide();
+            loadOrders();
+            // rafraîchir les demandes pour voir le lien
+            loadDemandes();
+          } catch (e) {
+            if (newOrderError) {
+              newOrderError.textContent = e.message;
+              newOrderError.classList.remove('d-none');
+            } else {
+              alert(e.message);
+            }
+          } finally {
+            newOrderSave.disabled = false;
+          }
+        });
+      }
+      // Lier demande -> nouvelle commande pré-remplie
+      demandesContainer?.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('.btn-create-order');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        const d = demandes.find(x => String(x.id) === String(id));
+        if (!d || !newOrderModal) return;
+        linkedDemandeId = d.id;
+        linkedDemandeQty = d.quantite || 1;
+        if (newOrderError) newOrderError.classList.add('d-none');
+        // Préfill
+        if (newFields.reference) newFields.reference.value = d.titre ? `DM-${d.id}` : '';
+        if (newFields.designation) newFields.designation.value = d.titre || '';
+        if (newFields.categorie) newFields.categorie.value = '';
+        if (newFields.fabricant) newFields.fabricant.value = '';
+        if (newFields.fournisseur) newFields.fournisseur.value = '';
+        if (newFields.prix) newFields.prix.value = '';
+        if (newFields.remise) newFields.remise.value = '';
+        if (newFields.quantite) newFields.quantite.value = linkedDemandeQty;
+        if (newFields.status) newFields.status.value = 'A commander';
+        if (newFields.commentaire) newFields.commentaire.value = d.commentaire || '';
+        newOrderModal.show();
+      });
 
       function showFeedback(msg, isError = true) {
           feedback.className = `alert ${isError ? 'alert-danger' : 'alert-success'}`;
@@ -286,19 +622,43 @@
           }
       });
       
-      tbody.addEventListener('click', (e) => {
+      cardsContainer.addEventListener('click', (e) => {
           const target = e.target.closest('button');
           if (!target) return;
           const id = target.dataset.id;
           if (target.classList.contains('edit-btn')) {
               const order = orders.find(i => i.id == id);
               openModal(order);
+          } else if (target.classList.contains('receive-btn')) {
+              const order = orders.find(i => i.id == id);
+              if (!order) return;
+              receivingOrderId = id;
+              receiveRef.textContent = `Référence : ${order.reference || '-'}`;
+              receiveQty.value = '';
+              receiveModal.show();
           } else if (target.classList.contains('del-btn')) {
               if (!confirm('Supprimer cette commande?')) return;
               api(`/api/materiels/${id}`, { method: 'DELETE' }).then(loadOrders).catch(e => alert(e.message));
           } else if (target.classList.contains('docs-btn')) {
               openDocsModal(id);
           }
+      });
+
+      receiveSaveBtn.addEventListener('click', async () => {
+          if (!receivingOrderId) return;
+          const qty = Number(receiveQty.value);
+          if (Number.isNaN(qty) || qty < 0) { alert('Veuillez saisir une quantité valide.'); return; }
+          try {
+              await api(`/api/materiels/${receivingOrderId}`, {
+                  method: 'PUT',
+                  body: JSON.stringify({
+                    commande_status: 'Reçu',
+                    commentaire: `Quantité reçue: ${qty}`
+                  })
+              });
+              await loadOrders();
+              receiveModal.hide();
+          } catch (err) { alert(err.message); }
       });
 
       // --- Document Logic ---
@@ -382,6 +742,7 @@
       statusFilter.addEventListener('change', render);
 
       loadOrders();
+      loadDemandes();
     });
   </script>
 </body>

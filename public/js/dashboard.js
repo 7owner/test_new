@@ -22,7 +22,9 @@ async function buildHeaders(json=false){
           if (!limited.length) { urgentMaintenancesDiv.innerHTML = '<p class="text-muted">Aucun ticket ouvert.</p>'; return; }
           urgentMaintenancesDiv.innerHTML = '';
           limited.forEach(t => {
-            const siteName = siteMap.get(String(t.site_id)) || (t.site_id ? `Site #${t.site_id}` : 'N/A');
+            if (t.site?.id && t.site?.nom_site) siteMap.set(String(t.site.id), t.site.nom_site);
+            const resolvedSiteId = t.site?.id ?? t.site_id;
+            const siteName = t.site?.nom_site ?? (resolvedSiteId ? (siteMap.get(String(resolvedSiteId)) || `Site #${resolvedSiteId}`) : 'N/A');
             const badge = (s => { switch(String(s||'')) { case 'Pas_commence': return 'bg-secondary'; case 'En_attente': return 'bg-info'; case 'En_cours': return 'bg-warning'; case 'Bloque': return 'bg-danger'; default: return 'bg-light text-dark'; } })(t.etat);
             const el = document.createElement('div'); el.className='card card-body mb-2';
             el.innerHTML = `
@@ -33,7 +35,7 @@ async function buildHeaders(json=false){
                   <span class="badge ${badge}">${String(t.etat||'').replace('_',' ')}</span>
                 </div>
                 <div>
-                  <a href="ticket-view.html?id=${t.id}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i> Détails</a>
+                  <button class="btn btn-sm btn-info ticket-modal-btn" data-id="${t.id}"><i class="bi bi-eye"></i> Détails</button>
                 </div>
               </div>`;
             urgentMaintenancesDiv.appendChild(el);
@@ -41,6 +43,98 @@ async function buildHeaders(json=false){
           const footer = document.createElement('div'); footer.className='d-flex justify-content-end mt-2'; footer.innerHTML = '<a class="btn btn-sm btn-outline-primary" href="/tickets.html">Voir tout</a>'; urgentMaintenancesDiv.appendChild(footer);
         } catch (e) { urgentMaintenancesDiv.innerHTML = '<p class="text-muted">Impossible de charger les tickets ouverts.</p>'; }
       })();
+
+      // Commandes reçues
+      const ordersReceivedDiv = document.getElementById('ordersReceived');
+      (async () => {
+        if (!ordersReceivedDiv) return;
+        try {
+          const headers = await buildHeaders(false);
+          // Fetch full dashboard data which now includes recentOrders
+          const dashboardData = await (await fetch('/api/dashboard', { headers, credentials: 'same-origin' })).json();
+          const recentOrders = dashboardData.recentOrders || [];
+
+          if (!recentOrders.length) {
+            ordersReceivedDiv.innerHTML = '<p class="text-muted">Aucune commande reçue.</p>';
+            return;
+          }
+          ordersReceivedDiv.innerHTML = '';
+          
+          recentOrders.forEach(cmd => {
+            const el = document.createElement('div');
+            el.className = 'card card-body mb-2';
+            const prix = cmd.prix_achat != null ? `${Number(cmd.prix_achat).toFixed(2)} €` : '—';
+            const qtyUsed = Number(cmd.total_quantite_used_in_interventions || 0);
+            const status = cmd.commande_status || 'N/A';
+            const statusBadge = (() => {
+              switch (status) {
+                case 'Reçu':
+                case 'Recu': return 'bg-success';
+                case 'Installé': return 'bg-info text-dark';
+                case 'En livraison': return 'bg-warning text-dark';
+                default: return 'bg-secondary';
+              }
+            })();
+            const interId = cmd.intervention_id || null;
+            const interBtn = interId
+              ? `<a class="btn btn-sm btn-outline-primary btn-intervention-modal" data-id="${interId}">
+                    <i class="bi bi-search"></i> Trouver intervention
+                 </a>`
+              : (cmd.reference ? `<a class="btn btn-sm btn-outline-secondary" href="/interventions.html?q=${encodeURIComponent(cmd.reference)}" target="_blank">
+                    <i class="bi bi-search"></i> Rechercher par réf.
+                 </a>` : '');
+
+            el.innerHTML = `
+              <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                <div>
+                  <div class="fw-semibold">${cmd.reference || 'Sans ref.'} — ${cmd.designation || cmd.titre || ''}</div>
+                  <div class="small text-muted">Fournisseur: ${cmd.fournisseur || '—'}</div>
+                  <div class="small text-muted">Prix: ${prix}</div>
+                  <div class="small text-muted">Quantité (interventions): ${qtyUsed}</div>
+                </div>
+                <div class="d-flex flex-column align-items-end gap-1">
+                  <span class="badge ${statusBadge}">${status}</span>
+                  ${interBtn}
+                </div>
+              </div>`;
+            ordersReceivedDiv.appendChild(el);
+          });
+          const footer = document.createElement('div');
+          footer.className = 'd-flex justify-content-end mt-2';
+          footer.innerHTML = '<a class="btn btn-sm btn-outline-primary" href="/materiel-gestion.html">Voir toutes</a>';
+          ordersReceivedDiv.appendChild(footer);
+        } catch (e) {
+          ordersReceivedDiv.innerHTML = '<p class="text-muted">Impossible de charger les commandes.</p>';
+        }
+      })();
+
+      // Ouverture modal intervention depuis les commandes reçues
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-intervention-modal');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        const modalEl = document.getElementById('orderInterventionModal');
+        const frame = document.getElementById('orderInterventionFrame');
+        if (modalEl && frame && id) {
+          frame.src = `/intervention-view.html?id=${id}`;
+          const m = bootstrap.Modal.getOrCreateInstance(modalEl);
+          m.show();
+        }
+      });
+
+      // Ouverture du ticket en modal depuis la carte "Tickets ouverts récents"
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.ticket-modal-btn');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        const modalEl = document.getElementById('ticketModal');
+        const frame = document.getElementById('ticketFrame');
+        if (modalEl && frame) {
+          frame.src = `/ticket-view.html?id=${id}`;
+          const m = bootstrap.Modal.getOrCreateInstance(modalEl);
+          m.show();
+        }
+      });
 
       // Tickets (ouvert/total) + graphiques (bar + donut)
       (async () => {

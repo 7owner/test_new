@@ -68,86 +68,22 @@
     </div>
   </div>
 
+  <!-- Modal pour voir les contrats associés -->
+  <div class="modal fade" id="viewContractModal" tabindex="-1" aria-labelledby="viewContractModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="viewContractModalLabel">Voir Contrat</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="viewContractFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const grid = document.getElementById('associations-grid');
-      const token = localStorage.getItem('token');
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
-      async function loadAssociations() {
-        try {
-          const res = await fetch('/api/associations', { headers });
-          if (!res.ok) throw new Error('Failed to fetch associations');
-          const associations = await res.json();
-          renderAssociations(associations);
-        } catch (error) {
-          grid.innerHTML = '<div class="col-12"><div class="alert alert-danger">Erreur de chargement des associations.</div></div>';
-        }
-      }
-
-      function renderAssociations(associations) {
-        grid.innerHTML = '';
-        if (!associations || associations.length === 0) {
-          grid.innerHTML = '<div class="col-12"><p class="text-muted">Aucune association trouvée.</p></div>';
-          return;
-        }
-        associations.forEach(assoc => {
-          const col = document.createElement('div');
-          col.className = 'col-12 col-md-6 col-lg-4';
-          const address = [assoc.ligne1, assoc.code_postal, assoc.ville].filter(Boolean).join(', ');
-          col.innerHTML = `
-            <div class="card h-100">
-              <div class="card-body">
-                <h5 class="card-title">${assoc.titre}</h5>
-                <h6 class="card-subtitle mb-2 text-muted">${assoc.email_comptabilite || 'Pas d\'email de compta'}</h6>
-                <p class="card-text small">${address || 'Pas d\'adresse'}</p>
-                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#viewAssociationModal" data-id="${assoc.id}"><i class="bi bi-eye"></i></button>
-                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editAssociationModal" data-id="${assoc.id}"><i class="bi bi-pencil"></i></button>
-                <button class="btn btn-sm btn-danger delete-btn" data-id="${assoc.id}"><i class="bi bi-trash"></i></button>
-              </div>
-            </div>
-          `;
-          grid.appendChild(col);
-        });
-      }
-
-      // Modal event listeners
-      const viewModal = document.getElementById('viewAssociationModal');
-      viewModal.addEventListener('show.bs.modal', e => {
-        const id = e.relatedTarget.getAttribute('data-id');
-        e.currentTarget.querySelector('iframe').src = `/association-view.html?id=${id}`;
-      });
-
-      const editModal = document.getElementById('editAssociationModal');
-      editModal.addEventListener('show.bs.modal', e => {
-        const id = e.relatedTarget.getAttribute('data-id');
-        e.currentTarget.querySelector('iframe').src = `/association-edit.html?id=${id}`;
-      });
-
-      [document.getElementById('createAssociationModal'), editModal].forEach(modal => {
-        modal.addEventListener('hidden.bs.modal', loadAssociations);
-      });
-      
-      // Delete button listener
-      grid.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('delete-btn') || e.target.closest('.delete-btn')) {
-          const btn = e.target.closest('.delete-btn');
-          const id = btn.getAttribute('data-id');
-          if (confirm('Voulez-vous vraiment supprimer cette association ?')) {
-            try {
-              const res = await fetch(`/api/associations/${id}`, { method: 'DELETE', headers });
-              if (!res.ok) throw new Error('La suppression a échoué');
-              loadAssociations();
-            } catch (error) {
-              alert(error.message);
-            }
-          }
-        }
-      });
-
-      loadAssociations();
-    });
-  </script>
+  <script src="/js/associations.js"></script>
 </body>
 </html>

@@ -1,0 +1,1539 @@
+﻿document.addEventListener('DOMContentLoaded', async function () {
+  const urlParams = new URLSearchParams(window.location.search);
+  const interventionId = urlParams.get('id');
+  const token = localStorage.getItem('token');
+  const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+
+  const rendusList = document.getElementById('rendu-intervention-list');
+  const responsablesList = document.getElementById('responsables-list');
+  const agentsList = document.getElementById('agents-list');
+  const downloadPpspsBtn = document.getElementById('download-ppsps-btn');
+  const documentsList = document.getElementById('documents-list');
+  const responsableSelect = document.getElementById('responsable-select');
+  const agentSelect = document.getElementById('agent-select');
+  const showMaterielsBtn = document.getElementById('show-materiels-btn');
+  const materielsModal = document.getElementById('materielsModal');
+  const materielsModalInstance = materielsModal ? new bootstrap.Modal(materielsModal) : null;
+  const materielsGrid = document.getElementById('materiels-grid');
+  const materielsEmpty = document.getElementById('materiels-empty');
+  const materielFilter = document.getElementById('materiel-filter');
+
+  // New elements for material request modal
+  const requestMaterielBtn = document.getElementById('request-materiel-btn'); // removed button, kept for safety (null)
+  const requestMaterielModalEl = document.getElementById('requestMaterielModal');
+  const requestMaterielModalInstance = requestMaterielModalEl ? new bootstrap.Modal(requestMaterielModalEl) : null;
+  const requestMaterielSearch = document.getElementById('request-materiel-search');
+  const requestMaterielMetierFilter = document.getElementById('request-materiel-metier-filter');
+  const requestMaterielCatalog = document.getElementById('request-materiel-catalog');
+  const requestMaterielEmpty = document.getElementById('request-materiel-empty');
+  const addSelectedMaterielsBtn = document.getElementById('add-selected-materiels-btn');
+  const materielsInlineList = document.getElementById('materiels-inline-list');
+  const inlineRequestBtn = document.getElementById('inline-request-materiel-btn'); // removed card, will be null
+  const inlineResp = document.getElementById('inline-responsables');
+  const inlineAg = document.getElementById('inline-agents');
+  const inlineAddResp = document.getElementById('inline-add-resp');
+  const inlineAddAgent = document.getElementById('inline-add-agent');
+  const planningBody = document.getElementById('planning-body');
+  const planningToggleBtn = document.getElementById('toggle-planning-btn');
+  const demandesList = document.getElementById('demandes-materiel-list');
+  const demandeTitreInput = document.getElementById('demande-titre');
+  const demandeCommentaireInput = document.getElementById('demande-commentaire');
+  const demandeQuantiteInput = document.getElementById('demande-quantite');
+  const demandeSubmitBtn = document.getElementById('demande-submit-btn');
+  const backInlineBtn = document.getElementById('back-inline-btn');
+  const finishInterBtn = document.getElementById('finish-inter-btn');
+  const factureCard = document.getElementById('facture-card');
+  const factureBody = document.getElementById('facture-body');
+  const factureBtn = document.getElementById('toggle-facture-btn');
+  // Inputs facture (sécurisés avec fallback null)
+  const factureHoursInput = document.getElementById('facture-hours-input') || null;
+  const factureHoursAutoEl = document.getElementById('facture-hours-auto') || null;
+  const factureRateInput = document.getElementById('facture-rate') || null;
+  const factureMatTauxInput = document.getElementById('facture-mat-taux') || null;
+  const factureDeplQtyInput = document.getElementById('facture-depl-qty') || null;
+  const factureDeplPuInput = document.getElementById('facture-depl-pu') || null;
+  const factureDeplTotalEl = document.getElementById('facture-depl-total') || null;
+  const factureDiversInput = document.getElementById('facture-divers') || null;
+  const factureTvaInput = document.getElementById('facture-tva') || null;
+  const factureHoursTotalEl = document.getElementById('facture-hours-total') || null;
+  const factureMatTotalHtEl = document.getElementById('facture-mat-total-ht') || null;
+  const factureTotalHtEl = document.getElementById('facture-total-ht') || null;
+  const factureTotalTvaEl = document.getElementById('facture-total-tva') || null;
+  const factureTotalTtcEl = document.getElementById('facture-total-ttc') || null;
+  const factureTitleInput = document.getElementById('facture-title-input') || null;
+  const saveFactureBtn = document.getElementById('save-facture-btn') || null;
+  const factureSaveStatus = document.getElementById('facture-save-status') || null;
+  const rendusBody = document.getElementById('rendus-body');
+  const rendusToggleBtn = document.getElementById('toggle-rendus-btn');
+  const docsBody = document.getElementById('docs-body');
+  const docsToggleBtn = document.getElementById('toggle-docs-btn');
+  let demandesCache = [];
+  let eventsCache = [];
+  let factureMatTotalValue = 0;
+  let factureHoursAuto = 0;
+  // S'assurer que les helpers de rapport sont disponibles (utile en modal)
+  const ensureReportHelpers = async () => {
+    if (window.fetchInterventionMeta && window.buildInterventionReportHTML) return;
+    // Tenter de charger le script partagé
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = '/js/rapport-intervention.js';
+      s.onload = resolve;
+      s.onerror = () => resolve(); // on continuera avec le fallback inline
+      document.head.appendChild(s);
+    });
+    if (window.fetchInterventionMeta && window.buildInterventionReportHTML) return;
+    // Fallback inline minimal si le script n'a pas été exécuté
+    (function () {
+      if (window.fetchInterventionMeta && window.buildInterventionReportHTML) return;
+      const placeholderPixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAn8B9W/2zXMAAAAASUVORK5CYII=';
+      async function fetchAsDataUrl(path, token) {
+        if (!path) return placeholderPixel;
+        try {
+          const headers = token ? { Authorization: `Bearer ${token}` } : {};
+          const res = await fetch(path, { credentials: 'same-origin', headers });
+          if (!res.ok) throw new Error('fetch failed');
+          const ct = (res.headers.get('Content-Type') || '').toLowerCase();
+          if (!ct.startsWith('image/')) return path;
+          const blob = await res.blob();
+          return await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (_) {
+          return path || placeholderPixel;
+        }
+      }
+      async function buildInterventionReportHTML({ meta = {}, images = [], resumeHtml = '', token = null, logoUrl = '/logo_logicielle.png' } = {}) {
+        const safeMeta = {
+          client: meta.client || 'Non renseigné',
+          site: meta.site || 'Non renseigné',
+          contrat: meta.contrat || 'Non renseigné',
+          intervention: meta.intervention || 'Rendu intervention',
+          dateStr: meta.dateStr || new Date().toLocaleDateString('fr-FR'),
+        };
+        const logoSrc = await fetchAsDataUrl(logoUrl, token);
+        let imagesHtml = '';
+        for (const img of images) {
+          const imgSrc = await fetchAsDataUrl(img.url || img.previewUrl || '', token);
+          imagesHtml += `
+            <div class="bloc">
+              <img src="${imgSrc || ''}" alt="${img.nom_fichier || 'Image'}">
+              <p><b>${img.nom_fichier || 'Image'}</b></p>
+              <p>${img.commentaire_image || ''}</p>
+            </div>`;
+        }
+        return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Rapport d'intervention</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; background-color: #f9f9f9; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .header h1 { font-size: 16px; color: #2A61B3; margin-top: 5px; }
+    .date { text-align: center; font-size: 13px; margin-top: 10px; color: #555; }
+    .infos { text-align: center; margin: 30px 0; line-height: 1.8; font-size: 15px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+    .bloc { background-color: white; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 5px; text-align: center; }
+    .bloc img { width: 80%; height: auto; border-radius: 4px; margin-bottom: 8px; cursor: pointer; transition: transform 0.5s ease; }
+    .bloc img:hover { transform: scale(1.3); }
+    p { margin: 4px 0; font-size: 14px; color: #333; }
+    .comment-section { background-color: #f0f8ff; padding: 15px; margin: 20px 0; border-left: 4px solid #2A61B3; border-radius: 4px; }
+    .comment-section p { text-align: left; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="${logoSrc}" alt="Logo" style="width:160px;height:auto;">
+    <h1>Client : ${safeMeta.client}</h1>
+  </div>
+  <div class="date"><p><b>Date :</b> ${safeMeta.dateStr}</p></div>
+  <div class="infos">
+    <p><b>Intervention :</b> ${safeMeta.intervention}</p>
+    <p><b>Site :</b> ${safeMeta.site}</p>
+    <p><b>Contrat :</b> ${safeMeta.contrat}</p>
+  </div>
+  <div class="comment-section">
+    <p><b>Commentaire / Résumé :</b></p>
+    <div style="padding:8px;border-radius:4px;border:1px solid #ccc;background:#fff;">${resumeHtml || '<em>Aucun résumé</em>'}</div>
+  </div>
+  <div class="grid">
+    ${imagesHtml || '<p class="text-muted">Aucune image.</p>'}
+  </div>
+</body>
+</html>`;
+      }
+      async function fetchInterventionMeta({ interventionId, ticketId, siteId, associationId, clientId, contractId, token }) {
+        const safeMeta = { client:'Non renseigné', site:'Non renseigné', contrat:'Non renseigné', intervention: interventionId || 'Rendu intervention' };
+        const fetchJSON = async (url) => {
+          const headers = token ? { Authorization: `Bearer ${token}` } : {};
+          const res = await fetch(url, { headers, credentials:'same-origin' });
+          if (!res.ok) return null;
+          return res.json();
+        };
+        try {
+          if (interventionId) {
+            const interData = await fetchJSON(`/api/interventions/${interventionId}`);
+            if (interData) {
+              if (interData.titre) safeMeta.intervention = interData.titre;
+              if (interData.ticket_id) ticketId = ticketId || interData.ticket_id;
+              if (interData.site_id) siteId = siteId || interData.site_id;
+              if (interData.association_id) associationId = associationId || interData.association_id;
+              if (interData.client_id) clientId = clientId || interData.client_id;
+              if (interData.contrat_id) contractId = contractId || interData.contrat_id;
+            }
+            const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
+            if (rel?.ticket) {
+              ticketId = ticketId || rel.ticket.id || rel.ticket.ticket_id;
+              siteId = siteId || rel.ticket.site_id;
+              associationId = associationId || rel.ticket.association_id;
+              clientId = clientId || rel.ticket.client_id;
+              contractId = contractId || rel.ticket.contrat_id;
+              safeMeta.client = rel.ticket.nom_client || safeMeta.client;
+              safeMeta.site = rel.ticket.nom_site || safeMeta.site;
+              safeMeta.intervention = rel.ticket.titre || safeMeta.intervention;
+              safeMeta.contrat = rel.ticket.contrat_titre || safeMeta.contrat;
+            }
+            if (rel?.site?.nom_site) safeMeta.site = rel.site.nom_site;
+            if (rel?.intervention?.titre) safeMeta.intervention = rel.intervention.titre;
+            if (rel?.contrat?.titre) safeMeta.contrat = rel.contrat.titre;
+            if (rel?.association) {
+              associationId = associationId || rel.association.id;
+              clientId = clientId || rel.association.client_id;
+              contractId = contractId || rel.association.contrat_id;
+              safeMeta.client = rel.association.client_nom || safeMeta.client;
+              safeMeta.contrat = rel.association.contrat_titre || safeMeta.contrat;
+            }
+          }
+          if (ticketId) {
+            const rel = await fetchJSON(`/api/tickets/${ticketId}/relations`);
+            if (rel?.ticket) {
+              clientId = clientId || rel.ticket.client_id;
+              contractId = contractId || rel.ticket.contrat_id;
+              safeMeta.client = rel.ticket.nom_client || safeMeta.client;
+              safeMeta.site = rel.ticket.nom_site || safeMeta.site;
+              safeMeta.intervention = rel.ticket.titre || safeMeta.intervention;
+              safeMeta.contrat = rel.ticket.contrat_titre || safeMeta.contrat;
+              if (!siteId && rel.ticket.site_id) siteId = rel.ticket.site_id;
+              if (!associationId && rel.ticket.association_id) associationId = rel.ticket.association_id;
+            }
+            if (rel?.association) {
+              associationId = associationId || rel.association.id;
+              clientId = clientId || rel.association.client_id;
+              contractId = contractId || rel.association.contrat_id;
+              safeMeta.client = rel.association.client_nom || safeMeta.client;
+              safeMeta.contrat = rel.association.contrat_titre || safeMeta.contrat;
+            }
+          }
+          if (siteId && (safeMeta.site === 'Non renseigné' || safeMeta.client === 'Non renseigné')) {
+            const site = await fetchJSON(`/api/sites/${siteId}`);
+            if (site) {
+              if (site.nom_site) safeMeta.site = site.nom_site;
+              if (site.nom_client) safeMeta.client = site.nom_client;
+              if (site.client_id) clientId = clientId || site.client_id;
+              if (site.association_id) associationId = associationId || site.association_id;
+              if (site.contrat_id) contractId = contractId || site.contrat_id;
+            }
+          }
+          if (associationId && (safeMeta.client === 'Non renseigné' || safeMeta.contrat === 'Non renseigné')) {
+            const asso = await fetchJSON(`/api/associations/${associationId}`);
+            if (asso) {
+              if (asso.nom) safeMeta.client = asso.nom;
+              if (asso.client_nom) safeMeta.client = asso.client_nom;
+              if (asso.contrat_titre) safeMeta.contrat = asso.contrat_titre;
+              if (asso.client_id) clientId = clientId || asso.client_id;
+              if (asso.contrat_id) contractId = contractId || asso.contrat_id;
+            }
+          }
+          if (clientId && safeMeta.client === 'Non renseigné') {
+            const client = await fetchJSON(`/api/clients/${clientId}`);
+            if (client) {
+              if (client.nom) safeMeta.client = client.nom;
+              if (client.contrat_titre) safeMeta.contrat = client.contrat_titre;
+              if (client.contrat_id) contractId = contractId || client.contrat_id;
+            }
+          }
+          if (contractId && safeMeta.contrat === 'Non renseigné') {
+            const contrat = await fetchJSON(`/api/contrats/${contractId}`);
+            if (contrat && contrat.titre) safeMeta.contrat = contrat.titre;
+          }
+        } catch (_) {}
+        return safeMeta;
+      }
+      window.fetchInterventionMeta = fetchInterventionMeta;
+      window.buildInterventionReportHTML = buildInterventionReportHTML;
+    })();
+  };
+
+  // Toggle planning card
+  if (planningToggleBtn && planningBody) {
+    planningToggleBtn.addEventListener('click', () => {
+      const hidden = planningBody.style.display === 'none';
+      planningBody.style.display = hidden ? 'block' : 'none';
+      planningToggleBtn.innerHTML = hidden ? '<i class="bi bi-eye-slash"></i> Masquer' : '<i class="bi bi-eye"></i> Voir';
+    });
+  }
+
+  // Toggle rendus
+  if (rendusToggleBtn && rendusBody) {
+    rendusToggleBtn.addEventListener('click', () => {
+      const hidden = rendusBody.style.display === 'none';
+      rendusBody.style.display = hidden ? 'block' : 'none';
+      rendusToggleBtn.innerHTML = hidden ? '<i class="bi bi-eye-slash"></i> Masquer' : '<i class="bi bi-eye"></i> Voir';
+    });
+  }
+  // Charger helpers rapport si bouton HTML cliqué
+  ensureReportHelpers().catch(()=>{});
+      // Téléchargement rapide des rendus (bouton HTML sur la carte)
+      rendusList?.addEventListener('click', async (e) => {
+      const delBtn = e.target.closest('.delete-rendu-btn');
+      if (delBtn) {
+        const rid = delBtn.dataset.rid;
+        if (!rid) return;
+        if (!confirm('Supprimer ce rendu ?')) return;
+        try {
+          let resp = await fetch(`/api/rendus/${rid}`, { method:'DELETE', headers, credentials:'same-origin' });
+          if (!resp.ok && resp.status === 404) {
+            // tentative fallback si l'API expose un endpoint alternatif
+            resp = await fetch(`/api/rendus/${rid}/delete`, { method:'POST', headers, credentials:'same-origin' });
+          }
+          if (!resp.ok) {
+            const err = await resp.json().catch(()=>({}));
+            throw new Error(err.error || `HTTP ${resp.status}`);
+          }
+          const rendus = await fetchJSON(`/api/interventions/${interventionId}/rendus`);
+          renderRendus(rendus || []);
+        } catch (err) {
+          alert(`Échec de la suppression du rendu: ${err.message}`);
+        }
+        return;
+      }
+      const btn = e.target.closest('.download-rendu-btn');
+      if (!btn) return;
+      const rid = btn.dataset.rid;
+      if (!rid) return;
+      try {
+          await ensureReportHelpers();
+          if (!window.fetchInterventionMeta || !window.buildInterventionReportHTML) {
+            throw new Error('Helper rapport indisponible');
+          }
+          // Charger les détails du rendu pour récupérer resume/images
+          const renduPayload = await fetchJSON(`/api/rendus/${rid}`);
+          const rendu = renduPayload?.rendu || renduPayload || {};
+          const imgs = [];
+          (renduPayload?.images || []).forEach(img => imgs.push({ ...img, kind:'image', url: `/api/images/${img.id}/view` }));
+          // Enrichir les métadonnées
+          const metaReport = await window.fetchInterventionMeta({
+            interventionId: rendu.intervention_id,
+            ticketId: rendu.ticket_id,
+            siteId: rendu.site_id,
+            associationId: rendu.association_id,
+            clientId: rendu.client_id,
+            contractId: rendu.contrat_id,
+            token
+          });
+          // Fallback avec les valeurs déjà présentes sur le rendu si toujours manquantes
+          if (rendu.client_nom && metaReport.client === 'Non renseigné') metaReport.client = rendu.client_nom;
+          if (rendu.site_nom && metaReport.site === 'Non renseigné') metaReport.site = rendu.site_nom;
+          if (rendu.contrat_titre && metaReport.contrat === 'Non renseigné') metaReport.contrat = rendu.contrat_titre;
+          if (rendu.intervention_titre && metaReport.intervention === 'Rendu intervention') metaReport.intervention = rendu.intervention_titre;
+
+          metaReport.dateStr = new Date().toLocaleDateString('fr-FR');
+          const resumeHtml = rendu.resume ? marked.parse(rendu.resume) : '<em>Aucun résumé</em>';
+          const htmlString = await window.buildInterventionReportHTML({
+            meta: metaReport,
+            images: imgs,
+            resumeHtml,
+            token
+          });
+          const blob = new Blob([htmlString], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `rendu-${rid}.html`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          console.error(err);
+          alert(`Échec du téléchargement du rendu: ${err.message}`);
+        }
+      });
+  // Toggle documents
+  if (docsToggleBtn && docsBody) {
+    docsToggleBtn.addEventListener('click', () => {
+      const hidden = docsBody.style.display === 'none';
+      docsBody.style.display = hidden ? 'block' : 'none';
+      docsToggleBtn.innerHTML = hidden ? '<i class="bi bi-eye-slash"></i> Masquer' : '<i class="bi bi-eye"></i> Voir';
+    });
+  }
+
+
+  let ticketId = null;
+  let demandeId = null;
+  let clientIdForFacture = null;
+  let interventionMetier = null; // To store the metier of the current intervention
+  let allAgents = [];
+  let materielsCache = []; // Materiels already linked to this intervention
+  let materielCatalog = []; // All available materials for the catalog
+  let isAdmin = false;
+  let cachedResponsables = [];
+  let cachedAgentsAssignes = [];
+  try {
+    const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
+    isAdmin = Array.isArray(payload?.roles) && payload.roles.includes('ROLE_ADMIN');
+  } catch {}
+
+  // Masquer certains boutons pour non-admin
+  if (!isAdmin) {
+    const addRespBtn = document.getElementById('add-responsable-btn');
+    const addAgentBtn = document.getElementById('add-agent-btn');
+    const addDocBtn  = document.getElementById('add-document-btn');
+    if (addRespBtn) addRespBtn.style.display = 'none';
+    if (addAgentBtn) addAgentBtn.style.display = 'none';
+    if (addDocBtn)  addDocBtn.style.display  = 'none';
+    if (requestMaterielBtn) requestMaterielBtn.style.display = 'none'; // Hide for non-admin
+  } else {
+    if (showMaterielsBtn) showMaterielsBtn.classList.remove('d-none');
+    if (requestMaterielBtn) requestMaterielBtn.style.display = ''; // Ensure visible for admin
+    if (inlineRequestBtn) inlineRequestBtn.classList.remove('d-none');
+    if (inlineAddResp) inlineAddResp.classList.remove('d-none');
+    if (inlineAddAgent) inlineAddAgent.classList.remove('d-none');
+
+    // Boutons inline déclenchent les modales cachées
+    const addRespBtn = document.getElementById('add-responsable-btn');
+    const addAgentBtn = document.getElementById('add-agent-btn');
+    inlineAddResp?.addEventListener('click', () => addRespBtn?.click());
+    inlineAddAgent?.addEventListener('click', () => addAgentBtn?.click());
+  }
+
+  const renderMd = (txt='') => { try { return marked.parse(txt); } catch { return txt; } };
+  const renderDemandes = () => {
+    if (!demandesList) return;
+    if (!demandesCache.length) { demandesList.innerHTML = '<div class="text-muted small">Aucune demande.</div>'; return; }
+    demandesList.innerHTML = '';
+    demandesCache.forEach(d => {
+      const wrap = document.createElement('div');
+      wrap.className = 'card mb-2 shadow-sm';
+      wrap.innerHTML = `
+        <div class="card-body d-flex justify-content-between align-items-start gap-2">
+          <div>
+            <div class="fw-semibold">${d.titre}</div>
+            <div class="small text-muted">${d.commentaire || ''}</div>
+            <div class="small text-muted">Quantité: ${d.quantite || 1}</div>
+          </div>
+          <div class="text-end">
+            <div class="form-check">
+              <input class="form-check-input demande-check" type="checkbox" data-id="${d.id}" ${d.commande_complete ? 'checked' : ''}>
+              <label class="form-check-label small">Commandé</label>
+            </div>
+            <div class="small text-muted">${d.statut || ''}</div>
+          </div>
+        </div>`;
+      demandesList.appendChild(wrap);
+    });
+
+    demandesList.querySelectorAll('.demande-check').forEach(cb => {
+      cb.addEventListener('change', async (e) => {
+        const id = cb.dataset.id;
+        const checked = cb.checked;
+        try {
+          await fetchJSON(`/api/demandes-materiel/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ commande_complete: checked, statut: checked ? 'Commandé' : 'En_attente' })
+          });
+        } catch (err) {
+          alert(err.message || 'Impossible de mettre à jour');
+          cb.checked = !checked;
+        }
+      });
+    });
+  };
+
+  async function fetchJSON(url, opts = {}) {
+    const res = await fetch(url, { credentials: 'same-origin', ...opts, headers: { ...headers, ...opts.headers } });
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        location.href = '/login.html';
+        return;
+      }
+      const err = await res.json().catch(() => ({ error: 'HTTP ' + res.status }));
+      throw new Error(err.error || 'HTTP ' + res.status);
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  const formatElapsed = (startStr, endStr, status) => {
+    if (!startStr) return '—';
+    const start = new Date(startStr).getTime();
+    if (Number.isNaN(start)) return '—';
+    // Temps réel seulement si fin déclarée (clic sur "Fin d'intervention")
+    if (!endStr) return 'En attente de fin';
+    const end = new Date(endStr).getTime();
+    if (Number.isNaN(end)) return '—';
+    const diff = Math.max(0, end - start);
+    const totalMin = Math.floor(diff / 60000);
+    const days  = Math.floor(totalMin / (60 * 24));
+    const hours = Math.floor((totalMin % (60 * 24)) / 60);
+    const mins  = totalMin % 60;
+    const parts = [];
+    if (days) parts.push(days + ' j');
+    parts.push(String(hours).padStart(2,'0') + ' h ' + String(mins).padStart(2,'0') + ' min');
+    return parts.join(' ');
+  };
+
+  // Planning des événements (par agent)
+  const eventsListEl = document.getElementById('events-list');
+  function renderEvents(events = []) {
+    eventsCache = events || [];
+    if (!eventsListEl) return;
+    if (!events.length) {
+      eventsListEl.innerHTML = '<div class="text-muted small">Aucun événement planifié.</div>';
+      return;
+    }
+    const rows = events.map(ev => `
+      <tr>
+        <td>${ev.agent_matricule || ''}</td>
+        <td>${ev.titre || ''}</td>
+        <td>${ev.statut || ''}</td>
+        <td>${ev.date_heure_debut_prevue || ''}</td>
+        <td>${ev.date_heure_fin_prevue || ''}</td>
+        <td>${ev.date_heure_fin_reelle || ''}</td>
+      </tr>
+    `).join('');
+    eventsListEl.innerHTML = `
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Agent</th><th>Titre</th><th>Statut</th><th>Début prévu</th><th>Fin prévue</th><th>Fin réelle</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  // Calculs facture
+  function renderFactureTotals() {
+    if (!factureHoursInput) return; // pas de carte facture sur certaines vues
+    const hours = parseFloat(factureHoursInput.value || '0') || 0;
+    const rate = parseFloat(factureRateInput?.value || '0') || 0;
+    const matTaux = parseFloat(factureMatTauxInput?.value || '0') || 0;
+    const deplQty = parseFloat(factureDeplQtyInput?.value || '0') || 0;
+    const deplPu  = parseFloat(factureDeplPuInput?.value || '0') || 0;
+    const divers  = parseFloat(factureDiversInput?.value || '0') || 0;
+    const tva     = parseFloat(factureTvaInput?.value || '0') || 0;
+
+    const totalHeures = hours * rate;
+    const totalMatHT  = factureMatTotalValue + (factureMatTotalValue * (matTaux/100));
+    const totalDepl   = deplQty * deplPu;
+    const totalHT     = totalHeures + totalMatHT + totalDepl + divers;
+    const totalTVA    = totalHT * (tva/100);
+    const totalTTC    = totalHT + totalTVA;
+
+    if (factureDeplTotalEl) factureDeplTotalEl.textContent = `= ${totalDepl.toFixed(2)}€ HT`;
+    if (factureHoursTotalEl) factureHoursTotalEl.textContent = `${totalHeures.toFixed(2)}€`;
+    if (factureMatTotalHtEl) factureMatTotalHtEl.textContent = `${totalMatHT.toFixed(2)}€`;
+    if (factureTotalHtEl) factureTotalHtEl.textContent = `${totalHT.toFixed(2)}€`;
+    if (factureTotalTvaEl) factureTotalTvaEl.textContent = `${totalTVA.toFixed(2)}€`;
+    if (factureTotalTtcEl) factureTotalTtcEl.textContent = `${totalTTC.toFixed(2)}€`;
+  }
+
+  function wireFactureInputs() {
+    const inputs = [
+      factureHoursInput, factureRateInput, factureMatTauxInput,
+      factureDeplQtyInput, factureDeplPuInput, factureDiversInput, factureTvaInput
+    ];
+    inputs.forEach(inp => {
+      if (inp) inp.addEventListener('input', renderFactureTotals);
+    });
+  }
+
+  function parseEuroText(el) {
+    const raw = (el?.textContent || '0').replace(/[^\d.,-]/g, '').replace(',', '.');
+    const v = parseFloat(raw);
+    return Number.isFinite(v) ? v : 0;
+  }
+
+  function buildFacturePayload() {
+    const heures_saisies = parseFloat(factureHoursInput?.value || '0') || 0;
+    const heures_calculees = Number(factureHoursAuto || 0);
+    const taux_horaire = parseFloat(factureRateInput?.value || '0') || 0;
+    const taux_majoration_materiel = parseFloat(factureMatTauxInput?.value || '0') || 0;
+    const deplacement_qte = parseFloat(factureDeplQtyInput?.value || '0') || 0;
+    const deplacement_pu = parseFloat(factureDeplPuInput?.value || '0') || 0;
+    const divers_ht = parseFloat(factureDiversInput?.value || '0') || 0;
+    const tva_taux = parseFloat(factureTvaInput?.value || '20') || 20;
+
+    const total_heures_ht = parseEuroText(factureHoursTotalEl);
+    const total_materiel_ht = parseEuroText(factureMatTotalHtEl);
+    const total_deplacement_ht = deplacement_qte * deplacement_pu;
+    const total_ht = parseEuroText(factureTotalHtEl);
+    const total_tva = parseEuroText(factureTotalTvaEl);
+    const total_ttc = parseEuroText(factureTotalTtcEl);
+
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const date_emission = `${yyyy}-${mm}-${dd}`;
+
+    const titre = (factureTitleInput?.value || '').trim();
+    return {
+      titre: titre || `Facture intervention #${interventionId}`,
+      reference: `FAC-INT-${interventionId}-${Date.now()}`,
+      statut: 'Brouillon',
+      date_emission,
+      intervention_id: Number(interventionId),
+      client_id: clientIdForFacture || null,
+      heures_saisies,
+      heures_calculees,
+      taux_horaire,
+      total_heures_ht,
+      taux_majoration_materiel,
+      total_materiel_ht,
+      deplacement_qte,
+      deplacement_pu,
+      divers_ht,
+      tva_taux,
+      total_deplacement_ht,
+      total_tva,
+      total_ht,
+      total_ttc
+    };
+  }
+
+  // Matériels pour facture (liste validée)
+  const factureMatList = document.getElementById('facture-mat-list');
+  const factureMatTotal = document.getElementById('facture-mat-total');
+  function renderFactureMateriels() {
+    if (!factureMatList || !factureMatTotal) return;
+    if (!materielsCache || !materielsCache.length) {
+      factureMatList.innerHTML = '<li class="text-muted">Aucun matériel validé.</li>';
+      factureMatTotal.textContent = '0€';
+      factureMatTotalValue = 0;
+      renderFactureTotals();
+      return;
+    }
+    let total = 0;
+    factureMatList.innerHTML = '';
+    materielsCache.forEach(m => {
+      const q = Number(m.quantite) || 0;
+      const pu = Number(m.prix_achat) || 0;
+      const lineTotal = q * pu;
+      total += lineTotal;
+      const li = document.createElement('li');
+      li.innerHTML = `${m.designation || m.reference || 'Matériel'}${m.reference ? ' ('+m.reference+')' : ''} — ${q || 1} × ${pu ? (pu.toFixed(2) + '€') : 'N/A'}${lineTotal ? ' = ' + lineTotal.toFixed(2) + '€' : ''}`;
+      factureMatList.appendChild(li);
+    });
+    factureMatTotalValue = total;
+    factureMatTotal.textContent = `${total.toFixed(2)}€`;
+    renderFactureTotals();
+  }
+
+  // Toggle facture body
+  if (factureBtn) {
+    factureBtn.addEventListener('click', () => {
+      if (!factureBody) return;
+      const isHidden = factureBody.style.display === 'none' || factureBody.style.display === '';
+      factureBody.style.display = isHidden ? 'block' : 'none';
+      factureBtn.innerHTML = isHidden ? '<i class="bi bi-eye-slash"></i> Masquer' : '<i class="bi bi-eye"></i> Voir';
+    });
+  }
+
+  // --- Material Request / Catalog Logic ---
+  const renderCatalogMaterials = () => {
+    if (!requestMaterielCatalog) return;
+    const searchTerm = (requestMaterielSearch.value || '').toLowerCase();
+    const selectedMetier = requestMaterielMetierFilter.value;
+
+    requestMaterielCatalog.innerHTML = '';
+    let count = 0;
+
+    const filteredMaterials = materielCatalog.filter(m => {
+      const matchesSearch =
+        (m.reference && m.reference.toLowerCase().includes(searchTerm)) ||
+        (m.designation && m.designation.toLowerCase().includes(searchTerm)) ||
+        (m.categorie && m.categorie.toLowerCase().includes(searchTerm)) ||
+        (m.commentaire && m.commentaire.toLowerCase().includes(searchTerm));
+
+      const matchesMetier = !selectedMetier || (m.metier === selectedMetier);
+      return matchesSearch && matchesMetier;
+    });
+
+    if (filteredMaterials.length === 0) {
+      requestMaterielEmpty.classList.remove('d-none');
+    } else {
+      requestMaterielEmpty.classList.add('d-none');
+    }
+
+    filteredMaterials.forEach(m => {
+      count++;
+      const col = document.createElement('div');
+      col.className = 'col';
+      col.innerHTML = `
+        <div class="card h-100 shadow-sm">
+          <div class="card-body d-flex flex-column">
+            <div class="form-check mb-2">
+              <input class="form-check-input mat-check" type="checkbox" value="" id="check-${m.id}" data-materiel-id="${m.id}">
+              <label class="form-check-label small" for="check-${m.id}">Sélectionner</label>
+            </div>
+            <h6 class="card-title">${m.designation || 'Matériel sans désignation'}</h6>
+            <p class="card-text small text-muted mb-1">
+              Référence: ${m.reference || 'N/A'}<br>
+              Catégorie: ${m.categorie || 'N/A'}<br>
+              Métier: ${m.metier || 'N/A'}<br>
+              Fournisseur: ${m.fournisseur || 'N/A'}<br>
+              Prix unitaire: ${m.prix_achat ? m.prix_achat + ' €' : 'N/A'}<br>
+              Statut commande: ${m.commande_status || 'N/A'}
+            </p>
+            <div class="mt-auto pt-2">
+              <label for="qty-${m.id}" class="form-label visually-hidden">Quantité</label>
+              <input type="number" id="qty-${m.id}" class="form-control form-control-sm mat-qty" value="1" min="1" data-materiel-id="${m.id}" disabled>
+            </div>
+          </div>
+        </div>
+      `;
+      requestMaterielCatalog.appendChild(col);
+
+      const checkbox = col.querySelector('.mat-check');
+      const qtyInput = col.querySelector('.mat-qty');
+      if (checkbox && qtyInput) {
+        checkbox.addEventListener('change', () => {
+          qtyInput.disabled = !checkbox.checked;
+        });
+      }
+    });
+  };
+
+  const loadCatalogMaterials = async () => {
+    try {
+      // Fetch all materials from the catalog
+      const allMaterials = await fetchJSON('/api/materiels');
+      materielCatalog = allMaterials || [];
+      renderCatalogMaterials();
+    } catch (e) {
+      console.error('Error loading material catalog:', e);
+      requestMaterielCatalog.innerHTML = '<div class="col-12 text-danger">Erreur de chargement du catalogue de matériel.</div>';
+    }
+  };
+
+  // Rendu inline des matériels avec possibilité de changer le statut (admin)
+  const renderMaterielsInline = () => {
+    if (!materielsInlineList) return;
+    if (!materielsCache.length) {
+      materielsInlineList.innerHTML = '<div class="text-muted">Aucun matériel lié à cette intervention.</div>';
+      return;
+    }
+    materielsInlineList.innerHTML = '';
+    materielsCache.forEach(m => {
+      const status = m.commande_status || '—';
+      const card = document.createElement('div');
+      card.className = 'card mb-2 shadow-sm';
+      card.innerHTML = `
+        <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
+          <div>
+            <div class="fw-semibold">${m.designation || 'Matériel'}</div>
+            <div class="small text-muted">Ref: ${m.reference || '—'}${m.categorie ? ' • ' + m.categorie : ''}${m.metier ? ' • ' + m.metier : ''}</div>
+            <div class="small text-muted">Quantité: ${m.quantite || 1}</div>
+            ${m.commentaire ? `<div class="small text-muted">Commentaire: ${m.commentaire}</div>` : ''}
+          </div>
+          <div class="text-end" style="min-width:190px;">
+            <label class="small text-muted d-block">Statut commande</label>
+            ${isAdmin ? `
+              <select class="form-select form-select-sm mat-inline-status">
+                ${['', 'En attente', 'Commande en cours', 'Reçue', 'Installée', 'Annulée'].map(opt => `<option value="${opt}" ${opt===status?'selected':''}>${opt || '—'}</option>`).join('')}
+              </select>
+            ` : `<span class="badge bg-light text-dark">${status}</span>`}
+          </div>
+        </div>
+      `;
+      materielsInlineList.appendChild(card);
+      if (isAdmin) {
+        const select = card.querySelector('.mat-inline-status');
+        if (select) {
+          select.addEventListener('change', async () => {
+            try {
+              await fetchJSON(`/api/materiels/${m.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ commande_status: select.value || null })
+              });
+            } catch (e) {
+              alert(e.message || 'Mise à jour impossible');
+              select.value = status;
+            }
+          });
+        }
+      }
+    });
+  };
+
+  const addSelectedMateriels = async () => {
+    const selected = [];
+    requestMaterielCatalog.querySelectorAll('.mat-check').forEach(chk => {
+      if (!chk.checked) return;
+      const materielId = chk.dataset.materielId;
+      const qtyInput = requestMaterielCatalog.querySelector(`.mat-qty[data-materiel-id="${materielId}"]`);
+      const quantity = qtyInput ? parseInt(qtyInput.value, 10) : 0;
+      if (quantity > 0) selected.push({ materiel_id: materielId, quantite: quantity });
+    });
+
+    if (selected.length === 0) {
+      alert('Veuillez sélectionner au moins un matériel avec une quantité positive.');
+      return;
+    }
+
+    addSelectedMaterielsBtn.disabled = true;
+    addSelectedMaterielsBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Ajout...';
+
+    try {
+      for (const item of selected) {
+        await fetchJSON(`/api/interventions/${interventionId}/materiels`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item)
+        });
+      }
+      alert('Matériels ajoutés avec succès à l\'intervention.');
+      requestMaterielModalInstance.hide();
+      fetchAndPopulateAll(); // Refresh all intervention data, including materiels
+    } catch (e) {
+      console.error('Error adding materiels to intervention:', e);
+      alert(`Erreur lors de l\'ajout des matériels: ${e.message}`);
+    } finally {
+      addSelectedMaterielsBtn.disabled = false;
+      addSelectedMaterielsBtn.innerHTML = 'Ajouter les sélectionnés';
+      // Réinitialiser sélection/quantités
+      requestMaterielCatalog.querySelectorAll('.mat-check').forEach(chk => chk.checked = false);
+      requestMaterielCatalog.querySelectorAll('.mat-qty').forEach(input => { input.value = 1; input.disabled = true; });
+    }
+  };
+
+  // --- End Material Request / Catalog Logic ---
+
+  // --- Demandes matériel simples ---
+  async function loadDemandes() {
+    if (!demandesList) return;
+    try {
+      const q = new URLSearchParams();
+      q.set('intervention_id', interventionId);
+      demandesCache = await fetchJSON(`/api/demandes-materiel?${q.toString()}`);
+      renderDemandes();
+    } catch (e) {
+      demandesList.innerHTML = `<div class="text-danger small">Erreur de chargement : ${e.message}</div>`;
+    }
+  }
+
+  async function createDemande() {
+    const titre = (demandeTitreInput?.value || '').trim();
+    const commentaire = (demandeCommentaireInput?.value || '').trim();
+    const quantite = parseInt(demandeQuantiteInput?.value || '1', 10) || 1;
+    if (!titre) { alert('Veuillez saisir le matériel.'); return; }
+    try {
+      demandeSubmitBtn.disabled = true;
+      await fetchJSON('/api/demandes-materiel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titre, commentaire, quantite, intervention_id: interventionId, ticket_id: ticketId })
+      });
+      if (demandeTitreInput) demandeTitreInput.value = '';
+      if (demandeCommentaireInput) demandeCommentaireInput.value = '';
+      if (demandeQuantiteInput) demandeQuantiteInput.value = '1';
+      await loadDemandes();
+    } catch (e) {
+      alert(e.message || 'Erreur lors de la demande.');
+    } finally {
+      demandeSubmitBtn.disabled = false;
+    }
+  }
+
+  function renderMateriels(filterTerm = '') {
+    if (!materielsGrid || !materielsEmpty) return;
+    const norm = s => (s || '').toString().toLowerCase();
+    const term = norm(filterTerm);
+
+    const group = { consommables: [], cables: [], outils: [], autres: [] };
+    const classify = cat => {
+      const c = norm(cat);
+      if (c.includes('consomm')) return 'consommables';
+      if (c.includes('cabl'))    return 'cables';
+      if (c.includes('outil'))   return 'outils';
+      return 'autres';
+    };
+
+    materielsCache
+      .filter(m => {
+        const txt = norm(`${m.reference} ${m.designation} ${m.categorie} ${m.commentaire}`);
+        return !term || txt.includes(term);
+      })
+      .forEach(m => {
+        group[classify(m.categorie)].push(m);
+      });
+
+    const sections = [
+      { key: 'consommables', label: 'Consommables' },
+      { key: 'cables',       label: 'Câbles' },
+      { key: 'outils',       label: 'Outils' },
+      { key: 'autres',       label: 'Autres' }
+    ];
+
+    materielsGrid.innerHTML = '';
+    let count = 0;
+    sections.forEach(sec => {
+      const items = group[sec.key] || [];
+      if (!items.length) return;
+      const header = document.createElement('div');
+      header.className = 'col-12';
+      header.innerHTML = `<h6 class="mt-2 mb-2">${sec.label} (${items.length})</h6>`;
+      materielsGrid.appendChild(header);
+      items.forEach(m => {
+        count++;
+        const col = document.createElement('div');
+        col.className = 'col-12 col-md-6';
+        col.innerHTML = `
+          <div class="border rounded p-2 mb-2">
+            <div class="fw-semibold">${m.designation || 'Matériel'}</div>
+            <div class="text-muted small">Ref: ${m.reference || '—'} • Catégorie: ${m.categorie || '—'} • Métier: ${m.metier || '—'}</div>
+            <div class="small">Qté: ${m.quantite || 1} • Statut Commande: ${m.commande_status || '—'} ${m.commentaire ? '• ' + m.commentaire : ''}</div>
+          </div>`;
+        materielsGrid.appendChild(col);
+      });
+    });
+
+    if (count === 0) {
+      materielsEmpty.classList.remove('d-none');
+    } else {
+      materielsEmpty.classList.add('d-none');
+    }
+  }
+
+  async function loadMateriels() {
+    materielsCache = [];
+    try {
+      const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
+      if (rel && Array.isArray(rel.materiels)) {
+        materielsCache = rel.materiels;
+      } else {
+        const res = await fetch(`/api/interventions/${interventionId}/materiels`, { headers });
+        if (res.ok) {
+          const data = await res.json().catch(() => []);
+          if (Array.isArray(data)) materielsCache = data;
+        }
+      }
+    } catch (e) {
+      console.warn('Chargement materiels:', e);
+    } finally {
+      renderMateriels(materielFilter ? materielFilter.value : '');
+      renderMaterielsInline();
+    }
+  }
+
+  function displayResponsables(responsables = []) {
+    responsablesList.innerHTML = '';
+    const renderBadges = () => {
+      if (!inlineResp) return;
+      if (!responsables.length) {
+        inlineResp.textContent = 'Aucun responsable';
+        return;
+      }
+      const link = (mat) => `<a href="/agent-view.html?matricule=${encodeURIComponent(mat)}" class="text-decoration-none text-reset">${mat}</a>`;
+      inlineResp.innerHTML = responsables.map(r => {
+        const label = r.matricule || r.agent_matricule || r.nom || 'Resp';
+        const anchor = link(label);
+        return isAdmin
+          ? `<span class="badge bg-secondary me-1 d-inline-flex align-items-center gap-1">${anchor}<button class="btn btn-xs btn-link p-0 text-white del-resp" data-m="${label}"><i class="bi bi-x-lg"></i></button></span>`
+          : `<a class="badge bg-secondary me-1 text-decoration-none text-reset" href="/agent-view.html?matricule=${encodeURIComponent(label)}">${label}</a>`;
+      }).join(' ');
+    };
+
+    renderBadges();
+
+    cachedResponsables = Array.isArray(responsables) ? responsables : [];
+    if (!responsables.length) {
+      responsablesList.innerHTML = '<li class="list-group-item text-muted">Aucun responsable assigné.</li>';
+      return;
+    }
+    responsables.forEach(r => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      const mat = r.matricule || r.agent_matricule || '';
+      const label = `${r.prenom || ''} ${r.nom || ''} (${mat})${r.role ? ' - ' + r.role : ''}`;
+      const link = mat ? `<a href="/agent-view.html?matricule=${encodeURIComponent(mat)}" class="text-decoration-none text-reset">${label}</a>` : label;
+      li.innerHTML = `<span>${link}</span>` +
+                     (isAdmin ? `<button class="btn btn-sm btn-outline-danger del-resp" data-m="${mat}"><i class="bi bi-x-lg"></i></button>` : '');
+      responsablesList.appendChild(li);
+    });
+  }
+
+  function displayAgents(agents = []) {
+    agentsList.innerHTML = '';
+    const renderBadges = () => {
+      if (!inlineAg) return;
+      if (!agents.length) {
+        inlineAg.textContent = 'Aucun agent';
+        return;
+      }
+      const link = (mat) => `<a href="/agent-view.html?matricule=${encodeURIComponent(mat)}" class="text-decoration-none text-reset">${mat}</a>`;
+      inlineAg.innerHTML = agents.map(a => {
+        const label = a.agent_matricule || a.matricule || a.nom || 'Agent';
+        const anchor = link(label);
+        return isAdmin
+          ? `<span class="badge bg-light text-dark me-1 d-inline-flex align-items-center gap-1">${anchor}<button class="btn btn-xs btn-link p-0 text-dark del-agent" data-m="${label}"><i class="bi bi-x-lg"></i></button></span>`
+          : `<a class="badge bg-light text-dark me-1 text-decoration-none" href="/agent-view.html?matricule=${encodeURIComponent(label)}">${label}</a>`;
+      }).join(' ');
+    };
+
+    renderBadges();
+
+    cachedAgentsAssignes = Array.isArray(agents) ? agents : [];
+    if (!agents.length) {
+      agentsList.innerHTML = '<li class="list-group-item text-muted">Aucun agent assigné.</li>';
+      return;
+    }
+    agents.forEach(a => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      const mat = a.agent_matricule || a.matricule || '';
+      const label = `${a.prenom || ''} ${a.nom || ''} (${mat})`;
+      const link = mat ? `<a href="/agent-view.html?matricule=${encodeURIComponent(mat)}" class="text-decoration-none text-reset">${label}</a>` : label;
+      li.innerHTML = `<span>${link}</span>` +
+                     (isAdmin ? `<button class="btn btn-sm btn-outline-danger del-agent" data-m="${mat}"><i class="bi bi-x-lg"></i></button>` : '');
+      agentsList.appendChild(li);
+    });
+  }
+
+  async function removeAgent(agentMatricule) {
+    if (!ticketId || !agentMatricule || !confirm(`Retirer l'agent ${agentMatricule} de ce ticket ?`)) return;
+    try {
+      await fetchJSON(`/api/tickets/${ticketId}/agents/${agentMatricule}`, { method: 'DELETE' });
+      fetchAndDisplayTicketRelations();
+    } catch (e) {
+      console.error('Error removing agent:', e);
+      alert('Erreur lors du retrait de l\'agent.');
+    }
+  }
+
+  async function removeResponsable(matricule) {
+    if (!ticketId || !matricule || !confirm(`Retirer le responsable ${matricule} ?`)) return;
+    try {
+      await fetchJSON(`/api/tickets/${ticketId}/responsables/${matricule}`, { method: 'DELETE' });
+      fetchAndDisplayTicketRelations();
+    } catch (e) {
+      console.error('Error removing responsable:', e);
+      alert('Erreur lors du retrait du responsable.');
+    }
+  }
+
+  function displayDocuments(documents = []) {
+    if (!documentsList) return;
+    documentsList.innerHTML = '';
+    if (!documents.length) {
+      documentsList.innerHTML = '<p class="text-muted mb-0">Aucun document associé.</p>';
+      return;
+    }
+    documents.forEach(doc => {
+      const viewUrl = `/api/documents/${doc.id}/view`;
+      const el = document.createElement('div');
+      el.className = 'document-item mb-2 p-2 d-flex justify-content-between align-items-center';
+      el.innerHTML = `
+        <div>
+          <a href="${viewUrl}" target="_blank">${doc.nom_fichier}</a>
+          <span class="text-muted small"> (${doc.nature || 'Document'})</span>
+        </div>`;
+      documentsList.appendChild(el);
+    });
+  }
+
+ function renderRendus(rendus = []) {
+   if (!rendusList) return;
+    if (!rendus.length) {
+      rendusList.innerHTML = '<p class="text-muted mb-0">Aucun rendu enregistré pour cette intervention.</p>';
+      return;
+    }
+    rendusList.innerHTML = '';
+    rendus.forEach(r => {
+      const card = document.createElement('div');
+      card.className = 'card card-body mb-2';
+      const cleanResume = (txt = '') => {
+        let t = txt || '';
+        const marker = /pi[eè]ces\s+jointes/i;
+        const idx = t.search(marker);
+        if (idx >= 0) t = t.substring(0, idx);
+        return t.trim();
+      };
+      const resumeFull = cleanResume(r.resume || '');
+      const resumeSnippet = resumeFull.length > 200 ? resumeFull.substring(0, 200) + '…' : resumeFull;
+      const attachmentsCount = Array.isArray(r.images) ? r.images.length : (r.attachments_count || 0);
+      card.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start gap-3">
+          <div class="flex-grow-1">
+            <h6 class="mb-1">Rendu</h6>
+            <div class="markdown-body small mb-2">${renderMd(resumeSnippet || '*Aucun résumé.*')}</div>
+            <div class="text-muted small">${attachmentsCount} pièce(s) jointe(s)</div>
+          </div>
+          <div class="d-flex flex-column gap-2 ms-3">
+            <a href="rendu-intervention-view.html?id=${r.id}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-eye me-1"></i>Voir
+            </a>
+            <a href="rendu-intervention-edit.html?id=${r.id}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-pencil me-1"></i>Éditer
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-success download-rendu-btn" data-rid="${r.id}">
+              <i class="bi bi-download me-1"></i>HTML
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger delete-rendu-btn" data-rid="${r.id}">
+              <i class="bi bi-trash me-1"></i>Supprimer
+            </button>
+          </div>
+        </div>`;
+      rendusList.appendChild(card);
+    });
+  }
+
+  async function fetchAndDisplayTicketRelations() {
+    if (!ticketId) {
+      displayResponsables([]);
+      displayAgents([]);
+      return;
+    }
+    try {
+      const relations = await fetchJSON(`/api/tickets/${ticketId}/relations`);
+      displayResponsables(relations.responsables || []);
+      displayAgents(relations.agents_assignes || []);
+      // Events inline for delete (badges)
+      inlineResp?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.del-resp');
+        if (btn) removeResponsable(btn.dataset.m);
+      });
+      inlineAg?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.del-agent');
+        if (btn) removeAgent(btn.dataset.m);
+      });
+      // resync events après changement d'agents/responsables
+      if (interventionId) {
+        try {
+          const events = await fetchJSON(`/api/interventions/${interventionId}/events/sync`, { method: 'POST' });
+          renderEvents(events || []);
+        } catch (e) {
+          console.warn('Sync events après mise à jour des agents/responsables échouée', e);
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching ticket relations:', e);
+    }
+  }
+
+  async function fetchAndPopulateAll() {
+    try {
+      const rel = await fetchJSON(`/api/interventions/${interventionId}/relations`);
+      if (!rel || !rel.intervention) {
+        document.body.innerHTML = '<div class="container mt-5"><div class="alert alert-danger">Intervention introuvable.</div></div>';
+        return;
+      }
+
+      const it = rel.intervention;
+      ticketId  = rel.ticket ? rel.ticket.id : null;
+      demandeId = rel.ticket ? rel.ticket.demande_id : null;
+      clientIdForFacture = (rel.demande && rel.demande.client_id) || (rel.site && rel.site.client_id) || null;
+      interventionMetier = it.metier || null; // Store the metier of the current intervention
+
+      const statusText = it.status || it.statut || '—';
+      const elapsed = formatElapsed(it.date_debut, it.date_fin, statusText);
+
+      const descEl   = document.getElementById('view_description');
+      const debEl    = document.getElementById('view_date_debut');
+      const finEl    = document.getElementById('view_date_fin');
+      const statEl   = document.getElementById('view_status');
+      const elapsedEl= document.getElementById('view_elapsed');
+      const headerStatusText = document.getElementById('header-status-text');
+      const headerTitle = document.getElementById('header-title');
+      const ticketLinkEl = document.getElementById('view_ticket_link');
+
+      if (descEl)   descEl.textContent    = it.description || '—';
+      if (debEl)    debEl.textContent     = it.date_debut || '—';
+      if (finEl)    finEl.textContent     = it.date_fin || '—';
+      if (statEl)   statEl.textContent    = statusText;
+      if (elapsedEl)elapsedEl.textContent = elapsed;
+      if (headerStatusText) headerStatusText.textContent = statusText;
+      if (headerTitle) headerTitle.textContent = it.titre || it.description || `Intervention #${it.id || ''}`;
+
+      // Afficher la carte facture si déjà clôturée
+      if (it.date_fin && factureCard) {
+        factureCard.classList.remove('d-none');
+      }
+      // Heures auto (si début/fin connus)
+      if (factureHoursAutoEl) {
+        if (it.date_debut && it.date_fin) {
+          const startMs = new Date(it.date_debut).getTime();
+          const endMs = new Date(it.date_fin).getTime();
+          if (!Number.isNaN(startMs) && !Number.isNaN(endMs) && endMs > startMs) {
+            const hours = (endMs - startMs) / 3600000;
+            factureHoursAutoEl.textContent = `${hours.toFixed(2)} h`;
+            if (factureHoursInput) factureHoursInput.value = hours.toFixed(2);
+          } else {
+            factureHoursAutoEl.textContent = '—';
+          }
+        } else {
+          factureHoursAutoEl.textContent = '—';
+        }
+      }
+
+      if (ticketLinkEl) {
+        if (ticketId) {
+          ticketLinkEl.innerHTML = `<a href="ticket-view.html?id=${ticketId}" class="link-button">Voir le ticket</a>`;
+        } else {
+          ticketLinkEl.textContent = 'Non lié';
+        }
+      }
+
+      // Charger les événements d'intervention (planning agents)
+      try {
+        const events = await fetchJSON(`/api/interventions/${interventionId}/events`);
+        renderEvents(events || []);
+      } catch (e) {
+        console.error('Erreur chargement événements:', e);
+        renderEvents([]);
+      }
+
+      // Display assigned agent for the intervention
+      const interventionAgentEl = document.getElementById('view_intervention_agent');
+      if (interventionAgentEl) {
+        if (rel.assigned_agent) {
+          interventionAgentEl.textContent = `${rel.assigned_agent.prenom || ''} ${rel.assigned_agent.nom || ''} (${rel.assigned_agent.matricule})`.trim();
+        } else {
+          interventionAgentEl.textContent = 'Non assigné';
+        }
+      }
+
+      // Documents / materiels / rendus / agents / responsables
+      displayDocuments(rel.documents || []);
+
+      if (Array.isArray(rel.materiels)) {
+        materielsCache = rel.materiels;
+        renderMateriels(materielFilter ? materielFilter.value : '');
+        renderFactureMateriels();
+      }
+
+      try {
+        const rendus = await fetchJSON(`/api/interventions/${interventionId}/rendus`);
+        renderRendus(rendus || []);
+      } catch (e) {
+        console.error('Failed to load rendus:', e);
+        rendusList.innerHTML = '<p class="text-danger">Erreur de chargement des rendus.</p>';
+      }
+
+      allAgents = await fetchJSON('/api/agents');
+      const options = (allAgents || []).map(agent =>
+        `<option value="${agent.matricule}">${agent.nom} ${agent.prenom || ''} (${agent.matricule})</option>`
+      ).join('');
+      if (responsableSelect) responsableSelect.innerHTML = options;
+      if (agentSelect)       agentSelect.innerHTML       = options;
+
+      fetchAndDisplayTicketRelations();
+      await loadDemandes();
+      wireFactureInputs();
+      renderFactureTotals();
+
+    } catch (e) {
+      console.error('Erreur chargement initial', e);
+      document.body.innerHTML = `<div class="container mt-5"><div class="alert alert-danger">${e.message}</div></div>`;
+    }
+  }
+
+  // Bouton ajouter responsable
+  const saveResponsableBtn = document.getElementById('save-responsable-btn');
+  if (saveResponsableBtn) {
+    saveResponsableBtn.addEventListener('click', async () => {
+      const agent_matricule = responsableSelect.value;
+      if (!ticketId || !agent_matricule) return;
+      try {
+        await fetchJSON(`/api/tickets/${ticketId}/responsables`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent_matricule })
+        });
+        bootstrap.Modal.getInstance(document.getElementById('addResponsableModal')).hide();
+        fetchAndDisplayTicketRelations();
+      } catch (e) {
+        console.error('Error adding responsable:', e);
+        alert(`Erreur: ${e.message}`);
+      }
+    });
+  }
+
+  // Bouton ajouter agent
+  const saveAgentBtn = document.getElementById('save-agent-btn');
+  if (saveAgentBtn) {
+    saveAgentBtn.addEventListener('click', async () => {
+      const agent_matricule = agentSelect.value;
+      if (!ticketId || !agent_matricule) return;
+      try {
+        await fetchJSON(`/api/tickets/${ticketId}/agents`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent_matricule })
+        });
+        bootstrap.Modal.getInstance(document.getElementById('addAgentModal')).hide();
+        fetchAndDisplayTicketRelations();
+      } catch (e) {
+        console.error('Error adding agent:', e);
+        alert('Erreur lors de l\'ajout de l\'agent.');
+      }
+    });
+  }
+
+  // Bouton ajouter rendu
+  const addRenduBtn = document.getElementById('add-rendu-btn');
+  if (addRenduBtn) {
+    addRenduBtn.addEventListener('click', e => {
+      e.preventDefault();
+      if (!interventionId) {
+        alert('Intervention inconnue.');
+        return;
+      }
+      let url = `rendu-intervention-new.html?id=${interventionId}`;
+      if (demandeId) url += `&demande_id=${demandeId}`;
+      window.location.href = url;
+    });
+  }
+
+  // Bouton voir matériels
+  if (showMaterielsBtn) {
+    showMaterielsBtn.addEventListener('click', e => {
+      e.preventDefault();
+      if (materielsModalInstance) materielsModalInstance.show();
+      if (!materielsCache.length) loadMateriels();
+      else renderMateriels(materielFilter ? materielFilter.value : '');
+      renderMaterielsInline();
+      renderFactureMateriels();
+    });
+  }
+  if (materielFilter) {
+    materielFilter.addEventListener('input', () => renderMateriels(materielFilter.value));
+  }
+
+  // Documents : ajout
+  const addDocumentModalEl = document.getElementById('addDocumentModal');
+  const addDocumentModal = addDocumentModalEl ? new bootstrap.Modal(addDocumentModalEl) : null;
+  const addDocumentBtn = document.getElementById('add-document-btn');
+  const saveDocumentBtn = document.getElementById('save-document-btn');
+
+  if (addDocumentBtn && addDocumentModal) {
+    addDocumentBtn.addEventListener('click', () => {
+      const form = document.getElementById('add-document-form');
+      if (form) form.reset();
+      addDocumentModal.show();
+    });
+  }
+
+  function toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload  = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = error => reject(error);
+    });
+  }
+
+  // Téléchargement PPSPS (responsables + agents)
+  function downloadPpsps() {
+    const rows = [['Nom', 'Prénom', 'Matricule', 'Rôle/Fonction']];
+    const pushRow = (p, roleLabel) => {
+      rows.push([
+        p.nom || '',
+        p.prenom || '',
+        p.agent_matricule || p.matricule || '',
+        roleLabel || p.role || p.fonction || ''
+      ]);
+    };
+    (cachedResponsables || []).forEach(r => pushRow(r, 'Responsable'));
+    (cachedAgentsAssignes || []).forEach(a => pushRow(a, 'Agent'));
+    const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ppsps-intervention-${interventionId || ''}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  if (downloadPpspsBtn) {
+    downloadPpspsBtn.addEventListener('click', downloadPpsps);
+  }
+  if (backInlineBtn) {
+    backInlineBtn.addEventListener('click', (e) => { e.preventDefault(); history.back(); });
+  }
+
+  // Bouton fin d'intervention (admin)
+  if (finishInterBtn && isAdmin) {
+    finishInterBtn.addEventListener('click', async () => {
+      if (!interventionId) return;
+      if (!confirm('Clore cette intervention maintenant ?')) return;
+      const nowIso = new Date().toISOString();
+      try {
+        await fetchJSON(`/api/interventions/${interventionId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date_fin: nowIso, status: 'Termine' })
+        });
+        alert('Intervention clôturée.');
+        // re-synchroniser les événements
+        try {
+          const events = await fetchJSON(`/api/interventions/${interventionId}/events/sync`, { method: 'POST' });
+          renderEvents(events || []);
+        } catch (e) {
+          console.warn('Sync events après clôture échouée', e);
+        }
+        // Afficher la carte facture
+        const factureCard = document.getElementById('facture-card');
+        const factureBtn = document.getElementById('toggle-facture-btn');
+        if (factureCard) factureCard.classList.remove('d-none');
+        if (factureBtn) {
+          factureBtn.classList.add('btn-primary');
+          factureBtn.click();
+        }
+        // Pas de reload forcé pour garder l'état d'affichage
+      } catch (e) {
+        alert('Échec de la clôture: ' + e.message);
+      }
+    });
+  } else if (finishInterBtn) {
+    finishInterBtn.style.display = 'none';
+  }
+
+  if (saveDocumentBtn) {
+    saveDocumentBtn.addEventListener('click', async () => {
+      const fileInput = document.getElementById('doc-file-input');
+      const file = fileInput.files[0];
+      if (!file) {
+        alert('Veuillez sélectionner un fichier.');
+        return;
+      }
+
+      const base64 = await toBase64(file);
+      const nom_fichier = (document.getElementById('doc-name-input').value || '').trim() || file.name;
+      const nature = document.getElementById('doc-nature-input').value;
+
+      const payload = {
+        base64,
+        nom_fichier,
+        nature,
+        type_mime: file.type,
+        cible_type: 'Intervention',
+        cible_id: interventionId
+      };
+
+      saveDocumentBtn.disabled = true;
+      saveDocumentBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enregistrement...';
+
+      try {
+        await fetchJSON('/api/documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (addDocumentModal) addDocumentModal.hide();
+        fetchAndPopulateAll();
+      } catch (e) {
+        alert(`Échec de l'ajout: ${e.message}`);
+      } finally {
+        saveDocumentBtn.disabled = false;
+        saveDocumentBtn.textContent = 'Enregistrer';
+      }
+    });
+  }
+
+  if (saveFactureBtn) {
+    if (!isAdmin) {
+      saveFactureBtn.style.display = 'none';
+    } else {
+      saveFactureBtn.addEventListener('click', async () => {
+        try {
+          const titre = (factureTitleInput?.value || '').trim();
+          if (!titre) {
+            alert('Veuillez renseigner un titre de facture avant enregistrement.');
+            factureTitleInput?.focus();
+            return;
+          }
+          saveFactureBtn.disabled = true;
+          if (factureSaveStatus) factureSaveStatus.textContent = 'Enregistrement...';
+          const payload = buildFacturePayload();
+          const created = await fetchJSON('/api/factures', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (factureSaveStatus) factureSaveStatus.textContent = `Facture enregistrée (ID ${created.id}).`;
+          alert(`Facture enregistrée (ID ${created.id}).`);
+        } catch (e) {
+          if (factureSaveStatus) factureSaveStatus.textContent = '';
+          alert(`Erreur lors de l'enregistrement de la facture: ${e.message}`);
+        } finally {
+          saveFactureBtn.disabled = false;
+        }
+      });
+    }
+  }
+
+  // --- Event Listeners for Materiel Request Modal ---
+  if (requestMaterielBtn) {
+    requestMaterielBtn.addEventListener('click', async e => {
+      e.preventDefault();
+      if (!interventionId) {
+        alert('Intervention inconnue.');
+        return;
+      }
+      requestMaterielSearch.value = ''; // Reset search
+      if (interventionMetier && requestMaterielMetierFilter) {
+        requestMaterielMetierFilter.value = interventionMetier; // Pre-fill metier filter
+      } else {
+        requestMaterielMetierFilter.value = ''; // Reset metier filter
+      }
+      await loadCatalogMaterials(); // Load and render all materials
+      if (requestMaterielModalInstance) requestMaterielModalInstance.show();
+    });
+  }
+  if (inlineRequestBtn) {
+    inlineRequestBtn.addEventListener('click', async e => {
+      e.preventDefault();
+      if (requestMaterielBtn) requestMaterielBtn.click();
+    });
+  }
+
+  if (requestMaterielSearch) {
+    requestMaterielSearch.addEventListener('input', renderCatalogMaterials);
+  }
+
+  if (requestMaterielMetierFilter) {
+    requestMaterielMetierFilter.addEventListener('change', renderCatalogMaterials);
+  }
+  if (demandeSubmitBtn) {
+    demandeSubmitBtn.addEventListener('click', createDemande);
+  }
+
+  if (addSelectedMaterielsBtn) {
+    addSelectedMaterielsBtn.addEventListener('click', addSelectedMateriels);
+  }
+
+  // Reset inputs when modal closes
+  if (requestMaterielModalEl) {
+    requestMaterielModalEl.addEventListener('hidden.bs.modal', () => {
+      requestMaterielSearch.value = '';
+      requestMaterielMetierFilter.value = '';
+      requestMaterielCatalog.innerHTML = '';
+      requestMaterielEmpty.classList.add('d-none');
+    });
+  }
+
+  fetchAndPopulateAll();
+  renderMaterielsInline();
+});

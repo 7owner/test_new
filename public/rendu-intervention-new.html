@@ -152,10 +152,10 @@
       <h1 class="h4 mb-0"><i class="bi bi-file-text me-2"></i>Nouveau rendu d'intervention</h1>
       <div class="d-flex gap-2 no-print">
         <button class="btn btn-outline-secondary btn-sm" id="back-btn">
-          <i class="bi bi-arrow-left"></i> Retour
+          <i class="bi bi-arrow-left"></i> Retour à l'intervention
         </button>
-        <button class="btn btn-primary btn-sm" onclick="window.print()">
-          <i class="bi bi-printer"></i> Imprimer
+        <button class="btn btn-outline-primary btn-sm" id="download-html-btn">
+          <i class="bi bi-download"></i> Télécharger HTML
         </button>
       </div>
     </div>
@@ -164,13 +164,17 @@
     <div class="card mb-4">
       <div class="card-body">
         <form id="rendu-form" novalidate>
-          <!-- Valeur -->
+          <!-- Résumé (Markdown + preview) -->
           <div class="mb-4">
-            <label class="form-label fw-bold">Valeur de l'intervention</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-currency-euro"></i></span>
-              <input type="text" class="form-control" id="valeur" placeholder="Ex: 1500">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Résumé détaillé (Markdown)</h5>
+              <small class="text-muted">Utilisez Markdown pour un résumé détaillé</small>
             </div>
+            <textarea class="form-control" id="resume" rows="10" placeholder="Rédigez un résumé détaillé en Markdown..."></textarea>
+            <div class="border rounded p-3 bg-light mt-2" style="min-height: 200px;" id="resume-preview">
+              <em class="text-muted">Le résumé apparaîtra ici...</em>
+            </div>
+            <div class="form-text">Prévisualisation du résumé</div>
           </div>
 
           <!-- Section Pièces jointes -->
@@ -185,7 +189,7 @@
             </p>
             <div class="row g-2 align-items-center mb-3">
               <div class="col-md-4">
-                <input type="text" class="form-control form-control-sm" id="filter-search" placeholder="Rechercher (nom, commentaire, note)...">
+                <input type="text" class="form-control form-control-sm" id="filter-search" placeholder="Rechercher (nom, commentaire)...">
               </div>
               <div class="col-md-4">
                 <select class="form-select form-select-sm" id="filter-source">
@@ -264,29 +268,17 @@
             </div>
           </div>
 
-            <!-- Colonne droite : Commentaire et résumé -->
+            <!-- Colonne droite : Commentaire -->
             <div class="col-md-7">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Titre / Nom du fichier</label>
+                <input type="text" class="form-control" id="edit-title" placeholder="Ex: Dalle GTB couloir">
+              </div>
               <div class="mb-3">
                 <label class="form-label fw-bold">Commentaire</label>
                 <textarea class="form-control" id="edit-comment" rows="4" 
                   placeholder="Ajoutez un commentaire sur cette pièce jointe..."></textarea>
                 <div class="form-text">Commentaire court visible sur la carte</div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label fw-bold">
-                  Résumé détaillé (Markdown)
-                  <i class="bi bi-info-circle text-muted" title="Pour les commentaires longs"></i>
-                </label>
-                <textarea id="edit-resume" class="form-control resume-editor"></textarea>
-                <div class="form-text">Utilisez Markdown pour un résumé détaillé (optionnel)</div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label fw-bold">Aperçu du résumé</label>
-                <div id="edit-resume-preview" class="border rounded p-3 bg-light" style="min-height: 100px;">
-                  <em class="text-muted">Le résumé apparaîtra ici...</em>
-                </div>
               </div>
             </div>
           </div>
@@ -354,6 +346,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/js/rapport-intervention.js"></script>
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
@@ -372,44 +365,58 @@
     let attachments = [];
     let currentEditIndex = -1;
     let editModal = null;
-    let resumeEditor = null;
     let sourcesModal = null; // modal instance lazily created
+    let mainResumeEditor = null;
+    let meta = {
+      client: 'Non renseigné',
+      site: 'Non renseigné',
+      contrat: 'Non renseigné',
+      intervention: 'Rendu intervention',
+    };
+    let ticketIdRef = null;
+    let siteIdRef = null;
+    let associationIdRef = null;
 
     const grid = document.getElementById('attachments-grid');
     const countBadge = document.getElementById('attachments-count');
     const filterSearch = document.getElementById('filter-search');
     const filterSource = document.getElementById('filter-source');
     const filterKind = document.getElementById('filter-kind');
+    const resumeInput = document.getElementById('resume');
+    const resumePreview = document.getElementById('resume-preview');
     const sourceSearch = document.getElementById('source-search');
     const sourceFilter = document.getElementById('source-filter');
     const sourceKind = document.getElementById('source-kind');
     const sourcesList = document.getElementById('sources-list');
     const sourcesEmpty = document.getElementById('sources-empty');
 
-    // Initialisation de l'éditeur Markdown dans le modal
-    const initResumeEditor = () => {
-      if (!resumeEditor) {
-        resumeEditor = new EasyMDE({
-          element: document.getElementById('edit-resume'),
+    // Initialisation de l'éditeur Markdown principal (résumé)
+    const initMainResumeEditor = () => {
+      if (!mainResumeEditor && typeof EasyMDE !== 'undefined') {
+        mainResumeEditor = new EasyMDE({
+          element: document.getElementById('resume'),
           spellChecker: false,
           forceSync: true,
           placeholder: "Rédigez un résumé détaillé en Markdown...",
           toolbar: ["bold", "italic", "heading", "|", "quote", "unordered-list", "ordered-list", "|", "link", "preview"],
           status: false,
-          minHeight: "200px"
+          minHeight: "180px"
         });
-
-        resumeEditor.codemirror.on('change', () => {
-          const preview = document.getElementById('edit-resume-preview');
-          const text = resumeEditor.value();
-          if (text) {
-            preview.innerHTML = marked.parse(text);
-          } else {
-            preview.innerHTML = '<em class="text-muted">Le résumé apparaîtra ici...</em>';
-          }
+        mainResumeEditor.codemirror.on('change', () => {
+          const txt = mainResumeEditor.value();
+          resumePreview.innerHTML = txt ? marked.parse(txt) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
         });
       }
     };
+
+    // Preview du résumé principal
+    // Preview du résumé principal (fallback si EasyMDE indisponible)
+    const updateResumePreview = () => {
+      if (!resumePreview) return;
+      const txt = mainResumeEditor ? mainResumeEditor.value() : (resumeInput?.value || '');
+      resumePreview.innerHTML = txt ? (typeof marked !== 'undefined' ? marked.parse(txt) : txt) : '<em class="text-muted">Le résumé apparaîtra ici...</em>';
+    };
+    resumeInput?.addEventListener('input', updateResumePreview);
 
     // Fonction pour créer une card de pièce jointe
     const createAttachmentCard = (att, index) => {
@@ -432,8 +439,11 @@
       }
 
       // Info
-      const info = document.createElement('div');
-      info.className = 'attachment-info';
+     const info = document.createElement('div');
+     info.className = 'attachment-info';
+      const title = document.createElement('div');
+      title.className = 'fw-semibold';
+      title.textContent = att.titre || att.nom_fichier || 'Fichier';
       
       const comment = document.createElement('div');
       comment.className = 'attachment-comment';
@@ -452,6 +462,7 @@
       meta.appendChild(sourceSpan);
       meta.appendChild(nameSpan);
       
+      info.appendChild(title);
       info.appendChild(comment);
       info.appendChild(meta);
       
@@ -491,7 +502,7 @@
       const kind = filterKind?.value || '';
 
       const filtered = attachments.filter((att) => {
-        const txt = `${att.nom_fichier||''} ${att.commentaire_image||''} ${att.note||''}`.toLowerCase();
+        const txt = `${att.titre||''} ${att.nom_fichier||''} ${att.commentaire_image||''}`.toLowerCase();
         const matchTerm = !term || txt.includes(term);
         const matchSrc = !src || att.type === src;
         const matchKind = !kind || att.kind === kind;
@@ -522,7 +533,6 @@
         cible_id: '',
         nom_fichier: 'Nouveau fichier',
         commentaire_image: '',
-        note: '',
         url: '',
         previewUrl: '',
         isNew: true
@@ -546,7 +556,7 @@
       const kind = sourceKind?.value || '';
 
       const filtered = attachments.filter(att => {
-        const txt = `${att.nom_fichier||''} ${att.commentaire_image||''} ${att.note||''}`.toLowerCase();
+        const txt = `${att.titre||att.nom_fichier||''} ${att.commentaire_image||''}`.toLowerCase();
         const matchTerm = !term || txt.includes(term);
         const matchSrc = !src || att.type === src;
         const matchKind = !kind 
@@ -578,7 +588,7 @@
                 : `<div class="d-flex align-items-center justify-content-center" style="width:70px;height:70px;border-radius:8px;border:1px solid #e5e7eb;"><i class="bi bi-file-earmark-text"></i></div>`}
             </div>
             <div class="flex-grow-1">
-              <div class="fw-semibold">${att.nom_fichier||'Fichier'}</div>
+              <div class="fw-semibold">${att.titre || att.nom_fichier || 'Fichier'}</div>
               <div class="text-muted small">${att.commentaire_image||''}</div>
               <div class="d-flex flex-wrap gap-1 mt-1">
                 <span class="badge bg-${color}">${att.type||'Upload'}</span>
@@ -602,7 +612,6 @@
             const target = attachments[currentEditIndex];
             target.nom_fichier = att.nom_fichier;
             target.commentaire_image = att.commentaire_image;
-            target.note = att.note;
             target.type = att.type;
             target.kind = att.kind;
             target.url = att.url;
@@ -618,19 +627,17 @@
     };
 
     // Ouvrir le modal d'édition
-    const openEditModal = (index) => {
-      currentEditIndex = index;
-      const att = attachments[index];
+  const openEditModal = (index) => {
+    currentEditIndex = index;
+    const att = attachments[index];
       
       if (!editModal) {
         editModal = new bootstrap.Modal(document.getElementById('editModal'));
       }
-      
-      initResumeEditor();
-      
-      // Remplir le modal
-      document.getElementById('edit-comment').value = att.commentaire_image || '';
-      resumeEditor.value(att.note || '');
+
+  // Remplir le modal
+  document.getElementById('edit-title').value = att.titre || att.nom_fichier || '';
+  document.getElementById('edit-comment').value = att.commentaire_image || '';
       
       // Aperçu
       const previewContainer = document.getElementById('edit-preview');
@@ -664,15 +671,16 @@
     };
 
     // Sauvegarder les modifications
-    document.getElementById('save-edit-btn').addEventListener('click', () => {
-      const att = attachments[currentEditIndex];
-      
-      att.commentaire_image = document.getElementById('edit-comment').value;
-      att.note = resumeEditor.value();
-      
-      const fileInput = document.getElementById('edit-file-input');
-      if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
+  document.getElementById('save-edit-btn').addEventListener('click', () => {
+    const att = attachments[currentEditIndex];
+    
+    const titleVal = document.getElementById('edit-title').value.trim();
+    att.titre = titleVal || '';
+    att.commentaire_image = document.getElementById('edit-comment').value;
+    
+    const fileInput = document.getElementById('edit-file-input');
+    if (fileInput.files.length > 0) {
+      const file = fileInput.files[0];
         att.nom_fichier = file.name;
         att.file = file;
         att.kind = file.type.startsWith('image/') ? 'image' : 'doc';
@@ -724,9 +732,22 @@
         ticketId = rel.ticket.id || rel.ticket.ticket_id;
         siteId = rel.ticket.site_id;
         if (!demandeId && rel.ticket.demande_id) demandeId = rel.ticket.demande_id;
+        meta.client = rel.ticket.nom_client || rel.ticket.client_nom || rel.ticket.client || meta.client;
+        meta.intervention = rel.ticket.titre || rel.ticket.ticket_titre || meta.intervention;
+        meta.site = rel.ticket.nom_site || meta.site;
+        if (rel.ticket.contrat_titre) meta.contrat = rel.ticket.contrat_titre;
       }
       if (rel?.demande && !demandeId) demandeId = rel.demande.id || rel.demande.demande_id;
       if (rel?.site) siteId = siteId || rel.site.id || rel.site.site_id;
+      if (rel?.site?.nom_site) meta.site = rel.site.nom_site;
+      if (rel?.intervention?.titre) meta.intervention = rel.intervention.titre;
+      if (rel?.contrat?.titre) meta.contrat = rel.contrat.titre;
+      if (rel?.association) {
+        if (rel.association.client_nom) meta.client = rel.association.client_nom;
+        if (rel.association.contrat_titre) meta.contrat = rel.association.contrat_titre;
+        if (rel.association.contrat && rel.association.contrat.titre) meta.contrat = rel.association.contrat.titre;
+        if (rel.association.id) associationIdRef = rel.association.id;
+      }
 
       // Fallback direct via l'intervention si dispo
       try {
@@ -735,6 +756,7 @@
           if (!ticketId && interData.ticket_id) ticketId = interData.ticket_id;
           if (!siteId && interData.site_id) siteId = interData.site_id;
           if (!demandeId && interData.demande_id) demandeId = interData.demande_id;
+          if (interData.titre) meta.intervention = interData.titre;
         }
       } catch(_) {}
 
@@ -743,7 +765,17 @@
         const ticketData = await fetchJSON(`/api/tickets/${ticketId}`);
         if (ticketData?.demande_id && !demandeId) demandeId = ticketData.demande_id;
         if (ticketData?.site_id && !siteId) siteId = ticketData.site_id;
+        if (ticketData?.nom_client) meta.client = ticketData.nom_client;
+        if (ticketData?.nom_site) meta.site = ticketData.nom_site;
+        if (ticketData?.titre) meta.intervention = ticketData.titre;
+        if (ticketData?.contrat_titre) meta.contrat = ticketData.contrat_titre;
+        if (ticketData?.association) {
+          meta.client = ticketData.association.client_nom || meta.client;
+          meta.contrat = ticketData.association.contrat_titre || meta.contrat;
+        }
       }
+      ticketIdRef = ticketId;
+      siteIdRef = siteId;
 
       // Charger images et documents
       const loadItems = async (type, id, endpoint) => {
@@ -756,8 +788,8 @@
               type,
               cible_id: id,
               nom_fichier: item.nom_fichier,
-              commentaire_image: item.commentaire_image || item.commentaire || '',
-              note: item.note || '',
+              titre: (item.titre ?? ''),
+              commentaire_image: item.commentaire_image || item.commentaire || item.nature || '',
               url: `/api/${endpoint}/${item.id}/view`,
               kind: endpoint === 'images' ? 'image' : 'doc'
             });
@@ -775,22 +807,22 @@
           m.attachments.forEach(att => {
             const path = String(att.file_path || '');
             const url = path ? '/' + path.replace(/^public\//, '') : '';
-            const name = att.file_name || path.split('/').pop() || 'Pièce jointe';
-            const mime = att.type_mime || '';
-            const lower = name.toLowerCase();
+          const name = att.file_name || path.split('/').pop() || 'Pièce jointe';
+          const mime = att.type_mime || '';
+          const lower = name.toLowerCase();
             const kind = (mime && mime.startsWith('image/')) || /\.(png|jpe?g|gif|webp)$/i.test(lower) ? 'image' : 'doc';
             attachments.push({
               id: att.id || `conv-${demandeId}-${name}`,
               type: 'Message',
               cible_id: demandeId,
               nom_fichier: name,
-              commentaire_image: att.commentaire || m.message || '',
-              note: '',
-              url,
-              kind,
-              isNew: false,
-              file: null
-            });
+            titre: att.titre ?? '',
+            commentaire_image: att.commentaire_image || att.commentaire || m.message || '',
+            url,
+            kind,
+            isNew: false,
+            file: null
+          });
           });
         });
       };
@@ -813,8 +845,8 @@
           type: 'Exemple',
           cible_id: 'N/A',
           nom_fichier: 'Exemple photo',
+          titre: 'Exemple photo',
           commentaire_image: 'Commentaire exemple',
-          note: 'Résumé markdown exemple',
           url: 'data:image/svg+xml,%3Csvg%20width%3D%22400%22%20height%3D%22250%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20250%22%20preserveAspectRatio%3D%22none%22%3E%3Cdefs%3E%3Cstyle%20type%3D%22text%2Fcss%22%3E%23holder_16b2e1b10a5%20text%20%7B%20fill%3Argba(255%2C255%2C255%2C.75)%3Bfont-weight%3Anormal%3Bfont-family%3AHelvetica%2C%20monospace%3Bfont-size%3A20pt%20%7D%20%3C%2Fstyle%3E%3C%2Fdefs%3E%3Cg%20id%3D%22holder_16b2e1b10a5%22%3E%3Crect%20width%3D%22400%22%20height%3D%22250%22%20fill%3D%22%23868e96%22%3E%3C%2Frect%3E%3Cg%3E%3Ctext%20x%3D%22148.5%22%20y%3D%22133.6%22%3EPhoto%20exemple%3C%2Ftext%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E',
           kind: 'image'
         });
@@ -823,8 +855,8 @@
           type: 'Exemple',
           cible_id: 'N/A',
           nom_fichier: 'Doc exemple',
+          titre: 'Doc exemple',
           commentaire_image: 'Description du document',
-          note: 'Note en markdown',
           url: 'https://example.com/doc.pdf',
           kind: 'doc'
         });
@@ -839,28 +871,19 @@
       e.preventDefault();
       
       const fd = new FormData();
-      fd.append('valeur', document.getElementById('valeur').value || '');
       
-      // Construire le résumé complet avec toutes les pièces jointes
-      let fullResume = '## Pièces jointes\n\n';
+      // Résumé simple (sans concaténer les pièces jointes dans le texte)
+      const resumeText = (mainResumeEditor ? mainResumeEditor.value() : (resumeInput?.value || '')).trim();
+      fd.append('resume', resumeText);
       
-      attachments.forEach((att, idx) => {
-        if (att.commentaire_image) {
-          fullResume += `### ${att.nom_fichier}\n${att.commentaire_image}\n\n`;
-        }
-        if (att.note) {
-          fullResume += `${att.note}\n\n`;
-        }
-        
-        // Ajouter les nouveaux fichiers
+      // Ajouter uniquement les nouveaux fichiers et leurs métadonnées
+      attachments.forEach((att) => {
         if (att.isNew && att.file) {
           fd.append('image_files[]', att.file);
           fd.append('image_commentaires[]', att.commentaire_image || '');
-          fd.append('image_notes[]', att.note || '');
+          fd.append('image_titles[]', att.titre || att.nom_fichier || '');
         }
       });
-      
-      fd.append('resume', fullResume);
 
       try {
         const res = await fetch(`/api/interventions/${interventionId}/rendus`, {
@@ -870,7 +893,67 @@
         });
         
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        
+
+        // Tenter de patcher les titres/commentaires des fichiers créés (alignement entre écrans)
+        const patchCreatedAttachments = async (created) => {
+          if (!created) return;
+          // Préparer index local par nom_fichier
+          const newFiles = attachments.filter(att => att.isNew && att.file);
+          const findLocal = (nom) => newFiles.find(a => a.file?.name === nom || a.nom_fichier === nom);
+          const patchOne = async (id, kind, titre, commentaire) => {
+            if (!id) return;
+            const endpoint = kind === 'doc' ? '/api/documents/' : '/api/images/';
+            try {
+              await fetch(endpoint + id, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(kind === 'doc'
+                  ? {
+                      titre: titre || undefined,
+                      commentaire: commentaire || undefined
+                    }
+                  : {
+                      titre: titre || undefined,
+                      commentaire_image: commentaire || undefined
+                    })
+              });
+            } catch (_) { /* silencieux */ }
+          };
+
+          // Si la réponse contient directement les images/documents créés
+          if (created.images || created.documents) {
+            (created.images || []).forEach(img => {
+              const local = findLocal(img.nom_fichier);
+              if (local) patchOne(img.id, 'image', local.titre || local.nom_fichier, local.commentaire_image);
+            });
+            (created.documents || []).forEach(doc => {
+              const local = findLocal(doc.nom_fichier);
+              if (local) patchOne(doc.id, 'doc', local.titre || local.nom_fichier, local.commentaire_image);
+            });
+            return;
+          }
+
+          // Sinon si un rendu est retourné, recharger ses relations pour récupérer les ids
+          if (created.id || created.rendu?.id) {
+            const rid = created.id || created.rendu.id;
+            try {
+              const rel = await fetch(`/api/rendus/${rid}/relations`, { headers: { 'Authorization': `Bearer ${token}` }, credentials: 'same-origin' })
+                .then(r => r.ok ? r.json() : null);
+              (rel?.images || []).forEach(img => {
+                const local = findLocal(img.nom_fichier);
+                if (local) patchOne(img.id, 'image', local.titre || local.nom_fichier, local.commentaire_image);
+              });
+              (rel?.documents || []).forEach(doc => {
+                const local = findLocal(doc.nom_fichier);
+                if (local) patchOne(doc.id, 'doc', local.titre || local.nom_fichier, local.commentaire_image);
+              });
+            } catch (_) {}
+          }
+        };
+
+        const payload = await res.json().catch(() => null);
+        await patchCreatedAttachments(payload);
+
         alert('Rendu enregistré avec succès !');
         location.href = `intervention-view.html?id=${interventionId}`;
       } catch (err) {
@@ -878,6 +961,42 @@
         alert('Erreur lors de l\'enregistrement du rendu');
       }
     });
+
+    // Télécharger en HTML (rapport)
+    const downloadHtmlBtn = document.getElementById('download-html-btn');
+    if (downloadHtmlBtn) {
+      downloadHtmlBtn.addEventListener('click', async () => {
+        const images = attachments.filter(att => att.kind === 'image').map(att => ({
+          ...att,
+          url: att.url || att.previewUrl || ''
+        }));
+        const resumeMd = (mainResumeEditor ? mainResumeEditor.value() : (document.getElementById('resume')?.value || '')).trim();
+        const resumeHtml = resumeMd ? (typeof marked !== 'undefined' ? marked.parse(resumeMd) : resumeMd) : '';
+        const metaForReport = await window.fetchInterventionMeta({
+          interventionId,
+          ticketId: ticketIdRef,
+          siteId: siteIdRef,
+          token
+        });
+        metaForReport.dateStr = new Date().toLocaleDateString('fr-FR');
+        const html = await window.buildInterventionReportHTML({
+          meta: metaForReport,
+          images,
+          resumeHtml,
+          token,
+          logoUrl: '/logo_logicielle.png'
+        });
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `rapport-intervention-${interventionId}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    }
 
     // Boutons d'action
     document.getElementById('cancel-btn').addEventListener('click', () => {
@@ -895,6 +1014,8 @@
     });
 
     // Initialisation
+    initMainResumeEditor();
+    updateResumePreview();
     loadAttachments();
 
     // Filtres

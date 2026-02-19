@@ -211,16 +211,23 @@
             </div>
           </div>
         </div>
+        <div class="mt-3">
+          <div class="section-title">Associations liées</div>
+          <div id="client-associations" class="d-flex flex-wrap gap-2 small"></div>
+        </div>
       </div>
     </div>
 
     <!-- Representatives Section -->
     <div class="main-card">
       <div class="card-header-custom d-flex justify-content-between align-items-center">
-        <div><i class="bi bi-people me-2"></i>Représentants</div>
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-people me-2"></i>Représentants
+          <button class="btn btn-light btn-sm toggle-card-btn" data-target="representants-body"><i class="bi bi-eye"></i> Voir</button>
+        </div>
         <button class="btn btn-light btn-sm d-none" id="add-rep-btn"><i class="bi bi-person-plus me-1"></i>Ajouter</button>
       </div>
-      <div class="card-body p-4">
+      <div class="card-body p-4" id="representants-body">
         <div id="representants-list">
           <div class="loading-spinner">
             <div class="spinner-border text-primary" role="status">
@@ -233,30 +240,41 @@
 
 
 
-    <!-- Sites and Demands Row -->
-    <div class="row g-4 mb-4">
-      <div class="col-lg-6">
-        <div class="main-card h-100">
-          <div class="card-header-custom">
-            <i class="bi bi-building me-2"></i>Sites Associés
-          </div>
-          <div class="card-body p-4">
-            <div id="sites-container">
-              <div class="loading-spinner">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Chargement...</span>
-                </div>
-              </div>
+    <!-- Contrats Section -->
+    <div class="main-card">
+      <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-file-earmark-spreadsheet me-2"></i>Contrats Associés
+          <button class="btn btn-light btn-sm toggle-card-btn" data-target="contrats-body"><i class="bi bi-eye"></i> Voir</button>
+        </div>
+        <div class="mt-1">
+          <button class="btn btn-gradient btn-sm" id="openContratModal" data-bs-toggle="modal" data-bs-target="#createContratModal">
+            <i class="bi bi-plus-circle me-1"></i>Créer un contrat
+          </button>
+        </div>
+      </div>
+      <div class="card-body p-4" id="contrats-body">
+        <div id="contrats-container">
+          <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Chargement...</span>
             </div>
           </div>
         </div>
       </div>
-      <div class="col-lg-6">
+    </div>
+
+    <!-- Demandes Row -->
+    <div class="row g-4 mb-4">
+      <div class="col-lg-12">
         <div class="main-card h-100">
-          <div class="card-header-custom">
-            <i class="bi bi-clipboard-check me-2"></i>Demandes d'Intervention
+          <div class="card-header-custom d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-clipboard-check me-2"></i>Demandes d'Intervention
+              <button class="btn btn-light btn-sm toggle-card-btn" data-target="demandes-body"><i class="bi bi-eye"></i> Voir</button>
+            </div>
           </div>
-          <div class="card-body p-4">
+          <div class="card-body p-4" id="demandes-body">
             <div id="demandes-container">
               <div class="loading-spinner">
                 <div class="spinner-border text-primary" role="status">
@@ -271,10 +289,13 @@
 
     <!-- Documents Repository -->
     <div class="main-card">
-      <div class="card-header-custom">
-        <i class="bi bi-folder2-open me-2"></i>Répertoire Documents
+      <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-folder2-open me-2"></i>Répertoire Documents
+          <button class="btn btn-light btn-sm toggle-card-btn" data-target="docs-body"><i class="bi bi-eye"></i> Voir</button>
+        </div>
       </div>
-      <div class="card-body p-4">
+      <div class="card-body p-4" id="docs-body">
         <p class="text-muted mb-4">
           <i class="bi bi-info-circle me-2"></i>
           Rassemble toutes les pièces jointes (documents, images, PJ messages) liées aux sites/tickets/demandes de ce client.
@@ -306,61 +327,56 @@
     </div>
 
     <!-- Admin Actions -->
-    <div id="adminActions" class="main-card" style="display:none;">
-      <div class="card-header-custom">
-        <i class="bi bi-shield-lock me-2"></i>Actions Administrateur
-      </div>
-      <div class="card-body p-4">
-        <div class="admin-section text-center">
-          <h5 class="mb-3"><i class="bi bi-file-earmark-plus me-2"></i>Créer un contrat</h5>
-          <p class="text-muted mb-4">Générez un nouveau contrat lié à ce client.</p>
-          <button id="openContratModal" class="btn btn-gradient px-4">
-            <i class="bi bi-plus-circle me-2"></i>Créer un contrat
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- Section admin retirée -->
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 
-  <!-- Modal création contrat -->
-  <div class="modal fade" id="contratModal" tabindex="-1" aria-labelledby="contratModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+  <!-- Modal création contrat (now loads iframe) -->
+  <div class="modal fade" id="createContratModal" tabindex="-1" aria-labelledby="createContratModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="contratModalLabel">Créer un contrat</h5>
+          <h5 class="modal-title" id="createContratModalLabel">Créer un contrat</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
-            <label for="contrat-titre" class="form-label fw-semibold">Titre du contrat</label>
-            <input type="text" class="form-control" id="contrat-titre" placeholder="Ex : Contrat maintenance 2025">
-          </div>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label for="contrat-debut" class="form-label fw-semibold">Date de début</label>
-              <input type="date" class="form-control" id="contrat-debut">
-            </div>
-            <div class="col-md-6">
-              <label for="contrat-fin" class="form-label fw-semibold">Date de fin (optionnel)</label>
-              <input type="date" class="form-control" id="contrat-fin">
-            </div>
-          </div>
-          <div class="mt-3">
-            <label for="contrat-commentaire" class="form-label fw-semibold">Commentaire (optionnel)</label>
-            <textarea id="contrat-commentaire" class="form-control" rows="3" placeholder="Notes ou conditions particulières..."></textarea>
-          </div>
-          <div class="mt-3 small text-muted">Le contrat sera lié automatiquement à ce client.</div>
-          <div class="mt-3 alert d-none" id="contrat-feedback"></div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="save-contrat-btn"><i class="bi bi-save me-2"></i>Enregistrer</button>
+          <iframe id="createContratFrame" src="about:blank" style="width: 100%; height: 80vh; border: none;"></iframe>
         </div>
       </div>
     </div>
   </div>
+  
+  <!-- Modal pour voir les contrats associés -->
+  <div class="modal fade" id="viewContractModal" tabindex="-1" aria-labelledby="viewContractModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="viewContractModalLabel">Voir Contrat</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="viewContractFrame" style="width: 100%; height: 80vh; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal association -->
+  <div class="modal fade" id="associationModal" tabindex="-1" aria-labelledby="associationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="associationModalLabel">Voir l'association</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="associationFrame" src="about:blank" style="width:100%;height:80vh;border:none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal ajout représentant -->
   <div class="modal fade" id="repModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
@@ -387,6 +403,42 @@
             <input type="text" class="form-control" id="rep-fonction" placeholder="Fonction">
           </div>
           <div id="rep-feedback" class="small d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="save-rep-btn"><i class="bi bi-save me-1"></i>Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal éditer représentant -->
+  <div class="modal fade" id="editRepModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Modifier le représentant</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="edit-rep-id">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nom</label>
+            <input type="text" class="form-control" id="edit-rep-nom">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Email</label>
+            <input type="email" class="form-control" id="edit-rep-email">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Téléphone</label>
+            <input type="text" class="form-control" id="edit-rep-tel">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Fonction</label>
+            <input type="text" class="form-control" id="edit-rep-fonction">
+          </div>
+          <div id="edit-rep-feedback" class="small d-none"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
@@ -460,11 +512,28 @@
       const contratFeedback = document.getElementById('contrat-feedback');
       const saveContratBtn = document.getElementById('save-contrat-btn');
       const saveEditRepBtn = document.getElementById('save-rep-btn');
+      const createContratModalEl = document.getElementById('createContratModal');
+      const createContratFrame = document.getElementById('createContratFrame');
+      const createContratBtn = document.getElementById('openContratModal');
       let currentRepEditing = null;
+      const assocContainer = document.getElementById('client-associations');
+      const associationModal = document.getElementById('associationModal');
+      const associationFrame = document.getElementById('associationFrame');
+
+      // Gestion des boutons "Voir"/retracter pour les cartes
+      document.querySelectorAll('.toggle-card-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetId = btn.dataset.target;
+          const target = targetId ? document.getElementById(targetId) : null;
+          if (!target) return;
+          const hidden = target.classList.toggle('d-none');
+          btn.innerHTML = hidden ? '<i class="bi bi-eye-slash"></i> Voir' : '<i class="bi bi-eye"></i> Voir';
+        });
+      });
 
       try {
         const data = await fetchJSON('/api/clients/' + id + '/relations');
-        const { client: c, sites, demandes, representants } = data;
+        const { client: c, sites, demandes, representants, contrats = [], associations = [] } = data;
         let isAdmin = false;
         try {
           const payload = token ? JSON.parse(atob(token.split('.')[1])) : {};
@@ -481,6 +550,54 @@
         if (editLink) {
           editLink.href = `/client-edit.html?id=${encodeURIComponent(id)}`;
           editLink.style.display = 'inline-block';
+        }
+
+        // Associations liées
+        if (assocContainer) {
+          assocContainer.innerHTML = '';
+          const listAssoc = associations || [];
+          if (!listAssoc.length) {
+            assocContainer.innerHTML = '<span class="text-muted">Aucune association</span>';
+          } else {
+            listAssoc.forEach(asso => {
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'btn btn-sm btn-outline-secondary';
+              btn.textContent = asso.titre || `Association #${asso.id}`;
+              btn.addEventListener('click', () => {
+                if (associationModal && associationFrame && asso.id) {
+                  associationFrame.src = `/association-view.html?id=${asso.id}`;
+                  const m = bootstrap.Modal.getOrCreateInstance(associationModal);
+                  m.show();
+                }
+              });
+              assocContainer.appendChild(btn);
+            });
+          }
+        }
+
+        // Contrats associés
+        const contratsContainer = document.getElementById('contrats-container');
+        if (contratsContainer) {
+          contratsContainer.innerHTML = '';
+          if (contrats.length) {
+            contrats.forEach(ct => {
+              const card = document.createElement('div');
+              card.className = 'list-item-custom d-flex justify-content-between align-items-start';
+              card.innerHTML = `
+                <div>
+                  <div class="fw-semibold">${ct.titre || 'Contrat'}</div>
+                  <div class="small text-muted">${ct.date_debut ? new Date(ct.date_debut).toLocaleDateString() : ''} ${ct.date_fin ? '→ '+ new Date(ct.date_fin).toLocaleDateString() : ''}</div>
+                </div>
+                <div>
+                  <a class="btn btn-sm btn-outline-primary" href="/contrat-view.html?id=${ct.id}" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i>Voir</a>
+                </div>
+              `;
+              contratsContainer.appendChild(card);
+            });
+          } else {
+            contratsContainer.innerHTML = '<div class="empty-state"><i class="bi bi-file-earmark text-primary"></i><div class="mt-2">Aucun contrat associé.</div></div>';
+          }
         }
 
         // Représentants
@@ -518,18 +635,20 @@
 
         // Sites
         const sitesContainer = document.getElementById('sites-container');
-        sitesContainer.innerHTML = sites?.length ? '' : `
-          <div class="empty-state">
-            <i class="bi bi-building"></i><p>Aucun site</p>
-          </div>`;
-        sites?.forEach(s =>
-          sitesContainer.innerHTML += `
-            <div class="list-item-custom">
-              <strong>${s.nom_site || 'Site #' + s.id}</strong><br>
-              <a href="/site-view.html?id=${s.id}" class="btn btn-sm btn-outline-primary mt-2">
-                <i class="bi bi-eye"></i> Voir
-              </a>
-            </div>`);
+        if (sitesContainer) {
+          sitesContainer.innerHTML = sites?.length ? '' : `
+            <div class="empty-state">
+              <i class="bi bi-building"></i><p>Aucun site</p>
+            </div>`;
+          sites?.forEach(s =>
+            sitesContainer.innerHTML += `
+              <div class="list-item-custom">
+                <strong>${s.nom_site || 'Site #' + s.id}</strong><br>
+                <a href="/site-view.html?id=${s.id}" class="btn btn-sm btn-outline-primary mt-2">
+                  <i class="bi bi-eye"></i> Voir
+                </a>
+              </div>`);
+        }
 
         // Demandes
         const demandesContainer = document.getElementById('demandes-container');
@@ -548,7 +667,6 @@
             </div>`);
 
         if (isAdmin) {
-          document.getElementById('adminActions').style.display = '';
           if (addRepBtn && repModal) addRepBtn.classList.remove('d-none');
         }
 
@@ -645,6 +763,13 @@
               editRepFeedback.className = 'small text-danger';
               editRepFeedback.textContent = err.message || 'Erreur lors de la mise à jour';
             }
+          });
+        }
+
+        // Modal contrat : charge l'iframe au clic
+        if (createContratModalEl && createContratFrame) {
+          createContratModalEl.addEventListener('show.bs.modal', () => {
+            createContratFrame.src = `/contrat-new.html?client_id=${encodeURIComponent(id)}`;
           });
         }
 

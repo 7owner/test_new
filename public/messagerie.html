@@ -7,120 +7,389 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
-    .dashboard-bg { background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%); min-height: 100vh; }
+    :root {
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --message-sent-bg: #dcf8c6;
+      --message-received-bg: #ffffff;
+      --border-radius: 20px;
+      --shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-medium: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    body {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
     .embed header, .embed #offcanvasNavbar { display: none !important; }
     .embed .container { margin-top: 0 !important; }
-    .card { border: none; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
-    .conversations-list {
-      height: 80vh;
-      overflow-y: auto;
+
+    .card {
+      border: none;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-medium);
+      transition: all 0.3s ease;
     }
+
+    .card:hover {
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      transform: translateY(-2px);
+    }
+
+    .conversations-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .conversations-header h2 {
+      margin-bottom: 0;
+      color: #2d3748;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .conversations-header .btn {
+      flex-shrink: 0;
+      background: var(--primary-gradient);
+      border: none;
+      border-radius: 12px;
+      padding: 0.5rem 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .conversations-header .btn:hover {
+      transform: scale(1.05);
+      box-shadow: var(--shadow-light);
+    }
+
+    .filters-section {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      border-radius: var(--border-radius);
+      padding: 1rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow-light);
+    }
+
+    .filters-section .row { margin: 0 -0.5rem; }
+    .filters-section .col-md-12,
+    .filters-section .col-md-6,
+    .filters-section .col-md-4 { padding: 0 0.5rem; }
+
+    .filters-section .form-control,
+    .filters-section .form-select {
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      padding: 0.75rem;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .filters-section .form-control:focus,
+    .filters-section .form-select:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+      background: white;
+    }
+
+    .conversations-list {
+      height: 60vh;
+      overflow-y: auto;
+      background: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-light);
+    }
+
+    .list-group-item {
+      border: none;
+      padding: 1rem;
+      transition: all 0.2s ease;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .list-group-item:last-child { border-bottom: none; }
+
+    .list-group-item:hover {
+      background: #f8fafc;
+      transform: translateX(4px);
+    }
+
+    .list-group-item h5 {
+      color: #2d3748;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .list-group-item p { color: #64748b; margin-bottom: 0.5rem; }
+
+    .new-convo-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-medium);
+    }
+
+    .new-convo-card .form-label {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .new-convo-card .form-control,
+    .new-convo-card textarea {
+      background: rgba(255, 255, 255, 0.95);
+      border: none;
+      border-radius: 10px;
+      color: #2d3748;
+    }
+
+    .new-convo-card .form-control::placeholder,
+    .new-convo-card textarea::placeholder { color: #94a3b8; }
+
+    .new-convo-card .btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      border-radius: 10px;
+      padding: 0.5rem 1rem;
+    }
+
+    .new-convo-card .btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
     .messages-display {
-      height: 65vh;
+      height: 70vh;
       overflow-y: auto;
       display: flex;
-      flex-direction: column-reverse;
+      flex-direction: column;
+      padding: 1rem;
+      background: #f8fafc;
+      border-radius: var(--border-radius);
+      gap: 1rem;
+      scroll-behavior: smooth;
+      box-shadow: var(--shadow-light);
     }
+
+    .message-sent,
+    .message-received {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-light);
+      position: relative;
+      word-wrap: break-word;
+    }
+
     .message-sent {
       align-self: flex-end;
-      background-color: #dcf8c6;
-      border-radius: 10px;
-      padding: 10px;
-      margin-bottom: 10px;
-      max-width: 70%;
+      background: var(--message-sent-bg);
+      border-bottom-right-radius: 4px;
     }
+
     .message-received {
       align-self: flex-start;
-      background-color: #f1f0f0;
+      background: var(--message-received-bg);
+      border-bottom-left-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .message-sent p,
+    .message-received p { margin: 0 0 0.5rem 0; color: #2d3748; }
+
+    .message-sent small,
+    .message-received small {
+      color: #64748b;
+      font-size: 0.75rem;
+      display: block;
+    }
+
+    .message-attachments { margin-top: 0.5rem; }
+    .message-attachments a {
+      display: inline-block;
+      background: rgba(102, 126, 234, 0.1);
+      color: #667eea;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.875rem;
+      margin-right: 0.5rem;
+      margin-bottom: 0.25rem;
+      transition: all 0.2s ease;
+    }
+    .message-attachments a:hover {
+      background: rgba(102, 126, 234, 0.2);
+      transform: scale(1.05);
+    }
+
+    #messages-container h2 {
+      color: #2d3748;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #message-form {
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 1rem;
+      box-shadow: var(--shadow-light);
+      margin-top: 1rem;
+    }
+
+    #message-form .input-group { box-shadow: none; }
+    #message-form .form-control {
+      border-radius: 12px 0 0 12px;
+      border: 1px solid #e2e8f0;
+    }
+    #message-form .btn {
+      border-radius: 0 12px 12px 0;
+      background: var(--primary-gradient);
+      border: none;
+      padding: 0.75rem 1.5rem;
+    }
+
+    #no-conversation-selected {
+      text-align: center;
+      color: #64748b;
+      padding: 3rem 1rem;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: var(--border-radius);
+      margin-top: 1rem;
+    }
+
+    .modal-content {
+      border-radius: var(--border-radius);
+      border: none;
+      box-shadow: var(--shadow-medium);
+    }
+    .modal-header {
+      background: var(--primary-gradient);
+      color: white;
+      border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+    .modal-header .btn-close { filter: invert(1); }
+    .modal-body .form-control,
+    .modal-body .form-select {
       border-radius: 10px;
-      padding: 10px;
-      margin-bottom: 10px;
-      max-width: 70%;
+      border: 1px solid #e2e8f0;
+    }
+    .modal-footer .btn {
+      border-radius: 10px;
+      padding: 0.5rem 1.5rem;
+    }
+    .modal-footer .btn-primary {
+      background: var(--secondary-gradient);
+      border: none;
+    }
+
+    @media (max-width: 768px) {
+      .conversations-list { height: 50vh; }
+      .messages-display { height: 60vh; }
+      .filters-section { padding: 0.75rem; }
+      .message-sent, .message-received { max-width: 85%; }
     }
   </style>
 </head>
-<body class="dashboard-bg">
+<body>
   <div id="navbar-placeholder"></div>
 
   <div class="container mt-4">
-    <div class="row">
+    <div class="row g-3">
       <div class="col-md-4">
-        <div class="d-flex justify-content-between align-items-center">
-          <h2 class="mb-0">Conversations</h2>
-          <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newMessageModal">
-            <i class="bi bi-envelope-plus me-1"></i>Nouveau message
+        <div class="conversations-header">
+          <h2><i class="bi bi-chat-dots"></i>Conversations</h2>
+          <button class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#newMessageModal">
+            <i class="bi bi-envelope-plus me-1"></i>Nouveau
           </button>
         </div>
-        <div class="mb-3">
+
+        <div class="filters-section">
           <div class="row g-2">
-            <div class="col-md-12">
-                <input type="text" id="titleFilter" class="form-control" placeholder="Filtrer par titre ou ID de demande...">
+            <div class="col-12">
+              <input type="text" id="titleFilter" class="form-control" placeholder="Filtrer par titre ou ID de demande...">
             </div>
             <div class="col-md-6">
-                <input type="text" id="siteFilter" class="form-control" placeholder="Filtrer par site...">
+              <input type="text" id="siteFilter" class="form-control" placeholder="Filtrer par site...">
             </div>
             <div class="col-md-6">
-                <input type="text" id="clientFilter" class="form-control" placeholder="Filtrer par client..." list="clientNames">
-                <datalist id="clientNames"></datalist>
+              <input type="text" id="clientFilter" class="form-control" placeholder="Filtrer par client..." list="clientNames">
+              <datalist id="clientNames"></datalist>
             </div>
             <div class="col-md-4">
-                <select id="demand-status-filter" class="form-select">
-                    <option value="">Tous les statuts</option>
-                    <option value="En cours de traitement">En cours de traitement</option>
-                    <option value="Traité">Traité</option>
-                    <option value="Rejeté">Rejeté</option>
-                    <option value="Annulé">Annulé</option>
-                </select>
+              <select id="demand-status-filter" class="form-select">
+                <option value="">Tous les statuts</option>
+                <option value="En cours de traitement">En cours de traitement</option>
+                <option value="Traité">Traité</option>
+                <option value="Rejeté">Rejeté</option>
+                <option value="Annulé">Annulé</option>
+              </select>
             </div>
             <div class="col-md-4">
-                <input type="date" id="date-start" class="form-control" title="Date de début">
+              <input type="date" id="date-start" class="form-control" title="Date de début">
             </div>
             <div class="col-md-4">
-                <input type="date" id="date-end" class="form-control" title="Date de fin">
+              <input type="date" id="date-end" class="form-control" title="Date de fin">
             </div>
           </div>
         </div>
+
         <div id="conversations-list" class="list-group conversations-list">
-          <!-- Conversations will be loaded here -->
+          <!-- Conversations -->
         </div>
 
-        <!-- Nouvelle conversation avec un client -->
-        <div class="card mt-3">
+        <!-- Nouvelle conversation client -->
+        <div class="card new-convo-card mt-3">
           <div class="card-body">
-            <h6 class="fw-semibold mb-2"><i class="bi bi-person-plus me-1"></i>Nouvelle conversation client</h6>
-            <div class="mb-2">
-              <label class="form-label small">Choisir un client (email représentant)</label>
-              <input type="text" id="new-convo-client" class="form-control form-control-sm" list="clientEmails" placeholder="client@example.com">
+            <h6 class="fw-semibold mb-3"><i class="bi bi-person-plus me-2"></i>Nouvelle conversation client</h6>
+            <div class="mb-3">
+              <label class="form-label">Choisir un client (email représentant)</label>
+              <input type="text" id="new-convo-client" class="form-control" list="clientEmails" placeholder="client@example.com">
               <datalist id="clientEmails"></datalist>
             </div>
-            <div class="mb-2">
-              <label class="form-label small">Message</label>
-              <textarea id="new-convo-message" class="form-control form-control-sm" rows="2" placeholder="Votre message..."></textarea>
+            <div class="mb-3">
+              <label class="form-label">Message</label>
+              <textarea id="new-convo-message" class="form-control" rows="3" placeholder="Votre message..."></textarea>
             </div>
             <div class="text-end">
-              <button class="btn btn-primary btn-sm" id="new-convo-btn"><i class="bi bi-send me-1"></i>Envoyer</button>
+              <button class="btn" id="new-convo-btn"><i class="bi bi-send me-2"></i>Envoyer</button>
             </div>
-            <div id="new-convo-feedback" class="small mt-2"></div>
+            <div id="new-convo-feedback" class="mt-2"></div>
           </div>
         </div>
-
       </div>
+
       <div class="col-md-8">
         <div id="messages-container" class="d-none">
-          <h2 id="conversation-with"></h2>
-          <div id="messages-display" class="border p-3 mb-3 messages-display">
-            <!-- Messages will be loaded here -->
+          <h2 id="conversation-with"><i class="bi bi-person-lines-fill"></i> <span></span></h2>
+          <div id="messages-display" class="messages-display">
+            <!-- Messages -->
           </div>
           <form id="message-form">
             <div class="input-group">
               <input type="text" id="message-body" class="form-control" placeholder="Écrivez un message...">
-              <input type="file" id="attachments" class="form-control" multiple>
-              <button class="btn btn-primary" type="submit">Envoyer</button>
+              <input type="file" id="attachments" class="form-control d-none" multiple>
+              <button class="btn" type="button" id="attach-btn"><i class="bi bi-paperclip"></i></button>
+              <button class="btn" type="submit"><i class="bi bi-send"></i></button>
             </div>
           </form>
         </div>
-        <div id="no-conversation-selected">
-            <p>Sélectionnez une conversation pour voir les messages.</p>
+        <div id="no-conversation-selected" class="d-flex align-items-center justify-content-center">
+          <div>
+            <i class="bi bi-chat-square-text display-4 text-muted mb-3"></i>
+            <p class="mb-0">Sélectionnez une conversation pour voir les messages.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -128,7 +397,7 @@
 
   <!-- Modal nouveau message -->
   <div class="modal fade" id="newMessageModal" tabindex="-1" aria-labelledby="newMessageModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="newMessageModalLabel"><i class="bi bi-envelope-plus me-2"></i>Envoyer un message à un client</h5>
@@ -144,7 +413,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label">Message</label>
-            <textarea id="modal-client-message" class="form-control" rows="3" placeholder="Votre message..."></textarea>
+            <textarea id="modal-client-message" class="form-control" rows="4" placeholder="Votre message..."></textarea>
           </div>
           <div class="mb-3">
             <label class="form-label">Pièces jointes</label>
@@ -162,379 +431,386 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="/nav.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          location.href = '/login.html';
-          return;
-        }
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        location.href = '/login.html';
+        return;
+      }
 
-        const params = new URLSearchParams(window.location.search);
-        const isEmbed = window.self !== window.top || params.get('embed') === '1' || params.get('modal') === '1';
-        if (isEmbed) {
-          document.body.classList.add('embed');
-        }
-        
-        const user = JSON.parse(atob(token.split('.')[1]));
-        const userId = user.id;
-  
-        const conversationsList = document.getElementById('conversations-list');
-        const messagesContainer = document.getElementById('messages-container');
-        const noConversationSelected = document.getElementById('no-conversation-selected');
-        const conversationWith = document.getElementById('conversation-with');
-        const messagesDisplay = document.getElementById('messages-display');
-        const messageForm = document.getElementById('message-form');
-        const messageBodyInput = document.getElementById('message-body');
-        const attachmentsInput = document.getElementById('attachments');
-        const titleFilterInput = document.getElementById('titleFilter');
-        const siteFilterInput = document.getElementById('siteFilter');
-        const clientFilterInput = document.getElementById('clientFilter');
-        const clientNamesDatalist = document.getElementById('clientNames');
-        const demandStatusFilter = document.getElementById('demand-status-filter');
-        const dateStartInput = document.getElementById('date-start');
-        const dateEndInput = document.getElementById('date-end');
-        const newConvoClient = document.getElementById('new-convo-client');
-        const newConvoMessage = document.getElementById('new-convo-message');
-        const newConvoBtn = document.getElementById('new-convo-btn');
-        const newConvoFeedback = document.getElementById('new-convo-feedback');
-        const clientEmailsList = document.getElementById('clientEmails');
-        const modalClientSelect = document.getElementById('modal-client-select');
-        const modalClientFilter = document.getElementById('modal-client-filter');
-        const modalClientMessage = document.getElementById('modal-client-message');
-        const modalClientAttachments = document.getElementById('modal-client-attachments');
-        const modalClientFeedback = document.getElementById('modal-client-feedback');
-        const modalSendBtn = document.getElementById('modal-send-btn');
+      const params = new URLSearchParams(window.location.search);
+      const isEmbed = window.self !== window.top || params.get('embed') === '1' || params.get('modal') === '1';
+      if (isEmbed) {
+        document.body.classList.add('embed');
+      }
+      
+      const user = JSON.parse(atob(token.split('.')[1]));
+      const userId = user.id;
 
-        let currentConversationId = null;
-        let currentReceiverId = null;
-        let currentConversationLabel = '';
-        const demandeMap = new Map();
-        const demandeSiteMap = new Map();
-        const demandeClientMap = new Map();
-        const preselectConversationId = new URLSearchParams(window.location.search).get('conversation');
-        let clientsCache = [];
-  
-              function hrefForAttachment(att) {
-                if (!att || !att.id) return '#';
-                return `/api/attachments/${att.id}/view`;
-              }  
-        async function fetchJSON(url, opts) {
-          const res = await fetch(url, {
-            headers: { 'Authorization': 'Bearer ' + token },
-            ...opts
-          });
-          let body = null;
+      const conversationsList = document.getElementById('conversations-list');
+      const messagesContainer = document.getElementById('messages-container');
+      const noConversationSelected = document.getElementById('no-conversation-selected');
+      const conversationWith = document.getElementById('conversation-with').querySelector('span');
+      const messagesDisplay = document.getElementById('messages-display');
+      const messageForm = document.getElementById('message-form');
+      const messageBodyInput = document.getElementById('message-body');
+      const attachmentsInput = document.getElementById('attachments');
+      const attachBtn = document.getElementById('attach-btn');
+      const titleFilterInput = document.getElementById('titleFilter');
+      const siteFilterInput = document.getElementById('siteFilter');
+      const clientFilterInput = document.getElementById('clientFilter');
+      const clientNamesDatalist = document.getElementById('clientNames');
+      const demandStatusFilter = document.getElementById('demand-status-filter');
+      const dateStartInput = document.getElementById('date-start');
+      const dateEndInput = document.getElementById('date-end');
+      const newConvoClient = document.getElementById('new-convo-client');
+      const newConvoMessage = document.getElementById('new-convo-message');
+      const newConvoBtn = document.getElementById('new-convo-btn');
+      const newConvoFeedback = document.getElementById('new-convo-feedback');
+      const clientEmailsList = document.getElementById('clientEmails');
+      const modalClientSelect = document.getElementById('modal-client-select');
+      const modalClientFilter = document.getElementById('modal-client-filter');
+      const modalClientMessage = document.getElementById('modal-client-message');
+      const modalClientAttachments = document.getElementById('modal-client-attachments');
+      const modalClientFeedback = document.getElementById('modal-client-feedback');
+      const modalSendBtn = document.getElementById('modal-send-btn');
+
+      let currentConversationId = null;
+      let currentReceiverId = null;
+      let currentConversationLabel = '';
+      const demandeMap = new Map();
+      const demandeSiteMap = new Map();
+      const demandeClientMap = new Map();
+      const preselectConversationId = new URLSearchParams(window.location.search).get('conversation');
+      let clientsCache = [];
+
+      function hrefForAttachment(att) {
+        if (!att || !att.id) return '#';
+        return `/api/attachments/${att.id}/view`;
+      }  
+
+      async function fetchJSON(url, opts) {
+        const res = await fetch(url, {
+          headers: { 'Authorization': 'Bearer ' + token },
+          ...opts
+        });
+        let body = null;
+        try { body = await res.json(); } catch (_) {}
+        if (res.status === 401 || res.status === 403) {
+          console.warn('Unauthorized/Forbidden, redirecting to login.');
+          localStorage.removeItem('token');
+          window.location.href = '/login.html';
+          throw new Error('Unauthorized');
+        }
+        if (!res.ok) throw new Error((body && body.error) || res.statusText);
+        return body;
+      }
+
+      async function loadDemandesLabels() {
+        let demandes = [];
+        try {
+          demandes = await fetchJSON('/api/demandes_client/mine');
+        } catch (err) {
+          if (String(err).includes('Unauthorized')) return;
           try {
-            body = await res.json();
-          } catch (_) {}
-          if (res.status === 401 || res.status === 403) {
-            console.warn('Unauthorized/Forbidden, redirecting to login.');
-            localStorage.removeItem('token');
-            window.location.href = '/login.html';
-            throw new Error('Unauthorized');
+            demandes = await fetchJSON('/api/demandes_client');
+          } catch (err2) {
+            if (String(err2).includes('Unauthorized')) return;
+            console.warn('Impossible de charger les demandes client pour les filtres.', err2);
+            return;
           }
-          if (!res.ok) throw new Error((body && body.error) || res.statusText);
-          return body;
         }
-  
-        async function loadDemandesLabels() {
-          let demandes = [];
-          try {
-            demandes = await fetchJSON('/api/demandes_client/mine');
-          } catch (err) {
-            if (String(err).includes('Unauthorized')) return;
-            try {
-              demandes = await fetchJSON('/api/demandes_client');
-            } catch (err2) {
-              if (String(err2).includes('Unauthorized')) return;
-              console.warn('Impossible de charger les demandes client pour les filtres.', err2);
-              return;
+        demandeMap.clear();
+        demandeSiteMap.clear();
+        demandeClientMap.clear();
+        if (clientNamesDatalist) clientNamesDatalist.innerHTML = '';
+        const clientSet = new Set();
+        demandes.forEach(d => {
+          const label = `Demande #${d.id} — ${d.title || d.titre || d.description || d.nom_site || d.site_nom || 'Sans titre'}`;
+          demandeMap.set(`demande-${d.id}`, label);
+          const siteName = d.nom_site || d.site_nom || '';
+          demandeSiteMap.set(`demande-${d.id}`, siteName);
+          const clientName = d.nom_client || d.client_nom || '';
+          demandeClientMap.set(`demande-${d.id}`, clientName);
+          if (clientName) clientSet.add(clientName);
+        });
+        if (clientNamesDatalist) {
+          clientSet.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            clientNamesDatalist.appendChild(opt);
+          });
+        }
+      }
+
+      const renderClientOptions = (filterTerm = '') => {
+        if (!modalClientSelect) return;
+        modalClientSelect.innerHTML = '<option value="">Sélectionner un client...</option>';
+        const term = filterTerm.toLowerCase();
+        clientsCache
+          .filter(c => {
+            const label = `${c.nom_client || ''} ${c.representant_nom || ''} ${c.representant_email || ''}`.toLowerCase();
+            return !term || label.includes(term);
+          })
+          .forEach(c => {
+            if (c.representant_email) {
+              const opt2 = document.createElement('option');
+              opt2.value = c.representant_email;
+              opt2.textContent = `${c.nom_client || c.representant_nom || c.representant_email} (${c.representant_email})`;
+              modalClientSelect.appendChild(opt2);
             }
-          }
-          demandeMap.clear();
-          demandeSiteMap.clear();
-          demandeClientMap.clear();
-          if (clientNamesDatalist) clientNamesDatalist.innerHTML = '';
-          const clientSet = new Set();
-          demandes.forEach(d => {
-            const label = `Demande #${d.id} — ${d.title || d.titre || d.description || d.nom_site || d.site_nom || 'Sans titre'}`;
-            demandeMap.set(`demande-${d.id}`, label);
-            const siteName = d.nom_site || d.site_nom || '';
-            demandeSiteMap.set(`demande-${d.id}`, siteName);
-            const clientName = d.nom_client || d.client_nom || '';
-            demandeClientMap.set(`demande-${d.id}`, clientName);
-            if (clientName) clientSet.add(clientName);
           });
-          if (clientNamesDatalist) {
-            clientSet.forEach(name => {
+      };
+
+      async function loadClientEmails() {
+        try {
+          const clients = await fetchJSON('/api/clients');
+          if (!Array.isArray(clients)) return;
+          clientsCache = clients;
+          clientEmailsList.innerHTML = '';
+          clients.forEach(c => {
+            if (c.representant_email) {
               const opt = document.createElement('option');
-              opt.value = name;
-              clientNamesDatalist.appendChild(opt);
-            });
-          }
-        }
-
-        const renderClientOptions = (filterTerm = '') => {
-          if (!modalClientSelect) return;
-          modalClientSelect.innerHTML = '<option value="">Sélectionner un client...</option>';
-          const term = filterTerm.toLowerCase();
-          clientsCache
-            .filter(c => {
-              const label = `${c.nom_client || ''} ${c.representant_nom || ''} ${c.representant_email || ''}`.toLowerCase();
-              return !term || label.includes(term);
-            })
-            .forEach(c => {
-              if (c.representant_email) {
-                const opt2 = document.createElement('option');
-                opt2.value = c.representant_email;
-                opt2.textContent = `${c.nom_client || c.representant_nom || c.representant_email} (${c.representant_email})`;
-                modalClientSelect.appendChild(opt2);
-              }
-            });
-        };
-
-        async function loadClientEmails() {
-          try {
-            const clients = await fetchJSON('/api/clients');
-            if (!Array.isArray(clients)) return;
-            clientsCache = clients;
-            clientEmailsList.innerHTML = '';
-            clients.forEach(c => {
-              if (c.representant_email) {
-                const opt = document.createElement('option');
-                opt.value = c.representant_email;
-                opt.label = c.nom_client || c.representant_nom || c.representant_email;
-                clientEmailsList.appendChild(opt);
-              }
-            });
-            renderClientOptions(modalClientFilter?.value || '');
-          } catch (e) {
-            console.warn('Impossible de charger les emails clients', e);
-          }
-        }
-        
-        async function loadConversations() {
-          const search = titleFilterInput.value.trim();
-          const site = siteFilterInput ? siteFilterInput.value.trim() : '';
-          const client = clientFilterInput ? clientFilterInput.value.trim() : '';
-          const status = demandStatusFilter ? demandStatusFilter.value : '';
-          const startDate = dateStartInput ? dateStartInput.value : '';
-          const endDate = dateEndInput ? dateEndInput.value : '';
-          
-          const query = new URLSearchParams();
-          if (search) query.set('search', search);
-          if (site) query.set('site', site);
-          if (client) query.set('client', client);
-          if (status) query.set('status', status);
-          if (startDate) query.set('startDate', startDate);
-          if (endDate) query.set('endDate', endDate);
-  
-          const url = `/api/conversations?${query.toString()}`;
-  
-          try {
-            const conversations = await fetchJSON(url);
-            
-            conversationsList.innerHTML = '';
-            if (conversations.length === 0) {
-              conversationsList.innerHTML = '<p class="text-muted p-3">Aucune conversation trouvée.</p>';
-              return;
+              opt.value = c.representant_email;
+              opt.label = c.nom_client || c.representant_nom || c.representant_email;
+              clientEmailsList.appendChild(opt);
             }
-  
-            conversations.forEach(convo => {
-              const isDemande = String(convo.conversation_id || '').startsWith('demande-');
-              const demandeLabel = demandeMap.get(convo.conversation_id) || (isDemande ? `Demande #${String(convo.conversation_id).replace('demande-', '')}` : null);
-              const displayTitle = demandeLabel || convo.other_user_email;
-              const convoElement = document.createElement('a');
-              convoElement.href = '#';
-              convoElement.className = 'list-group-item list-group-item-action';
-              convoElement.dataset.conversationId = convo.conversation_id;
-              convoElement.dataset.receiverId = convo.sender_id === userId ? convo.receiver_id : convo.sender_id;
-              convoElement.dataset.label = displayTitle;
-              convoElement.innerHTML = `
-                <div class="d-flex w-100 justify-content-between">
-                  <h5 class="mb-1">${displayTitle}</h5>
-                  <small>${new Date(convo.created_at).toLocaleDateString()}</small>
-                </div>
-                <p class="mb-1">${(convo.body || '').substring(0, 50)}...</p>
-              `;
-              convoElement.addEventListener('click', (e) => {
-                e.preventDefault();
-                currentConversationId = convo.conversation_id;
-                currentReceiverId = e.currentTarget.dataset.receiverId;
-                currentConversationLabel = e.currentTarget.dataset.label || '';
-                loadMessages(currentConversationId);
-              });
-              conversationsList.appendChild(convoElement);
-            });
+          });
+          renderClientOptions(modalClientFilter?.value || '');
+        } catch (e) {
+          console.warn('Impossible de charger les emails clients', e);
+        }
+      }
+      
+      async function loadConversations() {
+        const search = titleFilterInput.value.trim();
+        const site = siteFilterInput ? siteFilterInput.value.trim() : '';
+        const client = clientFilterInput ? clientFilterInput.value.trim() : '';
+        const status = demandStatusFilter ? demandStatusFilter.value : '';
+        const startDate = dateStartInput ? dateStartInput.value : '';
+        const endDate = dateEndInput ? dateEndInput.value : '';
+        
+        const query = new URLSearchParams();
+        if (search) query.set('search', search);
+        if (site) query.set('site', site);
+        if (client) query.set('client', client);
+        if (status) query.set('status', status);
+        if (startDate) query.set('startDate', startDate);
+        if (endDate) query.set('endDate', endDate);
 
-            if (preselectConversationId) {
-              const target = conversationsList.querySelector(`[data-conversation-id="${preselectConversationId}"]`);
-              if (target) {
-                target.click();
-              } else {
-                const first = conversationsList.querySelector('[data-conversation-id]');
-                if (first) first.click();
-              }
+        const url = `/api/conversations?${query.toString()}`;
+
+        try {
+          const conversations = await fetchJSON(url);
+          
+          conversationsList.innerHTML = '';
+          if (conversations.length === 0) {
+            conversationsList.innerHTML = '<div class="list-group-item text-center text-muted py-4"><i class="bi bi-inbox display-4 mb-2 d-block"></i>Aucune conversation trouvée.</div>';
+            return;
+          }
+
+          conversations.forEach(convo => {
+            const isDemande = String(convo.conversation_id || '').startsWith('demande-');
+            const demandeLabel = demandeMap.get(convo.conversation_id) || (isDemande ? `Demande #${String(convo.conversation_id).replace('demande-', '')}` : null);
+            const displayTitle = demandeLabel || convo.other_user_email;
+            const convoElement = document.createElement('a');
+            convoElement.href = '#';
+            convoElement.className = 'list-group-item list-group-item-action d-flex align-items-start';
+            convoElement.dataset.conversationId = convo.conversation_id;
+            convoElement.dataset.receiverId = convo.sender_id === userId ? convo.receiver_id : convo.sender_id;
+            convoElement.dataset.label = displayTitle;
+            convoElement.innerHTML = `
+              <div class="flex-grow-1 ms-3">
+                <div class="d-flex w-100 justify-content-between align-items-start">
+                  <h5 class="mb-1 flex-grow-1">${displayTitle}</h5>
+                  <small class="text-muted">${new Date(convo.created_at).toLocaleDateString()}</small>
+                </div>
+                <p class="mb-1 text-truncate">${(convo.body || '').substring(0, 60)}${convo.body && convo.body.length > 60 ? '...' : ''}</p>
+              </div>
+            `;
+            convoElement.addEventListener('click', (e) => {
+              e.preventDefault();
+              currentConversationId = convo.conversation_id;
+              currentReceiverId = e.currentTarget.dataset.receiverId;
+              currentConversationLabel = e.currentTarget.dataset.label || '';
+              loadMessages(currentConversationId);
+              conversationsList.querySelectorAll('.list-group-item').forEach(item => item.classList.remove('active', 'bg-primary-subtle'));
+              convoElement.classList.add('active', 'bg-primary-subtle');
+            });
+            conversationsList.appendChild(convoElement);
+          });
+
+          if (preselectConversationId) {
+            const target = conversationsList.querySelector(`[data-conversation-id="${preselectConversationId}"]`);
+            if (target) {
+              target.click();
             } else {
               const first = conversationsList.querySelector('[data-conversation-id]');
               if (first) first.click();
             }
-          } catch (error) {
-            console.error('Error loading conversations:', error);
-            conversationsList.innerHTML = '<p class="text-danger p-3">Erreur de chargement des conversations.</p>';
+          } else {
+            const first = conversationsList.querySelector('[data-conversation-id]');
+            if (first) first.click();
           }
+        } catch (error) {
+          console.error('Error loading conversations:', error);
+          conversationsList.innerHTML = '<div class="list-group-item text-center text-danger py-4">Erreur de chargement des conversations.</div>';
         }
-  
-        async function loadMessages(conversationId) {
-          try {
-            const messages = await fetchJSON(`/api/conversations/${conversationId}`);
-            messagesDisplay.innerHTML = '';
-            messages.forEach(msg => {
-              const msgElement = document.createElement('div');
-              msgElement.className = msg.sender_id === userId ? 'message-sent' : 'message-received';
-              let attachmentsHTML = '';
-              if (msg.attachments && msg.attachments.length > 0) {
-                attachmentsHTML = msg.attachments.map(att => 
-                  `<br><a href="${hrefForAttachment(att)}" target="_blank" download="${att.file_name}">${att.file_name}</a>`
-                ).join('');
-              }
-              msgElement.innerHTML = `
-                <p>${msg.body}</p>
-                <small>${new Date(msg.created_at).toLocaleString()}</small>
-                ${attachmentsHTML}
-              `;
-            messagesDisplay.prepend(msgElement);
-            });
-            messagesContainer.classList.remove('d-none');
-            noConversationSelected.classList.add('d-none');
-            const label = currentConversationLabel || (String(currentConversationId || '').startsWith('demande-') ? `Demande #${String(currentConversationId).replace('demande-', '')}` : 'Conversation');
-            conversationWith.textContent = label;
-          } catch (error) {
-            console.error('Error loading messages:', error);
-          }
+      }
+
+      async function loadMessages(conversationId) {
+        try {
+          const messages = await fetchJSON(`/api/conversations/${conversationId}`);
+          messagesDisplay.innerHTML = '';
+          messages.forEach(msg => {
+            const msgElement = document.createElement('div');
+            msgElement.className = msg.sender_id === userId ? 'message-sent' : 'message-received';
+            let attachmentsHTML = '';
+            if (msg.attachments && msg.attachments.length > 0) {
+              attachmentsHTML = `<div class="message-attachments">${msg.attachments.map(att => 
+                `<a href="${hrefForAttachment(att)}" target="_blank" download="${att.file_name}"><i class="bi bi-file-earmark me-1"></i>${att.file_name}</a>`
+              ).join('')}</div>`;
+            }
+            msgElement.innerHTML = `
+              <p>${msg.body}</p>
+              <small>${new Date(msg.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</small>
+              ${attachmentsHTML}
+            `;
+            messagesDisplay.appendChild(msgElement);
+          });
+          messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
+          messagesContainer.classList.remove('d-none');
+          noConversationSelected.classList.add('d-none');
+          const label = currentConversationLabel || (String(currentConversationId || '').startsWith('demande-') ? `Demande #${String(currentConversationId).replace('demande-', '')}` : 'Conversation');
+          conversationWith.textContent = label;
+        } catch (error) {
+          console.error('Error loading messages:', error);
         }
-  
-        messageForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const body = messageBodyInput.value;
-          const files = attachmentsInput.files;
-          
-          if (!body && files.length === 0) return;
-  
-          const formData = new FormData();
-          formData.append('body', body);
-          formData.append('receiver_id', currentReceiverId);
-  
-          for (let i = 0; i < files.length; i++) {
-            formData.append('attachments', files[i]);
+      }
+
+      messageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const body = messageBodyInput.value.trim();
+        const files = attachmentsInput.files;
+        
+        if (!body && files.length === 0) return;
+
+        const formData = new FormData();
+        formData.append('body', body);
+        formData.append('receiver_id', currentReceiverId);
+
+        for (let i = 0; i < files.length; i++) {
+          formData.append('attachments', files[i]);
+        }
+
+        try {
+          await fetch(`/api/conversations/${currentConversationId}/messages`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: formData
+          });
+          messageBodyInput.value = '';
+          attachmentsInput.value = '';
+          loadMessages(currentConversationId);
+        } catch (error) {
+          console.error('Error sending message:', error);
+        }
+      });
+
+      attachBtn.addEventListener('click', () => attachmentsInput.click());
+
+      titleFilterInput.addEventListener('input', loadConversations);
+      if (siteFilterInput) siteFilterInput.addEventListener('input', loadConversations);
+      if (clientFilterInput) clientFilterInput.addEventListener('input', loadConversations);
+      if (demandStatusFilter) demandStatusFilter.addEventListener('change', loadConversations);
+      if (dateStartInput) dateStartInput.addEventListener('change', loadConversations);
+      if (dateEndInput) dateEndInput.addEventListener('change', loadConversations);
+      if (modalClientFilter) {
+        modalClientFilter.addEventListener('input', () => renderClientOptions(modalClientFilter.value || ''));
+      }
+
+      if (newConvoBtn) {
+        newConvoBtn.addEventListener('click', async () => {
+          newConvoFeedback.textContent = '';
+          newConvoFeedback.className = 'small';
+          const email = (newConvoClient.value || '').trim();
+          const body = (newConvoMessage.value || '').trim();
+          if (!email || !body) {
+            newConvoFeedback.classList.add('text-danger');
+            newConvoFeedback.textContent = 'Sélectionnez un client et saisissez un message.';
+            return;
           }
-  
           try {
-            await fetch(`/api/conversations/${currentConversationId}/messages`, {
+            newConvoBtn.disabled = true;
+            newConvoBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Envoi...';
+            await fetchJSON('/api/conversations/new', {
               method: 'POST',
-              headers: { 'Authorization': 'Bearer ' + token },
-              body: formData
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message_body: body, recipient_email: email })
             });
-            messageBodyInput.value = '';
-            attachmentsInput.value = '';
-            loadMessages(currentConversationId);
-          } catch (error) {
-            console.error('Error sending message:', error);
+            newConvoFeedback.classList.add('text-success');
+            newConvoFeedback.textContent = 'Conversation créée et message envoyé.';
+            newConvoMessage.value = '';
+            loadConversations();
+          } catch (err) {
+            newConvoFeedback.classList.add('text-danger');
+            newConvoFeedback.textContent = err.message || 'Erreur lors de l\'envoi.';
+          } finally {
+            newConvoBtn.disabled = false;
+            newConvoBtn.innerHTML = '<i class="bi bi-send me-2"></i>Envoyer';
           }
         });
-  
-        titleFilterInput.addEventListener('input', loadConversations);
-        if (siteFilterInput) siteFilterInput.addEventListener('input', loadConversations);
-        if (clientFilterInput) clientFilterInput.addEventListener('input', loadConversations);
-        if (demandStatusFilter) demandStatusFilter.addEventListener('change', loadConversations);
-        if (dateStartInput) dateStartInput.addEventListener('change', loadConversations);
-        if (dateEndInput) dateEndInput.addEventListener('change', loadConversations);
-        if (modalClientFilter) {
-          modalClientFilter.addEventListener('input', () => renderClientOptions(modalClientFilter.value || ''));
-        }
+      }
 
-        if (newConvoBtn) {
-          newConvoBtn.addEventListener('click', async () => {
-            newConvoFeedback.textContent = '';
-            newConvoFeedback.className = 'small';
-            const email = (newConvoClient.value || '').trim();
-            const body = (newConvoMessage.value || '').trim();
-            if (!email || !body) {
-              newConvoFeedback.classList.add('text-danger');
-              newConvoFeedback.textContent = 'Sélectionnez un client et saisissez un message.';
-              return;
+      if (modalSendBtn) {
+        modalSendBtn.addEventListener('click', async () => {
+          modalClientFeedback.textContent = '';
+          modalClientFeedback.className = 'small';
+          const email = modalClientSelect?.value || '';
+          const body = (modalClientMessage?.value || '').trim();
+          const files = modalClientAttachments?.files || [];
+          if (!email || !body) {
+            modalClientFeedback.classList.add('text-danger');
+            modalClientFeedback.textContent = 'Choisissez un client et saisissez un message.';
+            return;
+          }
+          try {
+            modalSendBtn.disabled = true;
+            modalSendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Envoi...';
+            const fd = new FormData();
+            fd.append('message_body', body);
+            fd.append('recipient_email', email);
+            Array.from(files).forEach(f => fd.append('attachments[]', f));
+            const res = await fetch('/api/conversations/new', {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token },
+              body: fd
+            });
+            if (!res.ok) {
+              const errTxt = await res.text().catch(()=> 'Erreur');
+              throw new Error(errTxt || `HTTP ${res.status}`);
             }
-            try {
-              newConvoBtn.disabled = true;
-              newConvoBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Envoi...';
-              await fetchJSON('/api/conversations/new', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message_body: body, recipient_email: email })
-              });
-              newConvoFeedback.classList.add('text-success');
-              newConvoFeedback.textContent = 'Conversation créée et message envoyé.';
-              newConvoMessage.value = '';
-              loadConversations();
-            } catch (err) {
-              newConvoFeedback.classList.add('text-danger');
-              newConvoFeedback.textContent = err.message || 'Erreur lors de l\'envoi.';
-            } finally {
-              newConvoBtn.disabled = false;
-              newConvoBtn.innerHTML = '<i class="bi bi-send me-1"></i>Envoyer';
-            }
-          });
-        }
+            modalClientFeedback.classList.add('text-success');
+            modalClientFeedback.textContent = 'Message envoyé.';
+            if (modalClientMessage) modalClientMessage.value = '';
+            if (modalClientAttachments) modalClientAttachments.value = '';
+            const modalEl = document.getElementById('newMessageModal');
+            if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+            loadConversations();
+          } catch (err) {
+            modalClientFeedback.classList.add('text-danger');
+            modalClientFeedback.textContent = err.message || 'Erreur lors de l\'envoi.';
+          } finally {
+            modalSendBtn.disabled = false;
+            modalSendBtn.innerHTML = '<i class="bi bi-send me-1"></i>Envoyer';
+          }
+        });
+      }
 
-        // Envoi depuis la modal
-        if (modalSendBtn) {
-          modalSendBtn.addEventListener('click', async () => {
-            modalClientFeedback.textContent = '';
-            modalClientFeedback.className = 'small';
-            const email = modalClientSelect?.value || '';
-            const body = (modalClientMessage?.value || '').trim();
-            const files = modalClientAttachments?.files || [];
-            if (!email || !body) {
-              modalClientFeedback.classList.add('text-danger');
-              modalClientFeedback.textContent = 'Choisissez un client et saisissez un message.';
-              return;
-            }
-            try {
-              modalSendBtn.disabled = true;
-              modalSendBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Envoi...';
-              const fd = new FormData();
-              fd.append('message_body', body);
-              fd.append('recipient_email', email);
-              Array.from(files).forEach(f => fd.append('attachments[]', f));
-              const res = await fetch('/api/conversations/new', {
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + token },
-                body: fd
-              });
-              if (!res.ok) {
-                const errTxt = await res.text().catch(()=> 'Erreur');
-                throw new Error(errTxt || `HTTP ${res.status}`);
-              }
-              modalClientFeedback.classList.add('text-success');
-              modalClientFeedback.textContent = 'Message envoyé.';
-              if (modalClientMessage) modalClientMessage.value = '';
-              if (modalClientAttachments) modalClientAttachments.value = '';
-              const modalEl = document.getElementById('newMessageModal');
-              if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
-              loadConversations();
-            } catch (err) {
-              modalClientFeedback.classList.add('text-danger');
-              modalClientFeedback.textContent = err.message || 'Erreur lors de l\'envoi.';
-            } finally {
-              modalSendBtn.disabled = false;
-              modalSendBtn.innerHTML = '<i class="bi bi-send me-1"></i>Envoyer';
-            }
-          });
-        }
-
-        loadDemandesLabels().then(loadConversations).catch(loadConversations);
-        loadClientEmails();
+      loadDemandesLabels().then(loadConversations).catch(loadConversations);
+      loadClientEmails();
     });
-    </script></body>
+  </script>
+</body>
 </html>

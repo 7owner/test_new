@@ -87,10 +87,7 @@
                 <label class="form-label">Prix achat (€)</label>
                 <input type="number" step="0.01" min="0" id="mat-prix" class="form-control" placeholder="0.00">
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Quantité (info)</label>
-                <input type="number" min="0" id="mat-quantite" class="form-control" placeholder="Indiquer une quantité (non stockée)">
-              </div>
+
               <div class="col-md-6">
                 <label class="form-label">Documentation</label>
                 <input type="text" id="mat-documentation" class="form-control" placeholder="URL du document">
@@ -145,7 +142,6 @@
         documentation: document.getElementById('mat-documentation'),
         remise: document.getElementById('mat-remise'),
         classe: document.getElementById('mat-classe')
-      };
 
       let materiels = [];
       const token = localStorage.getItem('token');
@@ -187,6 +183,7 @@
                 <div class="small">${m.commentaire || ''}</div>
                 <div class="mt-2 small text-muted">
                   <div>Fabricant: ${m.fabricant || '—'}</div>
+                  <div>Quantité utilisée: ${m.total_quantite_used_in_interventions || 0}</div>
                   <div>Fournisseur: ${m.fournisseur || '—'}</div>
                   <div>Prix achat: ${m.prix_achat ? m.prix_achat + ' €' : '—'}</div>
                   <div>Classe: ${m.classe_materiel || '—'}</div>

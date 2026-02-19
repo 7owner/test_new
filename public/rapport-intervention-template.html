@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Rapport d'intervention</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background-color: #f9f9f9;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .header h1 {
+      font-size: 16px;
+      color: #2A61B3;
+      margin-top: 5px;
+    }
+    .date {
+      text-align: center;
+      font-size: 13px;
+      margin-top: 10px;
+      color: #555;
+    }
+    .infos {
+      text-align: center;
+      margin: 30px 0;
+      line-height: 1.8;
+      font-size: 15px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .bloc {
+      background-color: white;
+      padding: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      border-radius: 5px;
+      text-align: center;
+    }
+    .bloc img {
+      width: 80%;
+      height: auto;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: transform 0.5s ease;
+    }
+    .bloc img:hover { transform: scale(1.3); }
+    p { margin: 4px 0; font-size: 14px; color: #333; }
+    .comment-section {
+      background-color: #f0f8ff;
+      padding: 15px;
+      margin: 20px 0;
+      border-left: 4px solid #2A61B3;
+      border-radius: 4px;
+    }
+    .comment-section p { text-align: left; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="/logo_logicielle.png" alt="Logo" style="width:160px;height:auto;">
+    <h1>Client : {{client_titre}}</h1>
+  </div>
+
+  <div class="date">
+    <p><b>Date :</b> {{date_creation}}</p>
+  </div>
+
+  <div class="infos">
+    <p><b>Intervention :</b> {{intervention_titre}}</p>
+    <p><b>Site :</b> {{site_titre}}</p>
+    <p><b>Contrat :</b> {{contrat_titre}}</p>
+  </div>
+
+  <div class="comment-section">
+    <p><b>Commentaire :</b></p>
+    <textarea id="commentEditable" style="width:100%;height:100px;font-family:Arial,sans-serif;font-size:14px;padding:8px;border-radius:4px;border:1px solid #ccc;">{{commentaire}}</textarea>
+  </div>
+
+  <div class="comment-section">
+    <p><b>Résumé (Markdown autorisé) :</b></p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <textarea id="resumeEditable" style="width:100%;height:140px;font-family:Arial,sans-serif;font-size:14px;padding:8px;border-radius:4px;border:1px solid #ccc;">{{resume}}</textarea>
+      <div id="resumePreview" style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:10px;min-height:140px;">{{resume}}</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Dupliquez ce bloc pour chaque image issue des rendus d'intervention -->
+    <div class="bloc">
+      <img src="{{image_data_uri}}" alt="Visuel rendu">
+      <p><b>{{image_titre}}</b></p>
+      <p>{{image_legende_1}}</p>
+      <p>{{image_legende_2}}</p>
+    </div>
+  </div>
+</body>
+</html>

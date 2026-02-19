@@ -4,83 +4,73 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Factures</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link href="/style.css" rel="stylesheet">
-  <script src="/nav.js"></script>
-  <script src="/script.js"></script>
+  <link href="/custom.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #f5f7fb 0%, #e9ecf5 50%, #f5f7fb 100%);
+      min-height: 100vh;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    .page-hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 12px 30px rgba(118,75,162,0.25);
+    }
+    .card-elevated {
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+    .badge-status { text-transform: capitalize; }
+    .table thead th {
+      border-bottom: none;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6c757d;
+    }
+  </style>
 </head>
 <body>
-  <header class="header d-flex justify-content-between align-items-center mb-4">
-    <h1><img src="/logo_logicielle.png" alt="Logo Système de Maintenance" style="height: 40px; vertical-align: middle; margin-right: 10px;"></h1>
-    <div id="user-info-container" class="d-flex align-items-center">
-      <span class="me-2">Bienvenue, <span id="logged-in-user-email"></span></span>
-      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-        Menu
-      </button>
-    </div>
-  </header>
+  <div id="navbar-placeholder"></div>
 
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-    <div class="offcanvas-header">
-      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  <main class="container mt-4 mb-5">
+    <div class="page-hero mb-4">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <div class="text-uppercase small opacity-75">Facturation</div>
+          <h1 class="h3 mb-0">Gestion des factures</h1>
+        </div>
+        <div class="d-flex gap-2">
+          <!--<a class="btn btn-light btn-sm" href="/dashboard.html"><i class="bi bi-house-door me-1"></i>Dashboard</a>
+          <a class="btn btn-outline-light btn-sm" href="/achats.html"><i class="bi bi-cart-check me-1"></i>Achats</a>-->
+        </div>
+      </div>
     </div>
-    <div class="offcanvas-body">
-      <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-        <li class="nav-item">
-          <a class="nav-link" href="/dashboard.html"><i class="bi bi-house-door-fill me-2"></i>Dashboard</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/agents.html"><i class="bi bi-people-fill me-2"></i>Agents</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/sites.html"><i class="bi bi-building-fill me-2"></i>Sites</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/interventions.html"><i class="bi bi-tools me-2"></i>Interventions</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/rendezvous.html"><i class="bi bi-calendar-event-fill me-2"></i>Rendez-vous</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/achats.html"><i class="bi bi-cart-fill me-2"></i>Achats</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/factures.html"><i class="bi bi-receipt-cutoff me-2"></i>Factures</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" id="logout-link"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a>
-        </li>
-      </ul>
-    </div>
-  </div>
 
-  <main class="container mt-5">
-    <nav aria-label="breadcrumb">
-      <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/dashboard.html">Dashboard</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Factures</li>
-      </ol>
-    </nav>
-    <h1 class="mb-4">Gestion des Factures</h1>
-
-    <div class="row">
-      <div class="col-md-4">
-        <div class="card mb-4">
+    <div class="row g-4">
+      <div class="col-lg-4">
+        <div class="card card-elevated">
           <div class="card-body">
-            <h2 class="card-title">Ajouter une facture</h2>
-            <form id="addFactureForm">
-              <input id="f_reference" type="text" placeholder="Ex: FAC-2025-001" class="form-control mb-3">
-              <div class="row mb-3">
-                <div class="col">
-                  <label for="f_montant_ht" class="form-label">Montant HT</label>
-                  <input id="f_montant_ht" class="form-control" type="number" step="0.01" placeholder="0.00">
-                </div>
-                <div class="col">
-                  <label for="f_tva" class="form-label">TVA %</label>
-                  <input id="f_tva" class="form-control" type="number" step="0.01" placeholder="20">
-                </div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h2 class="h5 mb-0"><i class="bi bi-plus-circle me-2 text-primary"></i>Nouvelle facture</h2>
+            </div>
+            <form id="addFactureForm" class="mt-3">
+              <div class="mb-3">
+                <label for="f_reference" class="form-label">Référence</label>
+                <input id="f_reference" type="text" placeholder="Ex: FAC-2025-001" class="form-control">
+              </div>
+              <div class="mb-3">
+                <label for="f_titre" class="form-label">Titre</label>
+                <input id="f_titre" type="text" placeholder="Titre de la facture" class="form-control">
+              </div>
+              <div class="mb-3">
+                <label for="f_tva_taux" class="form-label">TVA %</label>
+                <input id="f_tva_taux" class="form-control" type="number" step="0.01" placeholder="20">
               </div>
               <div class="row mb-3">
                 <div class="col">
@@ -100,28 +90,125 @@
                 <label for="f_affaire" class="form-label">Affaire</label>
                 <select id="f_affaire" class="form-select"><option value=""></option></select>
               </div>
-              <button type="submit" class="btn btn-primary w-100">Ajouter</button>
+              <div class="mb-3">
+                <label for="f_intervention" class="form-label">Intervention (optionnel)</label>
+                <select id="f_intervention" class="form-select"><option value="">(Aucune)</option></select>
+              </div>
+
+              <h6 class="mt-4 mb-3 text-primary">Détails de facturation</h6>
+
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="f_heures_saisies" class="form-label">Heures saisies</label>
+                  <input id="f_heures_saisies" class="form-control" type="number" step="0.01" placeholder="0.00">
+                </div>
+                <div class="col-md-6">
+                  <label for="f_heures_calculees" class="form-label">Heures calculées</label>
+                  <input id="f_heures_calculees" class="form-control" type="number" step="0.01" placeholder="0.00">
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="f_taux_horaire" class="form-label">Taux horaire (€/h)</label>
+                  <input id="f_taux_horaire" class="form-control" type="number" step="0.01" placeholder="0.00">
+                </div>
+                <div class="col-md-6">
+                  <label for="f_total_heures_ht" class="form-label">Total heures HT</label>
+                  <input id="f_total_heures_ht" class="form-control" type="number" step="0.01" placeholder="0.00">
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="f_taux_majoration_materiel" class="form-label">Taux majoration matériel (%)</label>
+                  <input id="f_taux_majoration_materiel" class="form-control" type="number" step="0.01" placeholder="0.00">
+                </div>
+                <div class="col-md-6">
+                  <label for="f_total_materiel_ht" class="form-label">Total matériel HT</label>
+                  <input id="f_total_materiel_ht" class="form-control" type="number" step="0.01" placeholder="0.00">
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="f_deplacement_qte" class="form-label">Déplacement Qte</label>
+                  <input id="f_deplacement_qte" class="form-control" type="number" step="0.01" placeholder="0.00">
+                </div>
+                <div class="col-md-6">
+                  <label for="f_deplacement_pu" class="form-label">Déplacement PU</label>
+                  <input id="f_deplacement_pu" class="form-control" type="number" step="0.01" placeholder="0.00">
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="f_divers_ht" class="form-label">Divers HT</label>
+                <input id="f_divers_ht" class="form-control" type="number" step="0.01" placeholder="0.00">
+              </div>
+
+              <h6 class="mt-4 mb-3 text-primary">Totaux finaux</h6>
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="f_total_deplacement_ht" class="form-label">Total déplacement HT</label>
+                  <input id="f_total_deplacement_ht" class="form-control" type="number" step="0.01" placeholder="0.00">
+                </div>
+                <div class="col-md-6">
+                  <label for="f_total_tva" class="form-label">Total TVA</label>
+                  <input id="f_total_tva" class="form-control" type="number" step="0.01" placeholder="0.00">
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="f_total_ht" class="form-label">Total HT</label>
+                  <input id="f_total_ht" class="form-control" type="number" step="0.01" placeholder="0.00">
+                </div>
+                <div class="col-md-6">
+                  <label for="f_total_ttc" class="form-label">Total TTC</label>
+                  <input id="f_total_ttc" class="form-control" type="number" step="0.01" placeholder="0.00">
+                </div>
+              </div>
+              <button type="submit" class="btn btn-gradient w-100"><i class="bi bi-check2-circle me-1"></i>Ajouter</button>
             </form>
           </div>
         </div>
       </div>
 
-      <div class="col-md-8">
-        <div class="card">
+      <div class="col-lg-8">
+        <div class="card card-elevated">
           <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h2 class="card-title mb-0">Liste des factures</h2>
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+              <h2 class="h5 mb-0"><i class="bi bi-receipt me-2 text-primary"></i>Liste des factures</h2>
+              <div class="ms-auto d-flex flex-wrap gap-2">
+                <input id="filter_search" type="text" class="form-control form-control-sm" placeholder="Réf / client / affaire">
+                <select id="filter_client" class="form-select form-select-sm" style="min-width:180px">
+                  <option value="">Tous les clients</option>
+                </select>
+                <select id="filter_affaire" class="form-select form-select-sm" style="min-width:180px">
+                  <option value="">Toutes les affaires</option>
+                </select>
+              </div>
             </div>
-            <div id="factureList"></div>
+            <div id="factureList" class="table-responsive"></div>
           </div>
         </div>
       </div>
     </div>
   </main>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/nav.js"></script>
   <script src="/js/factures.js"></script>
+
+  <!-- Modal plein écran pour affichage des vues/édition en iframe -->
+  <div class="modal fade" id="factureModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content" style="min-height:80vh;">
+        <div class="modal-header">
+          <h5 class="modal-title" id="factureModalTitle">Prévisualisation</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0" style="min-height:78vh;">
+          <iframe id="factureModalFrame" src="about:blank" style="border:0;width:100%;height:78vh;display:block;background:#fff;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
-
-

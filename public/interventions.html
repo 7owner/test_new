@@ -86,19 +86,57 @@
           const url = ticketId ? `/api/interventions?ticket_id=${encodeURIComponent(ticketId)}` : '/api/interventions';
           const r = await fetch(url, { headers, credentials:'same-origin' });
           const arr = r.ok ? await r.json() : [];
+          const search = (params.get('q') || '').trim().toLowerCase();
           tbody.innerHTML = '';
-          if (!arr.length) { if (empty) empty.classList.remove('d-none'); return; }
+          let list = Array.isArray(arr) ? arr : [];
+
+          const matchBasic = (it) => {
+            if (!search) return true;
+            const fields = [
+              it.id,
+              it.ticket_id,
+              it.titre,
+              it.description,
+              it.status || it.statut
+            ].map(x => (x || '').toString().toLowerCase());
+            return fields.some(f => f.includes(search));
+          };
+
+          if (search) {
+            const basicMatches = [];
+            const remaining = [];
+            list.forEach(it => (matchBasic(it) ? basicMatches : remaining).push(it));
+            // Cherche dans les matériels liés si pas trouvé par basic
+            const withMateriels = [];
+            for (const it of remaining) {
+              try {
+                const mats = await (await fetch(`/api/interventions/${it.id}/materiels`, { headers, credentials:'same-origin' })).json();
+                const hasMatch = Array.isArray(mats) && mats.some(m => {
+                  return [m.reference, m.designation, m.categorie].some(v => (v || '').toString().toLowerCase().includes(search));
+                });
+                if (hasMatch) withMateriels.push(it);
+              } catch {}
+            }
+            list = [...basicMatches, ...withMateriels];
+          }
+
+          if (!list.length) { if (empty) empty.classList.remove('d-none'); return; }
           if (empty) empty.classList.add('d-none');
 
-          arr.forEach(it => {
+          list.forEach(it => {
             const dDeb = it.date_debut ? new Date(it.date_debut).toLocaleString() : '';
             const dFin = it.date_fin ? new Date(it.date_fin).toLocaleString() : '';
             const elapsed = fmtElapsed(it.date_debut, it.date_fin, it.status || it.statut);
             const tr = document.createElement('tr');
             tr.innerHTML = `
-              <td class="fw-bold text-primary">#${it.id||''}</td>
-              <td><span class="fw-semibold">${it.ticket_id ? '#'+it.ticket_id : '—'}</span></td>
-              <td>${it.description||''}</td>
+              <td>
+                <div class="fw-semibold">${it.titre || '(Sans titre)'}</div>
+                <div class="small text-muted">#${it.id||''}</div>
+              </td>
+              <td>
+                ${it.ticket_id ? `<span class="fw-semibold">#${it.ticket_id}</span> — <span class="text-muted">${it.ticket_titre || ''}</span>` : '—'}
+              </td>
+              <td>${it.titre ? `<div class="fw-semibold">${it.titre}</div><div class="small text-muted">${it.description||''}</div>` : (it.description||'')}</td>
               <td>${dDeb||'-'}</td>
               <td>${dFin||'-'}</td>
               <td>${elapsed||'-'}</td>

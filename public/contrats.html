@@ -43,7 +43,6 @@
         <div class="col-lg-3 col-md-4 col-12">
           <select id="association-filter" class="form-select">
             <option value="">Toutes les associations</option>
-            <!-- Options loaded by JS -->
           </select>
         </div>
       </div>
@@ -54,6 +53,7 @@
         <thead>
           <tr>
             <th>Titre</th>
+            <th>Client</th>
             <th>Début</th>
             <th>Fin</th>
             <th>Sites liés</th>
@@ -110,9 +110,11 @@
       const searchInput = document.getElementById('contrat-search');
       const dateStart = document.getElementById('contrat-date-start');
       const dateEnd = document.getElementById('contrat-date-end');
-      const associationFilter = document.getElementById('association-filter'); // New filter
+      const associationFilter = document.getElementById('association-filter'); // Select
       const toggleFiltersBtn = document.getElementById('toggle-filters-btn');
       const filtersRow = document.getElementById('filters-row');
+      const params = new URLSearchParams(window.location.search);
+      const preselectAssociationId = params.get('association_id');
 
       const createModal = new bootstrap.Modal(document.getElementById('createContratModal'));
       const editModal = new bootstrap.Modal(document.getElementById('editContratModal'));
@@ -121,7 +123,6 @@
       const editContratFrame = document.getElementById('editContratFrame');
 
       let contrats = [];
-      let apiAssociations = []; // To store fetched associations
 
       async function api(url, opts={}) {
         const res = await fetch(url, { headers, ...opts });
@@ -141,23 +142,21 @@
         try {
           const [contratsList, associationsList] = await Promise.all([
             api('/api/contrats'),
-            api('/api/associations')
+            api('/api/associations').catch(() => [])
           ]);
           contrats = contratsList;
-          apiAssociations = associationsList;
-
-          // Populate association filter
+          // Populate association select
           associationFilter.innerHTML = '<option value="">Toutes les associations</option>';
-          apiAssociations.forEach(asso => {
-            const option = document.createElement('option');
-            option.value = asso.id;
-            option.textContent = asso.titre;
-            associationFilter.appendChild(option);
+          (associationsList || []).forEach(asso => {
+            const opt = document.createElement('option');
+            opt.value = asso.id;
+            opt.textContent = asso.titre;
+            associationFilter.appendChild(opt);
           });
-          
+          if (preselectAssociationId) associationFilter.value = preselectAssociationId;
           applyFilters();
         } catch (e) {
-          tableBody.innerHTML = '<tr><td colspan="6" class="text-danger">Erreur de chargement.</td></tr>';
+          tableBody.innerHTML = '<tr><td colspan="7" class="text-danger">Erreur de chargement.</td></tr>';
         }
       }
 
@@ -170,12 +169,15 @@
         if (end) end.setHours(23,59,59,999);
 
         const rows = (contrats || []).filter(c => {
-          const matchTerm = c.titre && c.titre.toLowerCase().includes(term);
+          const matchTerm = (
+            (c.titre && c.titre.toLowerCase().includes(term)) ||
+            (c.nom_client && c.nom_client.toLowerCase().includes(term))
+          );
           const deb = c.date_debut ? new Date(c.date_debut) : null;
           if (start && deb && deb < start) return false;
           if (end && deb && deb > end) return false;
 
-          // Filter by association
+          // Filter by association id
           const matchesAssociation = !selectedAssociationId || (c.associations && c.associations.some(asso => String(asso.id) === selectedAssociationId));
           
           return matchTerm && matchesAssociation;
@@ -186,7 +188,7 @@
       function render(rows) {
         tableBody.innerHTML = '';
         if (!rows.length) {
-          tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Aucun contrat trouvé.</td></tr>';
+          tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Aucun contrat trouvé.</td></tr>';
           return;
         }
         rows.forEach(c => {
@@ -201,6 +203,7 @@
 
           tr.innerHTML = `
             <td>${c.titre || ''}</td>
+            <td>${c.nom_client || '<span class="text-muted">—</span>'}</td>
             <td>${formatDate(c.date_debut)}</td>
             <td>${formatDate(c.date_fin) || '—'}</td>
             <td>${siteNames}</td>
@@ -242,7 +245,7 @@
       searchInput.addEventListener('input', applyFilters);
       dateStart.addEventListener('change', applyFilters);
       dateEnd.addEventListener('change', applyFilters);
-      associationFilter.addEventListener('change', applyFilters); // New event listener
+      associationFilter.addEventListener('change', applyFilters);
 
       if (toggleFiltersBtn && filtersRow) {
         toggleFiltersBtn.addEventListener('click', () => {
@@ -252,6 +255,8 @@
       }
 
       loadContrats();
+      // Exposer pour l'iframe de création afin de rafraîchir après création
+      window.loadContrats = loadContrats;
     });
   </script>
 </body>

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modifier un travail</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/custom.css?v=1">
+  <script src="/nav.js?v=3"></script>
+  <style>
+    body { background: linear-gradient(135deg,#eef2ff 0%,#f8fbff 100%); }
+    .embed #navbar-placeholder { display:none !important; }
+    .form-card { max-width: 900px; margin: 2rem auto; }
+  </style>
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+  <main class="container form-card">
+    <div class="card shadow-sm">
+      <div class="card-header bg-gradient" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-tools me-2"></i>Modifier le travail</h5>
+          <!--<a href="travaux.html" class="btn btn-light btn-sm"><i class="bi bi-arrow-left"></i> Retour</a>-->
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="feedback" class="mb-3 small"></div>
+        <form id="edit-form" class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Titre *</label>
+            <input type="text" class="form-control" id="titre" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea class="form-control" id="description" rows="3"></textarea>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">État</label>
+            <select id="etat" class="form-select">
+              <option value="A_faire">À faire</option>
+              <option value="En_cours">En cours</option>
+              <option value="En_attente">En attente</option>
+              <option value="Termine">Terminé</option>
+              <option value="Annule">Annulé</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Priorité</label>
+            <select id="priorite" class="form-select">
+              <option value="Haute">Haute</option>
+              <option value="Moyenne" selected>Moyenne</option>
+              <option value="Basse">Basse</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Responsable (matricule)</label>
+            <input type="text" id="agent_matricule" class="form-control" placeholder="Ex: AGT001">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Date de début</label>
+            <input type="datetime-local" id="date_debut" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Date de fin</label>
+            <input type="datetime-local" id="date_fin" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Date d'échéance</label>
+            <input type="datetime-local" id="date_echeance" class="form-control">
+          </div>
+          <div class="col-12 d-grid d-md-flex gap-2">
+            <button type="submit" class="btn btn-gradient"><i class="bi bi-save me-1"></i>Enregistrer</button>
+            <a href="travaux.html" class="btn btn-secondary">Annuler</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const params = new URLSearchParams(location.search);
+      const id = params.get('id');
+      const feedback = document.getElementById('feedback');
+      const isEmbed = window.self !== window.top || params.get('embed') === '1';
+      if (isEmbed) document.body.classList.add('embed');
+      const token = localStorage.getItem('token');
+      if (!token) { location.href='/login.html'; return; }
+      const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' };
+      if (!id) { feedback.className='text-danger'; feedback.textContent='ID manquant'; return; }
+
+      const toLocal = (iso) => {
+        if (!iso) return '';
+        const d = new Date(iso);
+        if (isNaN(d)) return '';
+        const pad = n => n.toString().padStart(2,'0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      };
+
+      try {
+        const r = await fetch(`/api/travaux/${id}`, { headers, credentials:'same-origin' });
+        if (r.status===401||r.status===403) { location.href='/login.html'; return; }
+        const t = r.ok ? await r.json() : null;
+        if (!t) throw new Error('Travail introuvable');
+        document.getElementById('titre').value = t.titre || '';
+        document.getElementById('description').value = t.description || '';
+        document.getElementById('etat').value = t.etat || 'A_faire';
+        document.getElementById('priorite').value = t.priorite || 'Moyenne';
+        document.getElementById('agent_matricule').value = t.agent_matricule || '';
+        document.getElementById('date_debut').value = toLocal(t.date_debut);
+        document.getElementById('date_fin').value = toLocal(t.date_fin);
+        document.getElementById('date_echeance').value = toLocal(t.date_echeance);
+      } catch (err) {
+        feedback.className='text-danger';
+        feedback.textContent = err.message || 'Erreur de chargement';
+        return;
+      }
+
+      document.getElementById('edit-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        feedback.className='';
+        feedback.textContent='';
+        const payload = {
+          titre: document.getElementById('titre').value.trim(),
+          description: document.getElementById('description').value.trim() || null,
+          etat: document.getElementById('etat').value,
+          priorite: document.getElementById('priorite').value,
+          agent_matricule: document.getElementById('agent_matricule').value.trim() || null,
+          date_debut: document.getElementById('date_debut').value || null,
+          date_fin: document.getElementById('date_fin').value || null,
+          date_echeance: document.getElementById('date_echeance').value || null
+        };
+        if (!payload.titre) {
+          feedback.className='text-danger';
+          feedback.textContent='Le titre est requis.';
+          return;
+        }
+        try {
+          const res = await fetch(`/api/travaux/${id}`, {
+            method:'PUT',
+            headers,
+            credentials:'same-origin',
+            body: JSON.stringify(payload)
+          });
+          const body = await res.json().catch(()=>({}));
+          if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+          feedback.className='text-success';
+          feedback.textContent='Travail mis à jour.';
+          setTimeout(() => { window.location.href = `/travaux-view.html?id=${id}`; }, 800);
+        } catch(err) {
+          feedback.className='text-danger';
+          feedback.textContent = err.message || 'Erreur lors de la sauvegarde.';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

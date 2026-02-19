@@ -28,40 +28,98 @@
     </div>
   </div>
 
-  
-    
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <!--<h1 class="mb-4">Modifier un ticket</h1>-->
+  <main class="container mt-5">
 
-    <!--  <button type="button" class="btn btn-outline-secondary btn-sm" id="back-btn"><i class="bi bi-arrow-left"></i> Retour</button>-->
+    <!-- Site associé (prévisualisation) -->
+    <div class="card mb-4 d-none" id="site-card">
+      <div class="card-body p-0">
+        <div class="p-3 text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-top-left-radius: 12px; border-top-right-radius: 12px;">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h5 class="mb-1" id="site-name">Site</h5>
+              <div class="small opacity-75">Client : <span id="site-client">—</span> · Contact : <span id="site-contact">—</span></div>
+            </div>
+            <a id="site-view-link" class="btn btn-light btn-sm" href="#" target="_blank"><i class="bi bi-eye"></i> Voir le site</a>
+          </div>
+        </div>
+        <div class="p-3">
+          <div class="mb-3">
+            <div class="fw-semibold text-secondary">Adresse</div>
+            <div id="site-adresse" class="text-body">—</div>
+          </div>
+          <div class="mb-3">
+            <div class="fw-semibold text-secondary">Commentaire</div>
+            <div id="site-commentaire" class="text-body">—</div>
+          </div>
+          <div class="mb-2">
+            <div class="fw-semibold text-secondary mb-2">Représentants client</div>
+            <div id="site-representants" class="d-flex flex-column gap-2">
+              <div class="text-muted small">Chargement...</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="card">
       <div class="card-body">
-        <form id="ticket-edit-form">
-          <div class="mb-3">
-            <label for="titre" class="form-label">Titre</label>
-            <input type="text" class="form-control" id="titre" required>
+        <h2 class="card-title mb-4">Modifier le ticket</h2>
+        <div id="msg" class="d-none"></div>
+        <form id="ticket-new-form" class="row g-3">
+
+          <!-- DOE / Affaire juste sous le titre -->
+          <div class="col-md-6">
+            <label for="doe-search-input" class="form-label">DOE associé</label>
+            <input type="text" class="form-control" id="doe-search-input" placeholder="Rechercher un DOE" autocomplete="off">
+            <input type="hidden" id="doe_id">
+            <div id="doe-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
+            <div id="doe-details" class="mt-2 p-2 border rounded bg-light d-none">
+              <strong>Titre:</strong> <span id="doe-title"></span><br>
+              <strong>Description:</strong> <span id="doe-description"></span>
+              <a href="#" id="view-doe-btn" class="btn btn-sm btn-info mt-2"><i class="bi bi-eye"></i> Voir DOE</a>
+            </div>
           </div>
-          <div class="mb-3">
-            <label for="description" class="form-label">Description</label>
-            <textarea class="form-control" id="description" rows="3" placeholder="Ex: Vérification annuelle des systèmes de sécurité et remplacement des composants usés."></textarea>
-          </div>
-          <div class="mb-3">
-            <label for="etat" class="form-label">État</label>
-            <select class="form-select" id="etat" required>
-              <option value="Pas_commence">Pas commencé</option>
-              <option value="En_cours">En cours</option>
-              <option value="Termine">Terminé</option>
-            </select>
-          </div>
-<div class="mb-3">
-            <label for="responsable" class="form-label">Responsable</label>
-            <select class="form-select" id="responsable"></select>
+          <div class="col-md-6">
+            <label for="affaire-search-input" class="form-label">Affaire associée</label>
+            <input type="text" class="form-control" id="affaire-search-input" placeholder="Rechercher une affaire" autocomplete="off">
+            <input type="hidden" id="affaire_id">
+            <div id="affaire-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
           </div>
 
-          <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary">Enregistrer</button>
+          <div class="col-12">
+            <label for="site-search-input" class="form-label">Site</label>
+            <input type="text" class="form-control" id="site-search-input" placeholder="Rechercher un site" autocomplete="off">
+            <input type="hidden" id="site_id">
+            <div id="site-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
+          </div>
+
+          <div class="col-12">
+            <label for="titre" class="form-label">Titre *</label>
+            <input type="text" class="form-control" id="titre" required>
+          </div>
+          <div class="col-12">
+            <label for="description" class="form-label">Description (optionnel)</label>
+            <textarea class="form-control" id="description" rows="3"></textarea>
+          </div>
+
+          <div class="col-md-6">
+            <label for="date_debut" class="form-label">Date de début *</label>
+            <input type="datetime-local" class="form-control" id="date_debut" required>
+          </div>
+          <div class="col-md-6">
+            <label for="date_fin" class="form-label">Date de fin (optionnel)</label>
+            <input type="datetime-local" class="form-control" id="date_fin">
+          </div>
+
+          <div class="col-md-6 offset-md-6">
+            <label for="responsable-search-input" class="form-label">Responsable (optionnel)</label>
+            <input type="text" class="form-control" id="responsable-search-input" placeholder="Rechercher un responsable" autocomplete="off">
+            <input type="hidden" id="responsable">
+            <div id="responsable-suggestions" class="list-group position-absolute w-50" style="z-index: 100;"></div>
+          </div>
+
+          <div class="col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-primary" id="save-ticket-btn">Enregistrer</button>
             <a href="tickets.html" class="btn btn-secondary" id="cancel-button">Annuler</a>
           </div>
         </form>
@@ -69,102 +127,7 @@
     </div>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const ticketId = urlParams.get('id');
-      if (!ticketId) {
-        alert('ID de ticket manquant');
-        window.location.href = 'tickets.html';
-        return;
-      }
-
-      const token = localStorage.getItem('token');
-      const headers = { 'Authorization': `Bearer ${token}` };
-      let isAdmin = false;
-      try { 
-        const p = JSON.parse(atob(token.split('.')[1]));
-        isAdmin = Array.isArray(p.roles) && p.roles.includes('ROLE_ADMIN');
-      } catch(e) { console.error('Could not parse token', e); }
-
-      const form = document.getElementById('ticket-edit-form');
-      const responsableSelect = document.getElementById('responsable');
-
-      // Fetch related data for dropdowns
-      async function fetchData() {
-        try {
-          const [agents, ticketRel] = await Promise.all([
-            fetch('/api/agents', { headers }).then(res => res.json()),
-            fetch(`/api/tickets/${ticketId}/relations`, { headers }).then(res => res.json())
-          ]);
-
-          // Populate Responsables
-          responsableSelect.innerHTML = '<option value="">Non assigné</option>';
-          if (Array.isArray(agents)) {
-            agents.forEach(a => {
-              const opt = document.createElement('option');
-              opt.value = a.matricule;
-              opt.textContent = `${a.nom} ${a.prenom} (${a.matricule})`;
-              responsableSelect.appendChild(opt);
-            });
-          }
-
-          // Populate form with ticket data
-          const ticket = ticketRel.ticket;
-          if (ticket) {
-            document.getElementById('titre').value = ticket.titre || '';
-            document.getElementById('description').value = ticket.description || '';
-            document.getElementById('etat').value = ticket.etat || 'Pas_commence';
-            responsableSelect.value = ticket.responsable || '';
-            document.getElementById('cancel-button').href = `ticket-view.html?id=${ticket.id}`;
-          } else {
-            throw new Error('Ticket data not found');
-          }
-
-        } catch (e) {
-          console.error('Failed to load data', e);
-          alert('Erreur de chargement des données pour le formulaire.');
-        }
-      }
-
-      // Handle form submission
-      form.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-        if (!isAdmin) {
-          alert('Action réservée aux administrateurs.');
-          return;
-        }
-
-        const payload = {
-          titre: document.getElementById('titre').value,
-          description: document.getElementById('description').value,
-          responsable: document.getElementById('responsable').value || null,
-          etat: document.getElementById('etat').value
-        };
-
-        try {
-          const res = await fetch(`/api/tickets/${ticketId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', ...headers },
-            body: JSON.stringify(payload)
-          });
-
-          if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.error || `HTTP ${res.status}`);
-          }
-
-          alert('Ticket mis à jour avec succès !');
-          window.location.href = `ticket-view.html?id=${ticketId}`;
-        } catch (e) {
-          console.error('Failed to update ticket', e);
-          alert(`Échec de la sauvegarde: ${e.message}`);
-        }
-      });
-
-      await fetchData();
-    });
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script src="/js/ticket-edit.js?v=2"></script>
 </body>
 </html>
