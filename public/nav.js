@@ -1,4 +1,19 @@
-﻿document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  const App = window.AppCore || {
+    getToken: () => localStorage.getItem('token') || '',
+    clearAuth: () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('userRole');
+    },
+    decodeToken: (token) => {
+      try {
+        const payload = (token || '').split('.')[1];
+        return payload ? JSON.parse(atob(payload)) : null;
+      } catch (_) {
+        return null;
+      }
+    }
+  };
   const navbarPlaceholder = document.getElementById('navbar-placeholder');
   if (!navbarPlaceholder) {
     console.error('Navbar placeholder not found. Cannot inject navbar.');
@@ -31,13 +46,14 @@
     
     // Populate logged-in user info and handle dynamic menu items
     // Vérifie session : si token manquant/expiré ou réponse 401/403 sur ensureSessionAndCsrf, on redirige
-    const token = localStorage.getItem('token');
+    const token = App.getToken();
     if (!token) {
       return redirectLogin();
     }
 
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = App.decodeToken(token);
+      if (!payload) return redirectLogin();
       const email = payload.email || 'Utilisateur';
       const matricule = payload.matricule || payload.sub;
       const userId = payload.id;
@@ -121,8 +137,7 @@
         event.preventDefault();
         if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
           fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('userRole');
+            App.clearAuth();
             window.location.href = '/login.html';
           });
         }
@@ -137,8 +152,7 @@
   }
 
   function redirectLogin() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
+    App.clearAuth();
     window.location.href = '/login.html';
   }
 
@@ -152,7 +166,7 @@
     const currentUserId = Number(userId);
     if (!Number.isFinite(currentUserId)) return;
 
-    const token = localStorage.getItem('token') || '';
+    const token = App.getToken();
 
     const readKey = `notifReads:${currentUserId}`;
     const getReadMap = () => {
@@ -283,7 +297,7 @@
     const unprotected = ['/', '/login.html', '/register.html', '/forgot-password.html', '/reset-password.html'];
     if (unprotected.includes(window.location.pathname)) return;
 
-    const token = localStorage.getItem('token');
+    const token = App.getToken();
     if (!token) {
       window.location.href = '/login.html';
       return;
