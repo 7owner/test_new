@@ -2,3 +2,14 @@ node_modules
 .env
 CONTEXT8.md
 *.md
+*.txt
+*.zip
+*.mp
+.gemini/
+*.log
+*.tmp
+*.bak
+*.orig
+*.rej
+Thumbs.db
+.DS_Store

@@ -1,9 +1,0 @@
-            [titre, description]
-        );
-        res.status(201).json(result.rows[0]);
-    } catch (err) {
-        console.error('Error creating ticket:', err);
-        res.status(500).json({ error: 'Internal Server Error' \n    try { await logAudit('ticket', result?.rows?.[0]?.id, 'CREATE', (req.user&&req.user.email)||req.headers['x-actor-email']||null, { titre, description }); } catch(_){}\n});
-    }
-});
-            'INSERT INTO ticket (titre, description) VALUES ($1, $2) RETURNING *',
